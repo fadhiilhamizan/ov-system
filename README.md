@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ormawa Visit — Command Center
 
-## Getting Started
+Sistem manajemen terintegrasi untuk program kerja **Ormawa Visit**, Departemen **External Affairs HMSI ITS**. Dibangun dari digitalisasi *Main Sheet Ormawa Visit* (eks Google Sheets) menjadi web app modern, operasional, dan *fully customizable*.
 
-First, run the development server:
+> Menggantikan alur spreadsheet lama — termasuk fitur **"Mirroring"** (WBS ⇄ sheet divisi) yang dulu rapuh & lambat (Apps Script, delay 4–5 detik), kini menjadi *query* real-time tanpa duplikasi.
+
+## ✨ Fitur
+
+| Modul | Keterangan |
+|-------|-----------|
+| **Dashboard** | KPI, donut progres, pipeline prospek, progres per divisi, deadline terdekat, ringkasan edisi |
+| **Work Breakdown (WBS)** | Semua tugas dalam 3 tampilan: **Tabel**, **Kanban** (drag-drop status), **Timeline** (Gantt). Filter, cari, CRUD |
+| **Papan Divisi** | Tampilan tugas tersaring per divisi (mirroring otomatis) + progres & struktur tim |
+| **Prospek Himpunan** | Database + **pipeline** himpunan target (belum → proses → menunggu → diterima/ditolak) |
+| **Anggaran (RAB)** | Itemisasi per kategori & skenario min/maks, subtotal, total; angka bisa diedit inline |
+| **Super Link** | Direktori dokumen/form/drive terkelompok per edisi & divisi |
+| **Kalender** | Deadline tugas & hari-H dalam grid bulanan |
+| **Rundown** | Juklak-juknis susunan acara (multi-versi) + job per divisi |
+| **Job Hari-H** | Pembagian tugas panitia saat pelaksanaan |
+| **Anggota & Tim** | Direktori fungsionaris/intern + struktur tim per divisi |
+| **Edisi OV** | Riwayat & rencana seluruh gelaran lintas kabinet |
+| **FAQ** | Panduan & pertanyaan umum |
+| **Pengaturan** | Status backend, matriks hak akses, reset data |
+
+### Hak akses berjenjang (RBAC)
+`Admin / PIC OV` → `Koordinator` → `Staff` → `Intern` → `Viewer`.
+Coba langsung lewat **pengalih peran** di kanan atas (mode demo).
+
+## 🛠 Teknologi
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript**
+- **Tailwind CSS v4** + komponen custom berbasis **Radix UI**
+- **@dnd-kit** (Kanban), grafik SVG custom, **sonner** (toast), **next-themes** (dark mode)
+- **Supabase** (Postgres + Auth + RLS) untuk mode cloud
+
+## 🚀 Menjalankan (mode demo lokal — langsung jalan)
 
 ```bash
+cd ov-system
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# buka http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mode demo memakai data asli dari kedua file Excel (`../MAIN SHEET ORMAWA VISIT.xlsx`, `../ORMAWA VISIT 2026.xlsx`), tersimpan di `.data/db.json`. Semua CRUD berfungsi & persisten. Ganti peran dari menu kanan atas untuk menguji hak akses.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ☁️ Mengaktifkan Supabase (cloud, akun + real-time)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Buat proyek di [supabase.com](https://supabase.com) (free tier cukup).
+2. Di **SQL Editor**, jalankan berurutan:
+   - `supabase/migrations/0001_init.sql` (skema)
+   - `supabase/migrations/0002_rls.sql` (RLS + auth trigger)
+   - `supabase/seed.sql` (data awal dari Excel — di-generate `node scripts/gen-seed-sql.mjs`)
+3. Salin `.env.example` → `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings → API).
+4. Buat user pertama (Authentication → Users), lalu set `role = 'admin'` di tabel `profiles`.
+5. `npm run dev` — `proxy.ts` menyegarkan sesi; RLS menegakkan hak akses di level database.
 
-## Learn More
+> Berkas integrasi (`src/lib/supabase/*`, `proxy.ts`) sudah disiapkan. Selama env Supabase kosong, aplikasi berjalan penuh di mode demo lokal.
 
-To learn more about Next.js, take a look at the following resources:
+## 🧭 Arsitektur
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/(app)/…            # halaman tiap modul (server components)
+  components/            # UI kit (Radix), layout shell, komponen per modul
+  lib/
+    types.ts             # model domain (single source of truth)
+    data/store.ts        # backend lokal (JSON, persisten)
+    data/repo.ts         # repository: query + CRUD + agregasi
+    actions/*.ts         # server actions (mutasi + guard hak akses)
+    permissions.ts       # aturan RBAC (pure, dipakai client & server)
+    auth.ts / session.ts # identitas & edisi aktif (cookie)
+    seed/seed.json       # data hasil ekstraksi Excel
+supabase/                # migrations + RLS + seed.sql
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Sumber kebenaran tunggal:** satu tabel `tasks`; "papan divisi" hanyalah *filter* — pengganti sempurna fitur *Mirroring* di spreadsheet lama.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+Dibuat untuk External Affairs HMSI ITS · v1.0
