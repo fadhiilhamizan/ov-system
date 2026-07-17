@@ -9,9 +9,11 @@ export const metadata = { title: "Work Breakdown Structure" };
 
 export default async function TasksPage() {
   const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
-  const tasks = getTasks({ event_id: event.id });
-  const divisions = getDivisions();
-  const events = getEvents();
+  const [tasks, divisions, events] = await Promise.all([
+    getTasks({ event_id: event.id }),
+    getDivisions(),
+    getEvents(),
+  ]);
 
   return (
     <div>

@@ -13,7 +13,7 @@ export async function updateBudgetItemAction(
 ): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBudget(user)) return { ok: false, error: "Kamu tidak punya akses mengedit anggaran." };
-  updateBudgetItem(planId, index, patch);
+  await updateBudgetItem(planId, index, patch);
   revalidatePath("/", "layout");
   return { ok: true };
 }

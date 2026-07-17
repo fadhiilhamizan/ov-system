@@ -8,7 +8,7 @@ export const metadata = { title: "Rundown Acara" };
 
 export default async function RundownPage() {
   const event = await getActiveEvent();
-  const items = getRundown(event.id);
+  const items = await getRundown(event.id);
 
   return (
     <div>

@@ -11,7 +11,7 @@ export const metadata = { title: "Job Hari-H" };
 
 export default async function JobsPage() {
   const event = await getActiveEvent();
-  const jobs = getJobs(event.id);
+  const jobs = await getJobs(event.id);
 
   return (
     <div>

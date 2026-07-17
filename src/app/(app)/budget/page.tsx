@@ -11,9 +11,11 @@ import { EmptyState } from "@/components/ui/empty";
 export const metadata = { title: "Anggaran (RAB)" };
 
 export default async function BudgetPage() {
-  const user = await getCurrentUser();
-  const plans = getBudgetPlans();
-  const events = getEvents();
+  const [user, plans, events] = await Promise.all([
+    getCurrentUser(),
+    getBudgetPlans(),
+    getEvents(),
+  ]);
 
   const grand = plans.reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0);
   const itemCount = plans.reduce((s, p) => s + p.items.length, 0);

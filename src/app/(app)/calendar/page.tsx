@@ -8,8 +8,10 @@ export const metadata = { title: "Kalender" };
 
 export default async function CalendarPage() {
   const event = await getActiveEvent();
-  const tasks = getTasks({ event_id: event.id });
-  const divisions = getDivisions();
+  const [tasks, divisions] = await Promise.all([
+    getTasks({ event_id: event.id }),
+    getDivisions(),
+  ]);
 
   const dated = tasks.filter((t) => t.end_date);
   const initialMonth = event.event_date?.slice(0, 7) ?? dated[0]?.end_date?.slice(0, 7) ?? new Date().toISOString().slice(0, 7);

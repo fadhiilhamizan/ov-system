@@ -13,8 +13,7 @@ export const metadata = { title: "Papan Divisi" };
 
 export default async function DivisionsPage() {
   const event = await getActiveEvent();
-  const stats = divisionStats(event.id);
-  const teams = getTeams(event.id);
+  const [stats, teams] = await Promise.all([divisionStats(event.id), getTeams(event.id)]);
 
   return (
     <div>

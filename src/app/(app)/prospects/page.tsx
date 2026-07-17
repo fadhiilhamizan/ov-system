@@ -9,8 +9,7 @@ import { Target, CheckCircle2, XCircle, Clock } from "lucide-react";
 export const metadata = { title: "Prospek Himpunan" };
 
 export default async function ProspectsPage() {
-  const user = await getCurrentUser();
-  const prospects = getProspects();
+  const [user, prospects] = await Promise.all([getCurrentUser(), getProspects()]);
 
   const count = (k: string) => prospects.filter((p) => prospectStage(p) === k).length;
 

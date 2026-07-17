@@ -7,9 +7,11 @@ export const metadata = { title: "Anggota & Tim" };
 
 export default async function MembersPage() {
   const event = await getActiveEvent();
-  const members = getMembers();
-  const teams = getTeams(event.id);
-  const divisions = getDivisions();
+  const [members, teams, divisions] = await Promise.all([
+    getMembers(),
+    getTeams(event.id),
+    getDivisions(),
+  ]);
 
   return (
     <div>

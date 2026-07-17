@@ -8,5 +8,5 @@ export const EVENT_COOKIE = "ov_active_event";
 export async function getActiveEvent(): Promise<OVEvent> {
   const store = await cookies();
   const id = store.get(EVENT_COOKIE)?.value;
-  return (id && getEvent(id)) || getDefaultEvent();
+  return (id ? await getEvent(id) : null) ?? (await getDefaultEvent());
 }

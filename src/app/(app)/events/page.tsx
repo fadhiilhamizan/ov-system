@@ -17,6 +17,13 @@ const STATUS: Record<string, { label: string; variant: "success" | "warning" | "
 
 export default async function EventsPage() {
   const [events, active] = await Promise.all([getEvents(), getActiveEvent()]);
+  const cards = await Promise.all(
+    events.map(async (e) => ({
+      event: e,
+      stats: await taskStats(e.id),
+      budget: await budgetTotal(e.id),
+    })),
+  );
 
   return (
     <div>
@@ -26,9 +33,7 @@ export default async function EventsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {events.map((e) => {
-          const stats = taskStats(e.id);
-          const budget = budgetTotal(e.id);
+        {cards.map(({ event: e, stats, budget }) => {
           const st = STATUS[e.status];
           const isActive = e.id === active.id;
           return (

@@ -20,7 +20,6 @@ import {
   budgetTotal,
   getDivisions,
   getMembers,
-  getTasks,
 } from "@/lib/data/repo";
 import { PIPELINE_STAGES, prospectStage, STATUS_META } from "@/lib/constants";
 import { formatRupiah, formatDate, relativeDeadline, daysUntil } from "@/lib/format";
@@ -44,16 +43,19 @@ const STATUS_HEX: Record<TaskStatus, string> = {
 
 export default async function DashboardPage() {
   const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
-  const stats = taskStats(event.id);
-  const divStats = divisionStats(event.id);
-  const pstats = prospectStats();
-  const budget = budgetTotal(event.id);
-  const divisions = getDivisions();
-  const memberCount = getMembers().length;
+  const [stats, divStats, pstats, budget, divisions, members] = await Promise.all([
+    taskStats(event.id),
+    divisionStats(event.id),
+    prospectStats(),
+    budgetTotal(event.id),
+    getDivisions(),
+    getMembers(),
+  ]);
+  const memberCount = members.length;
 
   const attention = stats.by.ongoing + stats.by.overtime;
 
-  const upcoming = getTasks({ event_id: event.id })
+  const upcoming = stats.tasks
     .filter((t) => t.end_date && t.status !== "done")
     .sort((a, b) => (a.end_date! < b.end_date! ? -1 : 1))
     .slice(0, 6);

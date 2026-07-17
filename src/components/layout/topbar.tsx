@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { navItemForPath } from "./nav-config";
 import { EventSwitcher } from "./event-switcher";
 import { RoleSwitcher } from "./role-switcher";
+import { UserMenu } from "./user-menu";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
 import type { AppUser, OVEvent } from "@/lib/types";
@@ -12,11 +13,13 @@ export function Topbar({
   user,
   events,
   activeEventId,
+  demoMode,
   onMenu,
 }: {
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
+  demoMode: boolean;
   onMenu: () => void;
 }) {
   const pathname = usePathname();
@@ -40,7 +43,7 @@ export function Topbar({
       <div className="flex items-center gap-2">
         <EventSwitcher events={events} activeId={activeEventId} />
         <ThemeToggle />
-        <RoleSwitcher user={user} />
+        {demoMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} />}
       </div>
     </header>
   );

@@ -26,14 +26,14 @@ export async function createTaskAction(input: TaskInput): Promise<Result> {
     return { ok: false, error: "Kamu tidak punya akses membuat tugas di divisi ini." };
   }
   if (!input.title?.trim()) return { ok: false, error: "Judul tugas wajib diisi." };
-  createTask({ ...input, title: input.title.trim() });
+  await createTask({ ...input, title: input.title.trim() });
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function updateTaskAction(id: string, patch: Partial<Task>): Promise<Result> {
   const user = await getCurrentUser();
-  const task = getTask(id);
+  const task = await getTask(id);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
 
   const keys = Object.keys(patch);
@@ -41,7 +41,7 @@ export async function updateTaskAction(id: string, patch: Partial<Task>): Promis
   const allowed = onlyProgress ? can.editTaskProgress(user, task) : can.editTask(user, task);
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
 
-  updateTask(id, patch);
+  await updateTask(id, patch);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -52,12 +52,12 @@ export async function setTaskStatusAction(id: string, status: TaskStatus): Promi
 
 export async function deleteTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
-  const task = getTask(id);
+  const task = await getTask(id);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
   if (!can.manageTasks(user, task.division)) {
     return { ok: false, error: "Kamu tidak punya akses menghapus tugas ini." };
   }
-  deleteTask(id);
+  await deleteTask(id);
   revalidatePath("/", "layout");
   return { ok: true };
 }

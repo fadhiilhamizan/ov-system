@@ -18,7 +18,7 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
   if (!g.ok) return g;
   if (!input.org_name?.trim() && !input.contact?.trim())
     return { ok: false, error: "Isi minimal nama ormawa atau kontak." };
-  createProspect(input);
+  await createProspect(input);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -26,7 +26,7 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
 export async function updateProspectAction(id: string, patch: Partial<Prospect>): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  updateProspect(id, patch);
+  await updateProspect(id, patch);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -34,7 +34,7 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
 export async function deleteProspectAction(id: string): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  deleteProspect(id);
+  await deleteProspect(id);
   revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 export const metadata = { title: "FAQ & Panduan" };
 
 export default async function FaqPage() {
-  const faqs = getFaqs();
+  const faqs = await getFaqs();
 
   return (
     <div className="mx-auto max-w-3xl">

@@ -11,11 +11,13 @@ export function AppShell({
   user,
   events,
   activeEventId,
+  demoMode,
   children,
 }: {
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
+  demoMode: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -53,6 +55,7 @@ export function AppShell({
           user={user}
           events={events}
           activeEventId={activeEventId}
+          demoMode={demoMode}
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>

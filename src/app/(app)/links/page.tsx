@@ -7,8 +7,7 @@ import { LinksView } from "@/components/links/links-view";
 export const metadata = { title: "Super Link" };
 
 export default async function LinksPage() {
-  const user = await getCurrentUser();
-  const links = getLinks();
+  const [user, links] = await Promise.all([getCurrentUser(), getLinks()]);
 
   return (
     <div>
