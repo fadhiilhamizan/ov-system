@@ -11,6 +11,14 @@ export async function proxy(request: NextRequest) {
   // Demo / local mode — do nothing.
   if (!url || !anon) return NextResponse.next();
 
+  // Skip the auth round-trip on router prefetch requests — they don't need a
+  // session refresh, and prefetching the whole sidebar would otherwise fire a
+  // burst of getUser() calls (slow + hits Supabase auth rate limits).
+  const isPrefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    (request.headers.get("sec-purpose") ?? "").includes("prefetch");
+  if (isPrefetch) return NextResponse.next();
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anon, {

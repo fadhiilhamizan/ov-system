@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
@@ -37,30 +38,34 @@ function coalesce<T>(rows: T[], keys: string[]): T[] {
   });
 }
 
+// NOTE: read getters are wrapped in React cache() so repeated calls within a
+// single request (e.g. layout + page both need events/divisions) hit Supabase
+// only once. Cache is keyed by primitive args.
+
 // ---------------- Divisions ----------------
-export async function getDivisions(): Promise<Division[]> {
+export const getDivisions = cache(async (): Promise<Division[]> => {
   if (!USE_SUPABASE) return local.getDivisions();
   const { data } = await (await sb()).from("divisions").select("*").order("order");
   return (data ?? []) as Division[];
-}
-export async function getDivision(key: string): Promise<Division | null> {
+});
+export const getDivision = cache(async (key: string): Promise<Division | null> => {
   if (!USE_SUPABASE) return local.getDivision(key);
   const { data } = await (await sb()).from("divisions").select("*").eq("key", key).maybeSingle();
   return (data as Division) ?? null;
-}
+});
 
 // ---------------- Events ----------------
-export async function getEvents(): Promise<OVEvent[]> {
+export const getEvents = cache(async (): Promise<OVEvent[]> => {
   if (!USE_SUPABASE) return local.getEvents();
   const { data } = await (await sb()).from("events").select("*").order("order");
   return (data ?? []) as OVEvent[];
-}
-export async function getEvent(id: string): Promise<OVEvent | null> {
+});
+export const getEvent = cache(async (id: string): Promise<OVEvent | null> => {
   if (!USE_SUPABASE) return local.getEvent(id);
   const { data } = await (await sb()).from("events").select("*").eq("id", id).maybeSingle();
   return (data as OVEvent) ?? null;
-}
-export async function getDefaultEvent(): Promise<OVEvent> {
+});
+export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
   if (!USE_SUPABASE) return local.getDefaultEvent();
   const events = await getEvents();
   const active = events.find((e) => e.status === "active");
@@ -69,14 +74,14 @@ export async function getDefaultEvent(): Promise<OVEvent> {
   const withTasks = new Set((data ?? []).map((r: { event_id: string }) => r.event_id));
   const list = events.filter((e) => withTasks.has(e.id));
   return list[list.length - 1] ?? events[events.length - 1] ?? events[0];
-}
+});
 
 // ---------------- Members ----------------
-export async function getMembers(): Promise<Member[]> {
+export const getMembers = cache(async (): Promise<Member[]> => {
   if (!USE_SUPABASE) return local.getMembers();
   const { data } = await (await sb()).from("members").select("*");
   return coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]);
-}
+});
 
 // ---------------- Tasks ----------------
 export interface TaskFilter {
@@ -128,7 +133,7 @@ export async function deleteTask(id: string) {
 }
 
 // ---------------- Prospects ----------------
-export async function getProspects(eventId?: string): Promise<Prospect[]> {
+export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> => {
   if (!USE_SUPABASE) return local.getProspects(eventId);
   const { data } = await (await sb()).from("prospects").select("*");
   const list = coalesce((data ?? []) as Prospect[], [
@@ -136,7 +141,7 @@ export async function getProspects(eventId?: string): Promise<Prospect[]> {
     "location", "pic", "contact_status", "their_response", "our_response", "source",
   ]);
   return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
-}
+});
 export async function createProspect(input: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.createProspect(input);
   await (await sb()).from("prospects").insert(stripId(input));
@@ -151,12 +156,12 @@ export async function deleteProspect(id: string) {
 }
 
 // ---------------- Links ----------------
-export async function getLinks(eventId?: string): Promise<LinkItem[]> {
+export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
   if (!USE_SUPABASE) return local.getLinks(eventId);
   const { data } = await (await sb()).from("links").select("*");
   const list = coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
-}
+});
 export async function createLink(input: Partial<LinkItem>) {
   if (!USE_SUPABASE) return local.createLink(input);
   await (await sb()).from("links").insert(stripId(input));
@@ -171,7 +176,7 @@ export async function deleteLink(id: string) {
 }
 
 // ---------------- Budget ----------------
-export async function getBudgetPlans(eventId?: string): Promise<BudgetPlan[]> {
+export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan[]> => {
   if (!USE_SUPABASE) return local.getBudgetPlans(eventId);
   const client = await sb();
   const { data: plans } = await client.from("budget_plans").select("*");
@@ -195,7 +200,7 @@ export async function getBudgetPlans(eventId?: string): Promise<BudgetPlan[]> {
       ),
   }));
   return eventId ? list.filter((b) => b.event_id === eventId) : list;
-}
+});
 export async function updateBudgetItem(
   planId: string,
   index: number,
@@ -219,7 +224,7 @@ export async function updateBudgetItem(
 }
 
 // ---------------- Rundown ----------------
-export async function getRundown(eventId?: string, variant?: string): Promise<RundownItem[]> {
+export const getRundown = cache(async (eventId?: string, variant?: string): Promise<RundownItem[]> => {
   if (!USE_SUPABASE) return local.getRundown(eventId, variant);
   let q = (await sb()).from("rundown").select("*").order("no");
   if (eventId) q = q.eq("event_id", eventId);
@@ -229,36 +234,39 @@ export async function getRundown(eventId?: string, variant?: string): Promise<Ru
     "variant", "time_start", "time_end", "duration", "activity", "keterangan",
     "host", "opr_link", "mc", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
   ]);
-}
+});
 
 // ---------------- Jobs ----------------
-export async function getJobs(eventId?: string): Promise<JobHariH[]> {
+export const getJobs = cache(async (eventId?: string): Promise<JobHariH[]> => {
   if (!USE_SUPABASE) return local.getJobs(eventId);
   let q = (await sb()).from("job_harih").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   const { data } = await q;
   return coalesce((data ?? []) as JobHariH[], ["no", "pic", "job", "notes"]);
-}
+});
 
 // ---------------- FAQ ----------------
-export async function getFaqs(): Promise<Faq[]> {
+export const getFaqs = cache(async (): Promise<Faq[]> => {
   if (!USE_SUPABASE) return local.getFaqs();
   const { data } = await (await sb()).from("faqs").select("*").order("order");
   return (data ?? []) as Faq[];
-}
+});
 
 // ---------------- Teams ----------------
-export async function getTeams(eventId?: string): Promise<Team[]> {
+export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
   if (!USE_SUPABASE) return local.getTeams(eventId);
   let q = (await sb()).from("teams").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   const { data } = await q;
   return coalesce((data ?? []) as Team[], ["division", "fungsionaris", "intern"]);
-}
+});
 
 // ================= Aggregations (backend-agnostic) =================
+/** Cached per-event task fetch so taskStats + divisionStats (dashboard) share one query. */
+const getEventTasks = cache(async (eventId: string): Promise<Task[]> => getTasks({ event_id: eventId }));
+
 export async function taskStats(eventId?: string) {
-  const tasks = await getTasks(eventId ? { event_id: eventId } : {});
+  const tasks = eventId ? await getEventTasks(eventId) : await getTasks({});
   const total = tasks.length;
   const by: Record<TaskStatus, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
   for (const t of tasks) by[t.status]++;
@@ -268,7 +276,7 @@ export async function taskStats(eventId?: string) {
 
 export async function divisionStats(eventId?: string) {
   const [tasks, divs] = await Promise.all([
-    getTasks(eventId ? { event_id: eventId } : {}),
+    eventId ? getEventTasks(eventId) : getTasks({}),
     getDivisions(),
   ]);
   return divs
