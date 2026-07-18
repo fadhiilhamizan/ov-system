@@ -79,12 +79,14 @@ export function getTask(id: string) {
   return getDb().tasks.find((t) => t.id === id) ?? null;
 }
 export function createTask(input: Partial<Task> & { event_id: string; division: Task["division"]; title: string }): Task {
+  // Auto-number: next sequential "no" within this event + division.
+  const siblings = getDb().tasks.filter((t) => t.event_id === input.event_id && t.division === input.division);
+  const maxNo = Math.max(0, ...siblings.map((t) => parseInt(t.no, 10) || 0));
   const task: Task = {
     id: uid("t"),
-    source_id: input.source_id ?? uid("src"),
     event_id: input.event_id,
     division: input.division,
-    no: input.no ?? "",
+    no: input.no ?? String(maxNo + 1),
     pic: input.pic ?? "",
     title: input.title,
     start_date: input.start_date ?? null,
@@ -201,19 +203,60 @@ export function updateBudgetPlan(id: string, patch: Partial<BudgetPlan>) {
   });
 }
 export function updateBudgetItem(
+  itemId: string,
+  patch: { qty?: number | null; unit_price?: number | null; name?: string; category?: string; unit?: string },
+) {
+  return mutate((db) => {
+    for (const p of db.budgetPlans) {
+      const it = p.items.find((x) => x.id === itemId);
+      if (!it) continue;
+      Object.assign(it, patch);
+      if (patch.qty !== undefined || patch.unit_price !== undefined) {
+        it.total = (it.qty ?? 0) * (it.unit_price ?? 0);
+      }
+      return it;
+    }
+    return null;
+  });
+}
+export function createBudgetItem(
   planId: string,
-  index: number,
-  patch: { qty?: number | null; unit_price?: number | null; name?: string },
+  input: { category: string; name: string; qty?: number | null; unit?: string; unit_price?: number | null },
 ) {
   return mutate((db) => {
     const p = db.budgetPlans.find((x) => x.id === planId);
-    if (!p || !p.items[index]) return null;
-    const it = p.items[index];
-    Object.assign(it, patch);
-    if (patch.qty !== undefined || patch.unit_price !== undefined) {
-      it.total = (it.qty ?? 0) * (it.unit_price ?? 0);
+    if (!p) return null;
+    const item = {
+      id: uid("bi"),
+      category: input.category || "LAIN-LAIN",
+      no: Math.max(0, ...p.items.map((i) => i.no)) + 1,
+      name: input.name,
+      qty: input.qty ?? null,
+      unit: input.unit ?? "",
+      unit_price: input.unit_price ?? null,
+      total: (input.qty ?? 0) * (input.unit_price ?? 0),
+    };
+    p.items.push(item);
+    return item;
+  });
+}
+export function deleteBudgetItem(itemId: string) {
+  mutate((db) => {
+    for (const p of db.budgetPlans) {
+      const before = p.items.length;
+      p.items = p.items.filter((i) => i.id !== itemId);
+      if (p.items.length !== before) return;
     }
-    return it;
+  });
+}
+export function createBudgetPlan(input: { name: string; event_id: string }): BudgetPlan {
+  const plan: BudgetPlan = { id: uid("bp"), name: input.name, event_id: input.event_id, items: [] };
+  mutate((db) => db.budgetPlans.push(plan));
+  return plan;
+}
+export function deleteBudgetPlan(id: string) {
+  mutate((db) => {
+    db.budgetPlans = db.budgetPlans.filter((p) => p.id !== id);
   });
 }
 
@@ -445,10 +488,11 @@ export function deleteRundown(id: string) {
 
 export function createJob(input: Partial<JobHariH>): JobHariH {
   const items = getDb().jobHariH.filter((j) => j.event_id === input.event_id);
+  const maxNo = Math.max(0, ...items.map((j) => parseInt(j.no, 10) || 0));
   const j: JobHariH = {
     id: uid("j"),
     event_id: input.event_id ?? "",
-    no: input.no ?? String(items.length + 1),
+    no: input.no ?? String(maxNo + 1),
     pic: input.pic ?? "",
     job: input.job ?? "",
     notes: input.notes ?? "",

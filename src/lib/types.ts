@@ -53,7 +53,6 @@ export interface Member {
 
 export interface Task {
   id: string;
-  source_id: string;
   event_id: string;
   division: DivisionKey;
   no: string;
@@ -99,6 +98,7 @@ export interface LinkItem {
 }
 
 export interface BudgetItem {
+  id: string;
   category: string;
   no: number;
   name: string;

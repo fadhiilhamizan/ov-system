@@ -1,28 +1,34 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
-import { getLinks } from "@/lib/data/repo";
+import { getLinks, getEvents, getDivisions, getTeams } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { LinksView } from "@/components/links/links-view";
-import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Super Link" };
 
 export default async function LinksPage() {
-  const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
-  const links = await getLinks(event.id);
+  const [user, activeEvent, links, events, divisions, teams] = await Promise.all([
+    getCurrentUser(),
+    getActiveEvent(),
+    getLinks(),
+    getEvents(),
+    getDivisions(),
+    getTeams(),
+  ]);
 
   return (
     <div>
       <PageHeader
         title="Super Link"
-        description="Kumpulan dokumen, form, dan drive penting Ormawa Visit, dikelompokkan per seksi & divisi."
-        actions={<Badge variant="outline">{event.title}</Badge>}
+        description="Kumpulan dokumen, form, dan drive penting Ormawa Visit, dikelompokkan per Ormawa Visit & divisi."
       />
       <LinksView
         links={links}
-        user={user}
-        activeEventId={event.id}
+        events={events}
+        divisions={divisions}
+        teams={teams}
+        defaultEventId={activeEvent.id}
         canCreate={can.createLink(user)}
         canManage={can.manageLinks(user)}
       />

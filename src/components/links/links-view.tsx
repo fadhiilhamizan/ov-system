@@ -2,13 +2,15 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  Search, Plus, ExternalLink, Link2, FileText, Loader2, MoreHorizontal, Pencil, Trash2, X,
+  Search, Plus, ExternalLink, Link2, Loader2, MoreHorizontal, Pencil, Trash2, X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger,
@@ -19,16 +21,31 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createLinkAction, updateLinkAction, deleteLinkAction } from "@/lib/actions/links";
 import { isUrl } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import type { AppUser, LinkItem } from "@/lib/types";
+import type { Division, LinkItem, OVEvent, Team } from "@/lib/types";
 
+const NO_DIVISION = "__none__";
+
+/** Match a (possibly legacy free-text) division value to a known Division. */
+function resolveDivision(raw: string, divisions: Division[]): Division | null {
+  if (!raw) return null;
+  const norm = raw.trim().toLowerCase();
+  return (
+    divisions.find((d) => d.key.toLowerCase() === norm) ??
+    divisions.find((d) => d.name.toLowerCase() === norm) ??
+    null
+  );
+}
+
+// ---------------- Form ----------------
 function LinkFormDialog({
-  mode, link, sections, eventId, open, onOpenChange, trigger,
+  mode, link, events, divisions, teams, defaultEventId, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   link?: LinkItem;
-  sections: string[];
-  eventId: string;
+  events: OVEvent[];
+  divisions: Division[];
+  teams: Team[];
+  defaultEventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -38,19 +55,53 @@ function LinkFormDialog({
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
   const [f, setF] = React.useState(() => ({
-    section: link?.section ?? sections[0] ?? "",
-    division: link?.division ?? "",
+    event_id: link?.event_id ?? defaultEventId,
+    division: link ? resolveDivision(link.division, divisions)?.key ?? NO_DIVISION : NO_DIVISION,
     name: link?.name ?? "",
     url: link?.url ?? "",
     note: link?.note ?? "",
   }));
   React.useEffect(() => {
-    if (isOpen && link) setF({ section: link.section, division: link.division, name: link.name, url: link.url, note: link.note });
-  }, [isOpen, link]);
+    if (isOpen && link) {
+      setF({
+        event_id: link.event_id ?? defaultEventId,
+        division: resolveDivision(link.division, divisions)?.key ?? NO_DIVISION,
+        name: link.name,
+        url: link.url,
+        note: link.note,
+      });
+    }
+  }, [isOpen, link, defaultEventId, divisions]);
+
+  // Divisions actually used in the chosen Ormawa Visit (via team structure);
+  // falls back to the full division list if that event has no team data yet.
+  const availableDivisions = React.useMemo(() => {
+    const used = new Set(teams.filter((t) => t.event_id === f.event_id).map((t) => t.division));
+    return used.size ? divisions.filter((d) => used.has(d.key)) : divisions;
+  }, [teams, divisions, f.event_id]);
+
+  React.useEffect(() => {
+    if (f.division !== NO_DIVISION && !availableDivisions.some((d) => d.key === f.division)) {
+      setF((prev) => ({ ...prev, division: NO_DIVISION }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.event_id]);
+
+  const urlValid = isUrl(f.url);
 
   function submit() {
+    if (!urlValid) {
+      toast.error("URL wajib diisi dan berupa tautan yang valid (diawali https://).");
+      return;
+    }
     start(async () => {
-      const payload = { ...f, event_id: link?.event_id ?? eventId };
+      const payload = {
+        event_id: f.event_id,
+        division: f.division === NO_DIVISION ? "" : f.division,
+        name: f.name,
+        url: f.url,
+        note: f.note,
+      };
       const res = mode === "create" ? await createLinkAction(payload) : await updateLinkAction(link!.id, payload);
       if (res.ok) { toast.success(mode === "create" ? "Tautan ditambahkan" : "Tautan diperbarui"); setOpen(false); }
       else toast.error(res.error);
@@ -67,22 +118,49 @@ function LinkFormDialog({
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label>Nama</Label>
+            <Label>
+              Nama <span className="text-danger">*</span>
+            </Label>
             <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Rundown Panitia OV" />
           </div>
           <div className="grid gap-1.5">
-            <Label>URL / Tautan</Label>
-            <Input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} placeholder="https://… atau judul dokumen" />
+            <Label>
+              URL / Tautan <span className="text-danger">*</span>
+            </Label>
+            <Input
+              value={f.url}
+              onChange={(e) => setF({ ...f, url: e.target.value })}
+              placeholder="https://docs.google.com/…"
+            />
+            {f.url && !urlValid && (
+              <p className="text-[11px] text-danger">Harus berupa tautan (diawali http:// atau https://).</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Seksi / Edisi</Label>
-              <Input value={f.section} onChange={(e) => setF({ ...f, section: e.target.value })} list="sections" />
-              <datalist id="sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
+              <Label>
+                Jenis Ormawa Visit <span className="text-danger">*</span>
+              </Label>
+              <Select value={f.event_id} onValueChange={(v) => setF({ ...f, event_id: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {events.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label>Divisi (opsional)</Label>
-              <Input value={f.division} onChange={(e) => setF({ ...f, division: e.target.value })} placeholder="EVENT, LO…" />
+              <Label>Divisi</Label>
+              <Select value={f.division} onValueChange={(v) => setF({ ...f, division: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_DIVISION}>Umum (tanpa divisi)</SelectItem>
+                  {availableDivisions.map((d) => (
+                    <SelectItem key={d.key} value={d.key}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid gap-1.5">
@@ -92,7 +170,7 @@ function LinkFormDialog({
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
-          <Button onClick={submit} disabled={pending || !f.name.trim()}>
+          <Button onClick={submit} disabled={pending || !f.name.trim() || !urlValid}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {mode === "create" ? "Tambah" : "Simpan"}
           </Button>
@@ -102,7 +180,15 @@ function LinkFormDialog({
   );
 }
 
-function LinkActions({ link, sections, eventId }: { link: LinkItem; sections: string[]; eventId: string }) {
+function LinkActions({
+  link, events, divisions, teams, defaultEventId,
+}: {
+  link: LinkItem;
+  events: OVEvent[];
+  divisions: Division[];
+  teams: Team[];
+  defaultEventId: string;
+}) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -117,12 +203,15 @@ function LinkActions({ link, sections, eventId }: { link: LinkItem; sections: st
           <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> Hapus</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <LinkFormDialog mode="edit" link={link} sections={sections} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
+      <LinkFormDialog
+        mode="edit" link={link} events={events} divisions={divisions} teams={teams}
+        defaultEventId={defaultEventId} open={editOpen} onOpenChange={setEditOpen}
+      />
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Hapus tautan?</DialogTitle>
-            <DialogDescription>“{link.name}” akan dihapus.</DialogDescription>
+            <DialogDescription>&ldquo;{link.name}&rdquo; akan dihapus.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
@@ -137,40 +226,65 @@ function LinkActions({ link, sections, eventId }: { link: LinkItem; sections: st
   );
 }
 
+// ---------------- View ----------------
 export function LinksView({
   links,
-  activeEventId,
+  events,
+  divisions,
+  teams,
+  defaultEventId,
   canCreate,
   canManage,
 }: {
   links: LinkItem[];
-  user: AppUser;
-  activeEventId: string;
+  events: OVEvent[];
+  divisions: Division[];
+  teams: Team[];
+  defaultEventId: string;
   canCreate: boolean;
   canManage: boolean;
 }) {
-  const sections = React.useMemo(() => [...new Set(links.map((l) => l.section).filter(Boolean))], [links]);
   const [q, setQ] = React.useState("");
-  const [section, setSection] = React.useState("all");
+  const [eventFilter, setEventFilter] = React.useState<string>("all");
+  const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
     return links.filter((l) => {
-      if (section !== "all" && l.section !== section) return false;
+      if (eventFilter !== "all" && l.event_id !== eventFilter) return false;
       if (query && !`${l.name} ${l.division} ${l.note} ${l.url}`.toLowerCase().includes(query)) return false;
       return true;
     });
-  }, [links, q, section]);
+  }, [links, q, eventFilter]);
 
+  // Group: Ormawa Visit -> Divisi -> links. When a specific event is
+  // selected, the outer level collapses to a single group.
   const grouped = React.useMemo(() => {
-    const map = new Map<string, LinkItem[]>();
+    const byEvent = new Map<string, LinkItem[]>();
     for (const l of filtered) {
-      const key = l.section || "Lainnya";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(l);
+      const key = l.event_id ?? "__no_event__";
+      if (!byEvent.has(key)) byEvent.set(key, []);
+      byEvent.get(key)!.push(l);
     }
-    return [...map.entries()];
-  }, [filtered]);
+    return [...byEvent.entries()].map(([eventId, items]) => {
+      const byDivision = new Map<string, LinkItem[]>();
+      for (const l of items) {
+        const div = resolveDivision(l.division, divisions);
+        const key = div?.key ?? "__none__";
+        if (!byDivision.has(key)) byDivision.set(key, []);
+        byDivision.get(key)!.push(l);
+      }
+      return {
+        event: eventMap.get(eventId) ?? null,
+        divisionGroups: [...byDivision.entries()].map(([key, items]) => ({
+          division: divisions.find((d) => d.key === key) ?? null,
+          items,
+        })),
+      };
+    });
+  }, [filtered, divisions, eventMap]);
+
+  const hasFilters = q || eventFilter !== "all";
 
   return (
     <div className="space-y-4">
@@ -180,60 +294,77 @@ export function LinksView({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari tautan…" className="pl-9" />
           </div>
-          <Select value={section} onValueChange={setSection}>
-            <SelectTrigger className="w-auto min-w-[180px]"><SelectValue /></SelectTrigger>
+          <Select value={eventFilter} onValueChange={setEventFilter}>
+            <SelectTrigger className="w-auto min-w-[200px]"><SelectValue placeholder="Jenis Ormawa Visit" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Seksi</SelectItem>
-              {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              <SelectItem value="all">Semua Ormawa Visit</SelectItem>
+              {events.map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          {(q || section !== "all") && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setSection("all"); }}><X className="size-4" /> Reset</Button>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter("all"); }}><X className="size-4" /> Reset</Button>
           )}
         </div>
         {canCreate && (
-          <LinkFormDialog mode="create" sections={sections} eventId={activeEventId} trigger={
-            <DialogTrigger asChild><Button><Plus className="size-4" /> Tambah</Button></DialogTrigger>
-          } />
+          <LinkFormDialog
+            mode="create" events={events} divisions={divisions} teams={teams}
+            defaultEventId={eventFilter !== "all" ? eventFilter : defaultEventId}
+            trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> Tambah</Button></DialogTrigger>}
+          />
         )}
       </div>
 
       {grouped.length === 0 ? (
         <EmptyState icon={<Link2 />} title="Tidak ada tautan" description="Sesuaikan pencarian atau tambah tautan baru." />
       ) : (
-        <div className="space-y-4">
-          {grouped.map(([sec, items]) => (
-            <Card key={sec} className="overflow-hidden">
-              <div className="border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-semibold">{sec}</div>
-              <div className="divide-y divide-border">
-                {items.map((l) => {
-                  const real = isUrl(l.url);
-                  return (
-                    <div key={l.id} className="flex items-center gap-3 px-4 py-2.5">
-                      <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", real ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground")}>
-                        {real ? <Link2 /> : <FileText />}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-medium">{l.name}</span>
-                          {l.division && <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{l.division}</span>}
-                        </div>
-                        {(l.note || (!real && l.url)) && (
-                          <p className="truncate text-xs text-muted-foreground">{l.note || l.url}</p>
-                        )}
-                      </div>
-                      {real && (
-                        <a href={l.url} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-muted">
-                          Buka <ExternalLink className="size-3" />
-                        </a>
+        <div className="space-y-5">
+          {grouped.map(({ event, divisionGroups }) => (
+            <div key={event?.id ?? "no-event"} className="space-y-3">
+              {eventFilter === "all" && (
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">{event?.title ?? "Tanpa Ormawa Visit"}</h3>
+                  {event && <Badge variant="outline">{event.cabinet}</Badge>}
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {divisionGroups.map(({ division, items }) => (
+                  <Card key={division?.key ?? "none"} className="overflow-hidden">
+                    <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+                      {division ? (
+                        <DivisionBadge division={division} />
+                      ) : (
+                        <span className="text-xs font-semibold text-muted-foreground">Umum</span>
                       )}
-                      {canManage && <LinkActions link={l} sections={sections} eventId={activeEventId} />}
+                      <span className="ml-auto text-[11px] text-muted-foreground">{items.length} tautan</span>
                     </div>
-                  );
-                })}
+                    <div className="divide-y divide-border">
+                      {items.map((l) => (
+                        <div key={l.id} className="flex items-center gap-3 px-4 py-2.5">
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                            <Link2 className="size-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">{l.name}</span>
+                            {l.note && <p className="truncate text-xs text-muted-foreground">{l.note}</p>}
+                          </div>
+                          <a
+                            href={l.url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-muted"
+                          >
+                            Buka <ExternalLink className="size-3" />
+                          </a>
+                          {canManage && (
+                            <LinkActions link={l} events={events} divisions={divisions} teams={teams} defaultEventId={defaultEventId} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

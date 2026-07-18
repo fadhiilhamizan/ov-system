@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/select";
 import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
-import { ResultUpload } from "./result-upload";
 import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
@@ -63,7 +62,6 @@ export function TaskFormDialog({
   const [form, setForm] = React.useState(() => ({
     event_id: task?.event_id ?? activeEventId,
     division: (task?.division ?? defaultDivision ?? "EVENT") as DivisionKey,
-    no: task?.no ?? "",
     pic: task?.pic ?? "",
     title: task?.title ?? "",
     start_date: task?.start_date ?? "",
@@ -78,7 +76,6 @@ export function TaskFormDialog({
       setForm({
         event_id: task.event_id,
         division: task.division,
-        no: task.no,
         pic: task.pic,
         title: task.title,
         start_date: task.start_date ?? "",
@@ -127,7 +124,9 @@ export function TaskFormDialog({
           {!progressOnly && (
             <>
               <div className="grid gap-1.5">
-                <Label htmlFor="title">Judul tugas / Job Description</Label>
+                <Label htmlFor="title">
+                  Judul tugas / Job Description <span className="text-danger">*</span>
+                </Label>
                 <Textarea
                   id="title"
                   value={form.title}
@@ -139,7 +138,9 @@ export function TaskFormDialog({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label>Divisi</Label>
+                  <Label>
+                    Divisi <span className="text-danger">*</span>
+                  </Label>
                   <Select
                     value={form.division}
                     onValueChange={(v) => setForm({ ...form, division: v as DivisionKey })}
@@ -157,7 +158,9 @@ export function TaskFormDialog({
                   </Select>
                 </div>
                 <div className="grid gap-1.5">
-                  <Label>Ormawa Visit</Label>
+                  <Label>
+                    Ormawa Visit <span className="text-danger">*</span>
+                  </Label>
                   <Select
                     value={form.event_id}
                     onValueChange={(v) => setForm({ ...form, event_id: v })}
@@ -176,25 +179,14 @@ export function TaskFormDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="pic">PIC / Penanggung Jawab</Label>
-                  <Input
-                    id="pic"
-                    value={form.pic}
-                    onChange={(e) => setForm({ ...form, pic: e.target.value })}
-                    placeholder="Nama, bisa lebih dari satu"
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="no">Nomor</Label>
-                  <Input
-                    id="no"
-                    value={form.no}
-                    onChange={(e) => setForm({ ...form, no: e.target.value })}
-                    placeholder="Opsional"
-                  />
-                </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="pic">PIC / Penanggung Jawab</Label>
+                <Input
+                  id="pic"
+                  value={form.pic}
+                  onChange={(e) => setForm({ ...form, pic: e.target.value })}
+                  placeholder="Nama, bisa lebih dari satu (opsional)"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -252,21 +244,12 @@ export function TaskFormDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="result">Result / Hasil (link sangat disarankan)</Label>
-              <ResultUpload
-                taskId={task?.id ?? "new"}
-                label="Upload file/foto"
-                onUploaded={(url) =>
-                  setForm((f) => ({ ...f, result: f.result.trim() ? `${f.result.trim()} ${url}` : url }))
-                }
-              />
-            </div>
+            <Label htmlFor="result">Result / Hasil (tempel link, sangat disarankan)</Label>
             <Textarea
               id="result"
               value={form.result}
               onChange={(e) => setForm({ ...form, result: e.target.value })}
-              placeholder="Tempel link (Google Drive/Docs/Foto) atau upload file, bisa lebih dari satu"
+              placeholder="Tempel link Google Drive/Docs/Foto, bisa lebih dari satu"
               className="min-h-[60px]"
             />
           </div>

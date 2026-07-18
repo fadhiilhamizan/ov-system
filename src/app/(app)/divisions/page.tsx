@@ -23,7 +23,7 @@ export default async function DivisionsPage() {
     <div>
       <PageHeader
         title={t("Divisi")}
-        description={t("Tugas per divisi, otomatis tersinkron dengan Work Breakdown (tanpa duplikasi & tanpa delay).")}
+        description={`Setiap Divisi yang ada di Ormawa Visit ${event.title}`}
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline">{event.title}</Badge>

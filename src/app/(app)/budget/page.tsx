@@ -3,7 +3,7 @@ import { getActiveEvent } from "@/lib/session";
 import { getBudgetPlans, getEvents } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
-import { BudgetView } from "@/components/budget/budget-view";
+import { BudgetView, AddBudgetPlanButton } from "@/components/budget/budget-view";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Layers, Receipt } from "lucide-react";
@@ -28,7 +28,12 @@ export default async function BudgetPage() {
       <PageHeader
         title="Rencana Anggaran Biaya"
         description="Itemisasi anggaran per skenario (maksimal/minimal), lengkap dengan kategori & subtotal. Angka bisa diedit langsung."
-        actions={<Badge variant="outline">{event.title}</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{event.title}</Badge>
+            {can.manageBudget(user) && <AddBudgetPlanButton events={events} defaultEventId={event.id} />}
+          </div>
+        }
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">

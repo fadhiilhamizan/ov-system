@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
+import { isUrl } from "@/lib/format";
 import { createLink, deleteLink, updateLink } from "@/lib/data/repo";
 import type { LinkItem } from "@/lib/types";
 
@@ -17,6 +18,7 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
   const user = await getCurrentUser();
   if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
   if (!input.name?.trim()) return { ok: false, error: "Nama tautan wajib diisi." };
+  if (!isUrl(input.url)) return { ok: false, error: "URL wajib diisi dan berupa tautan yang valid." };
   await createLink(input);
   revalidatePath("/", "layout");
   return { ok: true };
@@ -25,6 +27,9 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
 export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
+  if (patch.url !== undefined && !isUrl(patch.url)) {
+    return { ok: false, error: "URL wajib diisi dan berupa tautan yang valid." };
+  }
   await updateLink(id, patch);
   revalidatePath("/", "layout");
   return { ok: true };

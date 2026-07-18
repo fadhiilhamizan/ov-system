@@ -157,7 +157,7 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Pipeline Prospek</CardTitle>
+            <CardTitle>Reach & Offer Himpunan</CardTitle>
             <Link href="/prospects" className="text-xs text-primary hover:underline">
               Lihat semua
             </Link>
@@ -269,7 +269,7 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Ringkasan Edisi</CardTitle>
+            <CardTitle>Ringkasan Ormawa Visit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <InfoRow icon={<CalendarDays />} label="Tanggal" value={formatDate(event.event_date, { long: true }) ?? "Belum ditentukan"} />
@@ -335,7 +335,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 const QUICK_LINKS: { href: string; label: string; sub: string; color: string; icon: React.ReactNode }[] = [
   { href: "/tasks", label: "Work Breakdown", sub: "Kelola tugas", color: "#6366f1", icon: <ListChecks /> },
   { href: "/divisions", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
-  { href: "/prospects", label: "Prospek", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
+  { href: "/prospects", label: "Reach & Offer", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
   { href: "/budget", label: "Anggaran", sub: "RAB", color: "#0ea5e9", icon: <Wallet /> },
   { href: "/rundown", label: "Rundown", sub: "Susunan acara", color: "#d946ef", icon: <CalendarClock /> },
   { href: "/calendar", label: "Kalender", sub: "Timeline", color: "#f43f5e", icon: <CalendarDays /> },

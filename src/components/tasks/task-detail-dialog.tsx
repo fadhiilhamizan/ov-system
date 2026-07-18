@@ -93,8 +93,6 @@ export function TaskDetailDialog({
             </p>
             <ResultValue value={task.result} />
           </div>
-
-          <p className="text-[11px] text-muted-foreground">ID: {task.source_id}</p>
         </div>
       </DialogContent>
     </Dialog>

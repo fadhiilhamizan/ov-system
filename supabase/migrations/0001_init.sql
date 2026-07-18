@@ -64,7 +64,6 @@ create table if not exists members (
 -- ---------- tasks (WBS) ----------
 create table if not exists tasks (
   id uuid primary key default gen_random_uuid(),
-  source_id text,
   event_id text references events(id) on delete cascade,
   division text references divisions(key),
   no text,

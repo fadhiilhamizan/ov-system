@@ -13,7 +13,31 @@ import { createDivisionAction, updateDivisionAction, deleteDivisionAction } from
 import { cn } from "@/lib/utils";
 import type { Division } from "@/lib/types";
 
-const PRESET = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#0ea5e9", "#10b981", "#f97316", "#64748b", "#d946ef", "#f43f5e", "#14b8a6"];
+// Ordered by hue (warm -> cool -> violet/pink), neutral gray last.
+const PRESET = [
+  "#f97316", // orange
+  "#f59e0b", // amber
+  "#10b981", // emerald
+  "#14b8a6", // teal
+  "#0ea5e9", // sky
+  "#6366f1", // indigo
+  "#8b5cf6", // violet
+  "#d946ef", // fuchsia
+  "#ec4899", // pink
+  "#f43f5e", // rose
+  "#64748b", // slate (neutral)
+];
+
+/** Lighten a hex color by mixing it toward white. */
+function lighten(hex: string, amount = 0.55): string {
+  const n = hex.replace("#", "");
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  const mix = (v: number) => Math.round(v + (255 - v) * amount);
+  return "#" + [mix(r), mix(g), mix(b)].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+const PRESET_LIGHT = PRESET.map((c) => lighten(c));
 
 function DivisionFormDialog({
   mode, division, open, onOpenChange, trigger,
@@ -90,6 +114,18 @@ function DivisionFormDialog({
                 />
               ))}
               <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="size-7 cursor-pointer rounded" />
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">Versi lebih muda</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {PRESET_LIGHT.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setF({ ...f, color: c })}
+                  className={cn("size-7 rounded-full ring-2 ring-offset-2 ring-offset-background transition", f.color === c ? "ring-foreground" : "ring-transparent")}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
             </div>
           </div>
         </div>

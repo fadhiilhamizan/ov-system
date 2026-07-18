@@ -97,7 +97,7 @@ export async function getTasks(filter: TaskFilter = {}): Promise<Task[]> {
   if (filter.status) q = q.eq("status", filter.status);
   const { data } = await q;
   return coalesce((data ?? []) as Task[], [
-    "no", "pic", "start_raw", "end_raw", "notes", "result", "source_id", "division",
+    "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
   ]);
 }
 export async function getTask(id: string): Promise<Task | null> {
@@ -107,11 +107,18 @@ export async function getTask(id: string): Promise<Task | null> {
 }
 export async function createTask(input: Partial<Task> & { event_id: string; division: Task["division"]; title: string }) {
   if (!USE_SUPABASE) return local.createTask(input);
-  await (await sb()).from("tasks").insert({
-    source_id: input.source_id ?? null,
+  const client = await sb();
+  // Auto-number: next sequential "no" within this event + division.
+  const { data: existing } = await client
+    .from("tasks")
+    .select("no")
+    .eq("event_id", input.event_id)
+    .eq("division", input.division);
+  const maxNo = Math.max(0, ...(existing ?? []).map((t: { no: string }) => parseInt(t.no, 10) || 0));
+  await client.from("tasks").insert({
     event_id: input.event_id,
     division: input.division,
-    no: input.no ?? "",
+    no: input.no ?? String(maxNo + 1),
     pic: input.pic ?? "",
     title: input.title,
     start_date: input.start_date ?? null,
@@ -189,6 +196,7 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
       .filter((i: { plan_id: string }) => i.plan_id === p.id)
       .map(
         (i: BudgetItem & { plan_id: string }): BudgetItem => ({
+          id: i.id,
           category: i.category,
           no: i.no,
           name: i.name,
@@ -202,25 +210,56 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
   return eventId ? list.filter((b) => b.event_id === eventId) : list;
 });
 export async function updateBudgetItem(
-  planId: string,
-  index: number,
-  patch: { qty?: number | null; unit_price?: number | null; name?: string },
+  itemId: string,
+  patch: { qty?: number | null; unit_price?: number | null; name?: string; category?: string; unit?: string },
 ) {
-  if (!USE_SUPABASE) return local.updateBudgetItem(planId, index, patch);
+  if (!USE_SUPABASE) return local.updateBudgetItem(itemId, patch);
   const client = await sb();
-  const { data: item } = await client
-    .from("budget_items")
-    .select("*")
-    .eq("plan_id", planId)
-    .eq("order", index)
-    .maybeSingle();
+  const { data: item } = await client.from("budget_items").select("*").eq("id", itemId).maybeSingle();
   if (!item) return;
   const qty = patch.qty ?? item.qty;
   const up = patch.unit_price ?? item.unit_price;
   await client
     .from("budget_items")
     .update({ ...patch, total: (qty ?? 0) * (up ?? 0) })
-    .eq("id", item.id);
+    .eq("id", itemId);
+}
+export async function createBudgetItem(
+  planId: string,
+  input: { category: string; name: string; qty?: number | null; unit?: string; unit_price?: number | null },
+) {
+  if (!USE_SUPABASE) return local.createBudgetItem(planId, input);
+  const client = await sb();
+  const { data: maxRow } = await client
+    .from("budget_items")
+    .select("order")
+    .eq("plan_id", planId)
+    .order("order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const total = (input.qty ?? 0) * (input.unit_price ?? 0);
+  await client.from("budget_items").insert({
+    plan_id: planId,
+    category: input.category || "LAIN-LAIN",
+    name: input.name,
+    qty: input.qty ?? null,
+    unit: input.unit ?? "",
+    unit_price: input.unit_price ?? null,
+    total,
+    order: (maxRow?.order ?? 0) + 1,
+  });
+}
+export async function deleteBudgetItem(itemId: string) {
+  if (!USE_SUPABASE) return local.deleteBudgetItem(itemId);
+  await (await sb()).from("budget_items").delete().eq("id", itemId);
+}
+export async function createBudgetPlan(input: { name: string; event_id: string }) {
+  if (!USE_SUPABASE) return local.createBudgetPlan(input);
+  await (await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id });
+}
+export async function deleteBudgetPlan(id: string) {
+  if (!USE_SUPABASE) return local.deleteBudgetPlan(id);
+  await (await sb()).from("budget_plans").delete().eq("id", id);
 }
 
 // ---------------- Rundown ----------------
@@ -470,9 +509,12 @@ export async function deleteRundown(id: string) {
 
 export async function createJob(input: Partial<JobHariH>) {
   if (!USE_SUPABASE) return local.createJob(input);
-  await (await sb()).from("job_harih").insert({
+  const client = await sb();
+  const { data: existing } = await client.from("job_harih").select("no").eq("event_id", input.event_id ?? "");
+  const maxNo = Math.max(0, ...(existing ?? []).map((j: { no: string }) => parseInt(j.no, 10) || 0));
+  await client.from("job_harih").insert({
     event_id: input.event_id ?? null,
-    no: input.no ?? "",
+    no: input.no ?? String(maxNo + 1),
     pic: input.pic ?? "",
     job: input.job ?? "",
     notes: input.notes ?? "",

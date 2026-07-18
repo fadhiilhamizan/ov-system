@@ -33,10 +33,10 @@ function JobFormDialog({
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
   const [f, setF] = React.useState(() => ({
-    no: job?.no ?? "", pic: job?.pic ?? "", job: job?.job ?? "", notes: job?.notes ?? "",
+    pic: job?.pic ?? "", job: job?.job ?? "", notes: job?.notes ?? "",
   }));
   React.useEffect(() => {
-    if (isOpen && job) setF({ no: job.no, pic: job.pic, job: job.job, notes: job.notes });
+    if (isOpen && job) setF({ pic: job.pic, job: job.job, notes: job.notes });
   }, [isOpen, job]);
 
   function submit() {
@@ -58,19 +58,15 @@ function JobFormDialog({
           <DialogDescription>Pembagian tugas panitia saat hari pelaksanaan.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid grid-cols-[80px_1fr] gap-3">
-            <div className="grid gap-1.5">
-              <Label>No</Label>
-              <Input value={f.no} onChange={(e) => setF({ ...f, no: e.target.value })} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>PIC (pisahkan koma)</Label>
-              <Input value={f.pic} onChange={(e) => setF({ ...f, pic: e.target.value })} placeholder="Nama1, Nama2" />
-            </div>
+          <div className="grid gap-1.5">
+            <Label>
+              Deskripsi tugas <span className="text-danger">*</span>
+            </Label>
+            <Input value={f.job} onChange={(e) => setF({ ...f, job: e.target.value })} placeholder="MC Acara" />
           </div>
           <div className="grid gap-1.5">
-            <Label>Deskripsi tugas</Label>
-            <Input value={f.job} onChange={(e) => setF({ ...f, job: e.target.value })} placeholder="MC Acara" />
+            <Label>PIC (pisahkan koma)</Label>
+            <Input value={f.pic} onChange={(e) => setF({ ...f, pic: e.target.value })} placeholder="Nama1, Nama2" />
           </div>
           <div className="grid gap-1.5">
             <Label>Catatan (opsional)</Label>
