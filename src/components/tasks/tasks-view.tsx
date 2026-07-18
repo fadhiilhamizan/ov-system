@@ -17,6 +17,7 @@ import { TaskTimeline } from "./task-timeline";
 import { TaskFormDialog } from "./task-form-dialog";
 import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
@@ -48,6 +49,7 @@ export function TasksView({
   const [view, setView] = React.useState<View>("table");
   const [q, setQ] = React.useState("");
   const [status, setStatus] = React.useState<string>("all");
+  const t = useT();
 
   // Division follows the global "Fokus divisi" dropdown (or the locked division
   // on a per-division board). No separate dropdown here.
@@ -85,7 +87,7 @@ export function TasksView({
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari tugas, PIC, catatan…"
+              placeholder={t("Cari tugas, PIC, catatan…")}
               className="pl-9"
             />
           </div>
@@ -94,7 +96,7 @@ export function TasksView({
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="all">{t("Semua Status")}</SelectItem>
               {STATUS_ORDER.map((s) => (
                 <SelectItem key={s} value={s}>
                   {STATUS_META[s].label}
@@ -111,7 +113,7 @@ export function TasksView({
                 setStatus("all");
               }}
             >
-              <X className="size-4" /> Reset
+              <X className="size-4" /> {t("Reset")}
             </Button>
           )}
         </div>
@@ -130,7 +132,7 @@ export function TasksView({
                 )}
               >
                 {v.icon}
-                <span className="hidden sm:inline">{v.label}</span>
+                <span className="hidden sm:inline">{t(v.label)}</span>
               </button>
             ))}
           </div>
@@ -145,7 +147,7 @@ export function TasksView({
               trigger={
                 <DialogTrigger asChild>
                   <Button>
-                    <Plus className="size-4" /> <span className="hidden sm:inline">Tambah</span>
+                    <Plus className="size-4" /> <span className="hidden sm:inline">{t("Tambah")}</span>
                   </Button>
                 </DialogTrigger>
               }
@@ -157,7 +159,7 @@ export function TasksView({
       {/* Count chips */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="text-muted-foreground">
-          {filtered.length} tugas
+          {filtered.length} {t("tugas")}
         </span>
         {STATUS_ORDER.map((s) => (
           <span

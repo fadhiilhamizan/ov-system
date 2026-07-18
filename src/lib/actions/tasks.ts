@@ -50,6 +50,39 @@ export async function setTaskStatusAction(id: string, status: TaskStatus): Promi
   return updateTaskAction(id, { status });
 }
 
+export async function bulkSetStatusAction(
+  ids: string[],
+  status: TaskStatus,
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  let count = 0;
+  for (const id of ids) {
+    const task = await getTask(id);
+    if (task && can.editTaskProgress(user, task)) {
+      await updateTask(id, { status });
+      count++;
+    }
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, count };
+}
+
+export async function bulkDeleteTasksAction(
+  ids: string[],
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  let count = 0;
+  for (const id of ids) {
+    const task = await getTask(id);
+    if (task && can.manageTasks(user, task.division)) {
+      await deleteTask(id);
+      count++;
+    }
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, count };
+}
+
 export async function deleteTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   const task = await getTask(id);

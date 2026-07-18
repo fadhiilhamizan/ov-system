@@ -1,6 +1,7 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { getDivisions, getEvents, getTasks } from "@/lib/data/repo";
+import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata = { title: "Kalender" };
 
 export default async function CalendarPage() {
-  const [event, user] = await Promise.all([getActiveEvent(), getCurrentUser()]);
+  const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
   const [tasks, divisions, events] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(),
@@ -24,8 +25,8 @@ export default async function CalendarPage() {
   return (
     <div>
       <PageHeader
-        title="Kalender"
-        description="Deadline tugas & hari pelaksanaan dalam satu tampilan. Klik tanggal untuk detail atau menambah tugas."
+        title={t("Kalender")}
+        description={t("Deadline tugas & hari pelaksanaan dalam satu tampilan. Klik tanggal untuk detail atau menambah tugas.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <CalendarView

@@ -5,6 +5,7 @@ import { NAV } from "./nav-config";
 import { Logo } from "./logo";
 import { can } from "@/lib/permissions";
 import { ROLE_META } from "@/lib/constants";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export function SidebarContent({
 }) {
   const pathname = usePathname();
   const activeSeg = "/" + (pathname.split("/")[1] ?? "");
+  const t = useT();
 
   return (
     <div className="flex h-full flex-col bg-sidebar">
@@ -35,7 +37,7 @@ export function SidebarContent({
           return (
             <div key={group.group}>
               <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted">
-                {group.group}
+                {t(group.group)}
               </div>
               <div className="space-y-0.5">
                 {items.map((item) => {
@@ -59,7 +61,7 @@ export function SidebarContent({
                           active ? "text-primary" : "text-sidebar-muted group-hover:text-sidebar-foreground",
                         )}
                       />
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate">{t(item.label)}</span>
                     </Link>
                   );
                 })}
@@ -73,10 +75,10 @@ export function SidebarContent({
         <div className="rounded-lg bg-sidebar-accent/50 px-3 py-2.5">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-sidebar-foreground">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            Peran: {ROLE_META[user.role].label}
+            {t("Peran")}: {t(ROLE_META[user.role].label)}
           </div>
           <p className="mt-0.5 text-[11px] leading-snug text-sidebar-muted">
-            {ROLE_META[user.role].description}
+            {t(ROLE_META[user.role].description)}
           </p>
         </div>
       </div>

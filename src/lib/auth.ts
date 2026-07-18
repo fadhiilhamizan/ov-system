@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AppUser, Role } from "./types";
@@ -30,7 +31,7 @@ function normalizeRole(r: string | null | undefined): Role {
  * profile, allows a guest bypass (cookie), or redirects to /login. In demo
  * mode it returns the cookie-selected demo identity.
  */
-export async function getCurrentUser(): Promise<AppUser> {
+export const getCurrentUser = cache(async (): Promise<AppUser> => {
   if (USE_SUPABASE) {
     const supabase = await createClient();
     const {
@@ -61,4 +62,4 @@ export async function getCurrentUser(): Promise<AppUser> {
   const store = await cookies();
   const id = store.get(AUTH_COOKIE)?.value;
   return DEMO_USERS.find((u) => u.id === id) ?? DEMO_USERS[0];
-}
+});

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
+import { LANG_COOKIE } from "@/lib/i18n/config";
 import { resetDb } from "@/lib/data/store";
 
 const YEAR = 60 * 60 * 24 * 365;
@@ -25,6 +26,12 @@ export async function setActiveDivision(division: string) {
   const store = await cookies();
   if (division === "all") store.delete(DIVISION_COOKIE);
   else store.set(DIVISION_COOKIE, division, { path: "/", maxAge: YEAR, sameSite: "lax" });
+  revalidatePath("/", "layout");
+}
+
+export async function setLang(lang: "id" | "en") {
+  const store = await cookies();
+  store.set(LANG_COOKIE, lang, { path: "/", maxAge: YEAR, sameSite: "lax" });
   revalidatePath("/", "layout");
 }
 

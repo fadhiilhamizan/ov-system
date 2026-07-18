@@ -4,6 +4,7 @@ import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { divisionStats, getTeams } from "@/lib/data/repo";
+import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { ProgressRing } from "@/components/charts/donut";
@@ -15,14 +16,14 @@ import { STATUS_META } from "@/lib/constants";
 export const metadata = { title: "Divisi" };
 
 export default async function DivisionsPage() {
-  const [event, user] = await Promise.all([getActiveEvent(), getCurrentUser()]);
+  const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
   const [stats, teams] = await Promise.all([divisionStats(event.id), getTeams(event.id)]);
 
   return (
     <div>
       <PageHeader
-        title="Divisi"
-        description="Tugas per divisi, otomatis tersinkron dengan Work Breakdown (tanpa duplikasi & tanpa delay)."
+        title={t("Divisi")}
+        description={t("Tugas per divisi, otomatis tersinkron dengan Work Breakdown (tanpa duplikasi & tanpa delay).")}
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline">{event.title}</Badge>
