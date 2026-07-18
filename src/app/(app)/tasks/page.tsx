@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getActiveEvent } from "@/lib/session";
+import { getActiveEvent, getActiveDivision } from "@/lib/session";
 import { getDivisions, getEvents, getTasks } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
@@ -8,7 +8,11 @@ import { Badge } from "@/components/ui/badge";
 export const metadata = { title: "Work Breakdown Structure" };
 
 export default async function TasksPage() {
-  const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
+  const [user, event, activeDivision] = await Promise.all([
+    getCurrentUser(),
+    getActiveEvent(),
+    getActiveDivision(),
+  ]);
   const [tasks, divisions, events] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(),
@@ -28,6 +32,7 @@ export default async function TasksPage() {
         events={events}
         activeEventId={event.id}
         user={user}
+        initialDivision={activeDivision}
       />
     </div>
   );

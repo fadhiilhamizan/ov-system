@@ -40,7 +40,7 @@ function persist() {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(DB_FILE, JSON.stringify(cache, null, 2), "utf8");
   } catch {
-    // read-only FS (e.g. some serverless) — keep in-memory only
+    // read-only FS (e.g. some serverless) - keep in-memory only
   }
 }
 

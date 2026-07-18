@@ -14,8 +14,8 @@ async function guard(): Promise<Result> {
 }
 
 export async function createLinkAction(input: Partial<LinkItem>): Promise<Result> {
-  const g = await guard();
-  if (!g.ok) return g;
+  const user = await getCurrentUser();
+  if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
   if (!input.name?.trim()) return { ok: false, error: "Nama tautan wajib diisi." };
   await createLink(input);
   revalidatePath("/", "layout");

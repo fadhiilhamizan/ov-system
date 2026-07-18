@@ -33,14 +33,14 @@ export const STATUS_META: Record<
 export const STATUS_ORDER: TaskStatus[] = ["todo", "ongoing", "overtime", "done"];
 
 export const ROLE_META: Record<Role, { label: string; description: string; level: number }> = {
-  admin: { label: "Admin / PIC OV", description: "Akses penuh ke seluruh sistem", level: 5 },
-  coordinator: { label: "Koordinator", description: "Kelola divisi & tugas divisinya", level: 4 },
-  staff: { label: "Staff (Fungsionaris)", description: "Edit tugas yang ditugaskan", level: 3 },
-  intern: { label: "Intern", description: "Update Result & Status tugasnya", level: 2 },
-  viewer: { label: "Viewer", description: "Hanya melihat (read-only)", level: 1 },
+  admin: { label: "Admin / PIC", description: "Akses penuh ke semua fitur", level: 5 },
+  coordinator: { label: "Koordinator", description: "Kelola divisi, tugas, rundown & anggaran", level: 4 },
+  staff: { label: "Staff", description: "Update status & isi hasil tugasnya", level: 3 },
+  intern: { label: "Intern", description: "Update status & isi hasil tugasnya", level: 2 },
+  guest: { label: "Tamu", description: "Hanya melihat", level: 1 },
 };
 
-export const ROLE_ORDER: Role[] = ["admin", "coordinator", "staff", "intern", "viewer"];
+export const ROLE_ORDER: Role[] = ["admin", "coordinator", "staff", "intern", "guest"];
 
 /** Prospect pipeline stages derived from contact/response fields. */
 export const PIPELINE_STAGES = [
@@ -66,20 +66,21 @@ export function prospectStage(p: {
   return "belum";
 }
 
-/** Which roles can access which modules (route keys). */
+/** Which roles can OPEN which modules (route keys). Per access matrix:
+ *  RAB (budget) hanya Admin & Koordinator; Super Link (links) tanpa Tamu. */
 export const MODULE_ACCESS: Record<string, Role[]> = {
-  dashboard: ["admin", "coordinator", "staff", "intern", "viewer"],
-  tasks: ["admin", "coordinator", "staff", "intern", "viewer"],
-  divisions: ["admin", "coordinator", "staff", "intern", "viewer"],
-  prospects: ["admin", "coordinator", "staff", "viewer"],
-  budget: ["admin", "coordinator", "viewer"],
-  links: ["admin", "coordinator", "staff", "intern", "viewer"],
-  calendar: ["admin", "coordinator", "staff", "intern", "viewer"],
-  rundown: ["admin", "coordinator", "staff", "intern", "viewer"],
-  members: ["admin", "coordinator", "staff", "intern", "viewer"],
-  jobs: ["admin", "coordinator", "staff", "intern", "viewer"],
-  faq: ["admin", "coordinator", "staff", "intern", "viewer"],
-  events: ["admin", "coordinator", "viewer"],
+  dashboard: ["admin", "coordinator", "staff", "intern", "guest"],
+  tasks: ["admin", "coordinator", "staff", "intern", "guest"],
+  divisions: ["admin", "coordinator", "staff", "intern", "guest"],
+  prospects: ["admin", "coordinator", "staff", "intern", "guest"],
+  budget: ["admin", "coordinator"],
+  links: ["admin", "coordinator", "staff", "intern"],
+  calendar: ["admin", "coordinator", "staff", "intern", "guest"],
+  rundown: ["admin", "coordinator", "staff", "intern", "guest"],
+  members: ["admin", "coordinator", "staff", "intern", "guest"],
+  jobs: ["admin", "coordinator", "staff", "intern", "guest"],
+  faq: ["admin", "coordinator", "staff", "intern", "guest"],
+  events: ["admin", "coordinator", "staff", "intern", "guest"],
   settings: ["admin"],
 };
 

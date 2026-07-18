@@ -35,6 +35,7 @@ export function TasksView({
   activeEventId,
   user,
   lockedDivision,
+  initialDivision = "all",
 }: {
   tasks: Task[];
   divisions: Division[];
@@ -42,11 +43,15 @@ export function TasksView({
   activeEventId: string;
   user: AppUser;
   lockedDivision?: DivisionKey;
+  initialDivision?: string;
 }) {
   const [view, setView] = React.useState<View>("table");
   const [q, setQ] = React.useState("");
-  const [division, setDivision] = React.useState<string>(lockedDivision ?? "all");
   const [status, setStatus] = React.useState<string>("all");
+
+  // Division follows the global "Fokus divisi" dropdown (or the locked division
+  // on a per-division board). No separate dropdown here.
+  const division = lockedDivision ?? initialDivision;
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
@@ -68,7 +73,7 @@ export function TasksView({
     return by;
   }, [filtered]);
 
-  const hasFilters = q || division !== (lockedDivision ?? "all") || status !== "all";
+  const hasFilters = q || status !== "all";
 
   return (
     <div className="space-y-4">
@@ -84,21 +89,6 @@ export function TasksView({
               className="pl-9"
             />
           </div>
-          {!lockedDivision && (
-            <Select value={division} onValueChange={setDivision}>
-              <SelectTrigger className="w-auto min-w-[140px]">
-                <SelectValue placeholder="Divisi" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Divisi</SelectItem>
-                {divisions.map((d) => (
-                  <SelectItem key={d.key} value={d.key}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-auto min-w-[130px]">
               <SelectValue placeholder="Status" />
@@ -118,7 +108,6 @@ export function TasksView({
               size="sm"
               onClick={() => {
                 setQ("");
-                setDivision(lockedDivision ?? "all");
                 setStatus("all");
               }}
             >

@@ -4,12 +4,12 @@ const ID_MONTHS = [
 ];
 
 export function formatRupiah(n: number | null | undefined) {
-  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  if (n === null || n === undefined || Number.isNaN(n)) return "-";
   return "Rp" + n.toLocaleString("id-ID");
 }
 
 export function formatRupiahShort(n: number | null | undefined) {
-  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  if (n === null || n === undefined || Number.isNaN(n)) return "-";
   if (n >= 1_000_000) return "Rp" + (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + "jt";
   if (n >= 1_000) return "Rp" + Math.round(n / 1_000) + "rb";
   return "Rp" + n;
@@ -43,8 +43,8 @@ export function relativeDeadline(iso: string | null | undefined): string | null 
   return `${d} hari lagi`;
 }
 
-export function isUrl(s: string) {
-  return /^https?:\/\//i.test(s.trim());
+export function isUrl(s: string | null | undefined) {
+  return !!s && /^https?:\/\//i.test(s.trim());
 }
 
 export function pct(part: number, whole: number) {

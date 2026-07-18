@@ -15,7 +15,7 @@ import { formatDate, isUrl } from "@/lib/format";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
 function ResultValue({ value }: { value: string }) {
-  if (!value) return <span className="text-muted-foreground">—</span>;
+  if (!value) return <span className="text-muted-foreground">-</span>;
   const parts = value.split(/\s+/).filter(Boolean);
   const urls = parts.filter(isUrl);
   if (urls.length === 0) return <span className="whitespace-pre-wrap">{value}</span>;
@@ -65,16 +65,16 @@ export function TaskDetailDialog({
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <Field icon={<User />} label="PIC">
-              {task.pic || "—"}
+              {task.pic || "-"}
             </Field>
             <Field icon={<Hash />} label="Nomor">
-              {task.no || "—"}
+              {task.no || "-"}
             </Field>
             <Field icon={<CalendarDays />} label="Mulai">
-              {formatDate(task.start_date) ?? task.start_raw ?? "—"}
+              {formatDate(task.start_date) ?? task.start_raw ?? "-"}
             </Field>
             <Field icon={<CalendarDays />} label="Deadline">
-              {formatDate(task.end_date) ?? task.end_raw ?? "—"}
+              {formatDate(task.end_date) ?? task.end_raw ?? "-"}
             </Field>
           </div>
 

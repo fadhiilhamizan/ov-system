@@ -1,13 +1,16 @@
 import { CalendarRange, MapPin, Target, ListChecks } from "lucide-react";
 import { getEvents, taskStats, budgetTotal } from "@/lib/data/repo";
 import { getActiveEvent } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/charts/donut";
+import { AddEventButton, EventActions } from "@/components/events/event-manage";
 import { formatDate, formatRupiah } from "@/lib/format";
 
-export const metadata = { title: "Edisi OV" };
+export const metadata = { title: "Ormawa Visit" };
 
 const STATUS: Record<string, { label: string; variant: "success" | "warning" | "info" }> = {
   active: { label: "Aktif", variant: "success" },
@@ -16,7 +19,8 @@ const STATUS: Record<string, { label: string; variant: "success" | "warning" | "
 };
 
 export default async function EventsPage() {
-  const [events, active] = await Promise.all([getEvents(), getActiveEvent()]);
+  const [events, active, user] = await Promise.all([getEvents(), getActiveEvent(), getCurrentUser()]);
+  const manage = can.manageEvents(user);
   const cards = await Promise.all(
     events.map(async (e) => ({
       event: e,
@@ -28,8 +32,9 @@ export default async function EventsPage() {
   return (
     <div>
       <PageHeader
-        title="Edisi Ormawa Visit"
-        description="Riwayat & rencana seluruh gelaran Ormawa Visit lintas kabinet. Ganti edisi aktif dari pemilih di kanan atas."
+        title="Daftar Ormawa Visit"
+        description="Riwayat & rencana semua Ormawa Visit lintas kabinet. Ganti yang aktif dari pemilih di kanan atas."
+        actions={manage ? <AddEventButton /> : undefined}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -52,7 +57,10 @@ export default async function EventsPage() {
                   <h3 className="mt-2 text-lg font-bold leading-tight">{e.title}</h3>
                   <p className="text-sm text-muted-foreground">{e.cabinet}</p>
                 </div>
-                {stats.total > 0 && <ProgressRing value={stats.progress} size={54} />}
+                <div className="flex items-center gap-1.5">
+                  {stats.total > 0 && <ProgressRing value={stats.progress} size={54} />}
+                  {manage && <EventActions event={e} />}
+                </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">

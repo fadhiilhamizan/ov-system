@@ -3,6 +3,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, LogOut, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { exitGuestMode } from "@/lib/actions/session";
 import { ROLE_META } from "@/lib/constants";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -21,6 +22,10 @@ export function UserMenu({ user }: { user: AppUser }) {
 
   function signOut() {
     start(async () => {
+      if (user.role === "guest") {
+        await exitGuestMode();
+        return;
+      }
       await createClient().auth.signOut();
       router.push("/login");
       router.refresh();

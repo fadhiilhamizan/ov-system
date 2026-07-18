@@ -51,7 +51,7 @@ export function RoleSwitcher({ user }: { user: AppUser }) {
                 {u.id === user.id && <Check className="size-3.5 text-primary" />}
               </div>
               <div className="truncate text-[11px] text-muted-foreground">
-                {ROLE_META[u.role].label} — {ROLE_META[u.role].description}
+                {ROLE_META[u.role].label} - {ROLE_META[u.role].description}
               </div>
             </div>
           </DropdownMenuItem>

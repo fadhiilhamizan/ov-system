@@ -36,14 +36,14 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
         </span>
         <div className="hidden min-w-0 leading-tight md:block">
           <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Edisi aktif
+            Ormawa Visit
           </div>
           <div className="truncate text-xs font-semibold">{active?.title}</div>
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
-        <DropdownMenuLabel>Pilih edisi Ormawa Visit</DropdownMenuLabel>
+        <DropdownMenuLabel>Pilih Ormawa Visit</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {events.map((e) => {
           const st = STATUS_LABEL[e.status];

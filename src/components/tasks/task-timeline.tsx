@@ -113,7 +113,7 @@ export function TaskTimeline({
                         backgroundColor: color,
                         opacity: task.status === "done" ? 1 : 0.75,
                       }}
-                      title={`${task.title} — ${formatDate(task.start_date) ?? ""} s/d ${formatDate(task.end_date) ?? ""}`}
+                      title={`${task.title} - ${formatDate(task.start_date) ?? ""} s/d ${formatDate(task.end_date) ?? ""}`}
                     />
                   </TaskDetailDialog>
                 </div>

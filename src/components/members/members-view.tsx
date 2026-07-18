@@ -1,12 +1,17 @@
 "use client";
 import * as React from "react";
-import { Search, Users2, IdCard } from "lucide-react";
+import { Search, Users2, IdCard, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty";
+import {
+  MemberFormDialog, MemberActions, TeamFormDialog, TeamActions,
+} from "./member-manage";
 import { cn } from "@/lib/utils";
 import type { Division, Member, Team } from "@/lib/types";
 
@@ -14,12 +19,18 @@ export function MembersView({
   members,
   teams,
   divisions,
+  eventId,
   eventTitle,
+  canManageMembers,
+  canManageTeams,
 }: {
   members: Member[];
   teams: Team[];
   divisions: Division[];
+  eventId: string;
   eventTitle: string;
+  canManageMembers: boolean;
+  canManageTeams: boolean;
 }) {
   const [q, setQ] = React.useState("");
   const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
@@ -51,23 +62,32 @@ export function MembersView({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama / NRP…" className="pl-9" />
           </div>
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
-            {([
-              ["all", `Semua ${members.length}`],
-              ["fungsionaris", `Fungsionaris ${fungCount}`],
-              ["intern", `Intern ${internCount}`],
-            ] as const).map(([k, label]) => (
-              <button
-                key={k}
-                onClick={() => setType(k as typeof type)}
-                className={cn(
-                  "rounded-md px-2.5 py-1.5 font-medium transition",
-                  type === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
+              {([
+                ["all", `Semua ${members.length}`],
+                ["fungsionaris", `Fungsionaris ${fungCount}`],
+                ["intern", `Intern ${internCount}`],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => setType(k as typeof type)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1.5 font-medium transition",
+                    type === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {canManageMembers && (
+              <MemberFormDialog mode="create" divisions={divisions} trigger={
+                <DialogTrigger asChild>
+                  <Button><Plus className="size-4" /> <span className="hidden sm:inline">Tambah</span></Button>
+                </DialogTrigger>
+              } />
+            )}
           </div>
         </div>
 
@@ -80,11 +100,12 @@ export function MembersView({
                   <div className="flex items-center gap-1.5">
                     <p className="truncate font-semibold">{m.name}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">NRP {m.nrp || "—"}</p>
+                  <p className="text-xs text-muted-foreground">NRP {m.nrp || "-"}</p>
                 </div>
                 <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
                   {m.type === "fungsionaris" ? "Fungsio" : "Intern"}
                 </Badge>
+                {canManageMembers && <MemberActions member={m} divisions={divisions} />}
               </Card>
             ))}
           </div>
@@ -94,7 +115,16 @@ export function MembersView({
       </TabsContent>
 
       <TabsContent value="tim">
-        <p className="mb-3 text-sm text-muted-foreground">Struktur tim untuk {eventTitle}</p>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">Struktur tim untuk {eventTitle}</p>
+          {canManageTeams && (
+            <TeamFormDialog mode="create" divisions={divisions} eventId={eventId} trigger={
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="size-4" /> Tambah Tim</Button>
+              </DialogTrigger>
+            } />
+          )}
+        </div>
         {teams.length ? (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {teams.map((t) => {
@@ -109,6 +139,11 @@ export function MembersView({
                       {div?.short ?? "?"}
                     </span>
                     <h4 className="font-semibold">{div?.name ?? t.division}</h4>
+                    {canManageTeams && (
+                      <div className="ml-auto">
+                        <TeamActions team={t} divisions={divisions} eventId={eventId} />
+                      </div>
+                    )}
                   </div>
                   {t.fungsionaris && (
                     <div className="mb-2">
@@ -135,7 +170,7 @@ export function MembersView({
             })}
           </div>
         ) : (
-          <EmptyState icon={<Users2 />} title="Belum ada struktur tim" description="Struktur tim untuk edisi ini belum diinput." />
+          <EmptyState icon={<Users2 />} title="Belum ada struktur tim" description="Struktur tim untuk Ormawa Visit ini belum diisi." />
         )}
       </TabsContent>
     </Tabs>

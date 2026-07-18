@@ -12,7 +12,7 @@ export default async function FaqPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="FAQ & Panduan"
-        description="Pertanyaan yang sering diajukan seputar Ormawa Visit — External Affairs HMSI ITS."
+        description="Pertanyaan yang sering diajukan seputar Ormawa Visit - External Affairs HMSI ITS."
       />
 
       <div className="space-y-2.5">
@@ -39,7 +39,7 @@ export default async function FaqPage() {
         <div className="text-sm">
           <p className="font-medium">Masih ada pertanyaan?</p>
           <p className="text-muted-foreground">
-            Tanyakan kepada PIC OV atau fungsionaris yang menemani tugasmu — jangan malu bertanya ya :)
+            Tanyakan ke PIC Ormawa Visit atau fungsionaris yang menemani tugasmu, jangan malu bertanya ya :)
           </p>
         </div>
       </Card>

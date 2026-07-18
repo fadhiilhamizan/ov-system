@@ -34,6 +34,7 @@ export function TaskFormDialog({
   events,
   activeEventId,
   defaultDivision,
+  defaultEndDate,
   user,
   open,
   onOpenChange,
@@ -45,6 +46,7 @@ export function TaskFormDialog({
   events: OVEvent[];
   activeEventId: string;
   defaultDivision?: DivisionKey;
+  defaultEndDate?: string;
   user: AppUser;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -64,7 +66,7 @@ export function TaskFormDialog({
     pic: task?.pic ?? "",
     title: task?.title ?? "",
     start_date: task?.start_date ?? "",
-    end_date: task?.end_date ?? "",
+    end_date: task?.end_date ?? defaultEndDate ?? "",
     notes: task?.notes ?? "",
     result: task?.result ?? "",
     status: (task?.status ?? "todo") as TaskStatus,
@@ -154,7 +156,7 @@ export function TaskFormDialog({
                   </Select>
                 </div>
                 <div className="grid gap-1.5">
-                  <Label>Edisi OV</Label>
+                  <Label>Ormawa Visit</Label>
                   <Select
                     value={form.event_id}
                     onValueChange={(v) => setForm({ ...form, event_id: v })}

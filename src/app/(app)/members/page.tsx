@@ -1,4 +1,6 @@
 import { getActiveEvent } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { getDivisions, getMembers, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { MembersView } from "@/components/members/members-view";
@@ -6,7 +8,7 @@ import { MembersView } from "@/components/members/members-view";
 export const metadata = { title: "Anggota & Tim" };
 
 export default async function MembersPage() {
-  const event = await getActiveEvent();
+  const [event, user] = await Promise.all([getActiveEvent(), getCurrentUser()]);
   const [members, teams, divisions] = await Promise.all([
     getMembers(),
     getTeams(event.id),
@@ -17,9 +19,17 @@ export default async function MembersPage() {
     <div>
       <PageHeader
         title="Anggota & Struktur Tim"
-        description="Direktori fungsionaris & intern External Affairs, serta pembagian tim per divisi."
+        description="Daftar fungsionaris & intern External Affairs, serta pembagian tim per divisi."
       />
-      <MembersView members={members} teams={teams} divisions={divisions} eventTitle={event.title} />
+      <MembersView
+        members={members}
+        teams={teams}
+        divisions={divisions}
+        eventId={event.id}
+        eventTitle={event.title}
+        canManageMembers={can.manageMembers(user)}
+        canManageTeams={can.manageTeams(user)}
+      />
     </div>
   );
 }

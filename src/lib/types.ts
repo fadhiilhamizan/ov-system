@@ -3,7 +3,7 @@
 // Single source of truth shared by the local store and Supabase.
 // ============================================================
 
-export type Role = "admin" | "coordinator" | "staff" | "intern" | "viewer";
+export type Role = "admin" | "coordinator" | "staff" | "intern" | "guest";
 
 export type TaskStatus = "todo" | "ongoing" | "done" | "overtime";
 
@@ -11,18 +11,10 @@ export type EventType = "internal" | "external";
 export type EventMode = "offline" | "online";
 export type EventStatus = "planning" | "active" | "done";
 
-export type DivisionKey =
-  | "PIC"
-  | "COORDINATOR"
-  | "SECRETARY"
-  | "TREASURER"
-  | "LO"
-  | "EVENT"
-  | "CONSUMPTION"
-  | "OPERATIONAL"
-  | "CREATIVE"
-  | "MARKETING"
-  | "OUTSOURCE";
+/** Division keys are dynamic (each Ormawa Visit may define its own). The
+ *  canonical HMSI divisions are PIC, COORDINATOR, SECRETARY, TREASURER, LO,
+ *  EVENT, CONSUMPTION, OPERATIONAL, CREATIVE, MARKETING, OUTSOURCE. */
+export type DivisionKey = string;
 
 export interface Division {
   key: DivisionKey;
@@ -42,6 +34,8 @@ export interface OVEvent {
   mode: EventMode;
   cabinet: string;
   event_date: string | null;
+  plan_start?: string | null;
+  plan_end?: string | null;
   location: string;
   status: EventStatus;
   order: number;

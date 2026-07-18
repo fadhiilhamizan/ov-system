@@ -1,8 +1,9 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2, LogIn, Eye } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { enterGuestMode } from "@/lib/actions/session";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
+  const [guestPending, startGuest] = React.useTransition();
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) router.replace("/dashboard");
@@ -79,9 +81,24 @@ export default function LoginPage() {
               Masuk
             </Button>
           </form>
+
+          <div className="my-4 flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="h-px flex-1 bg-border" /> atau <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={guestPending}
+            onClick={() => startGuest(() => enterGuestMode())}
+          >
+            {guestPending ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
+            Masuk sebagai Tamu (hanya lihat)
+          </Button>
         </Card>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Belum punya akun? Hubungi PIC OV untuk dibuatkan.
+          Belum punya akun? Hubungi PIC Ormawa Visit untuk dibuatkan.
         </p>
       </div>
     </div>

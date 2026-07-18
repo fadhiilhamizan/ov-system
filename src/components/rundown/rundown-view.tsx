@@ -4,6 +4,7 @@ import { Clock, Mic, ExternalLink, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty";
+import { AddRundownButton, RundownActions } from "./rundown-manage";
 import { isUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { RundownItem } from "@/lib/types";
@@ -16,33 +17,56 @@ const JOBS: { key: keyof RundownItem; label: string; color: string }[] = [
   { key: "job_opr", label: "Operational", color: "#64748b" },
 ];
 
-export function RundownView({ items }: { items: RundownItem[] }) {
-  const variants = React.useMemo(() => [...new Set(items.map((i) => i.variant))].sort(), [items]);
+export function RundownView({
+  items,
+  eventId,
+  canManage,
+}: {
+  items: RundownItem[];
+  eventId: string;
+  canManage: boolean;
+}) {
+  const variants = React.useMemo(() => {
+    const set = [...new Set(items.map((i) => i.variant))].sort();
+    return set.length ? set : ["A"];
+  }, [items]);
   const [variant, setVariant] = React.useState(variants[0] ?? "A");
   const list = items.filter((i) => i.variant === variant).sort((a, b) => a.no - b.no);
 
   if (!items.length) {
-    return <EmptyState icon={<Clock />} title="Belum ada rundown" description="Rundown acara belum tersedia untuk edisi ini." />;
+    return (
+      <div className="space-y-4">
+        {canManage && (
+          <div className="flex justify-end">
+            <AddRundownButton eventId={eventId} variant="A" />
+          </div>
+        )}
+        <EmptyState icon={<Clock />} title="Belum ada rundown" description="Rundown acara belum tersedia untuk Ormawa Visit ini." />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      {variants.length > 1 && (
-        <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-          {variants.map((v) => (
-            <button
-              key={v}
-              onClick={() => setVariant(v)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-medium transition",
-                variant === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Versi {v}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {variants.length > 1 ? (
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            {variants.map((v) => (
+              <button
+                key={v}
+                onClick={() => setVariant(v)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition",
+                  variant === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Versi {v}
+              </button>
+            ))}
+          </div>
+        ) : <div />}
+        {canManage && <AddRundownButton eventId={eventId} variant={variant} />}
+      </div>
 
       <div className="relative space-y-3 before:absolute before:left-[68px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border sm:before:left-[84px]">
         {list.map((item) => (
@@ -67,7 +91,10 @@ export function RundownView({ items }: { items: RundownItem[] }) {
                   </div>
                   {item.keterangan && <p className="mt-1 text-xs text-muted-foreground">{item.keterangan}</p>}
                 </div>
-                {item.duration && <Badge variant="outline"><Clock className="size-3" /> {item.duration}</Badge>}
+                <div className="flex items-center gap-1.5">
+                  {item.duration && <Badge variant="outline"><Clock className="size-3" /> {item.duration}</Badge>}
+                  {canManage && <RundownActions item={item} eventId={eventId} />}
+                </div>
               </div>
 
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">

@@ -4,19 +4,23 @@ import { X } from "lucide-react";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Logo } from "./logo";
-import type { AppUser, OVEvent } from "@/lib/types";
+import type { AppUser, Division, OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function AppShell({
   user,
   events,
   activeEventId,
+  divisions,
+  activeDivision,
   demoMode,
   children,
 }: {
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
+  divisions: Division[];
+  activeDivision: string;
   demoMode: boolean;
   children: React.ReactNode;
 }) {
@@ -55,6 +59,8 @@ export function AppShell({
           user={user}
           events={events}
           activeEventId={activeEventId}
+          divisions={divisions}
+          activeDivision={activeDivision}
           demoMode={demoMode}
           onMenu={() => setMobileOpen(true)}
         />
@@ -63,7 +69,7 @@ export function AppShell({
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
             <div className="flex items-center gap-2">
               <Logo size={18} />
-              <span>Ormawa Visit Command Center — External Affairs HMSI ITS</span>
+              <span>Ormawa Visit Command Center - External Affairs HMSI ITS</span>
             </div>
             <span>Dibangun dari Main Sheet OV · v1.0</span>
           </div>

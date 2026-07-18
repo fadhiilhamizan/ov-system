@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -49,6 +49,7 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
   const [q, setQ] = React.useState("");
   const [batch, setBatch] = React.useState("all");
   const [stage, setStage] = React.useState("all");
+  const [sort, setSort] = React.useState<{ key: string; dir: "asc" | "desc" } | null>(null);
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
@@ -60,6 +61,48 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
       return true;
     });
   }, [prospects, q, batch, stage]);
+
+  const stageOrder = React.useMemo(
+    () => Object.fromEntries(PIPELINE_STAGES.map((s, i) => [s.key, i])),
+    [],
+  );
+  const rows = React.useMemo(() => {
+    if (!sort) return filtered;
+    const dir = sort.dir === "asc" ? 1 : -1;
+    const val = (p: Prospect): string | number => {
+      switch (sort.key) {
+        case "org_name": return p.org_name.toLowerCase();
+        case "campus": return p.campus.toLowerCase();
+        case "contact": return p.contact.toLowerCase();
+        case "pic": return p.pic.toLowerCase();
+        case "stage": return stageOrder[prospectStage(p)] ?? 99;
+        case "batch": return p.batch.toLowerCase();
+        default: return "";
+      }
+    };
+    return [...filtered].sort((a, b) => {
+      const va = val(a), vb = val(b);
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }, [filtered, sort, stageOrder]);
+
+  function toggleSort(key: string) {
+    setSort((s) => (s?.key === key ? (s.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" }));
+  }
+  const SortHead = ({ k, children }: { k: string; children: React.ReactNode }) => (
+    <TableHead>
+      <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+        {children}
+        {sort?.key === k ? (
+          sort.dir === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+        ) : (
+          <ChevronsUpDown className="size-3.5 opacity-40" />
+        )}
+      </button>
+    </TableHead>
+  );
 
   const hasFilters = q || batch !== "all" || stage !== "all";
 
@@ -144,22 +187,22 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Himpunan</TableHead>
-                  <TableHead>Kampus</TableHead>
-                  <TableHead>Kontak</TableHead>
-                  <TableHead>PIC</TableHead>
-                  <TableHead>Tahap</TableHead>
-                  <TableHead>Batch</TableHead>
+                  <SortHead k="org_name">Himpunan</SortHead>
+                  <SortHead k="campus">Kampus</SortHead>
+                  <SortHead k="contact">Kontak</SortHead>
+                  <SortHead k="pic">PIC</SortHead>
+                  <SortHead k="stage">Tahap</SortHead>
+                  <SortHead k="batch">Batch</SortHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
+                {rows.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.org_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.campus || "—"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "—"}</TableCell>
-                    <TableCell className="text-sm">{p.pic || "—"}</TableCell>
+                    <TableCell className="font-medium">{p.org_name || <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.campus || "-"}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
+                    <TableCell className="text-sm">{p.pic || "-"}</TableCell>
                     <TableCell><StageBadge p={p} /></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{p.batch}</TableCell>
                     {manage && (
@@ -190,7 +233,7 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
                   {items.map((p) => (
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
-                        <p className="text-sm font-medium">{p.org_name || "—"}</p>
+                        <p className="text-sm font-medium">{p.org_name || "-"}</p>
                         {manage && <ProspectActions prospect={p} batches={batches} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}

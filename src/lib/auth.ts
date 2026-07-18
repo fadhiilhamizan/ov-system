@@ -8,11 +8,27 @@ import { createClient } from "./supabase/server";
 export { AUTH_COOKIE, DEMO_USERS };
 
 export const USE_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+export const GUEST_COOKIE = "ov_guest";
+
+const GUEST_USER: AppUser = {
+  id: "guest",
+  name: "Tamu",
+  email: "",
+  role: "guest",
+  division: null,
+  avatarColor: "#94a3b8",
+};
+
+function normalizeRole(r: string | null | undefined): Role {
+  if (r === "viewer") return "guest"; // legacy value support
+  if (r === "admin" || r === "coordinator" || r === "staff" || r === "intern" || r === "guest") return r;
+  return "guest";
+}
 
 /**
  * Returns the current user. In Supabase mode this reads the auth session +
- * profile, redirecting to /login when unauthenticated. In demo mode it
- * returns the cookie-selected demo identity.
+ * profile, allows a guest bypass (cookie), or redirects to /login. In demo
+ * mode it returns the cookie-selected demo identity.
  */
 export async function getCurrentUser(): Promise<AppUser> {
   if (USE_SUPABASE) {
@@ -20,7 +36,13 @@ export async function getCurrentUser(): Promise<AppUser> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
+
+    if (!user) {
+      const store = await cookies();
+      if (store.get(GUEST_COOKIE)?.value === "1") return GUEST_USER;
+      redirect("/login");
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -30,7 +52,7 @@ export async function getCurrentUser(): Promise<AppUser> {
       id: user.id,
       name: profile?.name || user.email!.split("@")[0],
       email: user.email ?? "",
-      role: (profile?.role as Role) ?? "viewer",
+      role: normalizeRole(profile?.role),
       division: profile?.division ?? null,
       avatarColor: profile?.avatar_color ?? undefined,
     };

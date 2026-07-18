@@ -6,7 +6,7 @@ import { ProspectsView } from "@/components/prospects/prospects-view";
 import { StatCard } from "@/components/stat-card";
 import { Target, CheckCircle2, XCircle, Clock } from "lucide-react";
 
-export const metadata = { title: "Prospek Himpunan" };
+export const metadata = { title: "Reach & Offer" };
 
 export default async function ProspectsPage() {
   const [user, prospects] = await Promise.all([getCurrentUser(), getProspects()]);
@@ -16,8 +16,8 @@ export default async function ProspectsPage() {
   return (
     <div>
       <PageHeader
-        title="Prospek Himpunan"
-        description="Database & pipeline himpunan target kunjungan — dari reach pertama hingga konfirmasi."
+        title="Reach & Offer"
+        description="Data & alur himpunan yang dihubungi, dari reach pertama sampai konfirmasi."
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">

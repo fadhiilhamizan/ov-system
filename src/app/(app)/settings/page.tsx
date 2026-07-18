@@ -33,8 +33,8 @@ export default async function SettingsPage() {
               <p className="text-sm font-medium">Sumber data</p>
               <p className="text-xs text-muted-foreground">
                 {supabaseConfigured
-                  ? "Supabase (cloud) — akun & real-time aktif"
-                  : "Mode demo lokal — data dari kedua file Excel, tersimpan di .data/db.json"}
+                  ? "Supabase (cloud) - akun & real-time aktif"
+                  : "Mode demo lokal - data dari kedua file Excel, tersimpan di .data/db.json"}
               </p>
             </div>
             <Badge variant={supabaseConfigured ? "success" : "warning"}>
@@ -131,7 +131,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
           <p>Ormawa Visit Command Center · v1.0</p>
-          <p>Sistem manajemen program kerja Ormawa Visit — Departemen External Affairs HMSI ITS.</p>
+          <p>Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.</p>
           <p>Dibangun dari digitalisasi Main Sheet Ormawa Visit (eks Google Sheets).</p>
         </CardContent>
       </Card>

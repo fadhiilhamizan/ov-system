@@ -161,10 +161,10 @@ function PlanCard({
                           {canManage ? (
                             <NumCell value={it.qty} onCommit={(v) => onEdit(plan.id, index, { qty: v })} width="w-16" />
                           ) : (
-                            it.qty ?? "—"
+                            it.qty ?? "-"
                           )}
                         </td>
-                        <td className="px-2 py-2 text-muted-foreground">{it.unit || "—"}</td>
+                        <td className="px-2 py-2 text-muted-foreground">{it.unit || "-"}</td>
                         <td className="px-2 py-2 text-right tabular-nums">
                           {canManage ? (
                             <NumCell value={it.unit_price} onCommit={(v) => onEdit(plan.id, index, { unit_price: v })} width="w-24" />

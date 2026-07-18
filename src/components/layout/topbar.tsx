@@ -3,22 +3,27 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { navItemForPath } from "./nav-config";
 import { EventSwitcher } from "./event-switcher";
+import { DivisionFilter } from "./division-filter";
 import { RoleSwitcher } from "./role-switcher";
 import { UserMenu } from "./user-menu";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
-import type { AppUser, OVEvent } from "@/lib/types";
+import type { AppUser, Division, OVEvent } from "@/lib/types";
 
 export function Topbar({
   user,
   events,
   activeEventId,
+  divisions,
+  activeDivision,
   demoMode,
   onMenu,
 }: {
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
+  divisions: Division[];
+  activeDivision: string;
   demoMode: boolean;
   onMenu: () => void;
 }) {
@@ -42,6 +47,7 @@ export function Topbar({
 
       <div className="flex items-center gap-2">
         <EventSwitcher events={events} activeId={activeEventId} />
+        {divisions.length > 0 && <DivisionFilter divisions={divisions} active={activeDivision} />}
         <ThemeToggle />
         {demoMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} />}
       </div>

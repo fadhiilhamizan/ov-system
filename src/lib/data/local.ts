@@ -287,3 +287,183 @@ export function budgetTotal(eventId?: string) {
     0,
   );
 }
+
+// ================= CRUD: events / members / divisions / teams =================
+export function createEvent(input: Partial<OVEvent>): OVEvent {
+  const events = getDb().events;
+  const ev: OVEvent = {
+    id: input.id ?? uid("ov"),
+    code: input.code ?? "",
+    title: input.title ?? "Ormawa Visit Baru",
+    partner: input.partner ?? "",
+    campus: input.campus ?? "",
+    type: input.type ?? "external",
+    mode: input.mode ?? "offline",
+    cabinet: input.cabinet ?? "",
+    event_date: input.event_date ?? null,
+    plan_start: input.plan_start ?? null,
+    plan_end: input.plan_end ?? null,
+    location: input.location ?? "",
+    status: input.status ?? "planning",
+    order: input.order ?? Math.max(0, ...events.map((e) => e.order)) + 1,
+  };
+  mutate((db) => db.events.push(ev));
+  return ev;
+}
+export function updateEvent(id: string, patch: Partial<OVEvent>) {
+  return mutate((db) => {
+    const e = db.events.find((x) => x.id === id);
+    if (!e) return null;
+    Object.assign(e, patch);
+    return e;
+  });
+}
+export function deleteEvent(id: string) {
+  mutate((db) => {
+    db.events = db.events.filter((e) => e.id !== id);
+  });
+}
+
+export function createMember(input: Partial<Member>): Member {
+  const m: Member = {
+    id: uid("m"),
+    name: input.name ?? "",
+    nickname: input.nickname ?? "",
+    nrp: input.nrp ?? "",
+    type: input.type ?? "fungsionaris",
+    year: input.year ?? new Date().getFullYear(),
+    division: input.division ?? null,
+  };
+  mutate((db) => db.members.push(m));
+  return m;
+}
+export function updateMember(id: string, patch: Partial<Member>) {
+  return mutate((db) => {
+    const m = db.members.find((x) => x.id === id);
+    if (!m) return null;
+    Object.assign(m, patch);
+    return m;
+  });
+}
+export function deleteMember(id: string) {
+  mutate((db) => {
+    db.members = db.members.filter((m) => m.id !== id);
+  });
+}
+
+export function createDivision(input: Partial<Division>): Division {
+  const divs = getDb().divisions;
+  const d: Division = {
+    key: input.key ?? uid("DIV").toUpperCase(),
+    name: input.name ?? "",
+    short: input.short ?? "",
+    color: input.color ?? "#6366f1",
+    order: input.order ?? Math.max(0, ...divs.map((x) => x.order)) + 1,
+  };
+  mutate((db) => db.divisions.push(d));
+  return d;
+}
+export function updateDivision(key: string, patch: Partial<Division>) {
+  return mutate((db) => {
+    const d = db.divisions.find((x) => x.key === key);
+    if (!d) return null;
+    Object.assign(d, patch);
+    return d;
+  });
+}
+export function deleteDivision(key: string) {
+  mutate((db) => {
+    db.divisions = db.divisions.filter((d) => d.key !== key);
+  });
+}
+
+export function createTeam(input: Partial<Team>): Team {
+  const t: Team = {
+    id: uid("tm"),
+    event_id: input.event_id ?? null,
+    division: input.division ?? "EVENT",
+    fungsionaris: input.fungsionaris ?? "",
+    intern: input.intern ?? "",
+  };
+  mutate((db) => db.teams.push(t));
+  return t;
+}
+export function updateTeam(id: string, patch: Partial<Team>) {
+  return mutate((db) => {
+    const t = db.teams.find((x) => x.id === id);
+    if (!t) return null;
+    Object.assign(t, patch);
+    return t;
+  });
+}
+export function deleteTeam(id: string) {
+  mutate((db) => {
+    db.teams = db.teams.filter((t) => t.id !== id);
+  });
+}
+
+// ================= CRUD: rundown / jobs =================
+export function createRundown(input: Partial<RundownItem>): RundownItem {
+  const items = getDb().rundown.filter((r) => r.event_id === (input.event_id ?? null) && r.variant === (input.variant ?? "A"));
+  const r: RundownItem = {
+    id: uid("r"),
+    event_id: input.event_id ?? "",
+    variant: input.variant ?? "A",
+    no: input.no ?? Math.max(0, ...items.map((x) => x.no)) + 1,
+    time_start: input.time_start ?? "",
+    time_end: input.time_end ?? "",
+    duration: input.duration ?? "",
+    activity: input.activity ?? "",
+    keterangan: input.keterangan ?? "",
+    host: input.host ?? "",
+    opr_link: input.opr_link ?? "",
+    mc: input.mc ?? "",
+    job_lo: input.job_lo ?? "",
+    job_event: input.job_event ?? "",
+    job_consump: input.job_consump ?? "",
+    job_creative: input.job_creative ?? "",
+    job_opr: input.job_opr ?? "",
+  };
+  mutate((db) => db.rundown.push(r));
+  return r;
+}
+export function updateRundown(id: string, patch: Partial<RundownItem>) {
+  return mutate((db) => {
+    const r = db.rundown.find((x) => x.id === id);
+    if (!r) return null;
+    Object.assign(r, patch);
+    return r;
+  });
+}
+export function deleteRundown(id: string) {
+  mutate((db) => {
+    db.rundown = db.rundown.filter((r) => r.id !== id);
+  });
+}
+
+export function createJob(input: Partial<JobHariH>): JobHariH {
+  const items = getDb().jobHariH.filter((j) => j.event_id === input.event_id);
+  const j: JobHariH = {
+    id: uid("j"),
+    event_id: input.event_id ?? "",
+    no: input.no ?? String(items.length + 1),
+    pic: input.pic ?? "",
+    job: input.job ?? "",
+    notes: input.notes ?? "",
+  };
+  mutate((db) => db.jobHariH.push(j));
+  return j;
+}
+export function updateJob(id: string, patch: Partial<JobHariH>) {
+  return mutate((db) => {
+    const j = db.jobHariH.find((x) => x.id === id);
+    if (!j) return null;
+    Object.assign(j, patch);
+    return j;
+  });
+}
+export function deleteJob(id: string) {
+  mutate((db) => {
+    db.jobHariH = db.jobHariH.filter((j) => j.id !== id);
+  });
+}

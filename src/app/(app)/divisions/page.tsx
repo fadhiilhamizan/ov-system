@@ -1,31 +1,39 @@
 import Link from "next/link";
 import { ArrowRight, Users2 } from "lucide-react";
 import { getActiveEvent } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { divisionStats, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { ProgressRing } from "@/components/charts/donut";
 import { StackedBar } from "@/components/charts/bars";
 import { Badge } from "@/components/ui/badge";
+import { AddDivisionButton } from "@/components/divisions/division-manage";
 import { STATUS_META } from "@/lib/constants";
 
-export const metadata = { title: "Papan Divisi" };
+export const metadata = { title: "Divisi" };
 
 export default async function DivisionsPage() {
-  const event = await getActiveEvent();
+  const [event, user] = await Promise.all([getActiveEvent(), getCurrentUser()]);
   const [stats, teams] = await Promise.all([divisionStats(event.id), getTeams(event.id)]);
 
   return (
     <div>
       <PageHeader
-        title="Papan Divisi"
-        description="Tampilan tugas tersaring per divisi — sinkron otomatis dengan Work Breakdown (fitur 'mirroring' tanpa duplikasi & tanpa delay)."
-        actions={<Badge variant="outline">{event.title}</Badge>}
+        title="Divisi"
+        description="Tugas per divisi, otomatis tersinkron dengan Work Breakdown (tanpa duplikasi & tanpa delay)."
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{event.title}</Badge>
+            {can.manageDivisions(user) && <AddDivisionButton />}
+          </div>
+        }
       />
 
       {stats.length === 0 ? (
         <Card className="p-10 text-center text-sm text-muted-foreground">
-          Belum ada tugas untuk edisi ini.
+          Belum ada tugas untuk Ormawa Visit ini.
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

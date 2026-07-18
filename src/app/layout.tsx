@@ -8,11 +8,11 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: {
-    default: "Ormawa Visit — Command Center",
+    default: "Ormawa Visit - Command Center",
     template: "%s · Ormawa Visit",
   },
   description:
-    "Sistem manajemen terintegrasi untuk program kerja Ormawa Visit — External Affairs HMSI ITS.",
+    "Sistem manajemen terintegrasi untuk program kerja Ormawa Visit - External Affairs HMSI ITS.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

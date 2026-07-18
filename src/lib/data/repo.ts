@@ -2,6 +2,7 @@ import "server-only";
 import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
+import { uid } from "../utils";
 import type {
   BudgetItem,
   BudgetPlan,
@@ -25,6 +26,16 @@ import type {
 
 const USE_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 const sb = () => createClient();
+
+/** Supabase returns NULL for empty text columns; coerce to "" so the UI
+ *  (which calls .trim()/.toLowerCase()/.split()) never crashes. */
+function coalesce<T>(rows: T[], keys: string[]): T[] {
+  return rows.map((r) => {
+    const o = { ...(r as Record<string, unknown>) };
+    for (const k of keys) if (o[k] == null) o[k] = "";
+    return o as T;
+  });
+}
 
 // ---------------- Divisions ----------------
 export async function getDivisions(): Promise<Division[]> {
@@ -64,7 +75,7 @@ export async function getDefaultEvent(): Promise<OVEvent> {
 export async function getMembers(): Promise<Member[]> {
   if (!USE_SUPABASE) return local.getMembers();
   const { data } = await (await sb()).from("members").select("*");
-  return (data ?? []) as Member[];
+  return coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]);
 }
 
 // ---------------- Tasks ----------------
@@ -80,7 +91,9 @@ export async function getTasks(filter: TaskFilter = {}): Promise<Task[]> {
   if (filter.division) q = q.eq("division", filter.division);
   if (filter.status) q = q.eq("status", filter.status);
   const { data } = await q;
-  return (data ?? []) as Task[];
+  return coalesce((data ?? []) as Task[], [
+    "no", "pic", "start_raw", "end_raw", "notes", "result", "source_id", "division",
+  ]);
 }
 export async function getTask(id: string): Promise<Task | null> {
   if (!USE_SUPABASE) return local.getTask(id);
@@ -118,7 +131,10 @@ export async function deleteTask(id: string) {
 export async function getProspects(): Promise<Prospect[]> {
   if (!USE_SUPABASE) return local.getProspects();
   const { data } = await (await sb()).from("prospects").select("*");
-  return (data ?? []) as Prospect[];
+  return coalesce((data ?? []) as Prospect[], [
+    "batch", "no", "date_text", "month", "contact", "org_name", "campus",
+    "location", "pic", "contact_status", "their_response", "our_response", "source",
+  ]);
 }
 export async function createProspect(input: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.createProspect(input);
@@ -137,7 +153,7 @@ export async function deleteProspect(id: string) {
 export async function getLinks(): Promise<LinkItem[]> {
   if (!USE_SUPABASE) return local.getLinks();
   const { data } = await (await sb()).from("links").select("*");
-  return (data ?? []) as LinkItem[];
+  return coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
 }
 export async function createLink(input: Partial<LinkItem>) {
   if (!USE_SUPABASE) return local.createLink(input);
@@ -207,7 +223,10 @@ export async function getRundown(eventId?: string, variant?: string): Promise<Ru
   if (eventId) q = q.eq("event_id", eventId);
   if (variant) q = q.eq("variant", variant);
   const { data } = await q;
-  return (data ?? []) as RundownItem[];
+  return coalesce((data ?? []) as RundownItem[], [
+    "variant", "time_start", "time_end", "duration", "activity", "keterangan",
+    "host", "opr_link", "mc", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
+  ]);
 }
 
 // ---------------- Jobs ----------------
@@ -216,7 +235,7 @@ export async function getJobs(eventId?: string): Promise<JobHariH[]> {
   let q = (await sb()).from("job_harih").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   const { data } = await q;
-  return (data ?? []) as JobHariH[];
+  return coalesce((data ?? []) as JobHariH[], ["no", "pic", "job", "notes"]);
 }
 
 // ---------------- FAQ ----------------
@@ -232,7 +251,7 @@ export async function getTeams(eventId?: string): Promise<Team[]> {
   let q = (await sb()).from("teams").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   const { data } = await q;
-  return (data ?? []) as Team[];
+  return coalesce((data ?? []) as Team[], ["division", "fungsionaris", "intern"]);
 }
 
 // ================= Aggregations (backend-agnostic) =================
@@ -287,4 +306,175 @@ function stripId<T extends { id?: string }>(obj: T) {
   const { id, ...rest } = obj;
   void id;
   return rest;
+}
+
+// ================= CRUD: events / members / divisions / teams =================
+export async function createEvent(input: Partial<OVEvent>) {
+  if (!USE_SUPABASE) return local.createEvent(input);
+  const client = await sb();
+  const id = input.id ?? uid("ov");
+  const { data: maxRow } = await client
+    .from("events")
+    .select("order")
+    .order("order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const order = input.order ?? (maxRow?.order ?? 0) + 1;
+  await client.from("events").insert({
+    id,
+    code: input.code ?? "",
+    title: input.title ?? "Ormawa Visit Baru",
+    partner: input.partner ?? "",
+    campus: input.campus ?? "",
+    type: input.type ?? "external",
+    mode: input.mode ?? "offline",
+    cabinet: input.cabinet ?? "",
+    event_date: input.event_date ?? null,
+    plan_start: input.plan_start ?? null,
+    plan_end: input.plan_end ?? null,
+    location: input.location ?? "",
+    status: input.status ?? "planning",
+    order,
+  });
+}
+export async function updateEvent(id: string, patch: Partial<OVEvent>) {
+  if (!USE_SUPABASE) return local.updateEvent(id, patch);
+  const { id: _drop, ...rest } = patch;
+  void _drop;
+  await (await sb()).from("events").update(rest).eq("id", id);
+}
+export async function deleteEvent(id: string) {
+  if (!USE_SUPABASE) return local.deleteEvent(id);
+  await (await sb()).from("events").delete().eq("id", id);
+}
+
+export async function createMember(input: Partial<Member>) {
+  if (!USE_SUPABASE) return local.createMember(input);
+  await (await sb()).from("members").insert({
+    name: input.name ?? "",
+    nickname: input.nickname ?? "",
+    nrp: input.nrp ?? "",
+    type: input.type ?? "fungsionaris",
+    year: input.year ?? new Date().getFullYear(),
+    division: input.division ?? null,
+  });
+}
+export async function updateMember(id: string, patch: Partial<Member>) {
+  if (!USE_SUPABASE) return local.updateMember(id, patch);
+  const { id: _drop, ...rest } = patch;
+  void _drop;
+  await (await sb()).from("members").update(rest).eq("id", id);
+}
+export async function deleteMember(id: string) {
+  if (!USE_SUPABASE) return local.deleteMember(id);
+  await (await sb()).from("members").delete().eq("id", id);
+}
+
+export async function createDivision(input: Partial<Division>) {
+  if (!USE_SUPABASE) return local.createDivision(input);
+  const client = await sb();
+  const { data: maxRow } = await client
+    .from("divisions")
+    .select("order")
+    .order("order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  await client.from("divisions").insert({
+    key: input.key ?? uid("DIV").toUpperCase(),
+    name: input.name ?? "",
+    short: input.short ?? "",
+    color: input.color ?? "#6366f1",
+    order: input.order ?? (maxRow?.order ?? 0) + 1,
+  });
+}
+export async function updateDivision(key: string, patch: Partial<Division>) {
+  if (!USE_SUPABASE) return local.updateDivision(key, patch);
+  await (await sb()).from("divisions").update(patch).eq("key", key);
+}
+export async function deleteDivision(key: string) {
+  if (!USE_SUPABASE) return local.deleteDivision(key);
+  await (await sb()).from("divisions").delete().eq("key", key);
+}
+
+export async function createTeam(input: Partial<Team>) {
+  if (!USE_SUPABASE) return local.createTeam(input);
+  await (await sb()).from("teams").insert({
+    event_id: input.event_id ?? null,
+    division: input.division ?? "EVENT",
+    fungsionaris: input.fungsionaris ?? "",
+    intern: input.intern ?? "",
+  });
+}
+export async function updateTeam(id: string, patch: Partial<Team>) {
+  if (!USE_SUPABASE) return local.updateTeam(id, patch);
+  const { id: _drop, ...rest } = patch;
+  void _drop;
+  await (await sb()).from("teams").update(rest).eq("id", id);
+}
+export async function deleteTeam(id: string) {
+  if (!USE_SUPABASE) return local.deleteTeam(id);
+  await (await sb()).from("teams").delete().eq("id", id);
+}
+
+// ================= CRUD: rundown / jobs =================
+export async function createRundown(input: Partial<RundownItem>) {
+  if (!USE_SUPABASE) return local.createRundown(input);
+  const client = await sb();
+  const { data: maxRow } = await client
+    .from("rundown")
+    .select("no")
+    .eq("event_id", input.event_id ?? "")
+    .eq("variant", input.variant ?? "A")
+    .order("no", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  await client.from("rundown").insert({
+    event_id: input.event_id ?? null,
+    variant: input.variant ?? "A",
+    no: input.no ?? (maxRow?.no ?? 0) + 1,
+    time_start: input.time_start ?? "",
+    time_end: input.time_end ?? "",
+    duration: input.duration ?? "",
+    activity: input.activity ?? "",
+    keterangan: input.keterangan ?? "",
+    host: input.host ?? "",
+    opr_link: input.opr_link ?? "",
+    mc: input.mc ?? "",
+    job_lo: input.job_lo ?? "",
+    job_event: input.job_event ?? "",
+    job_consump: input.job_consump ?? "",
+    job_creative: input.job_creative ?? "",
+    job_opr: input.job_opr ?? "",
+  });
+}
+export async function updateRundown(id: string, patch: Partial<RundownItem>) {
+  if (!USE_SUPABASE) return local.updateRundown(id, patch);
+  const { id: _d, ...rest } = patch;
+  void _d;
+  await (await sb()).from("rundown").update(rest).eq("id", id);
+}
+export async function deleteRundown(id: string) {
+  if (!USE_SUPABASE) return local.deleteRundown(id);
+  await (await sb()).from("rundown").delete().eq("id", id);
+}
+
+export async function createJob(input: Partial<JobHariH>) {
+  if (!USE_SUPABASE) return local.createJob(input);
+  await (await sb()).from("job_harih").insert({
+    event_id: input.event_id ?? null,
+    no: input.no ?? "",
+    pic: input.pic ?? "",
+    job: input.job ?? "",
+    notes: input.notes ?? "",
+  });
+}
+export async function updateJob(id: string, patch: Partial<JobHariH>) {
+  if (!USE_SUPABASE) return local.updateJob(id, patch);
+  const { id: _d, ...rest } = patch;
+  void _d;
+  await (await sb()).from("job_harih").update(rest).eq("id", id);
+}
+export async function deleteJob(id: string) {
+  if (!USE_SUPABASE) return local.deleteJob(id);
+  await (await sb()).from("job_harih").delete().eq("id", id);
 }

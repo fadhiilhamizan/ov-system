@@ -135,7 +135,16 @@ function LinkActions({ link, sections }: { link: LinkItem; sections: string[] })
   );
 }
 
-export function LinksView({ links, user, canManage }: { links: LinkItem[]; user: AppUser; canManage: boolean }) {
+export function LinksView({
+  links,
+  canCreate,
+  canManage,
+}: {
+  links: LinkItem[];
+  user: AppUser;
+  canCreate: boolean;
+  canManage: boolean;
+}) {
   const sections = React.useMemo(() => [...new Set(links.map((l) => l.section).filter(Boolean))], [links]);
   const [q, setQ] = React.useState("");
   const [section, setSection] = React.useState("all");
@@ -178,7 +187,7 @@ export function LinksView({ links, user, canManage }: { links: LinkItem[]; user:
             <Button variant="ghost" size="sm" onClick={() => { setQ(""); setSection("all"); }}><X className="size-4" /> Reset</Button>
           )}
         </div>
-        {canManage && (
+        {canCreate && (
           <LinkFormDialog mode="create" sections={sections} trigger={
             <DialogTrigger asChild><Button><Plus className="size-4" /> Tambah</Button></DialogTrigger>
           } />

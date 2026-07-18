@@ -193,7 +193,7 @@ function FieldSelect({
         <SelectContent>
           {options.map((o) => (
             <SelectItem key={o} value={o}>
-              {o === "none" ? "—" : o}
+              {o === "none" ? "-" : o}
             </SelectItem>
           ))}
         </SelectContent>

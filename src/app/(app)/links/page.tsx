@@ -13,9 +13,14 @@ export default async function LinksPage() {
     <div>
       <PageHeader
         title="Super Link"
-        description="Direktori terpusat semua dokumen, form, dan drive penting Ormawa Visit — dikelompokkan per edisi & divisi."
+        description="Direktori terpusat semua dokumen, form, dan drive penting Ormawa Visit - dikelompokkan per edisi & divisi."
       />
-      <LinksView links={links} user={user} canManage={can.manageLinks(user)} />
+      <LinksView
+        links={links}
+        user={user}
+        canCreate={can.createLink(user)}
+        canManage={can.manageLinks(user)}
+      />
     </div>
   );
 }

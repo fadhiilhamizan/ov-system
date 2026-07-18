@@ -258,7 +258,7 @@ export default async function DashboardPage() {
               <EmptyState
                 icon={<CalendarClock />}
                 title="Tidak ada deadline aktif"
-                description="Semua tugas ber-deadline sudah selesai untuk edisi ini."
+                description="Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini."
               />
             )}
           </CardContent>
@@ -334,7 +334,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 
 const QUICK_LINKS: { href: string; label: string; sub: string; color: string; icon: React.ReactNode }[] = [
   { href: "/tasks", label: "Work Breakdown", sub: "Kelola tugas", color: "#6366f1", icon: <ListChecks /> },
-  { href: "/divisions", label: "Papan Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
+  { href: "/divisions", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
   { href: "/prospects", label: "Prospek", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
   { href: "/budget", label: "Anggaran", sub: "RAB", color: "#0ea5e9", icon: <Wallet /> },
   { href: "/rundown", label: "Rundown", sub: "Susunan acara", color: "#d946ef", icon: <CalendarClock /> },
