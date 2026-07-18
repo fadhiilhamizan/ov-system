@@ -43,6 +43,7 @@ export interface OVEvent {
 
 export interface Member {
   id: string;
+  event_id?: string | null;
   name: string;
   nickname: string;
   nrp: string;

@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Loader2, MoreHorizontal, Pencil, Trash2, Check, ChevronsUpDown, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -9,20 +9,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   createMemberAction, updateMemberAction, deleteMemberAction,
   createTeamAction, updateTeamAction, deleteTeamAction,
 } from "@/lib/actions/manage";
-import type { Division, Member, Team } from "@/lib/types";
+import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
 // ---------------- Member ----------------
 export function MemberFormDialog({
-  mode, member, divisions, open, onOpenChange, trigger,
+  mode, member, divisions, events, defaultEventId, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   member?: Member;
   divisions: Division[];
+  events: OVEvent[];
+  defaultEventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -31,25 +35,48 @@ export function MemberFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
+  const nameRef = React.useRef<HTMLInputElement>(null);
+  const emptyForm = (base?: Partial<typeof f>) => ({
+    name: "",
+    nickname: "",
+    nrp: "",
+    type: (base?.type ?? "fungsionaris") as Member["type"],
+    year: base?.year ?? new Date().getFullYear(),
+    division: base?.division ?? divisions[0]?.key ?? "",
+    event_id: base?.event_id ?? defaultEventId,
+  });
   const [f, setF] = React.useState(() => ({
     name: member?.name ?? "",
     nickname: member?.nickname ?? "",
     nrp: member?.nrp ?? "",
     type: member?.type ?? "fungsionaris",
     year: member?.year ?? new Date().getFullYear(),
-    division: member?.division ?? "none",
+    division: member?.division ?? divisions[0]?.key ?? "",
+    event_id: member?.event_id ?? defaultEventId,
   }));
   React.useEffect(() => {
-    if (isOpen && member)
-      setF({ name: member.name, nickname: member.nickname, nrp: member.nrp, type: member.type, year: member.year, division: member.division ?? "none" });
-  }, [isOpen, member]);
+    if (isOpen && member) {
+      setF({
+        name: member.name, nickname: member.nickname, nrp: member.nrp, type: member.type,
+        year: member.year, division: member.division ?? divisions[0]?.key ?? "", event_id: member.event_id ?? defaultEventId,
+      });
+    }
+  }, [isOpen, member, divisions, defaultEventId]);
 
   function submit() {
     start(async () => {
-      const payload = { ...f, division: f.division === "none" ? null : f.division };
-      const res = mode === "create" ? await createMemberAction(payload) : await updateMemberAction(member!.id, payload);
-      if (res.ok) { toast.success(mode === "create" ? "Anggota ditambahkan" : "Anggota diperbarui"); setOpen(false); }
-      else toast.error(res.error);
+      const res = mode === "create" ? await createMemberAction(f) : await updateMemberAction(member!.id, f);
+      if (!res.ok) { toast.error(res.error); return; }
+      if (mode === "create") {
+        // Bulk-entry friendly: keep type/division/event, clear only identity
+        // fields, and keep the dialog open so the user can add the next person.
+        toast.success(`${f.name} ditambahkan — lanjut menambahkan anggota lain`);
+        setF((prev) => emptyForm(prev));
+        nameRef.current?.focus();
+      } else {
+        toast.success("Anggota diperbarui");
+        setOpen(false);
+      }
     });
   }
 
@@ -59,13 +86,17 @@ export function MemberFormDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Tambah Anggota" : "Edit Anggota"}</DialogTitle>
-          <DialogDescription>Anggota External Affairs (fungsionaris atau intern).</DialogDescription>
+          <DialogDescription>
+            {mode === "create"
+              ? "Dialog tetap terbuka setelah menambah, cocok untuk mengisi banyak anggota sekaligus."
+              : "Anggota External Affairs (fungsionaris atau intern)."}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Nama lengkap</Label>
-              <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+              <Label>Nama lengkap <span className="text-danger">*</span></Label>
+              <Input ref={nameRef} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </div>
             <div className="grid gap-1.5">
               <Label>Nama panggilan</Label>
@@ -84,7 +115,7 @@ export function MemberFormDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Tipe</Label>
+              <Label>Tipe <span className="text-danger">*</span></Label>
               <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as Member["type"] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -94,11 +125,10 @@ export function MemberFormDialog({
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label>Divisi (opsional)</Label>
+              <Label>Divisi <span className="text-danger">*</span></Label>
               <Select value={f.division} onValueChange={(v) => setF({ ...f, division: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-</SelectItem>
                   {divisions.map((d) => (
                     <SelectItem key={d.key} value={d.key}>{d.name}</SelectItem>
                   ))}
@@ -106,10 +136,21 @@ export function MemberFormDialog({
               </Select>
             </div>
           </div>
+          <div className="grid gap-1.5">
+            <Label>Ormawa Visit <span className="text-danger">*</span></Label>
+            <Select value={f.event_id} onValueChange={(v) => setF({ ...f, event_id: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {events.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
-          <Button onClick={submit} disabled={pending || !f.name.trim()}>
+          <DialogClose asChild><Button variant="outline">{mode === "create" ? "Selesai" : "Batal"}</Button></DialogClose>
+          <Button onClick={submit} disabled={pending || !f.name.trim() || !f.division}>
             {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? "Tambah" : "Simpan"}
           </Button>
         </DialogFooter>
@@ -118,7 +159,9 @@ export function MemberFormDialog({
   );
 }
 
-export function MemberActions({ member, divisions }: { member: Member; divisions: Division[] }) {
+export function MemberActions({
+  member, divisions, events, defaultEventId,
+}: { member: Member; divisions: Division[]; events: OVEvent[]; defaultEventId: string }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -135,18 +178,112 @@ export function MemberActions({ member, divisions }: { member: Member; divisions
           })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} Hapus</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <MemberFormDialog mode="edit" member={member} divisions={divisions} open={editOpen} onOpenChange={setEditOpen} />
+      <MemberFormDialog
+        mode="edit" member={member} divisions={divisions} events={events} defaultEventId={defaultEventId}
+        open={editOpen} onOpenChange={setEditOpen}
+      />
     </>
+  );
+}
+
+// ---------------- Multi-select for team roster fields ----------------
+function MemberMultiSelect({
+  members, value, onChange, placeholder,
+}: {
+  members: Member[];
+  value: string; // comma-joined display names
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const label = (m: Member) => m.nickname || m.name;
+  const tokens = React.useMemo(() => value.split(",").map((s) => s.trim()).filter(Boolean), [value]);
+  const matchedIds = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tokens) {
+      const m = members.find((mm) => label(mm).toLowerCase() === t.toLowerCase());
+      if (m) set.add(m.id);
+    }
+    return set;
+  }, [tokens, members]);
+  // Free-text tokens that didn't match any known member (preserved so data isn't lost).
+  const extras = tokens.filter((t) => !members.some((mm) => label(mm).toLowerCase() === t.toLowerCase()));
+
+  function toggle(m: Member) {
+    const isOn = matchedIds.has(m.id);
+    const names = isOn
+      ? tokens.filter((t) => t.toLowerCase() !== label(m).toLowerCase())
+      : [...tokens, label(m)];
+    onChange(names.join(", "));
+  }
+  function removeExtra(t: string) {
+    onChange(tokens.filter((x) => x !== t).join(", "));
+  }
+
+  return (
+    <div className="space-y-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex h-9 w-full items-center justify-between rounded-lg border border-input bg-card px-3 text-sm shadow-sm transition hover:bg-muted"
+          >
+            <span className="text-muted-foreground">{placeholder ?? "Pilih anggota…"}</span>
+            <ChevronsUpDown className="size-3.5 opacity-60" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="max-h-72 w-72 overflow-y-auto p-1.5">
+          {members.length === 0 ? (
+            <p className="p-2 text-xs text-muted-foreground">Belum ada anggota untuk Ormawa Visit ini.</p>
+          ) : (
+            members.map((m) => (
+              <label
+                key={m.id}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+              >
+                <Checkbox checked={matchedIds.has(m.id)} onCheckedChange={() => toggle(m)} />
+                <span className="flex-1 truncate">{label(m)}</span>
+                {matchedIds.has(m.id) && <Check className="size-3.5 text-primary" />}
+              </label>
+            ))
+          )}
+        </PopoverContent>
+      </Popover>
+
+      {(matchedIds.size > 0 || extras.length > 0) && (
+        <div className="flex flex-wrap gap-1.5">
+          {[...matchedIds].map((id) => {
+            const m = members.find((mm) => mm.id === id)!;
+            return (
+              <span key={id} className="inline-flex items-center gap-1 rounded-full bg-accent py-1 pl-2.5 pr-1 text-xs text-accent-foreground">
+                {label(m)}
+                <button type="button" onClick={() => toggle(m)} className="rounded-full p-0.5 hover:bg-black/10">
+                  <X className="size-3" />
+                </button>
+              </span>
+            );
+          })}
+          {extras.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-muted py-1 pl-2.5 pr-1 text-xs text-muted-foreground">
+              {t}
+              <button type="button" onClick={() => removeExtra(t)} className="rounded-full p-0.5 hover:bg-black/10">
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 // ---------------- Team ----------------
 export function TeamFormDialog({
-  mode, team, divisions, eventId, open, onOpenChange, trigger,
+  mode, team, divisions, members, eventId, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   team?: Team;
   divisions: Division[];
+  members: Member[];
   eventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -164,6 +301,9 @@ export function TeamFormDialog({
   React.useEffect(() => {
     if (isOpen && team) setF({ division: team.division, fungsionaris: team.fungsionaris, intern: team.intern });
   }, [isOpen, team]);
+
+  const fungsionarisPool = React.useMemo(() => members.filter((m) => m.type === "fungsionaris"), [members]);
+  const internPool = React.useMemo(() => members.filter((m) => m.type === "intern"), [members]);
 
   function submit() {
     start(async () => {
@@ -195,12 +335,22 @@ export function TeamFormDialog({
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label>Fungsionaris (pisahkan dengan koma)</Label>
-            <Input value={f.fungsionaris} onChange={(e) => setF({ ...f, fungsionaris: e.target.value })} placeholder="Nama1, Nama2" />
+            <Label>Fungsionaris</Label>
+            <MemberMultiSelect
+              members={fungsionarisPool}
+              value={f.fungsionaris}
+              onChange={(v) => setF({ ...f, fungsionaris: v })}
+              placeholder="Pilih fungsionaris…"
+            />
           </div>
           <div className="grid gap-1.5">
-            <Label>Intern (pisahkan dengan koma)</Label>
-            <Input value={f.intern} onChange={(e) => setF({ ...f, intern: e.target.value })} placeholder="Nama1, Nama2" />
+            <Label>Intern</Label>
+            <MemberMultiSelect
+              members={internPool}
+              value={f.intern}
+              onChange={(v) => setF({ ...f, intern: v })}
+              placeholder="Pilih intern…"
+            />
           </div>
         </div>
         <DialogFooter>
@@ -214,7 +364,9 @@ export function TeamFormDialog({
   );
 }
 
-export function TeamActions({ team, divisions, eventId }: { team: Team; divisions: Division[]; eventId: string }) {
+export function TeamActions({
+  team, divisions, members, eventId,
+}: { team: Team; divisions: Division[]; members: Member[]; eventId: string }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -231,7 +383,10 @@ export function TeamActions({ team, divisions, eventId }: { team: Team; division
           })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} Hapus</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <TeamFormDialog mode="edit" team={team} divisions={divisions} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
+      <TeamFormDialog
+        mode="edit" team={team} divisions={divisions} members={members} eventId={eventId}
+        open={editOpen} onOpenChange={setEditOpen}
+      />
     </>
   );
 }

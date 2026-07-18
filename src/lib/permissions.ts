@@ -24,6 +24,9 @@ export const can = {
   manageFaq(user: AppUser): boolean {
     return user.role === "admin";
   },
+  manageBackups(user: AppUser): boolean {
+    return user.role === "admin";
+  },
 
   // --- Admin + Koordinator ---
   manageTeams(user: AppUser): boolean {

@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
 import { LANG_COOKIE } from "@/lib/i18n/config";
-import { resetDb } from "@/lib/data/store";
 
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -45,9 +44,4 @@ export async function exitGuestMode() {
   const store = await cookies();
   store.delete(GUEST_COOKIE);
   redirect("/login");
-}
-
-export async function resetDemoData() {
-  resetDb();
-  revalidatePath("/", "layout");
 }

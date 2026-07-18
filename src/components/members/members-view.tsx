@@ -8,17 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
 import {
   MemberFormDialog, MemberActions, TeamFormDialog, TeamActions,
 } from "./member-manage";
 import { cn } from "@/lib/utils";
-import type { Division, Member, Team } from "@/lib/types";
+import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
 export function MembersView({
   members,
   teams,
   divisions,
+  events,
   eventId,
   eventTitle,
   canManageMembers,
@@ -27,6 +30,7 @@ export function MembersView({
   members: Member[];
   teams: Team[];
   divisions: Division[];
+  events: OVEvent[];
   eventId: string;
   eventTitle: string;
   canManageMembers: boolean;
@@ -82,7 +86,7 @@ export function MembersView({
               ))}
             </div>
             {canManageMembers && (
-              <MemberFormDialog mode="create" divisions={divisions} trigger={
+              <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
                 <DialogTrigger asChild>
                   <Button><Plus className="size-4" /> <span className="hidden sm:inline">Tambah</span></Button>
                 </DialogTrigger>
@@ -92,22 +96,50 @@ export function MembersView({
         </div>
 
         {filtered.length ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((m) => (
-              <Card key={m.id} className="flex items-center gap-3 p-3.5">
-                <Avatar name={m.nickname || m.name} size={44} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="truncate font-semibold">{m.name}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">NRP {m.nrp || "-"}</p>
-                </div>
-                <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
-                  {m.type === "fungsionaris" ? "Fungsio" : "Intern"}
-                </Badge>
-                {canManageMembers && <MemberActions member={m} divisions={divisions} />}
-              </Card>
-            ))}
+          <div className="rounded-xl border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Nama</TableHead>
+                  <TableHead>NRP</TableHead>
+                  <TableHead>Divisi</TableHead>
+                  <TableHead>Tipe</TableHead>
+                  <TableHead>Angkatan</TableHead>
+                  {canManageMembers && <TableHead className="w-10" />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((m) => {
+                  const div = m.division ? divMap.get(m.division) : undefined;
+                  return (
+                    <TableRow key={m.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={m.nickname || m.name} size={32} />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{m.name}</p>
+                            {m.nickname && <p className="truncate text-xs text-muted-foreground">{m.nickname}</p>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{m.nrp || "-"}</TableCell>
+                      <TableCell>{div ? <DivisionBadge division={div} /> : <span className="text-sm text-muted-foreground">-</span>}</TableCell>
+                      <TableCell>
+                        <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
+                          {m.type === "fungsionaris" ? "Fungsio" : "Intern"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{m.year}</TableCell>
+                      {canManageMembers && (
+                        <TableCell>
+                          <MemberActions member={m} divisions={divisions} events={events} defaultEventId={eventId} />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <EmptyState icon={<IdCard />} title="Tidak ditemukan" description="Tidak ada anggota yang cocok." />
@@ -118,7 +150,7 @@ export function MembersView({
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">Struktur tim untuk {eventTitle}</p>
           {canManageTeams && (
-            <TeamFormDialog mode="create" divisions={divisions} eventId={eventId} trigger={
+            <TeamFormDialog mode="create" divisions={divisions} members={members} eventId={eventId} trigger={
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="size-4" /> Tambah Tim</Button>
               </DialogTrigger>
@@ -141,7 +173,7 @@ export function MembersView({
                     <h4 className="font-semibold">{div?.name ?? t.division}</h4>
                     {canManageTeams && (
                       <div className="ml-auto">
-                        <TeamActions team={t} divisions={divisions} eventId={eventId} />
+                        <TeamActions team={t} divisions={divisions} members={members} eventId={eventId} />
                       </div>
                     )}
                   </div>

@@ -38,6 +38,7 @@ export async function deleteEventAction(id: string): Promise<Result> {
 export async function createMemberAction(input: Partial<Member>): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   if (!input.name?.trim()) return { ok: false, error: "Nama anggota wajib diisi." };
+  if (!input.division) return { ok: false, error: "Divisi wajib dipilih." };
   await createMember(input);
   revalidatePath("/", "layout");
   return { ok: true };

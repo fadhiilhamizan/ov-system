@@ -77,10 +77,11 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 });
 
 // ---------------- Members ----------------
-export const getMembers = cache(async (): Promise<Member[]> => {
-  if (!USE_SUPABASE) return local.getMembers();
+export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
+  if (!USE_SUPABASE) return local.getMembers(eventId);
   const { data } = await (await sb()).from("members").select("*");
-  return coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]);
+  const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]);
+  return eventId ? list.filter((m) => !m.event_id || m.event_id === eventId) : list;
 });
 
 // ---------------- Tasks ----------------
@@ -400,6 +401,7 @@ export async function deleteEvent(id: string) {
 export async function createMember(input: Partial<Member>) {
   if (!USE_SUPABASE) return local.createMember(input);
   await (await sb()).from("members").insert({
+    event_id: input.event_id ?? null,
     name: input.name ?? "",
     nickname: input.nickname ?? "",
     nrp: input.nrp ?? "",

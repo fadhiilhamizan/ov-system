@@ -1,25 +1,75 @@
-import { Check, Minus, Database, ShieldCheck, Info, Cloud } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
+import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
+import { can } from "@/lib/permissions";
+import { listBackupsAction } from "@/lib/actions/backup";
+import { APP_VERSION, APP_CODENAME } from "@/lib/version";
+import { CHANGELOG } from "@/lib/changelog";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ResetDataButton } from "@/components/settings/reset-data-button";
+import { Avatar } from "@/components/ui/avatar";
+import { BackupPanel } from "@/components/settings/backup-panel";
 import { ROLE_META, ROLE_ORDER, MODULE_ACCESS } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
+import { formatDate } from "@/lib/format";
 
 export const metadata = { title: "Pengaturan" };
 
+const WHATSAPP_URL = "https://wa.me/6281311598126";
+
 export default async function SettingsPage() {
   const user = await getCurrentUser();
-  const supabaseConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
   const modules = NAV.flatMap((g) => g.items);
+  const canBackup = can.manageBackups(user);
+  const backupsResult = canBackup ? await listBackupsAction() : null;
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Pengaturan"
-        description="Konfigurasi sistem, hak akses peran, dan manajemen data Ormawa Visit Command Center."
+        description="Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Command Center."
       />
+
+      {/* Under-development notice */}
+      <Card className="border-amber-300/60 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10">
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/20 text-amber-600 dark:text-amber-300">
+              <Info className="size-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Website ini masih dalam pengembangan</p>
+              <p className="text-sm text-muted-foreground">
+                Kalau menemukan bug, error, atau punya keluhan/masukan, langsung hubungi lewat WhatsApp.
+              </p>
+            </div>
+          </div>
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-105"
+          >
+            <MessageCircle className="size-4" /> Hubungi via WhatsApp
+          </a>
+        </CardContent>
+      </Card>
+
+      {/* Account */}
+      <Card>
+        <CardHeader className="flex-row items-center gap-2">
+          <UserCircle className="size-4 text-primary" />
+          <CardTitle>Akun Saya</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center gap-3">
+          <Avatar name={user.name} color={user.avatarColor} size={44} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{user.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email || "Mode tamu"}</p>
+          </div>
+          <Badge variant="outline" className="ml-auto shrink-0">{ROLE_META[user.role].label}</Badge>
+        </CardContent>
+      </Card>
 
       {/* Backend status */}
       <Card>
@@ -32,25 +82,38 @@ export default async function SettingsPage() {
             <div>
               <p className="text-sm font-medium">Sumber data</p>
               <p className="text-xs text-muted-foreground">
-                {supabaseConfigured
+                {USE_SUPABASE
                   ? "Supabase (cloud) - akun & real-time aktif"
-                  : "Mode demo lokal - data dari kedua file Excel, tersimpan di .data/db.json"}
+                  : "Mode demo lokal - data tersimpan di .data/db.json"}
               </p>
             </div>
-            <Badge variant={supabaseConfigured ? "success" : "warning"}>
-              {supabaseConfigured ? "Supabase" : "Demo Lokal"}
+            <Badge variant={USE_SUPABASE ? "success" : "warning"}>
+              {USE_SUPABASE ? "Supabase" : "Demo Lokal"}
             </Badge>
           </div>
-          {!supabaseConfigured && (
-            <p className="text-xs text-muted-foreground">
-              Untuk mengaktifkan akun sungguhan & sinkronisasi real-time multi-user, isi kredensial
-              Supabase pada <code className="rounded bg-muted px-1 py-0.5">.env.local</code> dan jalankan
-              migrasi di <code className="rounded bg-muted px-1 py-0.5">supabase/</code>. Lihat{" "}
-              <code className="rounded bg-muted px-1 py-0.5">README.md</code>.
-            </p>
-          )}
         </CardContent>
       </Card>
+
+      {/* Backup & Rollback */}
+      {canBackup && (
+        <Card>
+          <CardHeader className="flex-row items-center gap-2">
+            <DatabaseBackup className="size-4 text-primary" />
+            <CardTitle>Backup & Rollback</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!USE_SUPABASE ? (
+              <p className="text-sm text-muted-foreground">
+                Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).
+              </p>
+            ) : backupsResult && backupsResult.ok ? (
+              <BackupPanel initialBackups={backupsResult.backups} />
+            ) : (
+              <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : "Gagal memuat backup."}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Roles matrix */}
       <Card>
@@ -103,23 +166,31 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Data management */}
+      {/* Changelog */}
       <Card>
         <CardHeader className="flex-row items-center gap-2">
-          <Database className="size-4 text-primary" />
-          <CardTitle>Manajemen Data</CardTitle>
+          <History className="size-4 text-primary" />
+          <CardTitle>Changelog</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Kembalikan seluruh data ke kondisi awal dari file{" "}
-            <span className="font-medium text-foreground">MAIN SHEET ORMAWA VISIT.xlsx</span> &{" "}
-            <span className="font-medium text-foreground">ORMAWA VISIT 2026.xlsx</span>.
-          </p>
-          {user.role === "admin" ? (
-            <ResetDataButton />
-          ) : (
-            <Badge variant="outline">Hanya Admin</Badge>
-          )}
+        <CardContent>
+          <div className="space-y-4">
+            {CHANGELOG.map((entry, i) => (
+              <details key={entry.version} className="group rounded-lg border border-border" open={i === 0}>
+                <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                  <Badge variant={i === 0 ? "primary" : "outline"}>v{entry.version}</Badge>
+                  <span className="text-sm font-medium">{entry.title}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{formatDate(entry.date, { long: true })}</span>
+                </summary>
+                <ul className="space-y-1 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                  {entry.changes.map((c, j) => (
+                    <li key={j} className="flex gap-2">
+                      <span className="text-primary">•</span> {c}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -130,9 +201,14 @@ export default async function SettingsPage() {
           <CardTitle>Tentang</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
-          <p>Ormawa Visit Command Center · v1.0</p>
+          <p>Ormawa Visit Command Center · v{APP_VERSION} “{APP_CODENAME}”</p>
           <p>Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.</p>
-          <p>Dibangun dari digitalisasi Main Sheet Ormawa Visit (eks Google Sheets).</p>
+          <p>
+            Ada pertanyaan atau masukan? Hubungi{" "}
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              WhatsApp
+            </a>.
+          </p>
         </CardContent>
       </Card>
     </div>

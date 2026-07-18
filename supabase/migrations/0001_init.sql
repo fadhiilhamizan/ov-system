@@ -53,6 +53,7 @@ create table if not exists events (
 -- ---------- members ----------
 create table if not exists members (
   id uuid primary key default gen_random_uuid(),
+  event_id text references events(id) on delete set null,
   name text not null,
   nickname text,
   nrp text,

@@ -24,7 +24,7 @@ for (const e of seed.events)
 
 out += `\n-- members\n`;
 for (const m of seed.members)
-  out += `insert into members(name,nickname,nrp,type,year,division) values (${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(m.division)});\n`;
+  out += `insert into members(event_id,name,nickname,nrp,type,year,division) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(m.division)});\n`;
 
 out += `\n-- tasks\n`;
 for (const t of seed.tasks)

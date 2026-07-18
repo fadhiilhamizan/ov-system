@@ -50,9 +50,3 @@ export function mutate<T>(fn: (db: Database) => T): T {
   persist();
   return result;
 }
-
-/** Reset the local store back to the original Excel seed. */
-export function resetDb() {
-  cache = clone(seed) as unknown as Database;
-  persist();
-}

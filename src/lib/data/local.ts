@@ -45,8 +45,9 @@ export function getDefaultEvent(): OVEvent {
 }
 
 // ---------------- Members ----------------
-export function getMembers(): Member[] {
-  return getDb().members;
+export function getMembers(eventId?: string): Member[] {
+  const list = getDb().members;
+  return eventId ? list.filter((m) => !m.event_id || m.event_id === eventId) : list;
 }
 
 // ---------------- Tasks ----------------
@@ -372,6 +373,7 @@ export function deleteEvent(id: string) {
 export function createMember(input: Partial<Member>): Member {
   const m: Member = {
     id: uid("m"),
+    event_id: input.event_id ?? null,
     name: input.name ?? "",
     nickname: input.nickname ?? "",
     nrp: input.nrp ?? "",
