@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 
 const STATUS_LABEL: Record<OVEvent["status"], { label: string; variant: "success" | "warning" | "info" }> = {
   active: { label: "Aktif", variant: "success" },
@@ -21,6 +22,7 @@ const STATUS_LABEL: Record<OVEvent["status"], { label: string; variant: "success
 };
 
 export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeId: string }) {
+  const t = useT();
   const [pending, start] = React.useTransition();
   const active = events.find((e) => e.id === activeId) ?? events[0];
   return (
@@ -36,14 +38,14 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
         </span>
         <div className="hidden min-w-0 leading-tight md:block">
           <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Ormawa Visit
+            {t("Ormawa Visit")}
           </div>
           <div className="truncate text-xs font-semibold">{active?.title}</div>
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
-        <DropdownMenuLabel>Pilih Ormawa Visit</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("Pilih Ormawa Visit")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {events.map((e) => {
           const st = STATUS_LABEL[e.status];
@@ -62,7 +64,7 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
                   {e.cabinet} · {e.code}
                 </div>
               </div>
-              <Badge variant={st.variant}>{st.label}</Badge>
+              <Badge variant={st.variant}>{t(st.label)}</Badge>
             </DropdownMenuItem>
           );
         })}

@@ -93,7 +93,7 @@ export function TasksView({
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-auto min-w-[130px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("Status")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("Semua Status")}</SelectItem>

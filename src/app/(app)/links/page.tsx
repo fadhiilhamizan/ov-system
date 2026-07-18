@@ -4,6 +4,7 @@ import { getLinks, getEvents, getDivisions, getTeams } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { LinksView } from "@/components/links/links-view";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Super Link" };
 
@@ -16,12 +17,13 @@ export default async function LinksPage() {
     getDivisions(),
     getTeams(),
   ]);
+  const t = await getT();
 
   return (
     <div>
       <PageHeader
-        title="Super Link"
-        description="Kumpulan dokumen, form, dan drive penting Ormawa Visit, dikelompokkan per Ormawa Visit & divisi."
+        title={t("Super Link")}
+        description={t("Kumpulan dokumen, form, dan drive penting Ormawa Visit, dikelompokkan per Ormawa Visit & divisi.")}
       />
       <LinksView
         links={links}

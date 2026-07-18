@@ -5,6 +5,7 @@ import { getDivisions, getEvents, getMembers, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { MembersView } from "@/components/members/members-view";
 import { Badge } from "@/components/ui/badge";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Anggota & Tim" };
 
@@ -16,12 +17,13 @@ export default async function MembersPage() {
     getDivisions(),
     getEvents(),
   ]);
+  const t = await getT();
 
   return (
     <div>
       <PageHeader
-        title="Anggota & Struktur Tim"
-        description="Daftar fungsionaris & intern External Affairs, serta pembagian tim per divisi."
+        title={t("Anggota & Struktur Tim")}
+        description={t("Daftar fungsionaris & intern External Affairs, serta pembagian tim per divisi.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <MembersView

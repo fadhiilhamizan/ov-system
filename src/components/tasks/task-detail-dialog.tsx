@@ -12,9 +12,11 @@ import { DivisionBadge } from "@/components/division-badge";
 import { StatusMenu } from "./status-menu";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, isUrl } from "@/lib/format";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
 function ResultValue({ value }: { value: string }) {
+  const t = useT();
   if (!value) return <span className="text-muted-foreground">-</span>;
   const parts = value.split(/\s+/).filter(Boolean);
   const urls = parts.filter(isUrl);
@@ -29,7 +31,7 @@ function ResultValue({ value }: { value: string }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-muted"
         >
-          <ExternalLink className="size-3.5" /> Tautan {urls.length > 1 ? i + 1 : "hasil"}
+          <ExternalLink className="size-3.5" /> {t("Tautan")} {urls.length > 1 ? i + 1 : t("hasil")}
         </a>
       ))}
     </div>
@@ -49,6 +51,7 @@ export function TaskDetailDialog({
   user: AppUser;
   children: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -67,20 +70,20 @@ export function TaskDetailDialog({
             <Field icon={<User />} label="PIC">
               {task.pic || "-"}
             </Field>
-            <Field icon={<Hash />} label="Nomor">
+            <Field icon={<Hash />} label={t("Nomor")}>
               {task.no || "-"}
             </Field>
-            <Field icon={<CalendarDays />} label="Mulai">
+            <Field icon={<CalendarDays />} label={t("Mulai")}>
               {formatDate(task.start_date) ?? task.start_raw ?? "-"}
             </Field>
-            <Field icon={<CalendarDays />} label="Deadline">
+            <Field icon={<CalendarDays />} label={t("Deadline")}>
               {formatDate(task.end_date) ?? task.end_raw ?? "-"}
             </Field>
           </div>
 
           {task.notes && (
             <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Important Notes</p>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{t("Important Notes")}</p>
               <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 text-sm leading-relaxed">
                 {task.notes}
               </p>
@@ -89,7 +92,7 @@ export function TaskDetailDialog({
 
           <div>
             <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Link2 className="size-3.5" /> Result / Hasil
+              <Link2 className="size-3.5" /> {t("Result / Hasil")}
             </p>
             <ResultValue value={task.result} />
           </div>

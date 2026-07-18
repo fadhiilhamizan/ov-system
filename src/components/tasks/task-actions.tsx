@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { TaskFormDialog } from "./task-form-dialog";
 import { can } from "@/lib/permissions";
 import { deleteTaskAction } from "@/lib/actions/tasks";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
 export function TaskActions({
@@ -36,6 +37,7 @@ export function TaskActions({
   activeEventId: string;
   user: AppUser;
 }) {
+  const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -48,7 +50,7 @@ export function TaskActions({
     start(async () => {
       const res = await deleteTaskAction(task.id);
       if (res.ok) {
-        toast.success("Tugas dihapus");
+        toast.success(t("Tugas dihapus"));
         setDelOpen(false);
       } else toast.error(res.error);
     });
@@ -63,12 +65,12 @@ export function TaskActions({
         <DropdownMenuContent align="end">
           {canEditAny && (
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
-              <Pencil /> Edit
+              <Pencil /> {t("Edit")}
             </DropdownMenuItem>
           )}
           {canDelete && (
             <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}>
-              <Trash2 /> Hapus
+              <Trash2 /> {t("Hapus")}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -88,19 +90,18 @@ export function TaskActions({
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Hapus tugas?</DialogTitle>
+            <DialogTitle>{t("Hapus tugas?")}</DialogTitle>
             <DialogDescription>
-              Tugas <span className="font-medium text-foreground">“{task.title}”</span> akan dihapus
-              permanen. Tindakan ini tidak dapat dibatalkan.
+              {t("Tugas")} <span className="font-medium text-foreground">“{task.title}”</span> {t("akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Batal</Button>
+              <Button variant="outline">{t("Batal")}</Button>
             </DialogClose>
             <Button variant="destructive" onClick={doDelete} disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Hapus
+              {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>

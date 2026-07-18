@@ -17,6 +17,7 @@ import {
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { BudgetPlan, OVEvent } from "@/lib/types";
 
 const CATEGORY_PRESETS = ["KONSUMSI", "TRANSPORTASI & AKOMODASI", "PERALATAN & CETAKAN", "PEMINJAMAN TEMPAT", "LAIN-LAIN"];
@@ -34,6 +35,7 @@ function catColor(c: string) {
 }
 
 export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEvent[]; defaultEventId: string }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   const [name, setName] = React.useState("");
@@ -42,7 +44,7 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
   function submit() {
     start(async () => {
       const res = await createBudgetPlanAction({ name, event_id: eventId });
-      if (res.ok) { toast.success("Rencana anggaran ditambahkan"); setOpen(false); setName(""); }
+      if (res.ok) { toast.success(t("Rencana anggaran ditambahkan")); setOpen(false); setName(""); }
       else toast.error(res.error);
     });
   }
@@ -50,20 +52,20 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button><Plus className="size-4" /> Tambah Rencana</Button>
+        <Button><Plus className="size-4" /> {t("Tambah Rencana")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Tambah Rencana Anggaran</DialogTitle>
-          <DialogDescription>Buat skenario RAB baru (mis. "RAB Maksimal", "RAB Fix").</DialogDescription>
+          <DialogTitle>{t("Tambah Rencana Anggaran")}</DialogTitle>
+          <DialogDescription>{t('Buat skenario RAB baru (mis. "RAB Maksimal", "RAB Fix").')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label>Nama rencana <span className="text-danger">*</span></Label>
+            <Label>{t("Nama rencana")} <span className="text-danger">*</span></Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="RAB Maksimal" />
           </div>
           <div className="grid gap-1.5">
-            <Label>Ormawa Visit <span className="text-danger">*</span></Label>
+            <Label>{t("Ormawa Visit")} <span className="text-danger">*</span></Label>
             <Select value={eventId} onValueChange={setEventId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -73,9 +75,9 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending || !name.trim()}>
-            {pending && <Loader2 className="size-4 animate-spin" />} Tambah
+            {pending && <Loader2 className="size-4 animate-spin" />} {t("Tambah")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -84,6 +86,7 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
 }
 
 function AddItemDialog({ planId, categories }: { planId: string; categories: string[] }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   const [f, setF] = React.useState({ category: categories[0] ?? "LAIN-LAIN", name: "", qty: "", unit: "", unit_price: "" });
@@ -99,7 +102,7 @@ function AddItemDialog({ planId, categories }: { planId: string; categories: str
         unit_price: f.unit_price ? Number(f.unit_price) : null,
       });
       if (res.ok) {
-        toast.success("Item ditambahkan");
+        toast.success(t("Item ditambahkan"));
         setOpen(false);
         setF({ category: f.category, name: "", qty: "", unit: "", unit_price: "" });
       } else toast.error(res.error);
@@ -109,41 +112,41 @@ function AddItemDialog({ planId, categories }: { planId: string; categories: str
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm"><Plus className="size-3.5" /> Tambah Item</Button>
+        <Button variant="outline" size="sm"><Plus className="size-3.5" /> {t("Tambah Item")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Tambah Item Anggaran</DialogTitle>
+          <DialogTitle>{t("Tambah Item Anggaran")}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
-            <Label>Kategori</Label>
+            <Label>{t("Kategori")}</Label>
             <Input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value.toUpperCase() })} list="budget-categories" />
             <datalist id="budget-categories">{allCategories.map((c) => <option key={c} value={c} />)}</datalist>
           </div>
           <div className="grid gap-1.5">
-            <Label>Nama item <span className="text-danger">*</span></Label>
+            <Label>{t("Nama item")} <span className="text-danger">*</span></Label>
             <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Konsumsi Peserta" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-1.5">
-              <Label>Qty</Label>
+              <Label>{t("Qty")}</Label>
               <Input type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} />
             </div>
             <div className="grid gap-1.5">
-              <Label>Satuan</Label>
+              <Label>{t("Satuan")}</Label>
               <Input value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} placeholder="Kotak" />
             </div>
             <div className="grid gap-1.5">
-              <Label>Harga satuan</Label>
+              <Label>{t("Harga satuan")}</Label>
               <Input type="number" value={f.unit_price} onChange={(e) => setF({ ...f, unit_price: e.target.value })} />
             </div>
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending || !f.name.trim()}>
-            {pending && <Loader2 className="size-4 animate-spin" />} Tambah
+            {pending && <Loader2 className="size-4 animate-spin" />} {t("Tambah")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -152,6 +155,7 @@ function AddItemDialog({ planId, categories }: { planId: string; categories: str
 }
 
 function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -166,15 +170,15 @@ function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
       </DialogTrigger>
       <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Hapus rencana anggaran?</DialogTitle>
-          <DialogDescription>&ldquo;{plan.name}&rdquo; beserta seluruh itemnya akan dihapus permanen.</DialogDescription>
+          <DialogTitle>{t("Hapus rencana anggaran?")}</DialogTitle>
+          <DialogDescription>&ldquo;{plan.name}&rdquo; {t("beserta seluruh itemnya akan dihapus permanen.")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button variant="destructive" disabled={pending} onClick={() => start(async () => {
             const res = await deleteBudgetPlanAction(plan.id);
-            if (res.ok) { toast.success("Rencana anggaran dihapus"); setOpen(false); } else toast.error(res.error);
-          })}>{pending && <Loader2 className="size-4 animate-spin" />}Hapus</Button>
+            if (res.ok) { toast.success(t("Rencana anggaran dihapus")); setOpen(false); } else toast.error(res.error);
+          })}>{pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -182,6 +186,7 @@ function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
 }
 
 function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: string }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -193,16 +198,16 @@ function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: stri
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Hapus item?</DialogTitle>
-          <DialogDescription>&ldquo;{itemName}&rdquo; akan dihapus dari rencana anggaran ini.</DialogDescription>
+          <DialogTitle>{t("Hapus item?")}</DialogTitle>
+          <DialogDescription>&ldquo;{itemName}&rdquo; {t("akan dihapus dari rencana anggaran ini.")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button variant="destructive" disabled={pending} onClick={() => start(async () => {
             const res = await deleteBudgetItemAction(itemId);
-            if (res.ok) toast.success("Item dihapus"); else toast.error(res.error);
+            if (res.ok) toast.success(t("Item dihapus")); else toast.error(res.error);
             setOpen(false);
-          })}>{pending && <Loader2 className="size-4 animate-spin" />}Hapus</Button>
+          })}>{pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -268,6 +273,7 @@ function PlanCard({
   canManage: boolean;
   onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = React.useState(true);
   const grand = plan.items.reduce((s, i) => s + (i.total ?? 0), 0);
 
@@ -298,13 +304,13 @@ function PlanCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-semibold">{plan.name}</h3>
             {event && <Badge variant="outline">{event.code}</Badge>}
-            {scenario && <Badge variant={scenario === "max" ? "warning" : "success"}>{scenario === "max" ? "Maksimal" : "Minimal"}</Badge>}
+            {scenario && <Badge variant={scenario === "max" ? "warning" : "success"}>{scenario === "max" ? t("Maksimal") : t("Minimal")}</Badge>}
           </div>
-          <p className="text-xs text-muted-foreground">{plan.items.length} item · {cats.length} kategori</p>
+          <p className="text-xs text-muted-foreground">{plan.items.length} {t("item")} · {cats.length} {t("kategori")}</p>
         </div>
         <div className="text-right">
           <div className="text-lg font-bold tabular-nums">{formatRupiah(grand)}</div>
-          <div className="text-[11px] text-muted-foreground">Total</div>
+          <div className="text-[11px] text-muted-foreground">{t("Total")}</div>
         </div>
         {canManage && <DeletePlanButton plan={plan} />}
         <ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition", open && "rotate-180")} />
@@ -332,11 +338,11 @@ function PlanCard({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-5 py-2 text-left font-medium">Item</th>
-                  <th className="px-2 py-2 text-right font-medium">Qty</th>
-                  <th className="px-2 py-2 text-left font-medium">Satuan</th>
-                  <th className="px-2 py-2 text-right font-medium">Harga</th>
-                  <th className="px-5 py-2 text-right font-medium">Total</th>
+                  <th className="px-5 py-2 text-left font-medium">{t("Item")}</th>
+                  <th className="px-2 py-2 text-right font-medium">{t("Qty")}</th>
+                  <th className="px-2 py-2 text-left font-medium">{t("Satuan")}</th>
+                  <th className="px-2 py-2 text-right font-medium">{t("Harga")}</th>
+                  <th className="px-5 py-2 text-right font-medium">{t("Total")}</th>
                   {canManage && <th className="w-8" />}
                 </tr>
               </thead>
@@ -375,14 +381,14 @@ function PlanCard({
                       </tr>
                     ))}
                     <tr className="border-b border-border">
-                      <td colSpan={4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">Subtotal {c.name}</td>
+                      <td colSpan={4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
                       <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums">{formatRupiah(c.subtotal)}</td>
                       {canManage && <td />}
                     </tr>
                   </React.Fragment>
                 ))}
                 <tr className="bg-muted/40">
-                  <td colSpan={4} className="px-5 py-2.5 text-right font-semibold">Total Pengeluaran</td>
+                  <td colSpan={4} className="px-5 py-2.5 text-right font-semibold">{t("Total Pengeluaran")}</td>
                   <td className="px-5 py-2.5 text-right text-base font-bold tabular-nums">{formatRupiah(grand)}</td>
                   {canManage && <td />}
                 </tr>

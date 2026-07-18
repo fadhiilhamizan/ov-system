@@ -25,11 +25,13 @@ import { ProspectActions } from "./prospect-actions";
 import { PIPELINE_STAGES, prospectStage } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Prospect } from "@/lib/types";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
 
 function StageBadge({ p }: { p: Prospect }) {
+  const t = useT();
   const s = STAGE_MAP[prospectStage(p)];
   return (
     <span
@@ -37,7 +39,7 @@ function StageBadge({ p }: { p: Prospect }) {
       style={{ color: s.color, backgroundColor: `color-mix(in srgb, ${s.color} 14%, transparent)` }}
     >
       <span className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-      {s.label}
+      {t(s.label)}
     </span>
   );
 }
@@ -51,6 +53,7 @@ export function ProspectsView({
   user: AppUser;
   activeEventId: string;
 }) {
+  const t = useT();
   const manage = can.manageProspects(user);
   const batches = React.useMemo(() => [...new Set(prospects.map((p) => p.batch))], [prospects]);
   const [view, setView] = React.useState<"table" | "board">("table");
@@ -120,14 +123,14 @@ export function ProspectsView({
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <div className="relative min-w-[180px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari himpunan, kampus, PIC…" className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari himpunan, kampus, PIC…")} className="pl-9" />
           </div>
           <Select value={batch} onValueChange={setBatch}>
             <SelectTrigger className="w-auto min-w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Batch</SelectItem>
+              <SelectItem value="all">{t("Semua Batch")}</SelectItem>
               {batches.map((b) => (
                 <SelectItem key={b} value={b}>
                   {b}
@@ -140,17 +143,17 @@ export function ProspectsView({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Tahap</SelectItem>
+              <SelectItem value="all">{t("Semua Tahap")}</SelectItem>
               {PIPELINE_STAGES.map((s) => (
                 <SelectItem key={s.key} value={s.key}>
-                  {s.label}
+                  {t(s.label)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={() => { setQ(""); setBatch("all"); setStage("all"); }}>
-              <X className="size-4" /> Reset
+              <X className="size-4" /> {t("Reset")}
             </Button>
           )}
         </div>
@@ -167,7 +170,7 @@ export function ProspectsView({
                 )}
               >
                 {v === "table" ? <Table2 className="size-4" /> : <Columns3 className="size-4" />}
-                <span className="hidden sm:inline">{v === "table" ? "Tabel" : "Pipeline"}</span>
+                <span className="hidden sm:inline">{v === "table" ? t("Tabel") : t("Pipeline")}</span>
               </button>
             ))}
           </div>
@@ -179,7 +182,7 @@ export function ProspectsView({
               trigger={
                 <DialogTrigger asChild>
                   <Button>
-                    <Plus className="size-4" /> <span className="hidden sm:inline">Tambah</span>
+                    <Plus className="size-4" /> <span className="hidden sm:inline">{t("Tambah")}</span>
                   </Button>
                 </DialogTrigger>
               }
@@ -188,7 +191,7 @@ export function ProspectsView({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">{filtered.length} prospek</p>
+      <p className="text-xs text-muted-foreground">{filtered.length} {t("prospek")}</p>
 
       {view === "table" ? (
         filtered.length ? (
@@ -196,12 +199,12 @@ export function ProspectsView({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortHead k="org_name">Himpunan</SortHead>
-                  <SortHead k="campus">Kampus</SortHead>
-                  <SortHead k="contact">Kontak</SortHead>
-                  <SortHead k="pic">PIC</SortHead>
-                  <SortHead k="stage">Tahap</SortHead>
-                  <SortHead k="batch">Batch</SortHead>
+                  <SortHead k="org_name">{t("Himpunan")}</SortHead>
+                  <SortHead k="campus">{t("Kampus")}</SortHead>
+                  <SortHead k="contact">{t("Kontak")}</SortHead>
+                  <SortHead k="pic">{t("PIC")}</SortHead>
+                  <SortHead k="stage">{t("Tahap")}</SortHead>
+                  <SortHead k="batch">{t("Batch")}</SortHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -225,7 +228,7 @@ export function ProspectsView({
             </Table>
           </div>
         ) : (
-          <EmptyState icon={<Building2 />} title="Tidak ada prospek" description="Sesuaikan filter atau tambah prospek baru." />
+          <EmptyState icon={<Building2 />} title={t("Tidak ada prospek")} description={t("Sesuaikan filter atau tambah prospek baru.")} />
         )
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -235,7 +238,7 @@ export function ProspectsView({
               <div key={s.key} className="rounded-xl border border-border bg-muted/30">
                 <div className="flex items-center gap-2 px-3 py-2.5">
                   <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
-                  <span className="text-sm font-semibold">{s.label}</span>
+                  <span className="text-sm font-semibold">{t(s.label)}</span>
                   <span className="ml-auto rounded-full bg-card px-2 py-0.5 text-xs text-muted-foreground">{items.length}</span>
                 </div>
                 <div className="flex flex-col gap-2 p-2 pt-0">

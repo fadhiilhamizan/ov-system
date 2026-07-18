@@ -21,6 +21,7 @@ import { setTaskStatusAction } from "@/lib/actions/tasks";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskKanban({
@@ -36,6 +37,7 @@ export function TaskKanban({
   activeEventId: string;
   user: AppUser;
 }) {
+  const t = useT();
   const [items, setItems] = React.useState(tasks);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   React.useEffect(() => setItems(tasks), [tasks]);
@@ -57,7 +59,7 @@ export function TaskKanban({
     const task = items.find((t) => t.id === id);
     if (!task || task.status === newStatus) return;
     if (!can.editTaskProgress(user, task)) {
-      toast.error("Kamu tidak punya akses mengubah status tugas ini.");
+      toast.error(t("Kamu tidak punya akses mengubah status tugas ini."));
       return;
     }
     setItems((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
@@ -155,6 +157,7 @@ function KanbanCard({
   user: AppUser;
   draggable: boolean;
 }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     disabled: !draggable,
@@ -173,7 +176,7 @@ function KanbanCard({
             {...attributes}
             {...listeners}
             className="mt-0.5 cursor-grab touch-none text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
-            aria-label="Geser"
+            aria-label={t("Geser")}
           >
             <GripVertical className="size-4" />
           </button>

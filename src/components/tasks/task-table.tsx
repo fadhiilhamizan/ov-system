@@ -19,6 +19,7 @@ import { updateTaskAction, bulkSetStatusAction, bulkDeleteTasksAction } from "@/
 import { can } from "@/lib/permissions";
 import { STATUS_ORDER, STATUS_META } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 type SortKey = "no" | "title" | "division" | "pic" | "deadline" | "status";
@@ -37,6 +38,7 @@ export function TaskTable({
   activeEventId: string;
   user: AppUser;
 }) {
+  const tr = useT();
   const divMap = new Map(divisions.map((d) => [d.key, d]));
   const evMap = new Map(events.map((e) => [e.id, e]));
   const [sort, setSort] = React.useState<{ key: SortKey; dir: SortDir } | null>(null);
@@ -76,7 +78,7 @@ export function TaskTable({
 
   if (!tasks.length) {
     return (
-      <EmptyState icon={<ListChecks />} title="Tidak ada tugas" description="Belum ada tugas yang cocok dengan filter saat ini." />
+      <EmptyState icon={<ListChecks />} title={tr("Tidak ada tugas")} description={tr("Belum ada tugas yang cocok dengan filter saat ini.")} />
     );
   }
 
@@ -96,7 +98,7 @@ export function TaskTable({
     const ids = [...selected];
     start(async () => {
       const res = await bulkSetStatusAction(ids, status);
-      if (res.ok) toast.success(`${res.count} tugas -> ${STATUS_META[status].label}`);
+      if (res.ok) toast.success(`${res.count} ${tr("tugas")} -> ${STATUS_META[status].label}`);
       else toast.error(res.error);
     });
   }
@@ -104,7 +106,7 @@ export function TaskTable({
     const ids = [...selected];
     start(async () => {
       const res = await bulkDeleteTasksAction(ids);
-      if (res.ok) toast.success(`${res.count} tugas dihapus`);
+      if (res.ok) toast.success(`${res.count} ${tr("tugas dihapus")}`);
       else toast.error(res.error);
     });
   }
@@ -127,7 +129,7 @@ export function TaskTable({
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-accent/50 px-3 py-2">
-          <span className="text-sm font-medium">{selected.size} terpilih</span>
+          <span className="text-sm font-medium">{selected.size} {tr("terpilih")}</span>
           <span className="mx-1 h-4 w-px bg-border" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -135,7 +137,7 @@ export function TaskTable({
                 disabled={pending}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium transition hover:bg-muted disabled:opacity-60"
               >
-                {pending ? <Loader2 className="size-3.5 animate-spin" /> : null} Ubah status
+                {pending ? <Loader2 className="size-3.5 animate-spin" /> : null} {tr("Ubah status")}
                 <ChevronDown className="size-3.5 opacity-70" />
               </button>
             </DropdownMenuTrigger>
@@ -154,14 +156,14 @@ export function TaskTable({
               disabled={pending}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-danger transition hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-500/10"
             >
-              <Trash2 className="size-3.5" /> Hapus
+              <Trash2 className="size-3.5" /> {tr("Hapus")}
             </button>
           )}
           <button
             onClick={() => setSelected(new Set())}
             className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <X className="size-3.5" /> Batal
+            <X className="size-3.5" /> {tr("Batal")}
           </button>
         </div>
       )}
@@ -172,16 +174,16 @@ export function TaskTable({
             <TableRow className="hover:bg-transparent">
               {canSelect && (
                 <TableHead className="w-9">
-                  <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Pilih semua" />
+                  <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label={tr("Pilih semua")} />
                 </TableHead>
               )}
               <SortHead k="no" className="w-10">#</SortHead>
-              <SortHead k="title" className="min-w-[220px]">Tugas</SortHead>
-              <SortHead k="division">Divisi</SortHead>
-              <SortHead k="pic" className="min-w-[110px]">PIC</SortHead>
-              <SortHead k="deadline">Deadline</SortHead>
-              <SortHead k="status">Status</SortHead>
-              <TableHead className="min-w-[180px]">Hasil</TableHead>
+              <SortHead k="title" className="min-w-[220px]">{tr("Tugas")}</SortHead>
+              <SortHead k="division">{tr("Divisi")}</SortHead>
+              <SortHead k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
+              <SortHead k="deadline">{tr("Deadline")}</SortHead>
+              <SortHead k="status">{tr("Status")}</SortHead>
+              <TableHead className="min-w-[180px]">{tr("Hasil")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -195,7 +197,7 @@ export function TaskTable({
                 <TableRow key={t.id} className={cn(checked && "bg-accent/40")}>
                   {canSelect && (
                     <TableCell>
-                      <Checkbox checked={checked} onCheckedChange={() => toggleOne(t.id)} aria-label="Pilih tugas" />
+                      <Checkbox checked={checked} onCheckedChange={() => toggleOne(t.id)} aria-label={tr("Pilih tugas")} />
                     </TableCell>
                   )}
                   <TableCell className="text-xs text-muted-foreground">{t.no || "-"}</TableCell>
@@ -231,6 +233,7 @@ export function TaskTable({
 
 /** Inline result editor - lets assignees drop a link/result without opening Edit. */
 function ResultCell({ task, user }: { task: Task; user: AppUser }) {
+  const tr = useT();
   const canEdit = can.editTaskProgress(user, task);
   const [val, setVal] = React.useState(task.result ?? "");
   const [pending, start] = React.useTransition();
@@ -241,7 +244,7 @@ function ResultCell({ task, user }: { task: Task; user: AppUser }) {
     if (!task.result) return <span className="text-xs text-muted-foreground">-</span>;
     return isUrl(task.result) ? (
       <a href={task.result} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-        <ExternalLink className="size-3" /> Lihat hasil
+        <ExternalLink className="size-3" /> {tr("Lihat hasil")}
       </a>
     ) : (
       <span className="line-clamp-1 text-xs text-muted-foreground">{task.result}</span>
@@ -268,7 +271,7 @@ function ResultCell({ task, user }: { task: Task; user: AppUser }) {
         onChange={(e) => setVal(e.target.value)}
         onBlur={save}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        placeholder="+ link hasil (Drive/Docs)"
+        placeholder={tr("+ link hasil (Drive/Docs)")}
         className="h-7 w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 text-xs transition hover:border-border focus:border-ring focus:bg-card focus:outline-none"
       />
       {pending ? (

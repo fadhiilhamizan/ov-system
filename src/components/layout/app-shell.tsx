@@ -6,6 +6,7 @@ import { Topbar } from "./topbar";
 import { Logo } from "./logo";
 import type { AppUser, Division, OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 
 export function AppShell({
   user,
@@ -25,6 +26,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const t = useT();
 
   return (
     <div className="min-h-dvh">
@@ -44,7 +46,7 @@ export function AppShell({
             <button
               className="absolute right-3 top-4 z-10 rounded-lg p-1.5 text-sidebar-muted hover:bg-sidebar-accent"
               onClick={() => setMobileOpen(false)}
-              aria-label="Tutup menu"
+              aria-label={t("Tutup menu")}
             >
               <X className="size-5" />
             </button>

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createRundownAction, updateRundownAction, deleteRundownAction } from "@/lib/actions/schedule";
+import { useT } from "@/lib/i18n/provider";
 import type { RundownItem } from "@/lib/types";
 
 function RundownFormDialog({
@@ -24,6 +25,7 @@ function RundownFormDialog({
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
 }) {
+  const t = useT();
   const [io, setIo] = React.useState(false);
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
@@ -48,7 +50,7 @@ function RundownFormDialog({
       const res = mode === "create"
         ? await createRundownAction({ ...f, event_id: eventId, variant })
         : await updateRundownAction(item!.id, f);
-      if (res.ok) { toast.success(mode === "create" ? "Agenda ditambahkan" : "Agenda diperbarui"); setOpen(false); }
+      if (res.ok) { toast.success(mode === "create" ? t("Agenda ditambahkan") : t("Agenda diperbarui")); setOpen(false); }
       else toast.error(res.error);
     });
   }
@@ -63,32 +65,32 @@ function RundownFormDialog({
       {trigger}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Tambah Agenda Rundown" : "Edit Agenda Rundown"}</DialogTitle>
-          <DialogDescription>Satu baris susunan acara (Juklak-Juknis).</DialogDescription>
+          <DialogTitle>{mode === "create" ? t("Tambah Agenda Rundown") : t("Edit Agenda Rundown")}</DialogTitle>
+          <DialogDescription>{t("Satu baris susunan acara (Juklak-Juknis).")}</DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[65vh] gap-4 overflow-y-auto px-0.5 py-1">
           <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5"><Label>Jam mulai</Label><Input value={f.time_start} onChange={(e) => setF({ ...f, time_start: e.target.value })} placeholder="08.00" /></div>
-            <div className="grid gap-1.5"><Label>Jam selesai</Label><Input value={f.time_end} onChange={(e) => setF({ ...f, time_end: e.target.value })} placeholder="08.30" /></div>
-            <div className="grid gap-1.5"><Label>Durasi</Label><Input value={f.duration} onChange={(e) => setF({ ...f, duration: e.target.value })} placeholder="30'" /></div>
+            <div className="grid gap-1.5"><Label>{t("Jam mulai")}</Label><Input value={f.time_start} onChange={(e) => setF({ ...f, time_start: e.target.value })} placeholder="08.00" /></div>
+            <div className="grid gap-1.5"><Label>{t("Jam selesai")}</Label><Input value={f.time_end} onChange={(e) => setF({ ...f, time_end: e.target.value })} placeholder="08.30" /></div>
+            <div className="grid gap-1.5"><Label>{t("Durasi")}</Label><Input value={f.duration} onChange={(e) => setF({ ...f, duration: e.target.value })} placeholder="30'" /></div>
           </div>
-          <div className="grid gap-1.5"><Label>Kegiatan</Label><Input value={f.activity} onChange={(e) => setF({ ...f, activity: e.target.value })} placeholder="Registrasi peserta" /></div>
+          <div className="grid gap-1.5"><Label>{t("Kegiatan")}</Label><Input value={f.activity} onChange={(e) => setF({ ...f, activity: e.target.value })} placeholder={t("Registrasi peserta")} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5"><Label>Pengisi acara</Label><Input value={f.host} onChange={(e) => setF({ ...f, host: e.target.value })} /></div>
+            <div className="grid gap-1.5"><Label>{t("Pengisi acara")}</Label><Input value={f.host} onChange={(e) => setF({ ...f, host: e.target.value })} /></div>
             <div className="grid gap-1.5"><Label>MC</Label><Input value={f.mc} onChange={(e) => setF({ ...f, mc: e.target.value })} /></div>
           </div>
-          <div className="grid gap-1.5"><Label>Keterangan</Label><Input value={f.keterangan} onChange={(e) => setF({ ...f, keterangan: e.target.value })} /></div>
-          <div className="grid gap-1.5"><Label>Link kebutuhan Operator</Label><Input value={f.opr_link} onChange={(e) => setF({ ...f, opr_link: e.target.value })} /></div>
+          <div className="grid gap-1.5"><Label>{t("Keterangan")}</Label><Input value={f.keterangan} onChange={(e) => setF({ ...f, keterangan: e.target.value })} /></div>
+          <div className="grid gap-1.5"><Label>{t("Link kebutuhan Operator")}</Label><Input value={f.opr_link} onChange={(e) => setF({ ...f, opr_link: e.target.value })} /></div>
           <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-muted/30 p-3 sm:grid-cols-2">
             {jobs.map(([k, label]) => (
-              <div key={k} className="grid gap-1"><Label>{label}</Label><Textarea value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className="min-h-[44px] text-xs" /></div>
+              <div key={k} className="grid gap-1"><Label>{t(label)}</Label><Textarea value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className="min-h-[44px] text-xs" /></div>
             ))}
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending || !f.activity.trim()}>
-            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? "Tambah" : "Simpan"}
+            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? t("Tambah") : t("Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -97,14 +99,16 @@ function RundownFormDialog({
 }
 
 export function AddRundownButton({ eventId, variant }: { eventId: string; variant: string }) {
+  const t = useT();
   return (
     <RundownFormDialog mode="create" eventId={eventId} variant={variant} trigger={
-      <DialogTrigger asChild><Button size="sm"><Plus className="size-4" /> Tambah Agenda</Button></DialogTrigger>
+      <DialogTrigger asChild><Button size="sm"><Plus className="size-4" /> {t("Tambah Agenda")}</Button></DialogTrigger>
     } />
   );
 }
 
 export function RundownActions({ item, eventId }: { item: RundownItem; eventId: string }) {
+  const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -114,11 +118,11 @@ export function RundownActions({ item, eventId }: { item: RundownItem; eventId: 
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> Edit</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => start(async () => {
             const res = await deleteRundownAction(item.id);
-            if (res.ok) toast.success("Agenda dihapus"); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} Hapus</DropdownMenuItem>
+            if (res.ok) toast.success(t("Agenda dihapus")); else toast.error(res.error);
+          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <RundownFormDialog mode="edit" item={item} eventId={eventId} variant={item.variant} open={editOpen} onOpenChange={setEditOpen} />

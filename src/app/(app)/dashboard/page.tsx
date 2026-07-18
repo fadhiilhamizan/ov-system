@@ -32,6 +32,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { DivisionBadge } from "@/components/division-badge";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty";
+import { getT } from "@/lib/i18n/server";
 import type { DivisionKey, TaskStatus } from "@/lib/types";
 
 const STATUS_HEX: Record<TaskStatus, string> = {
@@ -52,6 +53,7 @@ export default async function DashboardPage() {
     getMembers(),
   ]);
   const memberCount = members.length;
+  const t = await getT();
 
   const attention = stats.by.ongoing + stats.by.overtime;
 
@@ -73,10 +75,10 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        title={`Halo, ${user.name.split(" ")[0]} 👋`}
+        title={`${t("Halo,")} ${user.name.split(" ")[0]} 👋`}
         description={
           <>
-            Ringkasan progres untuk <span className="font-medium text-foreground">{event.title}</span> ·{" "}
+            {t("Ringkasan progres untuk")} <span className="font-medium text-foreground">{event.title}</span> ·{" "}
             {event.cabinet}
           </>
         }
@@ -85,7 +87,7 @@ export default async function DashboardPage() {
             href="/tasks"
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110"
           >
-            Buka Work Breakdown <ArrowUpRight className="size-4" />
+            {t("Buka Work Breakdown")} <ArrowUpRight className="size-4" />
           </Link>
         }
       />
@@ -93,30 +95,30 @@ export default async function DashboardPage() {
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Total Tugas"
+          label={t("Total Tugas")}
           value={stats.total}
-          sub={`${divStats.length} divisi aktif`}
+          sub={`${divStats.length} ${t("divisi aktif")}`}
           icon={<ListChecks />}
           accent="#6366f1"
         />
         <StatCard
-          label="Progress"
+          label={t("Progress")}
           value={`${stats.progress}%`}
-          sub={`${stats.by.done} dari ${stats.total} selesai`}
+          sub={`${stats.by.done} ${t("dari")} ${stats.total} ${t("selesai")}`}
           icon={<TrendingUp />}
           accent="#10b981"
         />
         <StatCard
-          label="Perlu Perhatian"
+          label={t("Perlu Perhatian")}
           value={attention}
           sub={`${stats.by.overtime} overtime · ${stats.by.ongoing} on going`}
           icon={<AlertTriangle />}
           accent="#f59e0b"
         />
         <StatCard
-          label="Anggaran Edisi"
+          label={t("Anggaran Edisi")}
           value={formatRupiah(budget)}
-          sub="Total rencana pengeluaran"
+          sub={t("Total rencana pengeluaran")}
           icon={<Wallet />}
           accent="#0ea5e9"
         />
@@ -126,8 +128,8 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Progres Keseluruhan</CardTitle>
-            <Badge variant="outline">{stats.total} tugas</Badge>
+            <CardTitle>{t("Progres Keseluruhan")}</CardTitle>
+            <Badge variant="outline">{stats.total} {t("tugas")}</Badge>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
@@ -135,10 +137,10 @@ export default async function DashboardPage() {
                 <DonutChart
                   data={donutData}
                   centerLabel={`${stats.progress}%`}
-                  centerSub="Selesai"
+                  centerSub={t("Selesai")}
                 />
               ) : (
-                <div className="text-sm text-muted-foreground">Belum ada tugas.</div>
+                <div className="text-sm text-muted-foreground">{t("Belum ada tugas.")}</div>
               )}
               <div className="grid flex-1 grid-cols-2 gap-3">
                 {(["done", "ongoing", "overtime", "todo"] as TaskStatus[]).map((s) => (
@@ -157,24 +159,24 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Reach & Offer Himpunan</CardTitle>
+            <CardTitle>{t("Reach & Offer Himpunan")}</CardTitle>
             <Link href="/prospects" className="text-xs text-primary hover:underline">
-              Lihat semua
+              {t("Lihat semua")}
             </Link>
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-baseline gap-2">
               <span className="text-3xl font-bold tabular-nums">{pstats.total}</span>
-              <span className="text-sm text-muted-foreground">himpunan direach</span>
+              <span className="text-sm text-muted-foreground">{t("himpunan direach")}</span>
               <Badge variant="success" className="ml-auto">
-                <Target className="size-3" /> {accepted} diterima
+                <Target className="size-3" /> {accepted} {t("diterima")}
               </Badge>
             </div>
             <div className="space-y-2.5">
               {stageCounts.map((s) => (
                 <div key={s.key} className="flex items-center gap-3">
                   <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-                  <span className="flex-1 text-sm">{s.label}</span>
+                  <span className="flex-1 text-sm">{t(s.label)}</span>
                   <span className="text-sm font-semibold tabular-nums">{s.count}</span>
                   <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                     <div
@@ -196,7 +198,7 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Progres per Divisi</CardTitle>
+            <CardTitle>{t("Progres per Divisi")}</CardTitle>
           </CardHeader>
           <CardContent>
             {divStats.length ? (
@@ -219,14 +221,14 @@ export default async function DashboardPage() {
                 }))}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">Belum ada data divisi.</p>
+              <p className="text-sm text-muted-foreground">{t("Belum ada data divisi.")}</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Deadline Terdekat</CardTitle>
+            <CardTitle>{t("Deadline Terdekat")}</CardTitle>
             <CalendarClock className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="space-y-2">
@@ -257,8 +259,8 @@ export default async function DashboardPage() {
             ) : (
               <EmptyState
                 icon={<CalendarClock />}
-                title="Tidak ada deadline aktif"
-                description="Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini."
+                title={t("Tidak ada deadline aktif")}
+                description={t("Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini.")}
               />
             )}
           </CardContent>
@@ -269,16 +271,16 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Ringkasan Ormawa Visit</CardTitle>
+            <CardTitle>{t("Ringkasan Ormawa Visit")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <InfoRow icon={<CalendarDays />} label="Tanggal" value={formatDate(event.event_date, { long: true }) ?? "Belum ditentukan"} />
-            <InfoRow icon={<MapPin />} label="Lokasi" value={event.location} />
-            <InfoRow icon={<Target />} label="Partner" value={`${event.partner} · ${event.campus}`} />
-            <InfoRow icon={<Users />} label="Anggota EA" value={`${memberCount} orang`} />
+            <InfoRow icon={<CalendarDays />} label={t("Tanggal")} value={formatDate(event.event_date, { long: true }) ?? t("Belum ditentukan")} />
+            <InfoRow icon={<MapPin />} label={t("Lokasi")} value={event.location} />
+            <InfoRow icon={<Target />} label={t("Partner")} value={`${event.partner} · ${event.campus}`} />
+            <InfoRow icon={<Users />} label={t("Anggota EA")} value={`${memberCount} ${t("orang")}`} />
             <div className="flex items-center gap-2 pt-1">
               <Badge variant={event.type === "internal" ? "info" : "primary"}>
-                {event.type === "internal" ? "Internal ITS" : "Eksternal"}
+                {event.type === "internal" ? t("Internal ITS") : t("Eksternal")}
               </Badge>
               <Badge variant="outline">{event.mode === "offline" ? "Offline" : "Online"}</Badge>
               <Badge variant="outline">{event.cabinet}</Badge>
@@ -288,7 +290,7 @@ export default async function DashboardPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Akses Cepat</CardTitle>
+            <CardTitle>{t("Akses Cepat")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -305,8 +307,8 @@ export default async function DashboardPage() {
                     {q.icon}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{q.label}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{q.sub}</p>
+                    <p className="truncate text-sm font-medium">{t(q.label)}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{t(q.sub)}</p>
                   </div>
                 </Link>
               ))}

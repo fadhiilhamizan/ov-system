@@ -20,9 +20,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProspectFormDialog } from "./prospect-form-dialog";
 import { deleteProspectAction } from "@/lib/actions/prospects";
+import { useT } from "@/lib/i18n/provider";
 import type { Prospect } from "@/lib/types";
 
 export function ProspectActions({ prospect, batches, eventId }: { prospect: Prospect; batches: string[]; eventId: string }) {
+  const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -35,10 +37,10 @@ export function ProspectActions({ prospect, batches, eventId }: { prospect: Pros
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}>
-            <Pencil /> Edit
+            <Pencil /> {t("Edit")}
           </DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}>
-            <Trash2 /> Hapus
+            <Trash2 /> {t("Hapus")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -48,15 +50,14 @@ export function ProspectActions({ prospect, batches, eventId }: { prospect: Pros
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Hapus prospek?</DialogTitle>
+            <DialogTitle>{t("Hapus prospek?")}</DialogTitle>
             <DialogDescription>
-              <span className="font-medium text-foreground">{prospect.org_name || prospect.contact}</span> akan
-              dihapus permanen.
+              <span className="font-medium text-foreground">{prospect.org_name || prospect.contact}</span> {t("akan dihapus permanen.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Batal</Button>
+              <Button variant="outline">{t("Batal")}</Button>
             </DialogClose>
             <Button
               variant="destructive"
@@ -65,14 +66,14 @@ export function ProspectActions({ prospect, batches, eventId }: { prospect: Pros
                 start(async () => {
                   const res = await deleteProspectAction(prospect.id);
                   if (res.ok) {
-                    toast.success("Prospek dihapus");
+                    toast.success(t("Prospek dihapus"));
                     setDelOpen(false);
                   } else toast.error(res.error);
                 })
               }
             >
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Hapus
+              {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>

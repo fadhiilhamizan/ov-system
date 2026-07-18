@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/charts/donut";
 import { AddEventButton, EventActions } from "@/components/events/event-manage";
 import { formatDate, formatRupiah } from "@/lib/format";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Ormawa Visit" };
 
@@ -20,6 +21,7 @@ const STATUS: Record<string, { label: string; variant: "success" | "warning" | "
 
 export default async function EventsPage() {
   const [events, active, user] = await Promise.all([getEvents(), getActiveEvent(), getCurrentUser()]);
+  const t = await getT();
   const manage = can.manageEvents(user);
   const cards = await Promise.all(
     events.map(async (e) => ({
@@ -32,8 +34,8 @@ export default async function EventsPage() {
   return (
     <div>
       <PageHeader
-        title="Daftar Ormawa Visit"
-        description="Riwayat & rencana semua Ormawa Visit lintas kabinet. Ganti yang aktif dari pemilih di kanan atas."
+        title={t("Daftar Ormawa Visit")}
+        description={t("Riwayat & rencana semua Ormawa Visit lintas kabinet. Ganti yang aktif dari pemilih di kanan atas.")}
         actions={manage ? <AddEventButton /> : undefined}
       />
 
@@ -50,9 +52,9 @@ export default async function EventsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={st.variant}>{st.label}</Badge>
+                    <Badge variant={st.variant}>{t(st.label)}</Badge>
                     <Badge variant="outline">{e.code}</Badge>
-                    {isActive && <Badge variant="primary">Sedang dilihat</Badge>}
+                    {isActive && <Badge variant="primary">{t("Sedang dilihat")}</Badge>}
                   </div>
                   <h3 className="mt-2 text-lg font-bold leading-tight">{e.title}</h3>
                   <p className="text-sm text-muted-foreground">{e.cabinet}</p>
@@ -64,15 +66,15 @@ export default async function EventsPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <Info icon={<CalendarRange />} label="Tanggal" value={formatDate(e.event_date, { long: true }) ?? "TBD"} />
-                <Info icon={<MapPin />} label="Lokasi" value={e.location} />
-                <Info icon={<Target />} label="Partner" value={e.partner} />
-                <Info icon={<ListChecks />} label="Tugas" value={`${stats.by.done}/${stats.total} selesai`} />
+                <Info icon={<CalendarRange />} label={t("Tanggal")} value={formatDate(e.event_date, { long: true }) ?? "TBD"} />
+                <Info icon={<MapPin />} label={t("Lokasi")} value={e.location} />
+                <Info icon={<Target />} label={t("Partner")} value={e.partner} />
+                <Info icon={<ListChecks />} label={t("Tugas")} value={`${stats.by.done}/${stats.total} ${t("selesai")}`} />
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs">
                 <Badge variant={e.type === "internal" ? "info" : "primary"}>
-                  {e.type === "internal" ? "Internal ITS" : "Eksternal"}
+                  {e.type === "internal" ? t("Internal ITS") : t("Eksternal")}
                 </Badge>
                 <Badge variant="outline">{e.mode === "offline" ? "Offline" : "Online"}</Badge>
                 {budget > 0 && <span className="ml-auto font-medium text-muted-foreground">RAB {formatRupiah(budget)}</span>}

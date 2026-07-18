@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { useT } from "@/lib/i18n/provider";
 
 export default function LoginPage() {
+  const t = useT();
   const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -60,7 +62,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="password">Kata sandi</Label>
+              <Label htmlFor="password">{t("Kata sandi")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -78,12 +80,12 @@ export default function LoginPage() {
             )}
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}
-              Masuk
+              {t("Masuk")}
             </Button>
           </form>
 
           <div className="my-4 flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> atau <span className="h-px flex-1 bg-border" />
+            <span className="h-px flex-1 bg-border" /> {t("atau")} <span className="h-px flex-1 bg-border" />
           </div>
 
           <Button
@@ -94,11 +96,11 @@ export default function LoginPage() {
             onClick={() => startGuest(() => enterGuestMode())}
           >
             {guestPending ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
-            Masuk sebagai Tamu (hanya lihat)
+            {t("Masuk sebagai Tamu (hanya lihat)")}
           </Button>
         </Card>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Belum punya akun? Hubungi PIC Ormawa Visit untuk dibuatkan.
+          {t("Belum punya akun? Hubungi PIC Ormawa Visit untuk dibuatkan.")}
         </p>
       </div>
     </div>

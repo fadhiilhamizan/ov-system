@@ -15,6 +15,7 @@ import {
   MemberFormDialog, MemberActions, TeamFormDialog, TeamActions,
 } from "./member-manage";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
 export function MembersView({
@@ -36,6 +37,7 @@ export function MembersView({
   canManageMembers: boolean;
   canManageTeams: boolean;
 }) {
+  const tr = useT();
   const [q, setQ] = React.useState("");
   const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
   const divMap = new Map(divisions.map((d) => [d.key, d]));
@@ -53,10 +55,10 @@ export function MembersView({
     <Tabs defaultValue="anggota">
       <TabsList>
         <TabsTrigger value="anggota">
-          <IdCard /> Anggota EA
+          <IdCard /> {tr("Anggota EA")}
         </TabsTrigger>
         <TabsTrigger value="tim">
-          <Users2 /> Struktur Tim
+          <Users2 /> {tr("Struktur Tim")}
         </TabsTrigger>
       </TabsList>
 
@@ -64,14 +66,14 @@ export function MembersView({
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama / NRP…" className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Cari nama / NRP…")} className="pl-9" />
           </div>
           <div className="flex items-center gap-2">
             <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
               {([
-                ["all", `Semua ${members.length}`],
-                ["fungsionaris", `Fungsionaris ${fungCount}`],
-                ["intern", `Intern ${internCount}`],
+                ["all", `${tr("Semua")} ${members.length}`],
+                ["fungsionaris", `${tr("Fungsionaris")} ${fungCount}`],
+                ["intern", `${tr("Intern")} ${internCount}`],
               ] as const).map(([k, label]) => (
                 <button
                   key={k}
@@ -88,7 +90,7 @@ export function MembersView({
             {canManageMembers && (
               <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
                 <DialogTrigger asChild>
-                  <Button><Plus className="size-4" /> <span className="hidden sm:inline">Tambah</span></Button>
+                  <Button><Plus className="size-4" /> <span className="hidden sm:inline">{tr("Tambah")}</span></Button>
                 </DialogTrigger>
               } />
             )}
@@ -100,11 +102,11 @@ export function MembersView({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Nama</TableHead>
+                  <TableHead>{tr("Nama")}</TableHead>
                   <TableHead>NRP</TableHead>
-                  <TableHead>Divisi</TableHead>
-                  <TableHead>Tipe</TableHead>
-                  <TableHead>Angkatan</TableHead>
+                  <TableHead>{tr("Divisi")}</TableHead>
+                  <TableHead>{tr("Tipe")}</TableHead>
+                  <TableHead>{tr("Angkatan")}</TableHead>
                   {canManageMembers && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -126,7 +128,7 @@ export function MembersView({
                       <TableCell>{div ? <DivisionBadge division={div} /> : <span className="text-sm text-muted-foreground">-</span>}</TableCell>
                       <TableCell>
                         <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
-                          {m.type === "fungsionaris" ? "Fungsio" : "Intern"}
+                          {m.type === "fungsionaris" ? tr("Fungsio") : tr("Intern")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{m.year}</TableCell>
@@ -142,17 +144,17 @@ export function MembersView({
             </Table>
           </div>
         ) : (
-          <EmptyState icon={<IdCard />} title="Tidak ditemukan" description="Tidak ada anggota yang cocok." />
+          <EmptyState icon={<IdCard />} title={tr("Tidak ditemukan")} description={tr("Tidak ada anggota yang cocok.")} />
         )}
       </TabsContent>
 
       <TabsContent value="tim">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">Struktur tim untuk {eventTitle}</p>
+          <p className="text-sm text-muted-foreground">{tr("Struktur tim untuk")} {eventTitle}</p>
           {canManageTeams && (
             <TeamFormDialog mode="create" divisions={divisions} members={members} eventId={eventId} trigger={
               <DialogTrigger asChild>
-                <Button size="sm"><Plus className="size-4" /> Tambah Tim</Button>
+                <Button size="sm"><Plus className="size-4" /> {tr("Tambah Tim")}</Button>
               </DialogTrigger>
             } />
           )}
@@ -179,7 +181,7 @@ export function MembersView({
                   </div>
                   {t.fungsionaris && (
                     <div className="mb-2">
-                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Fungsionaris</p>
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{tr("Fungsionaris")}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {t.fungsionaris.split(/\s{2,}|,|·/).filter(Boolean).map((n, i) => (
                           <span key={i} className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.trim()}</span>
@@ -202,7 +204,7 @@ export function MembersView({
             })}
           </div>
         ) : (
-          <EmptyState icon={<Users2 />} title="Belum ada struktur tim" description="Struktur tim untuk Ormawa Visit ini belum diisi." />
+          <EmptyState icon={<Users2 />} title={tr("Belum ada struktur tim")} description={tr("Struktur tim untuk Ormawa Visit ini belum diisi.")} />
         )}
       </TabsContent>
     </Tabs>

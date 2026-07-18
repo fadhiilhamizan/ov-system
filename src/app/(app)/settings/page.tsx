@@ -12,6 +12,7 @@ import { BackupPanel } from "@/components/settings/backup-panel";
 import { ROLE_META, ROLE_ORDER, MODULE_ACCESS } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
 import { formatDate } from "@/lib/format";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Pengaturan" };
 
@@ -19,6 +20,7 @@ const WHATSAPP_URL = "https://wa.me/6281311598126";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
+  const t = await getT();
   const modules = NAV.flatMap((g) => g.items);
   const canBackup = can.manageBackups(user);
   const backupsResult = canBackup ? await listBackupsAction() : null;
@@ -26,8 +28,8 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Pengaturan"
-        description="Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Command Center."
+        title={t("Pengaturan")}
+        description={t("Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Command Center.")}
       />
 
       {/* Under-development notice */}
@@ -38,9 +40,9 @@ export default async function SettingsPage() {
               <Info className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold">Website ini masih dalam pengembangan</p>
+              <p className="text-sm font-semibold">{t("Website ini masih dalam pengembangan")}</p>
               <p className="text-sm text-muted-foreground">
-                Kalau menemukan bug, error, atau punya keluhan/masukan, langsung hubungi lewat WhatsApp.
+                {t("Kalau menemukan bug, error, atau punya keluhan/masukan, langsung hubungi lewat WhatsApp.")}
               </p>
             </div>
           </div>
@@ -50,7 +52,7 @@ export default async function SettingsPage() {
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:brightness-105"
           >
-            <MessageCircle className="size-4" /> Hubungi via WhatsApp
+            <MessageCircle className="size-4" /> {t("Hubungi via WhatsApp")}
           </a>
         </CardContent>
       </Card>
@@ -59,15 +61,15 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader className="flex-row items-center gap-2">
           <UserCircle className="size-4 text-primary" />
-          <CardTitle>Akun Saya</CardTitle>
+          <CardTitle>{t("Akun Saya")}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center gap-3">
           <Avatar name={user.name} color={user.avatarColor} size={44} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email || "Mode tamu"}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email || t("Mode tamu")}</p>
           </div>
-          <Badge variant="outline" className="ml-auto shrink-0">{ROLE_META[user.role].label}</Badge>
+          <Badge variant="outline" className="ml-auto shrink-0">{t(ROLE_META[user.role].label)}</Badge>
         </CardContent>
       </Card>
 
@@ -75,20 +77,20 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader className="flex-row items-center gap-2">
           <Cloud className="size-4 text-primary" />
-          <CardTitle>Status Backend</CardTitle>
+          <CardTitle>{t("Status Backend")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border border-border p-3">
             <div>
-              <p className="text-sm font-medium">Sumber data</p>
+              <p className="text-sm font-medium">{t("Sumber data")}</p>
               <p className="text-xs text-muted-foreground">
                 {USE_SUPABASE
-                  ? "Supabase (cloud) - akun & real-time aktif"
-                  : "Mode demo lokal - data tersimpan di .data/db.json"}
+                  ? t("Supabase (cloud) - akun & real-time aktif")
+                  : t("Mode demo lokal - data tersimpan di .data/db.json")}
               </p>
             </div>
             <Badge variant={USE_SUPABASE ? "success" : "warning"}>
-              {USE_SUPABASE ? "Supabase" : "Demo Lokal"}
+              {USE_SUPABASE ? "Supabase" : t("Demo Lokal")}
             </Badge>
           </div>
         </CardContent>
@@ -99,17 +101,17 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader className="flex-row items-center gap-2">
             <DatabaseBackup className="size-4 text-primary" />
-            <CardTitle>Backup & Rollback</CardTitle>
+            <CardTitle>{t("Backup & Rollback")}</CardTitle>
           </CardHeader>
           <CardContent>
             {!USE_SUPABASE ? (
               <p className="text-sm text-muted-foreground">
-                Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).
+                {t("Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).")}
               </p>
             ) : backupsResult && backupsResult.ok ? (
               <BackupPanel initialBackups={backupsResult.backups} />
             ) : (
-              <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : "Gagal memuat backup."}</p>
+              <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : t("Gagal memuat backup.")}</p>
             )}
           </CardContent>
         </Card>
@@ -119,17 +121,17 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader className="flex-row items-center gap-2">
           <ShieldCheck className="size-4 text-primary" />
-          <CardTitle>Hak Akses per Peran</CardTitle>
+          <CardTitle>{t("Hak Akses per Peran")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th className="py-2 pr-3 text-left font-medium">Modul</th>
+                  <th className="py-2 pr-3 text-left font-medium">{t("Modul")}</th>
                   {ROLE_ORDER.map((r) => (
                     <th key={r} className="px-2 py-2 text-center font-medium">
-                      {ROLE_META[r].label.split(" ")[0]}
+                      {t(ROLE_META[r].label).split(" ")[0]}
                     </th>
                   ))}
                 </tr>
@@ -137,7 +139,7 @@ export default async function SettingsPage() {
               <tbody>
                 {modules.map((m) => (
                   <tr key={m.key} className="border-b border-border/60 last:border-0">
-                    <td className="py-2 pr-3 font-medium">{m.label}</td>
+                    <td className="py-2 pr-3 font-medium">{t(m.label)}</td>
                     {ROLE_ORDER.map((r) => {
                       const allowed = (MODULE_ACCESS[m.key] ?? []).includes(r);
                       return (
@@ -158,8 +160,8 @@ export default async function SettingsPage() {
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ROLE_ORDER.map((r) => (
               <div key={r} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-semibold">{ROLE_META[r].label}</p>
-                <p className="text-xs text-muted-foreground">{ROLE_META[r].description}</p>
+                <p className="text-sm font-semibold">{t(ROLE_META[r].label)}</p>
+                <p className="text-xs text-muted-foreground">{t(ROLE_META[r].description)}</p>
               </div>
             ))}
           </div>
@@ -198,13 +200,13 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader className="flex-row items-center gap-2">
           <Info className="size-4 text-primary" />
-          <CardTitle>Tentang</CardTitle>
+          <CardTitle>{t("Tentang")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
           <p>Ormawa Visit Command Center · v{APP_VERSION} “{APP_CODENAME}”</p>
-          <p>Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.</p>
+          <p>{t("Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.")}</p>
           <p>
-            Ada pertanyaan atau masukan? Hubungi{" "}
+            {t("Ada pertanyaan atau masukan? Hubungi")}{" "}
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               WhatsApp
             </a>.

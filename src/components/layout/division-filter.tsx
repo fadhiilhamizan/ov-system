@@ -12,8 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Division } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 
 export function DivisionFilter({ divisions, active }: { divisions: Division[]; active: string }) {
+  const t = useT();
   const [pending, start] = React.useTransition();
   const current = divisions.find((d) => d.key === active);
 
@@ -36,19 +38,19 @@ export function DivisionFilter({ divisions, active }: { divisions: Division[]; a
           )}
         </span>
         <div className="hidden min-w-0 leading-tight sm:block">
-          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Fokus divisi</div>
-          <div className="truncate text-xs font-semibold">{current?.name ?? "Semua Divisi"}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("Fokus divisi")}</div>
+          <div className="truncate text-xs font-semibold">{current?.name ?? t("Semua Divisi")}</div>
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel>Fokus ke divisi</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("Fokus ke divisi")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => start(() => setActiveDivision("all"))} className="gap-2">
           <span className="flex size-5 items-center justify-center rounded bg-muted text-muted-foreground">
             <LayoutGrid className="size-3" />
           </span>
-          <span className="flex-1">Semua Divisi</span>
+          <span className="flex-1">{t("Semua Divisi")}</span>
           {active === "all" && <Check className="size-3.5 text-primary" />}
         </DropdownMenuItem>
         {divisions.map((d) => (

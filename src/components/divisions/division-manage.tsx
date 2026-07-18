@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createDivisionAction, updateDivisionAction, deleteDivisionAction } from "@/lib/actions/manage";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { Division } from "@/lib/types";
 
 // Ordered by hue (warm -> cool -> violet/pink), neutral gray last.
@@ -48,6 +49,7 @@ function DivisionFormDialog({
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
 }) {
+  const t = useT();
   const [io, setIo] = React.useState(false);
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
@@ -71,7 +73,7 @@ function DivisionFormDialog({
         ...(mode === "create" ? { key: f.key || undefined } : {}),
       };
       const res = mode === "create" ? await createDivisionAction(payload) : await updateDivisionAction(division!.key, payload);
-      if (res.ok) { toast.success(mode === "create" ? "Divisi ditambahkan" : "Divisi diperbarui"); setOpen(false); }
+      if (res.ok) { toast.success(mode === "create" ? t("Divisi ditambahkan") : t("Divisi diperbarui")); setOpen(false); }
       else toast.error(res.error);
     });
   }
@@ -81,28 +83,28 @@ function DivisionFormDialog({
       {trigger}
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Tambah Divisi" : "Edit Divisi"}</DialogTitle>
-          <DialogDescription>Divisi bisa berbeda tiap Ormawa Visit.</DialogDescription>
+          <DialogTitle>{mode === "create" ? t("Tambah Divisi") : t("Edit Divisi")}</DialogTitle>
+          <DialogDescription>{t("Divisi bisa berbeda tiap Ormawa Visit.")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Nama divisi</Label>
+              <Label>{t("Nama divisi")}</Label>
               <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Liaison Officer" />
             </div>
             <div className="grid gap-1.5">
-              <Label>Singkatan</Label>
+              <Label>{t("Singkatan")}</Label>
               <Input value={f.short} onChange={(e) => setF({ ...f, short: e.target.value })} placeholder="LO" maxLength={6} />
             </div>
           </div>
           {mode === "create" && (
             <div className="grid gap-1.5">
-              <Label>Kode unik (opsional)</Label>
+              <Label>{t("Kode unik (opsional)")}</Label>
               <Input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value.toUpperCase() })} placeholder="LO" />
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label>Warna</Label>
+            <Label>{t("Warna")}</Label>
             <div className="flex flex-wrap items-center gap-2">
               {PRESET.map((c) => (
                 <button
@@ -115,7 +117,7 @@ function DivisionFormDialog({
               ))}
               <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="size-7 cursor-pointer rounded" />
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">Versi lebih muda</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{t("Versi lebih muda")}</p>
             <div className="flex flex-wrap items-center gap-2">
               {PRESET_LIGHT.map((c) => (
                 <button
@@ -130,9 +132,9 @@ function DivisionFormDialog({
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending || !f.name.trim()}>
-            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? "Tambah" : "Simpan"}
+            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? t("Tambah") : t("Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -141,16 +143,18 @@ function DivisionFormDialog({
 }
 
 export function AddDivisionButton() {
+  const t = useT();
   return (
     <DivisionFormDialog mode="create" trigger={
       <DialogTrigger asChild>
-        <Button><Plus className="size-4" /> Tambah Divisi</Button>
+        <Button><Plus className="size-4" /> {t("Tambah Divisi")}</Button>
       </DialogTrigger>
     } />
   );
 }
 
 export function DivisionActions({ division }: { division: Division }) {
+  const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -163,11 +167,11 @@ export function DivisionActions({ division }: { division: Division }) {
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> Edit</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => start(async () => {
             const res = await deleteDivisionAction(division.key);
-            if (res.ok) toast.success("Divisi dihapus"); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} Hapus</DropdownMenuItem>
+            if (res.ok) toast.success(t("Divisi dihapus")); else toast.error(res.error);
+          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <DivisionFormDialog mode="edit" division={division} open={editOpen} onOpenChange={setEditOpen} />

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty";
 import { AddRundownButton, RundownActions } from "./rundown-manage";
 import { isUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { RundownItem } from "@/lib/types";
 
 const JOBS: { key: keyof RundownItem; label: string; color: string }[] = [
@@ -26,6 +27,7 @@ export function RundownView({
   eventId: string;
   canManage: boolean;
 }) {
+  const t = useT();
   const variants = React.useMemo(() => {
     const set = [...new Set(items.map((i) => i.variant))].sort();
     return set.length ? set : ["A"];
@@ -41,7 +43,7 @@ export function RundownView({
             <AddRundownButton eventId={eventId} variant="A" />
           </div>
         )}
-        <EmptyState icon={<Clock />} title="Belum ada rundown" description="Rundown acara belum tersedia untuk Ormawa Visit ini." />
+        <EmptyState icon={<Clock />} title={t("Belum ada rundown")} description={t("Rundown acara belum tersedia untuk Ormawa Visit ini.")} />
       </div>
     );
   }
@@ -60,7 +62,7 @@ export function RundownView({
                   variant === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                Versi {v}
+                {t("Versi")} {v}
               </button>
             ))}
           </div>
@@ -106,7 +108,7 @@ export function RundownView({
                 )}
                 {item.opr_link && isUrl(item.opr_link) && (
                   <a href={item.opr_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
-                    <ExternalLink className="size-3" /> Kebutuhan OPR
+                    <ExternalLink className="size-3" /> {t("Kebutuhan OPR")}
                   </a>
                 )}
                 {item.opr_link && !isUrl(item.opr_link) && (
@@ -126,7 +128,7 @@ export function RundownView({
                         style={{ backgroundColor: `color-mix(in srgb, ${j.color} 12%, transparent)`, color: j.color }}
                         title={val}
                       >
-                        <span className="font-semibold">{j.label}:</span>
+                        <span className="font-semibold">{t(j.label)}:</span>
                         <span className="line-clamp-2 max-w-[220px] text-foreground/80">{val}</span>
                       </span>
                     );

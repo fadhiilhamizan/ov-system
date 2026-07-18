@@ -25,6 +25,7 @@ import {
 import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
@@ -52,6 +53,7 @@ export function TaskFormDialog({
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
 }) {
+  const t = useT();
   const [internalOpen, setInternalOpen] = React.useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -99,7 +101,7 @@ export function TaskFormDialog({
           ? await createTaskAction(payload)
           : await updateTaskAction(task!.id, payload);
       if (res.ok) {
-        toast.success(mode === "create" ? "Tugas ditambahkan" : "Tugas diperbarui");
+        toast.success(mode === "create" ? t("Tugas ditambahkan") : t("Tugas diperbarui"));
         setOpen(false);
       } else {
         toast.error(res.error);
@@ -112,11 +114,11 @@ export function TaskFormDialog({
       {trigger}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Tambah Tugas" : "Edit Tugas"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("Tambah Tugas") : t("Edit Tugas")}</DialogTitle>
           <DialogDescription>
             {progressOnly
-              ? "Kamu dapat memperbarui Status & Hasil tugas ini."
-              : "Lengkapi detail tugas pada Work Breakdown Structure."}
+              ? t("Kamu dapat memperbarui Status & Hasil tugas ini.")
+              : t("Lengkapi detail tugas pada Work Breakdown Structure.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -125,13 +127,13 @@ export function TaskFormDialog({
             <>
               <div className="grid gap-1.5">
                 <Label htmlFor="title">
-                  Judul tugas / Job Description <span className="text-danger">*</span>
+                  {t("Judul tugas / Job Description")} <span className="text-danger">*</span>
                 </Label>
                 <Textarea
                   id="title"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Contoh: Pembuatan Rundown Ormawa Visit"
+                  placeholder={t("Contoh: Pembuatan Rundown Ormawa Visit")}
                   className="min-h-[60px]"
                 />
               </div>
@@ -139,7 +141,7 @@ export function TaskFormDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
                   <Label>
-                    Divisi <span className="text-danger">*</span>
+                    {t("Divisi")} <span className="text-danger">*</span>
                   </Label>
                   <Select
                     value={form.division}
@@ -159,7 +161,7 @@ export function TaskFormDialog({
                 </div>
                 <div className="grid gap-1.5">
                   <Label>
-                    Ormawa Visit <span className="text-danger">*</span>
+                    {t("Ormawa Visit")} <span className="text-danger">*</span>
                   </Label>
                   <Select
                     value={form.event_id}
@@ -180,18 +182,18 @@ export function TaskFormDialog({
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="pic">PIC / Penanggung Jawab</Label>
+                <Label htmlFor="pic">{t("PIC / Penanggung Jawab")}</Label>
                 <Input
                   id="pic"
                   value={form.pic}
                   onChange={(e) => setForm({ ...form, pic: e.target.value })}
-                  placeholder="Nama, bisa lebih dari satu (opsional)"
+                  placeholder={t("Nama, bisa lebih dari satu (opsional)")}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="start">Mulai</Label>
+                  <Label htmlFor="start">{t("Mulai")}</Label>
                   <Input
                     id="start"
                     type="date"
@@ -200,7 +202,7 @@ export function TaskFormDialog({
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="end">Deadline</Label>
+                  <Label htmlFor="end">{t("Deadline")}</Label>
                   <Input
                     id="end"
                     type="date"
@@ -211,12 +213,12 @@ export function TaskFormDialog({
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="notes">Important Notes</Label>
+                <Label htmlFor="notes">{t("Important Notes")}</Label>
                 <Textarea
                   id="notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Catatan penting, konteks, atau evaluasi dari OV sebelumnya"
+                  placeholder={t("Catatan penting, konteks, atau evaluasi dari OV sebelumnya")}
                 />
               </div>
             </>
@@ -224,7 +226,7 @@ export function TaskFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label>Status</Label>
+              <Label>{t("Status")}</Label>
               <Select
                 value={form.status}
                 onValueChange={(v) => setForm({ ...form, status: v as TaskStatus })}
@@ -244,12 +246,12 @@ export function TaskFormDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="result">Result / Hasil (tempel link, sangat disarankan)</Label>
+            <Label htmlFor="result">{t("Result / Hasil (tempel link, sangat disarankan)")}</Label>
             <Textarea
               id="result"
               value={form.result}
               onChange={(e) => setForm({ ...form, result: e.target.value })}
-              placeholder="Tempel link Google Drive/Docs/Foto, bisa lebih dari satu"
+              placeholder={t("Tempel link Google Drive/Docs/Foto, bisa lebih dari satu")}
               className="min-h-[60px]"
             />
           </div>
@@ -257,11 +259,11 @@ export function TaskFormDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Batal</Button>
+            <Button variant="outline">{t("Batal")}</Button>
           </DialogClose>
           <Button onClick={submit} disabled={pending || !form.title.trim()}>
             {pending && <Loader2 className="size-4 animate-spin" />}
-            {mode === "create" ? "Tambah Tugas" : "Simpan Perubahan"}
+            {mode === "create" ? t("Tambah Tugas") : t("Simpan Perubahan")}
           </Button>
         </DialogFooter>
       </DialogContent>

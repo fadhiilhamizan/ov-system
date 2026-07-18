@@ -13,6 +13,7 @@ import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
 const DOW = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -42,6 +43,7 @@ export function CalendarView({
   user: AppUser;
   initialMonth: string; // yyyy-mm
 }) {
+  const t = useT();
   const divMap = new Map(divisions.map((d) => [d.key, d]));
   const evMap = new Map(events.map((e) => [e.id, e]));
   const canAdd = can.manageTasks(user);
@@ -77,17 +79,17 @@ export function CalendarView({
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <CalendarDays className="size-5 text-primary" />
-            <h3 className="text-base font-semibold">{MONTHS[month]} {year}</h3>
+            <h3 className="text-base font-semibold">{t(MONTHS[month])} {year}</h3>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => setRef(new Date())}>Hari ini</Button>
+            <Button variant="outline" size="sm" onClick={() => setRef(new Date())}>{t("Hari ini")}</Button>
             <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month - 1, 1))}><ChevronLeft /></Button>
             <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month + 1, 1))}><ChevronRight /></Button>
           </div>
         </div>
 
         <div className="grid grid-cols-7 border-b border-border bg-muted/30 text-center text-[11px] font-medium text-muted-foreground">
-          {DOW.map((d) => <div key={d} className="py-2">{d}</div>)}
+          {DOW.map((d) => <div key={d} className="py-2">{t(d)}</div>)}
         </div>
 
         <div className="grid grid-cols-7">
@@ -115,7 +117,7 @@ export function CalendarView({
                 </div>
                 <div className="space-y-1">
                   {isEvent && (
-                    <div className="truncate rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">🎉 Hari-H</div>
+                    <div className="truncate rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">🎉 {t("Hari-H")}</div>
                   )}
                   {dayTasks.slice(0, 3).map((t) => {
                     const div = divMap.get(t.division);
@@ -128,7 +130,7 @@ export function CalendarView({
                     );
                   })}
                   {dayTasks.length > 3 && (
-                    <span className="px-1 text-[10px] font-medium text-muted-foreground">+{dayTasks.length - 3} lagi</span>
+                    <span className="px-1 text-[10px] font-medium text-muted-foreground">+{dayTasks.length - 3} {t("lagi")}</span>
                   )}
                 </div>
               </button>
@@ -142,13 +144,13 @@ export function CalendarView({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {selected && `${DOW[selected.getDay()]}, ${selected.getDate()} ${MONTHS[selected.getMonth()]} ${selected.getFullYear()}`}
+              {selected && `${t(DOW[selected.getDay()])}, ${selected.getDate()} ${t(MONTHS[selected.getMonth()])} ${selected.getFullYear()}`}
             </DialogTitle>
           </DialogHeader>
 
           {selected && event.event_date === selKey && (
             <div className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
-              🎉 Hari pelaksanaan {event.title}
+              🎉 {t("Hari pelaksanaan")} {event.title}
             </div>
           )}
 
@@ -172,7 +174,7 @@ export function CalendarView({
                 );
               })
             ) : (
-              <EmptyState className="py-8" icon={<CalendarDays />} title="Tidak ada deadline" description="Belum ada tugas dengan deadline di hari ini." />
+              <EmptyState className="py-8" icon={<CalendarDays />} title={t("Tidak ada deadline")} description={t("Belum ada tugas dengan deadline di hari ini.")} />
             )}
           </div>
 
@@ -186,7 +188,7 @@ export function CalendarView({
               user={user}
               trigger={
                 <DialogTrigger asChild>
-                  <Button className="w-full"><Plus className="size-4" /> Tambah tugas di tanggal ini</Button>
+                  <Button className="w-full"><Plus className="size-4" /> {t("Tambah tugas di tanggal ini")}</Button>
                 </DialogTrigger>
               }
             />

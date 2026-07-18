@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty";
 import {
   createBackupAction, downloadBackupAction, deleteBackupAction, restoreBackupAction,
 } from "@/lib/actions/backup";
+import { useT } from "@/lib/i18n/provider";
 import type { BackupMeta } from "@/lib/backup";
 
 const KIND_LABEL: Record<BackupMeta["kind"], { label: string; variant: "primary" | "info" | "warning" }> = {
@@ -27,6 +28,7 @@ function formatTimestamp(iso: string) {
 }
 
 export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }) {
+  const t = useT();
   const [backups, setBackups] = React.useState(initialBackups);
   React.useEffect(() => setBackups(initialBackups), [initialBackups]);
   const [creating, startCreate] = React.useTransition();
@@ -40,7 +42,7 @@ export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }
   function backupNow() {
     startCreate(async () => {
       const res = await createBackupAction();
-      if (res.ok) { toast.success("Backup berhasil dibuat"); refreshAfterMutation(); }
+      if (res.ok) { toast.success(t("Backup berhasil dibuat")); refreshAfterMutation(); }
       else toast.error(res.error);
     });
   }
@@ -49,11 +51,11 @@ export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Backup otomatis berjalan tiap 3 hari (perlu <code className="rounded bg-muted px-1 py-0.5">CRON_SECRET</code> dikonfigurasi di Vercel).
+          {t("Backup otomatis berjalan tiap 3 hari (perlu")} <code className="rounded bg-muted px-1 py-0.5">CRON_SECRET</code> {t("dikonfigurasi di Vercel).")}
         </p>
         <Button size="sm" onClick={backupNow} disabled={creating}>
           {creating ? <Loader2 className="size-4 animate-spin" /> : <DatabaseBackup className="size-4" />}
-          Backup Sekarang
+          {t("Backup Sekarang")}
         </Button>
       </div>
 
@@ -66,13 +68,14 @@ export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }
           </div>
         </div>
       ) : (
-        <EmptyState icon={<DatabaseBackup />} title="Belum ada backup" description="Klik “Backup Sekarang” untuk membuat backup pertama." />
+        <EmptyState icon={<DatabaseBackup />} title={t("Belum ada backup")} description={t("Klik “Backup Sekarang” untuk membuat backup pertama.")} />
       )}
     </div>
   );
 }
 
 function BackupRow({ backup, onDone }: { backup: BackupMeta; onDone: () => void }) {
+  const t = useT();
   const [restoreOpen, setRestoreOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [confirmText, setConfirmText] = React.useState("");
@@ -90,22 +93,22 @@ function BackupRow({ backup, onDone }: { backup: BackupMeta; onDone: () => void 
       a.download = `ormawa-visit-backup-${backup.created_at.slice(0, 19).replace(/[:T]/g, "-")}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Backup diunduh");
+      toast.success(t("Backup diunduh"));
     });
   }
 
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-      <Badge variant={kind.variant}>{kind.label}</Badge>
+      <Badge variant={kind.variant}>{t(kind.label)}</Badge>
       <span className="text-sm">{formatTimestamp(backup.created_at)}</span>
       <div className="ml-auto flex items-center gap-1.5">
-        <Button variant="ghost" size="icon-sm" onClick={download} disabled={pending} title="Unduh JSON">
+        <Button variant="ghost" size="icon-sm" onClick={download} disabled={pending} title={t("Unduh JSON")}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setRestoreOpen(true)} title="Pulihkan (rollback)">
+        <Button variant="ghost" size="icon-sm" onClick={() => setRestoreOpen(true)} title={t("Pulihkan (rollback)")}>
           <RotateCcw className="size-4" />
         </Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setDelOpen(true)} title="Hapus backup">
+        <Button variant="ghost" size="icon-sm" onClick={() => setDelOpen(true)} title={t("Hapus backup")}>
           <Trash2 className="size-4 text-danger" />
         </Button>
       </div>
@@ -115,30 +118,29 @@ function BackupRow({ backup, onDone }: { backup: BackupMeta; onDone: () => void 
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-danger">
-              <AlertTriangle className="size-5" /> Pulihkan data ke titik ini?
+              <AlertTriangle className="size-5" /> {t("Pulihkan data ke titik ini?")}
             </DialogTitle>
             <DialogDescription>
-              Seluruh data saat ini (tugas, anggaran, anggota, dll) akan <b>diganti total</b> dengan isi backup
-              {" "}{formatTimestamp(backup.created_at)}. Sebuah backup pengaman otomatis akan dibuat sebelum
-              pemulihan, tapi tindakan ini tetap berisiko tinggi.
+              {t("Seluruh data saat ini (tugas, anggaran, anggota, dll) akan diganti total dengan isi backup")}
+              {" "}{formatTimestamp(backup.created_at)}. {t("Sebuah backup pengaman otomatis akan dibuat sebelum pemulihan, tapi tindakan ini tetap berisiko tinggi.")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">
-            <Label>Ketik <b>PULIHKAN</b> untuk konfirmasi</Label>
+            <Label>{t("Ketik PULIHKAN untuk konfirmasi")}</Label>
             <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="PULIHKAN" />
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+            <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
             <Button
               variant="destructive"
               disabled={pending || confirmText !== "PULIHKAN"}
               onClick={() => start(async () => {
                 const res = await restoreBackupAction(backup.id);
-                if (res.ok) { toast.success("Data dipulihkan"); setRestoreOpen(false); onDone(); }
+                if (res.ok) { toast.success(t("Data dipulihkan")); setRestoreOpen(false); onDone(); }
                 else toast.error(res.error);
               })}
             >
-              {pending && <Loader2 className="size-4 animate-spin" />} Pulihkan Sekarang
+              {pending && <Loader2 className="size-4 animate-spin" />} {t("Pulihkan Sekarang")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -148,21 +150,21 @@ function BackupRow({ backup, onDone }: { backup: BackupMeta; onDone: () => void 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Hapus backup ini?</DialogTitle>
-            <DialogDescription>Backup {formatTimestamp(backup.created_at)} akan dihapus permanen.</DialogDescription>
+            <DialogTitle>{t("Hapus backup ini?")}</DialogTitle>
+            <DialogDescription>{t("Backup")} {formatTimestamp(backup.created_at)} {t("akan dihapus permanen.")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+            <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
             <Button
               variant="destructive"
               disabled={pending}
               onClick={() => start(async () => {
                 const res = await deleteBackupAction(backup.id);
-                if (res.ok) { toast.success("Backup dihapus"); setDelOpen(false); onDone(); }
+                if (res.ok) { toast.success(t("Backup dihapus")); setDelOpen(false); onDone(); }
                 else toast.error(res.error);
               })}
             >
-              {pending && <Loader2 className="size-4 animate-spin" />} Hapus
+              {pending && <Loader2 className="size-4 animate-spin" />} {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>

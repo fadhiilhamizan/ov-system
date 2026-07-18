@@ -7,6 +7,7 @@ import { getDivision, getDivisions, getEvents, getTasks, getTeams } from "@/lib/
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { Badge } from "@/components/ui/badge";
+import { getT } from "@/lib/i18n/server";
 import type { DivisionKey } from "@/lib/types";
 
 export default async function DivisionDetailPage({
@@ -26,6 +27,7 @@ export default async function DivisionDetailPage({
     getTeams(event.id),
   ]);
   const team = teams.find((t) => t.division === division.key);
+  const t = await getT();
 
   return (
     <div>
@@ -33,7 +35,7 @@ export default async function DivisionDetailPage({
         href="/divisions"
         className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Semua divisi
+        <ArrowLeft className="size-4" /> {t("Semua divisi")}
       </Link>
 
       <PageHeader
@@ -55,7 +57,7 @@ export default async function DivisionDetailPage({
               {[team.fungsionaris, team.intern].filter(Boolean).join(" · ")}
             </span>
           ) : (
-            "Tugas divisi ini, tersinkron dengan Work Breakdown Structure."
+            t("Tugas divisi ini, tersinkron dengan Work Breakdown Structure.")
           )
         }
         actions={<Badge variant="outline">{event.title}</Badge>}

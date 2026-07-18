@@ -7,6 +7,7 @@ import { StatusDot } from "@/components/status-badge";
 import { EmptyState } from "@/components/ui/empty";
 import { formatDate } from "@/lib/format";
 import { STATUS_META } from "@/lib/constants";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
 const ID_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
@@ -22,6 +23,7 @@ export function TaskTimeline({
   events: OVEvent[];
   user: AppUser;
 }) {
+  const tr = useT();
   const divMap = new Map(divisions.map((d) => [d.key, d]));
   const evMap = new Map(events.map((e) => [e.id, e]));
 
@@ -40,8 +42,8 @@ export function TaskTimeline({
     return (
       <EmptyState
         icon={<CalendarRange />}
-        title="Belum ada tugas berjadwal"
-        description="Tambahkan tanggal mulai/deadline pada tugas untuk melihat timeline."
+        title={tr("Belum ada tugas berjadwal")}
+        description={tr("Tambahkan tanggal mulai/deadline pada tugas untuk melihat timeline.")}
       />
     );
   }
@@ -56,7 +58,7 @@ export function TaskTimeline({
   cur.setDate(1);
   while (cur.getTime() <= max) {
     ticks.push({
-      label: `${ID_MONTHS[cur.getMonth()]} ${String(cur.getFullYear()).slice(2)}`,
+      label: `${tr(ID_MONTHS[cur.getMonth()])} ${String(cur.getFullYear()).slice(2)}`,
       pos: ((cur.getTime() - min) / span) * 100,
     });
     cur.setMonth(cur.getMonth() + 1);
@@ -126,7 +128,7 @@ export function TaskTimeline({
       {undated.length > 0 && (
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-4">
           <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Tanpa tanggal ({undated.length})
+            {tr("Tanpa tanggal")} ({undated.length})
           </p>
           <div className="flex flex-wrap gap-1.5">
             {undated.slice(0, 40).map((t) => {

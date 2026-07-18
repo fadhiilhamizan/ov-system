@@ -14,9 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/lib/i18n/provider";
 import type { AppUser } from "@/lib/types";
 
 export function UserMenu({ user }: { user: AppUser }) {
+  const t = useT();
   const router = useRouter();
   const [pending, start] = React.useTransition();
 
@@ -38,7 +40,7 @@ export function UserMenu({ user }: { user: AppUser }) {
         <Avatar name={user.name} color={user.avatarColor} size={28} />
         <div className="hidden min-w-0 leading-tight sm:block">
           <div className="truncate text-xs font-semibold">{user.name}</div>
-          <div className="truncate text-[11px] text-muted-foreground">{ROLE_META[user.role].label}</div>
+          <div className="truncate text-[11px] text-muted-foreground">{t(ROLE_META[user.role].label)}</div>
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -49,7 +51,7 @@ export function UserMenu({ user }: { user: AppUser }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem destructive onSelect={(e) => { e.preventDefault(); signOut(); }}>
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut />} Keluar
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut />} {t("Keluar")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

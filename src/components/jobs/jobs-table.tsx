@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
 import { createJobAction, updateJobAction, deleteJobAction } from "@/lib/actions/schedule";
+import { useT } from "@/lib/i18n/provider";
 import type { JobHariH } from "@/lib/types";
 
 function JobFormDialog({
@@ -28,6 +29,7 @@ function JobFormDialog({
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
 }) {
+  const t = useT();
   const [io, setIo] = React.useState(false);
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
@@ -44,7 +46,7 @@ function JobFormDialog({
       const res = mode === "create"
         ? await createJobAction({ ...f, event_id: eventId })
         : await updateJobAction(job!.id, f);
-      if (res.ok) { toast.success(mode === "create" ? "Tugas ditambahkan" : "Tugas diperbarui"); setOpen(false); }
+      if (res.ok) { toast.success(mode === "create" ? t("Tugas ditambahkan") : t("Tugas diperbarui")); setOpen(false); }
       else toast.error(res.error);
     });
   }
@@ -54,29 +56,29 @@ function JobFormDialog({
       {trigger}
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Tambah Tugas Hari-H" : "Edit Tugas Hari-H"}</DialogTitle>
-          <DialogDescription>Pembagian tugas panitia saat hari pelaksanaan.</DialogDescription>
+          <DialogTitle>{mode === "create" ? t("Tambah Tugas Hari-H") : t("Edit Tugas Hari-H")}</DialogTitle>
+          <DialogDescription>{t("Pembagian tugas panitia saat hari pelaksanaan.")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
             <Label>
-              Deskripsi tugas <span className="text-danger">*</span>
+              {t("Deskripsi tugas")} <span className="text-danger">*</span>
             </Label>
             <Input value={f.job} onChange={(e) => setF({ ...f, job: e.target.value })} placeholder="MC Acara" />
           </div>
           <div className="grid gap-1.5">
-            <Label>PIC (pisahkan koma)</Label>
+            <Label>{t("PIC (pisahkan koma)")}</Label>
             <Input value={f.pic} onChange={(e) => setF({ ...f, pic: e.target.value })} placeholder="Nama1, Nama2" />
           </div>
           <div className="grid gap-1.5">
-            <Label>Catatan (opsional)</Label>
+            <Label>{t("Catatan (opsional)")}</Label>
             <Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} className="min-h-[56px]" />
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Batal</Button></DialogClose>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending || !f.job.trim()}>
-            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? "Tambah" : "Simpan"}
+            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? t("Tambah") : t("Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -85,6 +87,7 @@ function JobFormDialog({
 }
 
 function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
+  const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
@@ -94,11 +97,11 @@ function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> Edit</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => start(async () => {
             const res = await deleteJobAction(job.id);
-            if (res.ok) toast.success("Tugas dihapus"); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} Hapus</DropdownMenuItem>
+            if (res.ok) toast.success(t("Tugas dihapus")); else toast.error(res.error);
+          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <JobFormDialog mode="edit" job={job} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
@@ -107,12 +110,13 @@ function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
 }
 
 export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; eventId: string; canManage: boolean }) {
+  const t = useT();
   return (
     <div className="space-y-4">
       {canManage && (
         <div className="flex justify-end">
           <JobFormDialog mode="create" eventId={eventId} trigger={
-            <DialogTrigger asChild><Button><Plus className="size-4" /> Tambah Tugas</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
           } />
         </div>
       )}
@@ -122,10 +126,10 @@ export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; even
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12">No</TableHead>
-                <TableHead className="min-w-[240px]">Job Description</TableHead>
-                <TableHead className="min-w-[160px]">PIC</TableHead>
-                <TableHead>Catatan</TableHead>
+                <TableHead className="w-12">{t("No")}</TableHead>
+                <TableHead className="min-w-[240px]">{t("Job Description")}</TableHead>
+                <TableHead className="min-w-[160px]">{t("PIC")}</TableHead>
+                <TableHead>{t("Catatan")}</TableHead>
                 {canManage && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
@@ -151,7 +155,7 @@ export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; even
           </Table>
         </div>
       ) : (
-        <EmptyState icon={<ClipboardList />} title="Belum ada pembagian tugas" description="Tambahkan pembagian tugas hari-H untuk Ormawa Visit ini." />
+        <EmptyState icon={<ClipboardList />} title={t("Belum ada pembagian tugas")} description={t("Tambahkan pembagian tugas hari-H untuk Ormawa Visit ini.")} />
       )}
     </div>
   );
