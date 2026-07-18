@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
+import { ResultUpload } from "./result-upload";
 import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
@@ -251,12 +252,21 @@ export function TaskFormDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="result">Result / Hasil</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="result">Result / Hasil (link sangat disarankan)</Label>
+              <ResultUpload
+                taskId={task?.id ?? "new"}
+                label="Upload file/foto"
+                onUploaded={(url) =>
+                  setForm((f) => ({ ...f, result: f.result.trim() ? `${f.result.trim()} ${url}` : url }))
+                }
+              />
+            </div>
             <Textarea
               id="result"
               value={form.result}
               onChange={(e) => setForm({ ...form, result: e.target.value })}
-              placeholder="Link dokumen hasil, atau keterangan penyelesaian"
+              placeholder="Tempel link (Google Drive/Docs/Foto) atau upload file, bisa lebih dari satu"
               className="min-h-[60px]"
             />
           </div>

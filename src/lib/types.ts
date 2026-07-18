@@ -70,6 +70,7 @@ export interface Task {
 
 export interface Prospect {
   id: string;
+  event_id?: string | null;
   batch: string;
   no: string;
   date_text: string;
@@ -88,6 +89,7 @@ export interface Prospect {
 
 export interface LinkItem {
   id: string;
+  event_id?: string | null;
   section: string;
   division: string;
   name: string;

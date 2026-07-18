@@ -42,7 +42,15 @@ function StageBadge({ p }: { p: Prospect }) {
   );
 }
 
-export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user: AppUser }) {
+export function ProspectsView({
+  prospects,
+  user,
+  activeEventId,
+}: {
+  prospects: Prospect[];
+  user: AppUser;
+  activeEventId: string;
+}) {
   const manage = can.manageProspects(user);
   const batches = React.useMemo(() => [...new Set(prospects.map((p) => p.batch))], [prospects]);
   const [view, setView] = React.useState<"table" | "board">("table");
@@ -167,6 +175,7 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
             <ProspectFormDialog
               mode="create"
               batches={batches}
+              eventId={activeEventId}
               trigger={
                 <DialogTrigger asChild>
                   <Button>
@@ -207,7 +216,7 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
                     <TableCell className="text-xs text-muted-foreground">{p.batch}</TableCell>
                     {manage && (
                       <TableCell>
-                        <ProspectActions prospect={p} batches={batches} />
+                        <ProspectActions prospect={p} batches={batches} eventId={activeEventId} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -234,7 +243,7 @@ export function ProspectsView({ prospects, user }: { prospects: Prospect[]; user
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium">{p.org_name || "-"}</p>
-                        {manage && <ProspectActions prospect={p} batches={batches} />}
+                        {manage && <ProspectActions prospect={p} batches={batches} eventId={activeEventId} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}
                       <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">

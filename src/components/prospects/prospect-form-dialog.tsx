@@ -33,6 +33,7 @@ export function ProspectFormDialog({
   mode,
   prospect,
   batches,
+  eventId,
   open,
   onOpenChange,
   trigger,
@@ -40,6 +41,7 @@ export function ProspectFormDialog({
   mode: "create" | "edit";
   prospect?: Prospect;
   batches: string[];
+  eventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -83,6 +85,7 @@ export function ProspectFormDialog({
     start(async () => {
       const payload = {
         ...f,
+        event_id: prospect?.event_id ?? eventId,
         contact_status: f.contact_status === "none" ? "" : f.contact_status,
         their_response: f.their_response === "none" ? "" : f.their_response,
         our_response: f.our_response === "none" ? "" : f.our_response,

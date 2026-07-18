@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   const [stats, divStats, pstats, budget, divisions, members] = await Promise.all([
     taskStats(event.id),
     divisionStats(event.id),
-    prospectStats(),
+    prospectStats(event.id),
     budgetTotal(event.id),
     getDivisions(),
     getMembers(),

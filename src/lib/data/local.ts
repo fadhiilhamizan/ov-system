@@ -113,8 +113,9 @@ export function deleteTask(id: string) {
 }
 
 // ---------------- Prospects ----------------
-export function getProspects(): Prospect[] {
-  return getDb().prospects;
+export function getProspects(eventId?: string): Prospect[] {
+  const list = getDb().prospects;
+  return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
 }
 export function createProspect(input: Partial<Prospect>): Prospect {
   const p: Prospect = {
@@ -152,8 +153,9 @@ export function deleteProspect(id: string) {
 }
 
 // ---------------- Links ----------------
-export function getLinks(): LinkItem[] {
-  return getDb().links;
+export function getLinks(eventId?: string): LinkItem[] {
+  const list = getDb().links;
+  return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 }
 export function createLink(input: Partial<LinkItem>): LinkItem {
   const l: LinkItem = {

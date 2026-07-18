@@ -1,16 +1,19 @@
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveEvent } from "@/lib/session";
 import { getProspects } from "@/lib/data/repo";
 import { prospectStage } from "@/lib/constants";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { ProspectsView } from "@/components/prospects/prospects-view";
 import { StatCard } from "@/components/stat-card";
+import { Badge } from "@/components/ui/badge";
 import { Target, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 export const metadata = { title: "Reach & Offer" };
 
 export default async function ProspectsPage() {
-  const [user, prospects, t] = await Promise.all([getCurrentUser(), getProspects(), getT()]);
+  const [user, event, t] = await Promise.all([getCurrentUser(), getActiveEvent(), getT()]);
+  const prospects = await getProspects(event.id);
 
   const count = (k: string) => prospects.filter((p) => prospectStage(p) === k).length;
 
@@ -19,6 +22,7 @@ export default async function ProspectsPage() {
       <PageHeader
         title={t("Reach & Offer")}
         description={t("Data & alur himpunan yang dihubungi, dari reach pertama sampai konfirmasi.")}
+        actions={<Badge variant="outline">{event.title}</Badge>}
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -28,7 +32,7 @@ export default async function ProspectsPage() {
         <StatCard label={t("Ditolak")} value={count("ditolak")} icon={<XCircle />} accent="#ef4444" />
       </div>
 
-      <ProspectsView prospects={prospects} user={user} />
+      <ProspectsView prospects={prospects} user={user} activeEventId={event.id} />
     </div>
   );
 }

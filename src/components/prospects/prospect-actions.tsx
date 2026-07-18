@@ -22,7 +22,7 @@ import { ProspectFormDialog } from "./prospect-form-dialog";
 import { deleteProspectAction } from "@/lib/actions/prospects";
 import type { Prospect } from "@/lib/types";
 
-export function ProspectActions({ prospect, batches }: { prospect: Prospect; batches: string[] }) {
+export function ProspectActions({ prospect, batches, eventId }: { prospect: Prospect; batches: string[]; eventId: string }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -43,7 +43,7 @@ export function ProspectActions({ prospect, batches }: { prospect: Prospect; bat
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProspectFormDialog mode="edit" prospect={prospect} batches={batches} open={editOpen} onOpenChange={setEditOpen} />
+      <ProspectFormDialog mode="edit" prospect={prospect} batches={batches} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">

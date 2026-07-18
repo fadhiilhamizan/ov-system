@@ -23,11 +23,12 @@ import { cn } from "@/lib/utils";
 import type { AppUser, LinkItem } from "@/lib/types";
 
 function LinkFormDialog({
-  mode, link, sections, open, onOpenChange, trigger,
+  mode, link, sections, eventId, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   link?: LinkItem;
   sections: string[];
+  eventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -49,7 +50,8 @@ function LinkFormDialog({
 
   function submit() {
     start(async () => {
-      const res = mode === "create" ? await createLinkAction(f) : await updateLinkAction(link!.id, f);
+      const payload = { ...f, event_id: link?.event_id ?? eventId };
+      const res = mode === "create" ? await createLinkAction(payload) : await updateLinkAction(link!.id, payload);
       if (res.ok) { toast.success(mode === "create" ? "Tautan ditambahkan" : "Tautan diperbarui"); setOpen(false); }
       else toast.error(res.error);
     });
@@ -100,7 +102,7 @@ function LinkFormDialog({
   );
 }
 
-function LinkActions({ link, sections }: { link: LinkItem; sections: string[] }) {
+function LinkActions({ link, sections, eventId }: { link: LinkItem; sections: string[]; eventId: string }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -115,7 +117,7 @@ function LinkActions({ link, sections }: { link: LinkItem; sections: string[] })
           <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> Hapus</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <LinkFormDialog mode="edit" link={link} sections={sections} open={editOpen} onOpenChange={setEditOpen} />
+      <LinkFormDialog mode="edit" link={link} sections={sections} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -137,11 +139,13 @@ function LinkActions({ link, sections }: { link: LinkItem; sections: string[] })
 
 export function LinksView({
   links,
+  activeEventId,
   canCreate,
   canManage,
 }: {
   links: LinkItem[];
   user: AppUser;
+  activeEventId: string;
   canCreate: boolean;
   canManage: boolean;
 }) {
@@ -188,7 +192,7 @@ export function LinksView({
           )}
         </div>
         {canCreate && (
-          <LinkFormDialog mode="create" sections={sections} trigger={
+          <LinkFormDialog mode="create" sections={sections} eventId={activeEventId} trigger={
             <DialogTrigger asChild><Button><Plus className="size-4" /> Tambah</Button></DialogTrigger>
           } />
         )}
@@ -224,7 +228,7 @@ export function LinksView({
                           Buka <ExternalLink className="size-3" />
                         </a>
                       )}
-                      {canManage && <LinkActions link={l} sections={sections} />}
+                      {canManage && <LinkActions link={l} sections={sections} eventId={activeEventId} />}
                     </div>
                   );
                 })}

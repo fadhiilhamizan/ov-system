@@ -128,13 +128,14 @@ export async function deleteTask(id: string) {
 }
 
 // ---------------- Prospects ----------------
-export async function getProspects(): Promise<Prospect[]> {
-  if (!USE_SUPABASE) return local.getProspects();
+export async function getProspects(eventId?: string): Promise<Prospect[]> {
+  if (!USE_SUPABASE) return local.getProspects(eventId);
   const { data } = await (await sb()).from("prospects").select("*");
-  return coalesce((data ?? []) as Prospect[], [
+  const list = coalesce((data ?? []) as Prospect[], [
     "batch", "no", "date_text", "month", "contact", "org_name", "campus",
     "location", "pic", "contact_status", "their_response", "our_response", "source",
   ]);
+  return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
 }
 export async function createProspect(input: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.createProspect(input);
@@ -150,10 +151,11 @@ export async function deleteProspect(id: string) {
 }
 
 // ---------------- Links ----------------
-export async function getLinks(): Promise<LinkItem[]> {
-  if (!USE_SUPABASE) return local.getLinks();
+export async function getLinks(eventId?: string): Promise<LinkItem[]> {
+  if (!USE_SUPABASE) return local.getLinks(eventId);
   const { data } = await (await sb()).from("links").select("*");
-  return coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
+  const list = coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
+  return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 }
 export async function createLink(input: Partial<LinkItem>) {
   if (!USE_SUPABASE) return local.createLink(input);
@@ -286,8 +288,8 @@ export async function divisionStats(eventId?: string) {
     .filter((x) => x.total > 0);
 }
 
-export async function prospectStats() {
-  const prospects = await getProspects();
+export async function prospectStats(eventId?: string) {
+  const prospects = await getProspects(eventId);
   const stages: Record<string, number> = {};
   for (const p of prospects) {
     const s = prospectStage(p);

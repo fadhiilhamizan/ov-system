@@ -13,6 +13,7 @@ import { DivisionBadge } from "@/components/division-badge";
 import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { ResultUpload } from "./result-upload";
 import { EmptyState } from "@/components/ui/empty";
 import { formatDate, daysUntil, isUrl } from "@/lib/format";
 import { updateTaskAction, bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
@@ -248,15 +249,22 @@ function ResultCell({ task, user }: { task: Task; user: AppUser }) {
     );
   }
 
-  function save() {
-    if (val === (task.result ?? "")) return;
+  function persist(value: string) {
     start(async () => {
-      const r = await updateTaskAction(task.id, { result: val });
+      const r = await updateTaskAction(task.id, { result: value });
       if (r.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
       } else toast.error(r.error);
     });
+  }
+  function save() {
+    if (val !== (task.result ?? "")) persist(val);
+  }
+  function onUploaded(url: string) {
+    const nv = val.trim() ? `${val.trim()} ${url}` : url;
+    setVal(nv);
+    persist(nv);
   }
 
   return (
@@ -269,6 +277,7 @@ function ResultCell({ task, user }: { task: Task; user: AppUser }) {
         placeholder="+ link / hasil"
         className="h-7 w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 text-xs transition hover:border-border focus:border-ring focus:bg-card focus:outline-none"
       />
+      <ResultUpload taskId={task.id} onUploaded={onUploaded} />
       {pending ? (
         <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
       ) : saved ? (
