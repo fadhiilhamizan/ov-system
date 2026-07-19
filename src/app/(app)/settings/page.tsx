@@ -2,7 +2,7 @@ import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, Data
 import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
-import { APP_VERSION, APP_CODENAME } from "@/lib/version";
+import { APP_VERSION } from "@/lib/version";
 import { CHANGELOG } from "@/lib/changelog";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
     <div className="space-y-5">
       <PageHeader
         title={t("Pengaturan")}
-        description={t("Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Command Center.")}
+        description={t("Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Management System.")}
       />
 
       {/* Under-development notice */}
@@ -217,7 +217,7 @@ export default async function SettingsPage() {
           <CardTitle>{t("Tentang")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
-          <p>Ormawa Visit Command Center · v{APP_VERSION} “{APP_CODENAME}”</p>
+          <p>Ormawa Visit Management System · v{APP_VERSION}</p>
           <p>{t("Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.")}</p>
           <p>
             {t("Ada pertanyaan atau masukan? Hubungi")}{" "}

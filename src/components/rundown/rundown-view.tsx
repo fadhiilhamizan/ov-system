@@ -21,6 +21,39 @@ function useSynced(value: string): [string, React.Dispatch<React.SetStateAction<
   return [v, setV];
 }
 
+/** Parse a clock string ("07.30", "07:30", "0730", "7") to minutes-of-day. */
+function parseTime(s: string): number | null {
+  const str = (s ?? "").trim();
+  if (!str) return null;
+  const m = str.match(/^(\d{1,2})\s*[.:h ]?\s*(\d{2})$/);
+  if (m) {
+    const h = +m[1], min = +m[2];
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  }
+  const only = str.match(/^(\d{1,2})$/);
+  if (only && +only[1] <= 23) return +only[1] * 60;
+  return null;
+}
+
+/** Format a minute count to "45'", "1j", or "1j 30'". */
+function formatDuration(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h && m) return `${h}j ${m}'`;
+  if (h) return `${h}j`;
+  return `${m}'`;
+}
+
+/** Duration between two clock strings, or null if not derivable. */
+function computeDuration(start: string, end: string): string | null {
+  const a = parseTime(start), b = parseTime(end);
+  if (a === null || b === null) return null;
+  let diff = b - a;
+  if (diff < 0) diff += 24 * 60; // crosses midnight
+  return formatDuration(diff);
+}
+
 function EditCell({
   value, onSave, placeholder, readOnly, className, multiline,
 }: {
@@ -43,7 +76,7 @@ function EditCell({
     className,
   );
   return multiline ? (
-    <textarea rows={1} value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} className={cls} />
+    <textarea rows={1} value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} className={cn(cls, "autosize min-h-[2rem] leading-snug")} />
   ) : (
     <input value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} className={cls} />
   );
@@ -71,7 +104,7 @@ function NoteCell({ value, onSave, readOnly }: { value: string; onSave: (v: stri
         placeholder={t("Catatan…")}
         onChange={(e) => setV(e.target.value)}
         onBlur={() => v !== value && onSave(v)}
-        className="w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs outline-none transition hover:border-border focus:border-primary focus:bg-card"
+        className="autosize min-h-[2rem] w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs leading-snug outline-none transition hover:border-border focus:border-primary focus:bg-card"
       />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -135,9 +168,20 @@ export function RundownView({
       if (!res.ok) toast.error(res.error);
     });
   }
+  /** Save a time field and auto-recompute the duration when both ends parse. */
+  function saveTime(item: RundownItem, field: "time_start" | "time_end", value: string) {
+    const patch: Partial<RundownItem> = { [field]: value };
+    const start = field === "time_start" ? value : item.time_start;
+    const end = field === "time_end" ? value : item.time_end;
+    const dur = computeDuration(start, end);
+    if (dur !== null) patch.duration = dur;
+    save(item.id, patch);
+  }
   function addRow() {
     start(async () => {
-      const res = await createRundownAction({ event_id: eventId, variant: activeVariant, activity: "" });
+      // New activity starts where the last one ended (chain the schedule).
+      const prevEnd = list.length ? list[list.length - 1].time_end : "";
+      const res = await createRundownAction({ event_id: eventId, variant: activeVariant, activity: "", time_start: prevEnd });
       if (!res.ok) toast.error(res.error);
     });
   }
@@ -184,17 +228,17 @@ export function RundownView({
               <th className={cn(th, "w-10 text-center")}>{t("No")}</th>
               <th className={cn(th, "w-24")}>{t("Waktu")}</th>
               <th className={cn(th, "w-16")}>{t("Durasi")}</th>
-              <th className={cn(th, "min-w-[160px]")}>{t("Kegiatan")}</th>
+              <th className={cn(th, "min-w-[180px]")}>{t("Kegiatan")}</th>
+              <th className={cn(th, "min-w-[120px]")}>MC</th>
+              <th className={cn(th, "min-w-[140px]")}>{t("Kebutuhan Operator")}</th>
               {cols.map((d) => (
-                <th key={d.key} className={cn(th, "min-w-[120px]")}>
+                <th key={d.key} className={cn(th, "min-w-[130px]")}>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="size-2 rounded-full" style={{ backgroundColor: d.color }} />
                     {d.short || d.name}
                   </span>
                 </th>
               ))}
-              <th className={cn(th, "min-w-[110px]")}>MC</th>
-              <th className={cn(th, "min-w-[130px]")}>{t("Kebutuhan Operator")}</th>
               <th className={cn(th, "min-w-[150px]")}>{t("Catatan")}</th>
               {canManage && <th className={cn(th, "w-10")} />}
             </tr>
@@ -205,12 +249,16 @@ export function RundownView({
                 <td className={cn(td, "text-center text-xs font-medium text-muted-foreground")}>{item.no}</td>
                 <td className={td}>
                   <div className="flex flex-col">
-                    <EditCell value={item.time_start} onSave={(v) => save(item.id, { time_start: v })} placeholder="08.00" readOnly={!canManage} className="tabular-nums" />
-                    <EditCell value={item.time_end} onSave={(v) => save(item.id, { time_end: v })} placeholder="08.30" readOnly={!canManage} className="tabular-nums text-muted-foreground" />
+                    <EditCell value={item.time_start} onSave={(v) => saveTime(item, "time_start", v)} placeholder="08.00" readOnly={!canManage} className="tabular-nums" />
+                    <EditCell value={item.time_end} onSave={(v) => saveTime(item, "time_end", v)} placeholder="08.30" readOnly={!canManage} className="tabular-nums text-muted-foreground" />
                   </div>
                 </td>
-                <td className={td}><EditCell value={item.duration} onSave={(v) => save(item.id, { duration: v })} placeholder="30'" readOnly={!canManage} /></td>
+                <td className={cn(td, "px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} title={t("Otomatis dari waktu")}>
+                  {item.duration || <span className="text-muted-foreground/50">–</span>}
+                </td>
                 <td className={td}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
+                <td className={td}><EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline /></td>
+                <td className={td}><EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline /></td>
                 {cols.map((d) => (
                   <td key={d.key} className={td}>
                     <EditCell
@@ -221,8 +269,6 @@ export function RundownView({
                     />
                   </td>
                 ))}
-                <td className={td}><EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline /></td>
-                <td className={td}><EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline /></td>
                 <td className={td}><NoteCell value={item.keterangan} onSave={(v) => save(item.id, { keterangan: v })} readOnly={!canManage} /></td>
                 {canManage && (
                   <td className={cn(td, "text-center")}>
@@ -240,7 +286,7 @@ export function RundownView({
             ))}
             {list.length === 0 && (
               <tr>
-                <td colSpan={5 + cols.length + (canManage ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={7 + cols.length + (canManage ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">
                   {t("Belum ada baris rundown untuk versi ini.")}
                 </td>
               </tr>

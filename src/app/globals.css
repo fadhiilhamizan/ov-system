@@ -189,3 +189,11 @@
 }
 
 .animate-fade-in { animation: fade-in 0.25s ease both; }
+
+/* Auto-growing textareas (rundown cells) — height follows content so long
+   text wraps and stays fully visible instead of being clipped. Falls back to
+   normal wrapping where field-sizing is unsupported. */
+textarea.autosize {
+  field-sizing: content;
+  overflow: hidden;
+}

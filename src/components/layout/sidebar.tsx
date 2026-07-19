@@ -26,7 +26,7 @@ export function SidebarContent({
         <Logo size={34} />
         <div className="leading-tight">
           <div className="text-sm font-bold tracking-tight text-sidebar-foreground">Ormawa Visit</div>
-          <div className="text-[11px] text-sidebar-muted">Command Center · EA HMSI</div>
+          <div className="text-[11px] text-sidebar-muted">Management System · EA HMSI</div>
         </div>
       </div>
 

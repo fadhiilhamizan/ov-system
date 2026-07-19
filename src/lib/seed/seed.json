@@ -7,15 +7,15 @@
       "short": "PIC",
       "color": "#6366f1",
       "order": 1,
-      "exclude_from_rundown": false
+      "exclude_from_rundown": true
     },
     {
       "key": "COORDINATOR",
       "name": "Coordinator",
-      "short": "COORD",
+      "short": "CORD",
       "color": "#8b5cf6",
       "order": 2,
-      "exclude_from_rundown": false
+      "exclude_from_rundown": true
     },
     {
       "key": "SECRETARY",
@@ -23,7 +23,7 @@
       "short": "SEC",
       "color": "#ec4899",
       "order": 3,
-      "exclude_from_rundown": false
+      "exclude_from_rundown": true
     },
     {
       "key": "TREASURER",
@@ -31,7 +31,7 @@
       "short": "TRE",
       "color": "#f59e0b",
       "order": 4,
-      "exclude_from_rundown": false
+      "exclude_from_rundown": true
     },
     {
       "key": "LO",

@@ -77,7 +77,7 @@ export function AppShell({
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
             <div className="flex items-center gap-2">
               <Logo size={18} />
-              <span>Ormawa Visit Command Center - External Affairs HMSI ITS</span>
+              <span>Ormawa Visit Management System - External Affairs HMSI ITS</span>
             </div>
             <span>Dibangun dari Main Sheet OV · v{APP_VERSION}</span>
           </div>

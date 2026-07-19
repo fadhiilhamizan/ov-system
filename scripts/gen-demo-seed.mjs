@@ -19,18 +19,19 @@ const d = (v) => (v ? `'${v}'` : "null");
 
 const EV = "demo-ov";
 
+// [key, name, short, color, order, exclude_from_rundown]
 const divisions = [
-  ["PIC", "PIC Ormawa Visit", "PIC", "#6366f1", 1],
-  ["COORDINATOR", "Coordinator", "COORD", "#8b5cf6", 2],
-  ["SECRETARY", "Secretary", "SEC", "#ec4899", 3],
-  ["TREASURER", "Treasurer", "TRE", "#f59e0b", 4],
-  ["LO", "Liaison Officer", "LO", "#0ea5e9", 5],
-  ["EVENT", "Event", "EVE", "#10b981", 6],
-  ["CONSUMPTION", "Consumption", "CON", "#f97316", 7],
-  ["OPERATIONAL", "Operational", "OPR", "#64748b", 8],
-  ["CREATIVE", "Creative", "CRE", "#d946ef", 9],
-  ["MARKETING", "Marketing", "MRT", "#f43f5e", 10],
-  ["OUTSOURCE", "Outsource", "OUT", "#14b8a6", 11],
+  ["PIC", "PIC Ormawa Visit", "PIC", "#6366f1", 1, true],
+  ["COORDINATOR", "Coordinator", "CORD", "#8b5cf6", 2, true],
+  ["SECRETARY", "Secretary", "SEC", "#ec4899", 3, true],
+  ["TREASURER", "Treasurer", "TRE", "#f59e0b", 4, true],
+  ["LO", "Liaison Officer", "LO", "#0ea5e9", 5, false],
+  ["EVENT", "Event", "EVE", "#10b981", 6, false],
+  ["CONSUMPTION", "Consumption", "CON", "#f97316", 7, false],
+  ["OPERATIONAL", "Operational", "OPR", "#64748b", 8, false],
+  ["CREATIVE", "Creative", "CRE", "#d946ef", 9, false],
+  ["MARKETING", "Marketing", "MRT", "#f43f5e", 10, false],
+  ["OUTSOURCE", "Outsource", "OUT", "#14b8a6", 11, false],
 ];
 
 function angkatan(nrp) {
@@ -122,8 +123,8 @@ begin;
 
 -- divisions
 `;
-for (const [key, name, short, color, order] of divisions)
-  out += `insert into divisions(key,name,short,color,"order") values (${q(key)},${q(name)},${q(short)},${q(color)},${order}) on conflict (key) do nothing;\n`;
+for (const [key, name, short, color, order, excl] of divisions)
+  out += `insert into divisions(key,name,short,color,"order",exclude_from_rundown) values (${q(key)},${q(name)},${q(short)},${q(color)},${order},${b(excl)}) on conflict (key) do nothing;\n`;
 
 out += `\n-- demo edition (active = the landing edition)\n`;
 out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order")

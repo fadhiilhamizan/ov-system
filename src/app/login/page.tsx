@@ -45,7 +45,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <Logo size={48} />
-          <h1 className="text-xl font-bold">Ormawa Visit Command Center</h1>
+          <h1 className="text-xl font-bold">Ormawa Visit Management System</h1>
           <p className="text-sm text-muted-foreground">External Affairs HMSI ITS</p>
         </div>
         <Card className="p-6">

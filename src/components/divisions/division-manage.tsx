@@ -127,9 +127,7 @@ function DivisionFormDialog({
                   style={{ backgroundColor: c }}
                 />
               ))}
-              <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="size-7 cursor-pointer rounded" />
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">{t("Versi lebih muda")}</p>
             <div className="flex flex-wrap items-center gap-2">
               {PRESET_LIGHT.map((c) => (
                 <button
@@ -141,6 +139,7 @@ function DivisionFormDialog({
                 />
               ))}
             </div>
+            <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="mt-1 size-8 cursor-pointer rounded" />
           </div>
           <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border p-3 text-sm">
             <Checkbox

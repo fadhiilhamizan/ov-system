@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: {
-    default: "Ormawa Visit - Command Center",
+    default: "Ormawa Visit - Management System",
     template: "%s · Ormawa Visit",
   },
   description:

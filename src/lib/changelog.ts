@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.1",
+    date: "2026-07-20",
+    title: "Identitas baru, penyempurnaan rundown & divisi",
+    changes: [
+      "Nama sistem menjadi 'Ormawa Visit Management System' dengan logo & favicon baru yang lebih profesional.",
+      "Rundown: field kegiatan kini menyesuaikan tinggi (teks panjang tidak lagi terpotong); kolom MC & Kebutuhan Operator dipindah ke samping Kegiatan.",
+      "Rundown: durasi otomatis dihitung dari waktu, dan kegiatan baru otomatis dimulai dari waktu selesai kegiatan sebelumnya.",
+      "Divisi: singkatan Coordinator diperbaiki menjadi 'CORD'; PIC, Coordinator, Secretary, Treasurer kini tidak diikutkan pada rundown.",
+      "Divisi: penataan pemilih warna dirapikan pada dialog edit.",
+      "Penomoran versi kini tanpa nama kode.",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-07-20",
     title: "Rundown tabel dinamis, Panduan, FAQ CRUD, & penyempurnaan divisi",

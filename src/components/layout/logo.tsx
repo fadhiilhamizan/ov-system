@@ -9,23 +9,20 @@ export function Logo({ className, size = 36 }: { className?: string; size?: numb
       <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>
         <defs>
           <linearGradient id="ovlogo" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#818cf8" />
-            <stop offset="1" stopColor="#6366f1" />
+            <stop offset="0" stopColor="#6366f1" />
+            <stop offset="1" stopColor="#4338ca" />
           </linearGradient>
         </defs>
-        <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#ovlogo)" />
+        <rect x="1.5" y="1.5" width="37" height="37" rx="10.5" fill="url(#ovlogo)" />
+        <rect x="5" y="5" width="30" height="30" rx="7" fill="none" stroke="#fff" strokeOpacity="0.25" strokeWidth="1" />
+        <circle cx="15.5" cy="20" r="6" fill="none" stroke="#fff" strokeWidth="2.8" />
         <path
-          d="M12 13.5c0-.4.4-.6.7-.4l7 4.4c.3.2.3.7 0 .9l-7 4.4c-.3.2-.7 0-.7-.4V13.5Z"
-          fill="#fff"
-          opacity="0.95"
-        />
-        <circle cx="27" cy="18.5" r="4.2" fill="#fff" opacity="0.95" />
-        <path
-          d="M13 27.5h14"
+          d="M22.5 14 L26.5 26.5 L30.5 14"
+          fill="none"
           stroke="#fff"
-          strokeWidth="2.4"
+          strokeWidth="2.8"
           strokeLinecap="round"
-          opacity="0.6"
+          strokeLinejoin="round"
         />
       </svg>
     </span>

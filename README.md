@@ -1,4 +1,4 @@
-# Ormawa Visit Command Center
+# Ormawa Visit Management System
 
 Sistem manajemen program kerja **Ormawa Visit** untuk Departemen **External Affairs HMSI ITS**. Aplikasi web ini menggantikan alur *Main Sheet Ormawa Visit* (eks Google Sheets) dengan pusat kendali yang terintegrasi, real-time, dan mudah dipakai lintas divisi.
 
@@ -84,7 +84,7 @@ npm run db:demo    # regenerasi seed & skrip akses untuk project Supabase demo
 ## Konfigurasi Supabase (Cloud)
 
 1. Buat proyek di [supabase.com](https://supabase.com) (free tier mencukupi).
-2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0014), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012, 0013, dan 0014).
+2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0015), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012 hingga 0015).
 3. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings > API pada dashboard Supabase).
 4. Buat user pertama (Authentication > Users), kemudian set `role = 'admin'` pada tabel `profiles`.
 5. `npm run dev` — `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
@@ -96,7 +96,7 @@ Selama variabel Supabase kosong, aplikasi tetap berjalan penuh dalam mode demo l
 Mode Demo memungkinkan siapa pun mencoba sistem tanpa akun dan tanpa risiko, karena berjalan di **project Supabase yang benar-benar terpisah** dari produksi. Data demo dan data asli tidak dapat saling mengakses. Fitur ini opsional dan hanya muncul bila dikonfigurasi.
 
 1. Buat **project Supabase kedua** khusus demo.
-2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011, plus 0014), lalu:
+2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011, plus 0014 & 0015), lalu:
    - `supabase/demo/demo-open-access.sql` — menonaktifkan RLS agar demo bisa dipakai tanpa login (jalankan **hanya** di project demo, jangan di produksi).
    - `supabase/demo/demo-seed.sql` — mengisi data mockup contoh.
    - Berkas ini dihasilkan oleh `npm run db:demo`.

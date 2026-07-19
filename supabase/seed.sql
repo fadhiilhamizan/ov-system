@@ -3,10 +3,10 @@
 begin;
 
 -- divisions
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('PIC','PIC Ormawa Visit','PIC','#6366f1',1,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('COORDINATOR','Coordinator','COORD','#8b5cf6',2,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('SECRETARY','Secretary','SEC','#ec4899',3,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('TREASURER','Treasurer','TRE','#f59e0b',4,false) on conflict (key) do nothing;
+insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (key) do nothing;
+insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (key) do nothing;
+insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (key) do nothing;
+insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (key) do nothing;
 insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (key) do nothing;
 insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('EVENT','Event','EVE','#10b981',6,false) on conflict (key) do nothing;
 insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (key) do nothing;

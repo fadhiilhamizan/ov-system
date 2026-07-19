@@ -37,7 +37,7 @@ export const EN: Record<string, string> = {
   "Pertanyaan umum seputar Ormawa Visit": "Common questions about Ormawa Visit",
   "Konfigurasi sistem & manajemen data": "System configuration & data management",
   // Topbar / shell
-  "Command Center · EA HMSI": "Command Center · EA HMSI",
+  "Management System · EA HMSI": "Management System · EA HMSI",
   "Ganti tema": "Toggle theme",
   "Ganti bahasa": "Change language",
   "Fokus divisi": "Division focus",
@@ -247,7 +247,7 @@ export const EN: Record<string, string> = {
   "Tanyakan ke PIC Ormawa Visit atau fungsionaris yang menemani tugasmu, jangan malu bertanya ya :)": "Ask the Ormawa Visit PIC or the functionary supervising your task — don't be shy to ask :)",
 
   // Settings
-  "Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Command Center.": "System configuration, role permissions, backups, and Ormawa Visit Command Center info.",
+  "Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Management System.": "System configuration, role permissions, backups, and Ormawa Visit Management System info.",
   "Website ini masih dalam pengembangan": "This website is still under development",
   "Kalau menemukan bug, error, atau punya keluhan/masukan, langsung hubungi lewat WhatsApp.": "If you find a bug or error, or have complaints/feedback, reach out directly via WhatsApp.",
   "Hubungi via WhatsApp": "Contact via WhatsApp",
@@ -288,6 +288,7 @@ export const EN: Record<string, string> = {
   "Terlalu cepat": "Too fast",
   "Terlalu lama": "Too slow",
   "Tambah baris": "Add row",
+  "Otomatis dari waktu": "Auto from time",
   "Menyimpan…": "Saving…",
   "Belum ada baris rundown untuk versi ini.": "No rundown rows for this version yet.",
   "Susunan acara hari-H: tiap divisi menjadi kolom, isi kegiatannya langsung di tabel.": "Event-day schedule: each division is a column — fill its activity in the table.",
@@ -308,7 +309,7 @@ export const EN: Record<string, string> = {
   // Panduan (guide)
   "Panduan": "Guide",
   "Panduan Penggunaan": "User Guide",
-  "Alur penggunaan Ormawa Visit Command Center dari awal sampai akhir.": "How to use Ormawa Visit Command Center from start to finish.",
+  "Alur penggunaan Ormawa Visit Management System dari awal sampai akhir.": "How to use Ormawa Visit Management System from start to finish.",
 
   // Member picker (PIC)
   "dipilih": "selected",
