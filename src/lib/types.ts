@@ -22,6 +22,8 @@ export interface Division {
   short: string;
   color: string;
   order: number;
+  /** When true, this division is NOT shown as a column in the rundown table. */
+  exclude_from_rundown?: boolean;
 }
 
 export interface OVEvent {
@@ -125,15 +127,20 @@ export interface RundownItem {
   time_end: string;
   duration: string;
   activity: string;
-  keterangan: string;
-  host: string;
-  opr_link: string;
+  keterangan: string; // "Catatan" column in the rundown table
   mc: string;
-  job_lo: string;
-  job_event: string;
-  job_consump: string;
-  job_creative: string;
-  job_opr: string;
+  operator: string; // "Kebutuhan Operator" column
+  /** Per-division activity during the event, keyed by division key. Dynamic
+   *  columns in the rundown table. */
+  division_jobs: Record<string, string>;
+  // --- legacy columns (kept for backward-compat with older rows) ---
+  host?: string;
+  opr_link?: string;
+  job_lo?: string;
+  job_event?: string;
+  job_consump?: string;
+  job_creative?: string;
+  job_opr?: string;
 }
 
 export interface JobHariH {

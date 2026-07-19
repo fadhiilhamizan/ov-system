@@ -266,7 +266,9 @@ export function getRundown(eventId?: string, variant?: string): RundownItem[] {
   let list = getDb().rundown;
   if (eventId) list = list.filter((r) => r.event_id === eventId);
   if (variant) list = list.filter((r) => r.variant === variant);
-  return [...list].sort((a, b) => a.no - b.no);
+  return [...list]
+    .sort((a, b) => a.no - b.no)
+    .map((r) => ({ ...r, division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {} }));
 }
 
 // ---------------- Jobs (Hari-H) ----------------
@@ -278,6 +280,24 @@ export function getJobs(eventId?: string): JobHariH[] {
 // ---------------- FAQ ----------------
 export function getFaqs(): Faq[] {
   return getDb().faqs;
+}
+export function createFaq(input: { question: string; answer: string }): Faq {
+  const f: Faq = { id: uid("faq"), question: input.question, answer: input.answer };
+  mutate((db) => db.faqs.push(f));
+  return f;
+}
+export function updateFaq(id: string, patch: { question?: string; answer?: string }) {
+  return mutate((db) => {
+    const f = db.faqs.find((x) => x.id === id);
+    if (!f) return null;
+    Object.assign(f, patch);
+    return f;
+  });
+}
+export function deleteFaq(id: string) {
+  mutate((db) => {
+    db.faqs = db.faqs.filter((f) => f.id !== id);
+  });
 }
 
 // ---------------- Teams ----------------
@@ -445,6 +465,7 @@ export function createDivision(input: Partial<Division>): Division {
     short: input.short ?? "",
     color: input.color ?? "#6366f1",
     order: input.order ?? Math.max(0, ...divs.map((x) => x.order)) + 1,
+    exclude_from_rundown: input.exclude_from_rundown ?? false,
   };
   mutate((db) => db.divisions.push(d));
   return d;
@@ -501,14 +522,9 @@ export function createRundown(input: Partial<RundownItem>): RundownItem {
     duration: input.duration ?? "",
     activity: input.activity ?? "",
     keterangan: input.keterangan ?? "",
-    host: input.host ?? "",
-    opr_link: input.opr_link ?? "",
     mc: input.mc ?? "",
-    job_lo: input.job_lo ?? "",
-    job_event: input.job_event ?? "",
-    job_consump: input.job_consump ?? "",
-    job_creative: input.job_creative ?? "",
-    job_opr: input.job_opr ?? "",
+    operator: input.operator ?? "",
+    division_jobs: input.division_jobs ?? {},
   };
   mutate((db) => db.rundown.push(r));
   return r;

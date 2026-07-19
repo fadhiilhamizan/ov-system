@@ -153,7 +153,7 @@ out += `with p as (insert into budget_plans(name,event_id) values ('RAB Ormawa V
 
 out += `\n-- rundown\n`;
 rundown.forEach(([ts, te, activity, ket], i) => {
-  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values (${q(EV)},'A',${i + 1},${q(ts)},${q(te)},'',${q(activity)},${q(ket)},'','','','','','','','');\n`;
+  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values (${q(EV)},'A',${i + 1},${q(ts)},${q(te)},'',${q(activity)},${q(ket)},'','','{}'::jsonb);\n`;
 });
 
 out += `\n-- job hari-h\n`;

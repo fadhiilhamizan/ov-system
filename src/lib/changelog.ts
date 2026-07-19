@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.6.0",
+    date: "2026-07-20",
+    title: "Rundown tabel dinamis, Panduan, FAQ CRUD, & penyempurnaan divisi",
+    changes: [
+      "Rundown dirombak menjadi tabel: tiap divisi otomatis menjadi kolom, kegiatannya diisi langsung di tabel. MC & Kebutuhan Operator tetap kolom tetap; kolom pengisi acara dihapus.",
+      "Rundown: edit & hapus langsung di tabel (tanpa menu titik tiga), plus catatan cepat 'terlalu cepat/lama [menit]'.",
+      "Divisi: tambah opsi edit & hapus, singkatan otomatis kapital maksimal 4 huruf, dan opsi 'tidak diikutsertakan pada rundown'.",
+      "Anggota & Tim: kolom kini bisa diurutkan (sorting).",
+      "FAQ kini bisa CRUD penuh (tambah/edit/hapus), dan Panduan dipisah ke menu tersendiri.",
+      "Panduan: flowchart alur penggunaan website dari awal sampai akhir, lengkap dengan percabangan keputusan.",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-07-19",
     title: "Mode Demo, template pembuatan, & integrasi anggota",

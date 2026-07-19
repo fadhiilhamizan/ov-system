@@ -148,12 +148,18 @@ export const memberSchema = z.object({
 export const divisionSchema = z.object({
   key: z.string().trim().max(60).optional(),
   name: nonEmpty("Nama divisi", 200),
-  short: z.string().trim().max(60).optional(),
+  short: z
+    .string()
+    .trim()
+    .max(4, "Singkatan maksimal 4 huruf.")
+    .transform((v) => v.toUpperCase())
+    .optional(),
   color: z
     .string()
     .trim()
     .regex(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i, "Warna harus kode hex (mis. #3b82f6).")
     .optional(),
+  exclude_from_rundown: z.boolean().optional(),
 });
 
 // ---------------- Prospects ----------------
@@ -172,6 +178,12 @@ export const prospectSchema = z
 export const createLinkSchema = z.object({
   name: nonEmpty("Nama tautan", 200),
   url: urlSchema,
+});
+
+// ---------------- FAQ ----------------
+export const faqSchema = z.object({
+  question: nonEmpty("Pertanyaan", 300),
+  answer: nonEmpty("Jawaban", 3000),
 });
 
 // ============================================================

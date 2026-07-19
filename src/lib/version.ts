@@ -10,5 +10,5 @@
 // footer (src/components/layout/app-shell.tsx reads APP_VERSION) in sync.
 // See AGENTS.md → "Versioning".
 // ============================================================
-export const APP_VERSION = "1.5.0";
-export const APP_CODENAME = "Sanggar";
+export const APP_VERSION = "1.6.0";
+export const APP_CODENAME = "Juklak";

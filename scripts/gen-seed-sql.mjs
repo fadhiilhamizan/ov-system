@@ -11,12 +11,13 @@ const q = (v) => (v === null || v === undefined || v === "" ? "null" : `'${Strin
 const n = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? "null" : Number(v));
 const b = (v) => (v ? "true" : "false");
 const d = (v) => (v ? `'${v}'` : "null");
+const jb = (v) => `'${JSON.stringify(v ?? {}).replace(/'/g, "''")}'::jsonb`;
 
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
 out += `-- divisions\n`;
 for (const x of seed.divisions)
-  out += `insert into divisions(key,name,short,color,"order") values (${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order}) on conflict (key) do nothing;\n`;
+  out += `insert into divisions(key,name,short,color,"order",exclude_from_rundown) values (${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (key) do nothing;\n`;
 
 out += `\n-- events\n`;
 for (const e of seed.events)
@@ -48,7 +49,7 @@ for (const plan of seed.budgetPlans) {
 
 out += `-- rundown\n`;
 for (const r of seed.rundown)
-  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values (${q(r.event_id)},${q(r.variant)},${n(r.no)},${q(r.time_start)},${q(r.time_end)},${q(r.duration)},${q(r.activity)},${q(r.keterangan)},${q(r.host)},${q(r.opr_link)},${q(r.mc)},${q(r.job_lo)},${q(r.job_event)},${q(r.job_consump)},${q(r.job_creative)},${q(r.job_opr)});\n`;
+  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values (${q(r.event_id)},${q(r.variant)},${n(r.no)},${q(r.time_start)},${q(r.time_end)},${q(r.duration)},${q(r.activity)},${q(r.keterangan)},${q(r.mc)},${q(r.operator)},${jb(r.division_jobs)});\n`;
 
 out += `\n-- job hari-h\n`;
 for (const j of seed.jobHariH)

@@ -6,77 +6,88 @@
       "name": "PIC Ormawa Visit",
       "short": "PIC",
       "color": "#6366f1",
-      "order": 1
+      "order": 1,
+      "exclude_from_rundown": false
     },
     {
       "key": "COORDINATOR",
       "name": "Coordinator",
       "short": "COORD",
       "color": "#8b5cf6",
-      "order": 2
+      "order": 2,
+      "exclude_from_rundown": false
     },
     {
       "key": "SECRETARY",
       "name": "Secretary",
       "short": "SEC",
       "color": "#ec4899",
-      "order": 3
+      "order": 3,
+      "exclude_from_rundown": false
     },
     {
       "key": "TREASURER",
       "name": "Treasurer",
       "short": "TRE",
       "color": "#f59e0b",
-      "order": 4
+      "order": 4,
+      "exclude_from_rundown": false
     },
     {
       "key": "LO",
       "name": "Liaison Officer",
       "short": "LO",
       "color": "#0ea5e9",
-      "order": 5
+      "order": 5,
+      "exclude_from_rundown": false
     },
     {
       "key": "EVENT",
       "name": "Event",
       "short": "EVE",
       "color": "#10b981",
-      "order": 6
+      "order": 6,
+      "exclude_from_rundown": false
     },
     {
       "key": "CONSUMPTION",
       "name": "Consumption",
       "short": "CON",
       "color": "#f97316",
-      "order": 7
+      "order": 7,
+      "exclude_from_rundown": false
     },
     {
       "key": "OPERATIONAL",
       "name": "Operational",
       "short": "OPR",
       "color": "#64748b",
-      "order": 8
+      "order": 8,
+      "exclude_from_rundown": false
     },
     {
       "key": "CREATIVE",
       "name": "Creative",
       "short": "CRE",
       "color": "#d946ef",
-      "order": 9
+      "order": 9,
+      "exclude_from_rundown": false
     },
     {
       "key": "MARKETING",
       "name": "Marketing",
       "short": "MRT",
       "color": "#f43f5e",
-      "order": 10
+      "order": 10,
+      "exclude_from_rundown": false
     },
     {
       "key": "OUTSOURCE",
       "name": "Outsource",
       "short": "OUT",
       "color": "#14b8a6",
-      "order": 11
+      "order": 11,
+      "exclude_from_rundown": false
     }
   ],
   "events": [
@@ -5838,14 +5849,15 @@
       "duration": "30'",
       "activity": "Keberangkatan",
       "keterangan": "",
-      "host": "PIC dan Koordinator",
-      "opr_link": "Persiapan Screen & Timekeeper",
       "mc": "Persiapan",
-      "job_lo": "Mengingatkan Acara ke Peserta",
-      "job_event": "Mempersiapkan Acara",
-      "job_consump": "Menyiapkan Konsum Peserta",
-      "job_creative": "Dokum Persiapan Acara + Menyiapkan Creative Corner + Photobooth",
-      "job_opr": "Memasang Banner dan Plastik sampah"
+      "division_jobs": {
+        "LO": "Mengingatkan Acara ke Peserta",
+        "EVENT": "Mempersiapkan Acara",
+        "CONSUMPTION": "Menyiapkan Konsum Peserta",
+        "CREATIVE": "Dokum Persiapan Acara + Menyiapkan Creative Corner + Photobooth",
+        "OPERATIONAL": "Memasang Banner dan Plastik sampah"
+      },
+      "operator": "Persiapan Screen & Timekeeper"
     },
     {
       "id": "r-2",
@@ -5857,14 +5869,9 @@
       "duration": "10'",
       "activity": "Registrasi Panitia",
       "keterangan": "",
-      "host": "",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-3",
@@ -5876,14 +5883,9 @@
       "duration": "20'",
       "activity": "Persiapan dan Penataan Acara",
       "keterangan": "",
-      "host": "",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-4",
@@ -5895,14 +5897,14 @@
       "duration": "30'",
       "activity": "Registrasi Peserta",
       "keterangan": "",
-      "host": "",
-      "opr_link": "Bumper Bumper",
       "mc": "",
-      "job_lo": "Registrasi dan Mengarahkan peserta",
-      "job_event": "",
-      "job_consump": "Membagikan Konsum saat Regist",
-      "job_creative": "Dokum Acara",
-      "job_opr": "Menjaga Ketertiban dan Keamanan Acara"
+      "division_jobs": {
+        "LO": "Registrasi dan Mengarahkan peserta",
+        "CONSUMPTION": "Membagikan Konsum saat Regist",
+        "CREATIVE": "Dokum Acara",
+        "OPERATIONAL": "Menjaga Ketertiban dan Keamanan Acara"
+      },
+      "operator": "Bumper Bumper"
     },
     {
       "id": "r-5",
@@ -5914,14 +5916,9 @@
       "duration": "5'",
       "activity": "Pembukaan dan Doa oleh MC",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "Mc memulai acara",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-6",
@@ -5933,14 +5930,9 @@
       "duration": "5'",
       "activity": "Menyanyikan Lagu Indonesia Raya dan Hymne ITS",
       "keterangan": "",
-      "host": "",
-      "opr_link": "https://intip.in/IndonesiaRayatambahHymneITS",
       "mc": "Mempersilahkan Peserta Berdiri",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "https://intip.in/IndonesiaRayatambahHymneITS"
     },
     {
       "id": "r-7",
@@ -5952,14 +5944,9 @@
       "duration": "10'",
       "activity": "Sambutan Kedua Ketua Pelaksana",
       "keterangan": "",
-      "host": "Mba Dhona Mas Bintang",
-      "opr_link": "Bumper Bumper",
       "mc": "Mempersilahkan kedua ketua pelaksana",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Bumper Bumper"
     },
     {
       "id": "r-8",
@@ -5971,14 +5958,9 @@
       "duration": "5'",
       "activity": "Sambutan Ketua HMSI ITS",
       "keterangan": "",
-      "host": "Mas Arkaan",
-      "opr_link": "",
       "mc": "Mempersilahkan",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-9",
@@ -5990,14 +5972,9 @@
       "duration": "5'",
       "activity": "Sambutan Ketua HMTG ITS",
       "keterangan": "",
-      "host": "Mas Adam",
-      "opr_link": "",
       "mc": "Mempersilahkan",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-10",
@@ -6009,14 +5986,9 @@
       "duration": "30'",
       "activity": "Presentasi Profil HMSI ITS",
       "keterangan": "",
-      "host": "Mas Arkaan",
-      "opr_link": "https://intip.in/PPTHMSIOV",
       "mc": "Mempersilahkan Mas Arkaan",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "https://intip.in/PPTHMSIOV"
     },
     {
       "id": "r-11",
@@ -6028,14 +6000,11 @@
       "duration": "30'",
       "activity": "Presentasi Profil HMTG ITS",
       "keterangan": "",
-      "host": "Mas Adam",
-      "opr_link": "https://intip.in/PPTHMTGOV",
       "mc": "Mempersilahkan Kahima HMTG",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "Menyiapkankan Snack FGD",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "CONSUMPTION": "Menyiapkankan Snack FGD"
+      },
+      "operator": "https://intip.in/PPTHMTGOV"
     },
     {
       "id": "r-12",
@@ -6047,14 +6016,11 @@
       "duration": "75'",
       "activity": "Focus Group Discussion (FGD)",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Bumper",
       "mc": "Mulai FGD",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "Membagikan Snack FGD",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "CONSUMPTION": "Membagikan Snack FGD"
+      },
+      "operator": "Bumper"
     },
     {
       "id": "r-13",
@@ -6066,14 +6032,11 @@
       "duration": "5'",
       "activity": "Pengkondisian Peserta",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Bumper",
       "mc": "Kembali ke tempat masing2",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "Merapihkan dan Membuang Snack",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "CONSUMPTION": "Merapihkan dan Membuang Snack"
+      },
+      "operator": "Bumper"
     },
     {
       "id": "r-14",
@@ -6085,14 +6048,12 @@
       "duration": "30'",
       "activity": "Sesi Ice Breaking",
       "keterangan": "",
-      "host": "PIC Games (Crystal, Haqi)",
-      "opr_link": "https://intip.in/PPTGamesOV https://www.worldguessr.com/",
       "mc": "Diserahkan ke PIC Games",
-      "job_lo": "",
-      "job_event": "Menjelaskan dan Menuntun jalannya games",
-      "job_consump": "Mempersiapkan Hadiah Pemenang Games",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "EVENT": "Menjelaskan dan Menuntun jalannya games",
+        "CONSUMPTION": "Mempersiapkan Hadiah Pemenang Games"
+      },
+      "operator": "https://intip.in/PPTGamesOV https://www.worldguessr.com/"
     },
     {
       "id": "r-15",
@@ -6104,14 +6065,9 @@
       "duration": "5'",
       "activity": "Penyerahan Plakat",
       "keterangan": "",
-      "host": "Perwakilan HMSI dan HMTG",
-      "opr_link": "Bumper",
       "mc": "Penyerahan oleh Perwakilan",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Bumper"
     },
     {
       "id": "r-16",
@@ -6123,14 +6079,9 @@
       "duration": "5'",
       "activity": "Pengisian Feedback & Kesan Pesan",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "https://intip.in/FeedbackdanKesanPesanOV",
       "mc": "Mengarahkan feedback & kesan pesan",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "https://intip.in/FeedbackdanKesanPesanOV"
     },
     {
       "id": "r-17",
@@ -6142,14 +6093,9 @@
       "duration": "15'",
       "activity": "Creative Corner & Photobooth",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Bumper",
       "mc": "Mengingatkan kalau ada cc dan photobooth",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Bumper"
     },
     {
       "id": "r-18",
@@ -6161,14 +6107,9 @@
       "duration": "10'",
       "activity": "Foto Bersama dan Dokumentasi",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "Mengarahkan Foto bersama dan Dokum",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-19",
@@ -6180,14 +6121,9 @@
       "duration": "5'",
       "activity": "Penutupan oleh MC",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "Penutupan Acara",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-20",
@@ -6199,14 +6135,12 @@
       "duration": "30’",
       "activity": "Keberangkatan",
       "keterangan": "",
-      "host": "-",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "Mba Lila : Mengingatkan H-1 Jam OV di grup HMSI, dan mengechat kadep terkait departemen nya sudah ot",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": "mas irhab dan alwida : mengarahkan di lantai 1 ke lantai 2 yg dtg dr parkiran biologi"
+      "division_jobs": {
+        "LO": "Mba Lila : Mengingatkan H-1 Jam OV di grup HMSI, dan mengechat kadep terkait departemen nya sudah ot",
+        "OPERATIONAL": "mas irhab dan alwida : mengarahkan di lantai 1 ke lantai 2 yg dtg dr parkiran biologi"
+      },
+      "operator": ""
     },
     {
       "id": "r-21",
@@ -6218,14 +6152,15 @@
       "duration": "30’",
       "activity": "Registrasi peserta",
       "keterangan": "Meja regis",
-      "host": "LO",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "Mba lila : Membantu di meja regist untuk ttd roti dan presensi hmsi",
-      "job_event": "Mas padil, mega, zain : Mengarahkan ke tempat duduk peserta",
-      "job_consump": "Membagikan snack dan mengingatkan peserta untuk mengisi absensi konsumsi",
-      "job_creative": "Menjaga creative corner",
-      "job_opr": "mas burhan: Play bumper dan music"
+      "division_jobs": {
+        "LO": "Mba lila : Membantu di meja regist untuk ttd roti dan presensi hmsi",
+        "EVENT": "Mas padil, mega, zain : Mengarahkan ke tempat duduk peserta",
+        "CONSUMPTION": "Membagikan snack dan mengingatkan peserta untuk mengisi absensi konsumsi",
+        "CREATIVE": "Menjaga creative corner",
+        "OPERATIONAL": "mas burhan: Play bumper dan music"
+      },
+      "operator": ""
     },
     {
       "id": "r-22",
@@ -6237,14 +6172,11 @@
       "duration": "5’",
       "activity": "Pembukaan dan doa",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "Membuka acara",
-      "job_lo": "",
-      "job_event": "Ali: Start Timekeeper",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "EVENT": "Ali: Start Timekeeper"
+      },
+      "operator": ""
     },
     {
       "id": "r-23",
@@ -6256,14 +6188,11 @@
       "duration": "5’",
       "activity": "Menyanyikan lagu indonesia raya",
       "keterangan": "",
-      "host": "OPR",
-      "opr_link": "Indonesia Raya + Himne ITS + Himne FSAD.mp4",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": "Play video indonesia raya dan hymne its"
+      "division_jobs": {
+        "OPERATIONAL": "Play video indonesia raya dan hymne its"
+      },
+      "operator": "Indonesia Raya + Himne ITS + Himne FSAD.mp4"
     },
     {
       "id": "r-24",
@@ -6275,14 +6204,9 @@
       "duration": "10’",
       "activity": "Sambutan kedua ketua pelaksana",
       "keterangan": "",
-      "host": "PIC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-25",
@@ -6294,14 +6218,9 @@
       "duration": "5’",
       "activity": "Sambutan ketua HMSI ITS",
       "keterangan": "",
-      "host": "Ketua HMSI ITS",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-26",
@@ -6313,14 +6232,9 @@
       "duration": "5’",
       "activity": "Sambutan ketua HIMASTA ITS",
       "keterangan": "",
-      "host": "Ketua HIMASTA ITS",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-27",
@@ -6332,14 +6246,11 @@
       "duration": "25'",
       "activity": "Presentasi Profil HMSI ITS",
       "keterangan": "",
-      "host": "Pemateri HMSI ITS",
-      "opr_link": "PPT OV HMSI PilarAksi",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": "memaparkan ppt hmsi (25 menit) + ise 5 menit"
+      "division_jobs": {
+        "OPERATIONAL": "memaparkan ppt hmsi (25 menit) + ise 5 menit"
+      },
+      "operator": "PPT OV HMSI PilarAksi"
     },
     {
       "id": "r-28",
@@ -6351,14 +6262,9 @@
       "duration": "5’",
       "activity": "Presentasi ISE",
       "keterangan": "",
-      "host": "Pemateri ISE",
-      "opr_link": "PPT ISE! 2026 OV.pdf",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "PPT ISE! 2026 OV.pdf"
     },
     {
       "id": "r-29",
@@ -6370,14 +6276,9 @@
       "duration": "30’",
       "activity": "Presentasi Profil HIMASTA ITS",
       "keterangan": "",
-      "host": "Pemateri HIMASTA ITS",
-      "opr_link": "HBTN HIMASTA-ITS X HMSI (1).pdf",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "HBTN HIMASTA-ITS X HMSI (1).pdf"
     },
     {
       "id": "r-30",
@@ -6389,14 +6290,9 @@
       "duration": "5’",
       "activity": "Pengkondisian peserta",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "Di take over PIC HMSI",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-31",
@@ -6408,14 +6304,9 @@
       "duration": "60’",
       "activity": "Focus Group Discussion (FGD)",
       "keterangan": "",
-      "host": "-",
-      "opr_link": "Notulensi FGD OV HMSIxHIMASTA",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Notulensi FGD OV HMSIxHIMASTA"
     },
     {
       "id": "r-32",
@@ -6427,14 +6318,11 @@
       "duration": "10’",
       "activity": "Creative corner",
       "keterangan": "",
-      "host": "Creative",
-      "opr_link": "",
       "mc": "Pengarahan untuk ISHOMA di bebaskan tapi melewati creative corner",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "Menjaga creative corner",
-      "job_opr": ""
+      "division_jobs": {
+        "CREATIVE": "Menjaga creative corner"
+      },
+      "operator": ""
     },
     {
       "id": "r-33",
@@ -6446,14 +6334,11 @@
       "duration": "35’",
       "activity": "ISHOMA",
       "keterangan": "",
-      "host": "Konsumsi",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "Membagikan konsumsi makanan berat dan mengingatkan untuk mengisi absensi konsumsi",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "CONSUMPTION": "Membagikan konsumsi makanan berat dan mengingatkan untuk mengisi absensi konsumsi"
+      },
+      "operator": ""
     },
     {
       "id": "r-34",
@@ -6465,14 +6350,11 @@
       "duration": "30’",
       "activity": "Sesi Ice Breaking",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "https://canva.link/n0mald0iv1vwod0",
       "mc": "",
-      "job_lo": "",
-      "job_event": "Naina : Start Mini games Aya : Start juga untuk penentuan poin dan pantau tim selama games bersama alex Ali : tetap time keeper",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "EVENT": "Naina : Start Mini games Aya : Start juga untuk penentuan poin dan pantau tim selama games bersama alex Ali : tetap time keeper"
+      },
+      "operator": "https://canva.link/n0mald0iv1vwod0"
     },
     {
       "id": "r-35",
@@ -6484,14 +6366,9 @@
       "duration": "5’",
       "activity": "Penyerahan Plakat",
       "keterangan": "",
-      "host": "Ketua HMSI",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-36",
@@ -6503,14 +6380,11 @@
       "duration": "5'",
       "activity": "Pengisian Feedback",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Feedback",
       "mc": "Mengingatkan pengisian Feedback",
-      "job_lo": "Memberikan bc an feedback di grup hmsi",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {
+        "LO": "Memberikan bc an feedback di grup hmsi"
+      },
+      "operator": "Feedback"
     },
     {
       "id": "r-37",
@@ -6522,14 +6396,11 @@
       "duration": "15’",
       "activity": "Pengisian Kesan Pesan",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Feedback",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": "Menampilkan QR code lalu membuka padlet (kesan pesan) untuk melihat kesan pesan yang sudah terisi"
+      "division_jobs": {
+        "OPERATIONAL": "Menampilkan QR code lalu membuka padlet (kesan pesan) untuk melihat kesan pesan yang sudah terisi"
+      },
+      "operator": "Feedback"
     },
     {
       "id": "r-38",
@@ -6541,14 +6412,9 @@
       "duration": "15’",
       "activity": "Foto dan Konten Bersama",
       "keterangan": "",
-      "host": "Creative",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-39",
@@ -6560,14 +6426,12 @@
       "duration": "5’",
       "activity": "Penutupan",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "Setelah pulang ingatkan isi feedback di grup hmsi",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": "Play bumper dan music"
+      "division_jobs": {
+        "LO": "Setelah pulang ingatkan isi feedback di grup hmsi",
+        "OPERATIONAL": "Play bumper dan music"
+      },
+      "operator": ""
     },
     {
       "id": "r-40",
@@ -6579,14 +6443,9 @@
       "duration": "30’",
       "activity": "Keberangkatan",
       "keterangan": "",
-      "host": "-",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-41",
@@ -6598,14 +6457,9 @@
       "duration": "30’",
       "activity": "Registrasi peserta",
       "keterangan": "Meja regis",
-      "host": "LO",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-42",
@@ -6617,14 +6471,9 @@
       "duration": "5’",
       "activity": "Pembukaan dan doa",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-43",
@@ -6636,14 +6485,9 @@
       "duration": "5’",
       "activity": "Menyanyikan lagu indonesia raya",
       "keterangan": "",
-      "host": "OPR",
-      "opr_link": "Indonesia Raya + Himne ITS + Himne FSAD.mp4",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Indonesia Raya + Himne ITS + Himne FSAD.mp4"
     },
     {
       "id": "r-44",
@@ -6655,14 +6499,9 @@
       "duration": "10’",
       "activity": "Sambutan kedua ketua pelaksana",
       "keterangan": "",
-      "host": "PIC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-45",
@@ -6674,14 +6513,9 @@
       "duration": "3’",
       "activity": "Sambutan ketua HMSI ITS",
       "keterangan": "",
-      "host": "Ketua HMSI ITS",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-46",
@@ -6693,14 +6527,9 @@
       "duration": "2’",
       "activity": "Sambutan ketua HIMASTA ITS",
       "keterangan": "",
-      "host": "Ketua HIMASTA ITS",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-47",
@@ -6712,14 +6541,9 @@
       "duration": "30’",
       "activity": "Presentasi Profil HMSI ITS",
       "keterangan": "",
-      "host": "Pemateri HMSI ITS",
-      "opr_link": "PPT OV HMSI PilarAksi",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "PPT OV HMSI PilarAksi"
     },
     {
       "id": "r-48",
@@ -6731,14 +6555,9 @@
       "duration": "30’",
       "activity": "Presentasi Profil HIMASTA ITS",
       "keterangan": "",
-      "host": "Pemateri HIMASTA ITS",
-      "opr_link": "HBTN HIMASTA-ITS X HMSI (1).pdf",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "HBTN HIMASTA-ITS X HMSI (1).pdf"
     },
     {
       "id": "r-49",
@@ -6750,14 +6569,9 @@
       "duration": "5’",
       "activity": "Pengkondisian peserta",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-50",
@@ -6769,14 +6583,9 @@
       "duration": "60’",
       "activity": "Focus Group Discussion (FGD)",
       "keterangan": "",
-      "host": "-",
-      "opr_link": "Notulensi FGD OV HMSIxHIMASTA",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Notulensi FGD OV HMSIxHIMASTA"
     },
     {
       "id": "r-51",
@@ -6788,14 +6597,9 @@
       "duration": "10’",
       "activity": "Creative corner",
       "keterangan": "",
-      "host": "Creative",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-52",
@@ -6807,14 +6611,9 @@
       "duration": "35’",
       "activity": "ISHOMA",
       "keterangan": "",
-      "host": "Konsumsi",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-53",
@@ -6826,14 +6625,9 @@
       "duration": "30’",
       "activity": "Sesi Ice Breaking",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "https://canva.link/n0mald0iv1vwod0",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "https://canva.link/n0mald0iv1vwod0"
     },
     {
       "id": "r-54",
@@ -6845,14 +6639,9 @@
       "duration": "5’",
       "activity": "Penyerahan Plakat",
       "keterangan": "",
-      "host": "Ketua HMSI",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-55",
@@ -6864,14 +6653,9 @@
       "duration": "5'",
       "activity": "Pengisian Feedback",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Feedback",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Feedback"
     },
     {
       "id": "r-56",
@@ -6883,14 +6667,9 @@
       "duration": "5’",
       "activity": "Pengisian Kesan Pesan",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "Feedback",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": "Feedback"
     },
     {
       "id": "r-57",
@@ -6902,14 +6681,9 @@
       "duration": "15’",
       "activity": "Foto dan Konten Bersama",
       "keterangan": "",
-      "host": "Creative",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     },
     {
       "id": "r-58",
@@ -6921,14 +6695,9 @@
       "duration": "5’",
       "activity": "Penutupan",
       "keterangan": "",
-      "host": "MC",
-      "opr_link": "",
       "mc": "",
-      "job_lo": "",
-      "job_event": "",
-      "job_consump": "",
-      "job_creative": "",
-      "job_opr": ""
+      "division_jobs": {},
+      "operator": ""
     }
   ],
   "jobHariH": [

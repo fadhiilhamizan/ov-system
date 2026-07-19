@@ -87,6 +87,7 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   members: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   events: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   settings: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
 };
 

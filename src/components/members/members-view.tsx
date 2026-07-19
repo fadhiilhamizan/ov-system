@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Search, Users2, IdCard, Plus } from "lucide-react";
+import { Search, Users2, IdCard, Plus, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -18,6 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+
+type SortCol = "name" | "nrp" | "division" | "type" | "year";
 
 export function MembersView({
   members,
@@ -42,13 +44,35 @@ export function MembersView({
   const [q, setQ] = React.useState("");
   const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
-  const divMap = new Map(divisions.map((d) => [d.key, d]));
+  const [sort, setSort] = React.useState<{ col: SortCol; dir: 1 | -1 }>({ col: "name", dir: 1 });
+  const divMap = React.useMemo(() => new Map(divisions.map((d) => [d.key, d])), [divisions]);
 
-  const filtered = members.filter((m) => {
-    if (type !== "all" && m.type !== type) return false;
-    if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
-  });
+  const filtered = React.useMemo(() => {
+    const list = members.filter((m) => {
+      if (type !== "all" && m.type !== type) return false;
+      if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
+      return true;
+    });
+    const val = (m: Member): string | number => {
+      switch (sort.col) {
+        case "nrp": return m.nrp ?? "";
+        case "division": return divMap.get(m.division ?? "")?.name ?? "";
+        case "type": return m.type;
+        case "year": return m.year ?? 0;
+        default: return (m.name ?? "").toLowerCase();
+      }
+    };
+    return [...list].sort((a, b) => {
+      const av = val(a), bv = val(b);
+      if (av < bv) return -1 * sort.dir;
+      if (av > bv) return 1 * sort.dir;
+      return 0;
+    });
+  }, [members, type, q, sort, divMap]);
+
+  function toggleSort(col: SortCol) {
+    setSort((prev) => (prev.col === col ? { col, dir: (prev.dir === 1 ? -1 : 1) as 1 | -1 } : { col, dir: 1 }));
+  }
 
   // Only ever act on selections that are still visible under the current filter
   // (ids selected then filtered away, or deleted, are simply ignored — no effect
@@ -135,11 +159,11 @@ export function MembersView({
                       />
                     </TableHead>
                   )}
-                  <TableHead>{tr("Nama")}</TableHead>
-                  <TableHead>NRP</TableHead>
-                  <TableHead>{tr("Divisi")}</TableHead>
-                  <TableHead>{tr("Tipe")}</TableHead>
-                  <TableHead>{tr("Angkatan")}</TableHead>
+                  <SortHead col="name" label={tr("Nama")} sort={sort} onSort={toggleSort} />
+                  <SortHead col="nrp" label="NRP" sort={sort} onSort={toggleSort} />
+                  <SortHead col="division" label={tr("Divisi")} sort={sort} onSort={toggleSort} />
+                  <SortHead col="type" label={tr("Tipe")} sort={sort} onSort={toggleSort} />
+                  <SortHead col="year" label={tr("Angkatan")} sort={sort} onSort={toggleSort} />
                   {canManageMembers && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -250,5 +274,35 @@ export function MembersView({
         )}
       </TabsContent>
     </Tabs>
+  );
+}
+
+function SortHead({
+  col, label, sort, onSort,
+}: {
+  col: SortCol;
+  label: string;
+  sort: { col: SortCol; dir: 1 | -1 };
+  onSort: (c: SortCol) => void;
+}) {
+  const active = sort.col === col;
+  return (
+    <TableHead>
+      <button
+        type="button"
+        onClick={() => onSort(col)}
+        className={cn(
+          "inline-flex items-center gap-1 transition hover:text-foreground",
+          active ? "font-semibold text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {label}
+        {active ? (
+          sort.dir === 1 ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
+        ) : (
+          <ChevronsUpDown className="size-3.5 opacity-50" />
+        )}
+      </button>
+    </TableHead>
   );
 }

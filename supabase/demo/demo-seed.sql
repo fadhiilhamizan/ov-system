@@ -61,11 +61,11 @@ with p as (insert into budget_plans(name,event_id) values ('RAB Ormawa Visit Dem
   ) as v(category,no,name,qty,unit,unit_price,total,ord);
 
 -- rundown
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('demo-ov','A',1,'08:00','08:30','','Registrasi peserta','Semua panitia','','','','','','','','');
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('demo-ov','A',2,'08:30','09:00','','Pembukaan & sambutan','MC','','','','','','','','');
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('demo-ov','A',3,'09:00','10:30','','Sesi sharing & FGD','Moderator','','','','','','','','');
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('demo-ov','A',4,'10:30','11:30','','Games & networking','Event','','','','','','','','');
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('demo-ov','A',5,'11:30','12:00','','Penutupan & dokumentasi','MC','','','','','','','','');
+insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values ('demo-ov','A',1,'08:00','08:30','','Registrasi peserta','Semua panitia','','','{}'::jsonb);
+insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values ('demo-ov','A',2,'08:30','09:00','','Pembukaan & sambutan','MC','','','{}'::jsonb);
+insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values ('demo-ov','A',3,'09:00','10:30','','Sesi sharing & FGD','Moderator','','','{}'::jsonb);
+insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values ('demo-ov','A',4,'10:30','11:30','','Games & networking','Event','','','{}'::jsonb);
+insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values ('demo-ov','A',5,'11:30','12:00','','Penutupan & dokumentasi','MC','','','{}'::jsonb);
 
 -- job hari-h
 insert into job_harih(event_id,no,pic,job,notes) values ('demo-ov','1','Maya','MC Acara','');

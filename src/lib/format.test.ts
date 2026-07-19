@@ -36,7 +36,10 @@ describe("formatDate", () => {
 
 describe("daysUntil", () => {
   it("is 0 for today", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Use the LOCAL date (daysUntil works in local time; toISOString is UTC and
+    // would drift across the midnight-UTC boundary).
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     expect(daysUntil(today)).toBe(0);
   });
   it("returns null for nullish", () => {

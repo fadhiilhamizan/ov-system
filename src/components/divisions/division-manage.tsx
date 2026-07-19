@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { createDivisionAction, updateDivisionAction, deleteDivisionAction } from "@/lib/actions/manage";
 import { cn } from "@/lib/utils";
@@ -59,17 +60,23 @@ function DivisionFormDialog({
     name: division?.name ?? "",
     short: division?.short ?? "",
     color: division?.color ?? PRESET[0],
+    exclude_from_rundown: division?.exclude_from_rundown ?? false,
   }));
   React.useEffect(() => {
-    if (isOpen && division) setF({ key: division.key, name: division.name, short: division.short, color: division.color });
+    if (isOpen && division)
+      setF({
+        key: division.key, name: division.name, short: division.short, color: division.color,
+        exclude_from_rundown: division.exclude_from_rundown ?? false,
+      });
   }, [isOpen, division]);
 
   function submit() {
     start(async () => {
       const payload = {
         name: f.name,
-        short: f.short || f.name.slice(0, 3).toUpperCase(),
+        short: (f.short || f.name.slice(0, 4)).toUpperCase(),
         color: f.color,
+        exclude_from_rundown: f.exclude_from_rundown,
         ...(mode === "create" ? { key: f.key || undefined } : {}),
       };
       const res = mode === "create" ? await createDivisionAction(payload) : await updateDivisionAction(division!.key, payload);
@@ -93,8 +100,13 @@ function DivisionFormDialog({
               <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Liaison Officer" />
             </div>
             <div className="grid gap-1.5">
-              <Label>{t("Singkatan")}</Label>
-              <Input value={f.short} onChange={(e) => setF({ ...f, short: e.target.value })} placeholder="LO" maxLength={6} />
+              <Label>{t("Singkatan")} <span className="text-[10px] text-muted-foreground">({t("maks. 4 huruf")})</span></Label>
+              <Input
+                value={f.short}
+                onChange={(e) => setF({ ...f, short: e.target.value.toUpperCase().slice(0, 4) })}
+                placeholder="LO"
+                maxLength={4}
+              />
             </div>
           </div>
           {mode === "create" && (
@@ -130,6 +142,13 @@ function DivisionFormDialog({
               ))}
             </div>
           </div>
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border p-3 text-sm">
+            <Checkbox
+              checked={f.exclude_from_rundown}
+              onCheckedChange={(v) => setF({ ...f, exclude_from_rundown: v === true })}
+            />
+            <span>{t("Divisi tidak diikutsertakan pada rundown")}</span>
+          </label>
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>

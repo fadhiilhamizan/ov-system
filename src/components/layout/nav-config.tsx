@@ -11,6 +11,7 @@ import {
   Users,
   CalendarRange,
   HelpCircle,
+  BookOpen,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -126,10 +127,17 @@ export const NAV: NavGroup[] = [
       },
       {
         key: "faq",
-        label: "FAQ & Panduan",
+        label: "FAQ",
         href: "/faq",
         icon: HelpCircle,
         description: "Pertanyaan umum seputar Ormawa Visit",
+      },
+      {
+        key: "panduan",
+        label: "Panduan",
+        href: "/panduan",
+        icon: BookOpen,
+        description: "Alur penggunaan website dari awal sampai akhir",
       },
       {
         key: "settings",

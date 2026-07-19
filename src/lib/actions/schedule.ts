@@ -14,7 +14,8 @@ const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
 // ---------------- Rundown ----------------
 export async function createRundownAction(input: Partial<RundownItem>): Promise<Result> {
   if (!can.manageRundown(await getCurrentUser())) return DENY;
-  if (!input.activity?.trim()) return { ok: false, error: "Kegiatan wajib diisi." };
+  // Empty rows are allowed — the rundown table lets you add a blank row and
+  // fill it in inline.
   await createRundown(input);
   revalidatePath("/", "layout");
   return { ok: true };

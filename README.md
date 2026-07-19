@@ -19,11 +19,12 @@ Ormawa Visit adalah program kunjungan benchmarking antar organisasi mahasiswa. S
 | Anggaran (RAB) | Itemisasi biaya per kategori dan skenario, subtotal dan total, dapat diedit langsung. |
 | Super Link | Direktori dokumen, form, dan tautan penting yang dikelompokkan per edisi dan divisi. |
 | Kalender | Deadline tugas dan hari pelaksanaan dalam tampilan bulanan; klik tanggal untuk detail atau menambah tugas. |
-| Rundown | Susunan acara (juklak-juknis) beberapa versi beserta job per divisi. |
+| Rundown | Susunan acara (juklak-juknis) berupa tabel: tiap divisi menjadi kolom yang bisa diisi kegiatannya langsung, dengan catatan evaluasi. |
 | Hari-H | Pembagian tugas panitia saat hari pelaksanaan. |
 | Anggota & Tim | Direktori fungsionaris dan intern, struktur tim per divisi, angkatan otomatis dari NRP. |
 | Ormawa Visit | Riwayat dan rencana seluruh gelaran lintas kabinet. Edisi baru bisa dibuat dari template edisi sebelumnya. |
-| FAQ | Panduan dan pertanyaan umum. |
+| FAQ | Pertanyaan umum dengan CRUD penuh (tambah/edit/hapus oleh admin). |
+| Panduan | Flowchart alur penggunaan website dari awal sampai akhir. |
 | Pengaturan | Status backend, matriks hak akses tiga tingkat, changelog, serta backup dan rollback. |
 
 ## Peran dan Hak Akses
@@ -83,7 +84,7 @@ npm run db:demo    # regenerasi seed & skrip akses untuk project Supabase demo
 ## Konfigurasi Supabase (Cloud)
 
 1. Buat proyek di [supabase.com](https://supabase.com) (free tier mencukupi).
-2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0013), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012 dan 0013).
+2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0014), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012, 0013, dan 0014).
 3. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings > API pada dashboard Supabase).
 4. Buat user pertama (Authentication > Users), kemudian set `role = 'admin'` pada tabel `profiles`.
 5. `npm run dev` — `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
@@ -95,7 +96,7 @@ Selama variabel Supabase kosong, aplikasi tetap berjalan penuh dalam mode demo l
 Mode Demo memungkinkan siapa pun mencoba sistem tanpa akun dan tanpa risiko, karena berjalan di **project Supabase yang benar-benar terpisah** dari produksi. Data demo dan data asli tidak dapat saling mengakses. Fitur ini opsional dan hanya muncul bila dikonfigurasi.
 
 1. Buat **project Supabase kedua** khusus demo.
-2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011), lalu:
+2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011, plus 0014), lalu:
    - `supabase/demo/demo-open-access.sql` — menonaktifkan RLS agar demo bisa dipakai tanpa login (jalankan **hanya** di project demo, jangan di produksi).
    - `supabase/demo/demo-seed.sql` — mengisi data mockup contoh.
    - Berkas ini dihasilkan oleh `npm run db:demo`.

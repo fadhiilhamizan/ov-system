@@ -271,6 +271,45 @@ export const EN: Record<string, string> = {
   "Coba Mode Demo (database terpisah)": "Try Demo Mode (separate database)",
   "Mode Demo — database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.": "Demo Mode — separate database, safe to experiment. Changes don't affect real data.",
 
+  // Divisions
+  "maks. 4 huruf": "max 4 letters",
+  "Divisi tidak diikutsertakan pada rundown": "Exclude this division from the rundown",
+  "tanpa rundown": "no rundown",
+  "Belum ada divisi.": "No divisions yet.",
+
+  // Rundown table
+  "Waktu": "Time",
+  "Kebutuhan Operator": "Operator needs",
+  "Catatan…": "Note…",
+  "Catatan cepat": "Quick note",
+  "Catatan cepat evaluasi": "Quick evaluation note",
+  "Menit": "Minutes",
+  "menit": "min",
+  "Terlalu cepat": "Too fast",
+  "Terlalu lama": "Too slow",
+  "Tambah baris": "Add row",
+  "Menyimpan…": "Saving…",
+  "Belum ada baris rundown untuk versi ini.": "No rundown rows for this version yet.",
+  "Susunan acara hari-H: tiap divisi menjadi kolom, isi kegiatannya langsung di tabel.": "Event-day schedule: each division is a column — fill its activity in the table.",
+
+  // FAQ CRUD
+  "FAQ ditambahkan": "FAQ added",
+  "FAQ diperbarui": "FAQ updated",
+  "FAQ dihapus": "FAQ deleted",
+  "Tambah FAQ": "Add FAQ",
+  "Edit FAQ": "Edit FAQ",
+  "Pertanyaan yang sering diajukan seputar Ormawa Visit.": "Frequently asked questions about Ormawa Visit.",
+  "Apa itu Ormawa Visit?": "What is Ormawa Visit?",
+  "Pertanyaan": "Question",
+  "Jawaban": "Answer",
+  "Belum ada FAQ": "No FAQ yet",
+  "Pertanyaan yang sering diajukan akan tampil di sini.": "Frequently asked questions will appear here.",
+
+  // Panduan (guide)
+  "Panduan": "Guide",
+  "Panduan Penggunaan": "User Guide",
+  "Alur penggunaan Ormawa Visit Command Center dari awal sampai akhir.": "How to use Ormawa Visit Command Center from start to finish.",
+
   // Member picker (PIC)
   "dipilih": "selected",
   "Pilih dari anggota (opsional)": "Pick from members (optional)",

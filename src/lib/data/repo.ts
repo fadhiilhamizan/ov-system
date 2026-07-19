@@ -273,10 +273,15 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
   if (eventId) q = q.eq("event_id", eventId);
   if (variant) q = q.eq("variant", variant);
   const { data } = await q;
-  return coalesce((data ?? []) as RundownItem[], [
-    "variant", "time_start", "time_end", "duration", "activity", "keterangan",
-    "host", "opr_link", "mc", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
+  const rows = coalesce((data ?? []) as RundownItem[], [
+    "variant", "time_start", "time_end", "duration", "activity", "keterangan", "mc", "operator",
+    "host", "opr_link", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
   ]);
+  // division_jobs is jsonb — ensure it's always a plain object.
+  return rows.map((r) => ({
+    ...r,
+    division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {},
+  }));
 });
 
 // ---------------- Jobs ----------------
@@ -294,6 +299,29 @@ export const getFaqs = cache(async (): Promise<Faq[]> => {
   const { data } = await (await sb()).from("faqs").select("*").order("order");
   return (data ?? []) as Faq[];
 });
+export async function createFaq(input: { question: string; answer: string }) {
+  if (!USE_SUPABASE) return local.createFaq(input);
+  const client = await sb();
+  const { data: maxRow } = await client
+    .from("faqs")
+    .select("order")
+    .order("order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  await client.from("faqs").insert({
+    question: input.question,
+    answer: input.answer,
+    order: (maxRow?.order ?? 0) + 1,
+  });
+}
+export async function updateFaq(id: string, patch: { question?: string; answer?: string }) {
+  if (!USE_SUPABASE) return local.updateFaq(id, patch);
+  await (await sb()).from("faqs").update(patch).eq("id", id);
+}
+export async function deleteFaq(id: string) {
+  if (!USE_SUPABASE) return local.deleteFaq(id);
+  await (await sb()).from("faqs").delete().eq("id", id);
+}
 
 // ---------------- Teams ----------------
 export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
@@ -523,6 +551,7 @@ export async function createDivision(input: Partial<Division>) {
     short: input.short ?? "",
     color: input.color ?? "#6366f1",
     order: input.order ?? (maxRow?.order ?? 0) + 1,
+    exclude_from_rundown: input.exclude_from_rundown ?? false,
   });
 }
 export async function updateDivision(key: string, patch: Partial<Division>) {
@@ -575,14 +604,9 @@ export async function createRundown(input: Partial<RundownItem>) {
     duration: input.duration ?? "",
     activity: input.activity ?? "",
     keterangan: input.keterangan ?? "",
-    host: input.host ?? "",
-    opr_link: input.opr_link ?? "",
     mc: input.mc ?? "",
-    job_lo: input.job_lo ?? "",
-    job_event: input.job_event ?? "",
-    job_consump: input.job_consump ?? "",
-    job_creative: input.job_creative ?? "",
-    job_opr: input.job_opr ?? "",
+    operator: input.operator ?? "",
+    division_jobs: input.division_jobs ?? {},
   });
 }
 export async function updateRundown(id: string, patch: Partial<RundownItem>) {
