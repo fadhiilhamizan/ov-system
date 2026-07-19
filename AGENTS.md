@@ -22,3 +22,7 @@ Actions return `{ ok: true } | { ok: false; error: string }` (Indonesian error c
 **Testing.** Vitest. `npm test` runs `*.test.ts` under `src/`. Cover pure logic (permissions, schemas, formatters, scheduling/budget math). Run `npm test` + `npx tsc --noEmit` before finishing a change.
 
 **Seed.** `npm run db:seed` regenerates `supabase/seed.sql` from `src/lib/seed/seed.json`.
+
+**Versioning (v1.x.y).** The version scheme is `v1.x.y`: the leading `1` is **LOCKED — never change it**. Bump `x` (minor) for a big/feature update and reset `y` to 0; bump `y` (patch) for a small fix. On every shipped change you MUST: (1) update `APP_VERSION` in `src/lib/version.ts`, (2) prepend a matching entry to `CHANGELOG` in `src/lib/changelog.ts` (Indonesian copy, newest first), and (3) keep the footer in sync — it reads `APP_VERSION` from `src/components/layout/app-shell.tsx`, so no manual edit needed there. The Settings page renders the changelog automatically.
+
+**Demo edition.** `src/lib/demo.ts` defines the protected `ov-demo` sandbox (`DEMO_EVENT_ID`, `isDemoEvent`). It cannot be deleted (guarded in `deleteEvent` repo + `deleteEventAction`) and can be reset to its mockup via `resetDemoDataAction` (`src/lib/actions/demo.ts` → `resetDemoData` in repo). The demo dataset is derived from the `ov-demo`-scoped rows in `seed.json` (single source). If you add a new event-scoped table, extend `resetDemoData` to clear+reseed it too.

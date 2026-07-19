@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Users2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
-import { getDivision, getDivisions, getEvents, getTasks, getTeams } from "@/lib/data/repo";
+import { getDivision, getDivisions, getEvents, getMembers, getTasks, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
+import { MembersProvider } from "@/components/members/members-context";
 import { Badge } from "@/components/ui/badge";
 import { getT } from "@/lib/i18n/server";
 import type { DivisionKey } from "@/lib/types";
@@ -20,11 +21,12 @@ export default async function DivisionDetailPage({
   if (!division) notFound();
 
   const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
-  const [tasks, divisions, events, teams] = await Promise.all([
+  const [tasks, divisions, events, teams, members] = await Promise.all([
     getTasks({ event_id: event.id, division: division.key }),
     getDivisions(),
     getEvents(),
     getTeams(event.id),
+    getMembers(event.id),
   ]);
   const team = teams.find((t) => t.division === division.key);
   const t = await getT();
@@ -63,14 +65,16 @@ export default async function DivisionDetailPage({
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
 
-      <TasksView
-        tasks={tasks}
-        divisions={divisions}
-        events={events}
-        activeEventId={event.id}
-        user={user}
-        lockedDivision={division.key as DivisionKey}
-      />
+      <MembersProvider members={members}>
+        <TasksView
+          tasks={tasks}
+          divisions={divisions}
+          events={events}
+          activeEventId={event.id}
+          user={user}
+          lockedDivision={division.key as DivisionKey}
+        />
+      </MembersProvider>
     </div>
   );
 }

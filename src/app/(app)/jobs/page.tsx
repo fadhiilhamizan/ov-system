@@ -1,17 +1,18 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { getJobs } from "@/lib/data/repo";
+import { getJobs, getMembers } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { JobsTable } from "@/components/jobs/jobs-table";
+import { MembersProvider } from "@/components/members/members-context";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Hari-H" };
 
 export default async function JobsPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
-  const jobs = await getJobs(event.id);
+  const [jobs, members] = await Promise.all([getJobs(event.id), getMembers(event.id)]);
 
   return (
     <div>
@@ -20,7 +21,9 @@ export default async function JobsPage() {
         description={t("Pembagian tugas panitia saat hari pelaksanaan Ormawa Visit.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <JobsTable jobs={jobs} eventId={event.id} canManage={can.manageJobs(user)} />
+      <MembersProvider members={members}>
+        <JobsTable jobs={jobs} eventId={event.id} canManage={can.manageJobs(user)} />
+      </MembersProvider>
     </div>
   );
 }

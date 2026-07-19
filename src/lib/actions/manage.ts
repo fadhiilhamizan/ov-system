@@ -3,23 +3,46 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
-  createEvent, updateEvent, deleteEvent,
-  createMember, updateMember, deleteMember,
+  createEvent, updateEvent, deleteEvent, cloneEventData,
+  createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision,
   createTeam, updateTeam, deleteTeam,
 } from "@/lib/data/repo";
+import type { CloneOptions } from "@/lib/data/repo";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import { isDemoEvent } from "@/lib/demo";
+import { uid } from "@/lib/utils";
 import { eventSchema, memberSchema, divisionSchema, idSchema, parse } from "./schemas";
+
+export interface EventTemplate extends CloneOptions {
+  sourceEventId: string;
+}
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
 
 // ---------------- Events (Ormawa Visit) ----------------
-export async function createEventAction(input: Partial<OVEvent>): Promise<Result> {
+export async function createEventAction(
+  input: Partial<OVEvent>,
+  template?: EventTemplate,
+): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const v = parse(eventSchema, input);
   if (!v.ok) return v;
-  await createEvent(v.data);
+  // Generate the id up front so we can seed the new edition from a template.
+  const id = uid("ov");
+  await createEvent({ ...v.data, id });
+  if (template?.sourceEventId) {
+    const sv = parse(idSchema, template.sourceEventId);
+    if (sv.ok) {
+      await cloneEventData(sv.data, id, {
+        tasks: !!template.tasks,
+        rundown: !!template.rundown,
+        jobs: !!template.jobs,
+        budget: !!template.budget,
+      });
+    }
+  }
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -37,6 +60,8 @@ export async function deleteEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
+  if (isDemoEvent(idv.data))
+    return { ok: false, error: "Ormawa Visit Demo tidak bisa dihapus." };
   await deleteEvent(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
@@ -66,6 +91,38 @@ export async function deleteMemberAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteMember(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Validate a list of row ids, returning the clean ids or the first error. */
+function parseIds(ids: string[]): { ok: true; data: string[] } | { ok: false; error: string } {
+  if (!Array.isArray(ids) || ids.length === 0) return { ok: false, error: "Tidak ada yang dipilih." };
+  const clean: string[] = [];
+  for (const id of ids) {
+    const v = parse(idSchema, id);
+    if (!v.ok) return v;
+    clean.push(v.data);
+  }
+  return { ok: true, data: clean };
+}
+
+export async function bulkDeleteMembersAction(ids: string[]): Promise<Result> {
+  if (!can.manageMembers(await getCurrentUser())) return DENY;
+  const idv = parseIds(ids);
+  if (!idv.ok) return idv;
+  await bulkDeleteMembers(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Member>): Promise<Result> {
+  if (!can.manageMembers(await getCurrentUser())) return DENY;
+  const idv = parseIds(ids);
+  if (!idv.ok) return idv;
+  const v = parse(memberSchema.partial(), patch);
+  if (!v.ok) return v;
+  await bulkUpdateMembers(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

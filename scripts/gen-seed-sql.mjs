@@ -20,7 +20,7 @@ for (const x of seed.divisions)
 
 out += `\n-- events\n`;
 for (const e of seed.events)
-  out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,location,status,"order") values (${q(e.id)},${q(e.code)},${q(e.title)},${q(e.partner)},${q(e.campus)},${q(e.type)},${q(e.mode)},${q(e.cabinet)},${d(e.event_date)},${q(e.location)},${q(e.status)},${e.order}) on conflict (id) do nothing;\n`;
+  out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values (${q(e.id)},${q(e.code)},${q(e.title)},${q(e.partner)},${q(e.campus)},${q(e.type)},${q(e.mode)},${q(e.cabinet)},${d(e.event_date)},${d(e.plan_start)},${d(e.plan_end)},${q(e.location)},${q(e.status)},${e.order}) on conflict (id) do nothing;\n`;
 
 out += `\n-- members\n`;
 for (const m of seed.members)
@@ -32,11 +32,11 @@ for (const t of seed.tasks)
 
 out += `\n-- prospects\n`;
 for (const p of seed.prospects)
-  out += `insert into prospects(batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(p.batch)},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
+  out += `insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(p.event_id)},${q(p.batch)},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
 
 out += `\n-- links\n`;
 for (const l of seed.links)
-  out += `insert into links(section,division,name,url,note,source) values (${q(l.section)},${q(l.division)},${q(l.name)},${q(l.url)},${q(l.note)},${q(l.source)});\n`;
+  out += `insert into links(event_id,section,division,name,url,note,source) values (${q(l.event_id)},${q(l.section)},${q(l.division)},${q(l.name)},${q(l.url)},${q(l.note)},${q(l.source)});\n`;
 
 out += `\n-- budget\n`;
 for (const plan of seed.budgetPlans) {

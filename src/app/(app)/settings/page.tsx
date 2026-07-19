@@ -1,4 +1,4 @@
-import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
+import { Check, Eye, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical } from "lucide-react";
 import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { BackupPanel } from "@/components/settings/backup-panel";
-import { ROLE_META, ROLE_ORDER, MODULE_ACCESS } from "@/lib/constants";
+import { DemoResetPanel } from "@/components/settings/demo-reset";
+import { ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
 import { formatDate } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
@@ -117,6 +118,17 @@ export default async function SettingsPage() {
         </Card>
       )}
 
+      {/* Ormawa Visit Demo */}
+      <Card>
+        <CardHeader className="flex-row items-center gap-2">
+          <FlaskConical className="size-4 text-primary" />
+          <CardTitle>{t("Ormawa Visit Demo")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DemoResetPanel />
+        </CardContent>
+      </Card>
+
       {/* Roles matrix */}
       <Card>
         <CardHeader className="flex-row items-center gap-2">
@@ -124,6 +136,18 @@ export default async function SettingsPage() {
           <CardTitle>{t("Hak Akses per Peran")}</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Legend: three access states */}
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="size-4 text-emerald-500" /> {t("Akses penuh (kelola)")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Eye className="size-4 text-sky-500" /> {t("Hanya lihat")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Minus className="size-4 text-muted-foreground/40" /> {t("Tidak ada akses")}
+            </span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -141,13 +165,15 @@ export default async function SettingsPage() {
                   <tr key={m.key} className="border-b border-border/60 last:border-0">
                     <td className="py-2 pr-3 font-medium">{t(m.label)}</td>
                     {ROLE_ORDER.map((r) => {
-                      const allowed = (MODULE_ACCESS[m.key] ?? []).includes(r);
+                      const level = MODULE_ACCESS_LEVEL[m.key]?.[r] ?? "none";
                       return (
                         <td key={r} className="px-2 py-2 text-center">
-                          {allowed ? (
-                            <Check className="mx-auto size-4 text-emerald-500" />
+                          {level === "full" ? (
+                            <Check className="mx-auto size-4 text-emerald-500" aria-label={t("Akses penuh (kelola)")} />
+                          ) : level === "view" ? (
+                            <Eye className="mx-auto size-4 text-sky-500" aria-label={t("Hanya lihat")} />
                           ) : (
-                            <Minus className="mx-auto size-4 text-muted-foreground/40" />
+                            <Minus className="mx-auto size-4 text-muted-foreground/40" aria-label={t("Tidak ada akses")} />
                           )}
                         </td>
                       );

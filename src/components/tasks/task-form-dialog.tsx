@@ -26,6 +26,8 @@ import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
+import { MemberPicker } from "@/components/members/member-picker";
+import { useMembers } from "@/components/members/members-context";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
@@ -54,6 +56,7 @@ export function TaskFormDialog({
   trigger?: React.ReactNode;
 }) {
   const t = useT();
+  const members = useMembers();
   const [internalOpen, setInternalOpen] = React.useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -182,12 +185,12 @@ export function TaskFormDialog({
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor="pic">{t("PIC / Penanggung Jawab")}</Label>
-                <Input
-                  id="pic"
+                <Label>{t("PIC / Penanggung Jawab")}</Label>
+                <MemberPicker
+                  members={members}
                   value={form.pic}
-                  onChange={(e) => setForm({ ...form, pic: e.target.value })}
-                  placeholder={t("Nama, bisa lebih dari satu (opsional)")}
+                  onChange={(v) => setForm({ ...form, pic: v })}
+                  placeholder={t("Pilih dari anggota (opsional)")}
                 />
               </div>
 

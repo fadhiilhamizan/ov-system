@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
 import {
-  MemberFormDialog, MemberActions, TeamFormDialog, TeamActions,
+  MemberFormDialog, MemberActions, MemberBulkBar, TeamFormDialog, TeamActions,
 } from "./member-manage";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -40,6 +41,7 @@ export function MembersView({
   const tr = useT();
   const [q, setQ] = React.useState("");
   const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const divMap = new Map(divisions.map((d) => [d.key, d]));
 
   const filtered = members.filter((m) => {
@@ -47,6 +49,24 @@ export function MembersView({
     if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
+
+  // Only ever act on selections that are still visible under the current filter
+  // (ids selected then filtered away, or deleted, are simply ignored — no effect
+  // needed to prune state).
+  const filteredIds = filtered.map((m) => m.id);
+  const selectedInView = filteredIds.filter((id) => selected.has(id));
+  const allChecked = filtered.length > 0 && selectedInView.length === filtered.length;
+  const someChecked = selectedInView.length > 0 && !allChecked;
+  function toggleAll() {
+    setSelected(allChecked ? new Set() : new Set(filteredIds));
+  }
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   const fungCount = members.filter((m) => m.type === "fungsionaris").length;
   const internCount = members.filter((m) => m.type === "intern").length;
@@ -97,11 +117,24 @@ export function MembersView({
           </div>
         </div>
 
+        {canManageMembers && selectedInView.length > 0 && (
+          <MemberBulkBar ids={selectedInView} divisions={divisions} onClear={() => setSelected(new Set())} />
+        )}
+
         {filtered.length ? (
           <div className="rounded-xl border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  {canManageMembers && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                        onCheckedChange={toggleAll}
+                        aria-label={tr("Pilih semua")}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>{tr("Nama")}</TableHead>
                   <TableHead>NRP</TableHead>
                   <TableHead>{tr("Divisi")}</TableHead>
@@ -114,7 +147,16 @@ export function MembersView({
                 {filtered.map((m) => {
                   const div = m.division ? divMap.get(m.division) : undefined;
                   return (
-                    <TableRow key={m.id}>
+                    <TableRow key={m.id} data-state={selected.has(m.id) ? "selected" : undefined}>
+                      {canManageMembers && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(m.id)}
+                            onCheckedChange={() => toggleOne(m.id)}
+                            aria-label={tr("Pilih")}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center gap-2.5">
                           <Avatar name={m.nickname || m.name} size={32} />

@@ -135,6 +135,22 @@
       "location": "TBD",
       "status": "planning",
       "order": 4
+    },
+    {
+      "id": "ov-demo",
+      "code": "DEMO",
+      "title": "Ormawa Visit Demo",
+      "partner": "Himpunan Demo",
+      "campus": "Universitas Contoh",
+      "type": "external",
+      "mode": "offline",
+      "cabinet": "Sandbox",
+      "event_date": "2026-09-20",
+      "plan_start": "2026-08-01",
+      "plan_end": "2026-09-19",
+      "location": "Ruang Demo, Gedung Contoh",
+      "status": "planning",
+      "order": 100
     }
   ],
   "members": [
@@ -144,7 +160,7 @@
       "nickname": "Arjuna",
       "nrp": "5026221210",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-2",
@@ -152,7 +168,7 @@
       "nickname": "Agha",
       "nrp": "5026241003",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-3",
@@ -160,7 +176,7 @@
       "nickname": "Karina",
       "nrp": "5026221012",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-4",
@@ -168,7 +184,7 @@
       "nickname": "Naila",
       "nrp": "5026241004",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-5",
@@ -176,7 +192,7 @@
       "nickname": "Annisa",
       "nrp": "5026221069",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-6",
@@ -184,7 +200,7 @@
       "nickname": "Anin",
       "nrp": "5026241007",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-7",
@@ -192,7 +208,7 @@
       "nickname": "Nisrina",
       "nrp": "5026231111",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-8",
@@ -200,7 +216,7 @@
       "nickname": "Ali",
       "nrp": "5026241008",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-9",
@@ -208,7 +224,7 @@
       "nickname": "Natasha",
       "nrp": "5026221011",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-10",
@@ -216,7 +232,7 @@
       "nickname": "Audrey",
       "nrp": "5026241014",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-11",
@@ -224,7 +240,7 @@
       "nickname": "Muhammad",
       "nrp": "5026221080",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-12",
@@ -232,7 +248,7 @@
       "nickname": "Zahra",
       "nrp": "5026241017",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-13",
@@ -240,7 +256,7 @@
       "nickname": "Agung",
       "nrp": "5026221176",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-14",
@@ -248,7 +264,7 @@
       "nickname": "Christine",
       "nrp": "5026241028",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-15",
@@ -256,7 +272,7 @@
       "nickname": "Arayzi",
       "nrp": "5026221194",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2022
     },
     {
       "id": "m-i-16",
@@ -264,7 +280,7 @@
       "nickname": "Athilah",
       "nrp": "5026241031",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-17",
@@ -272,7 +288,7 @@
       "nickname": "Devika",
       "nrp": "5026231061",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-18",
@@ -280,7 +296,7 @@
       "nickname": "Sandhik",
       "nrp": "5026241043",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-19",
@@ -288,7 +304,7 @@
       "nickname": "Muhammad",
       "nrp": "5026231150",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-20",
@@ -296,7 +312,7 @@
       "nickname": "Mahda",
       "nrp": "5026241050",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-21",
@@ -304,7 +320,7 @@
       "nickname": "Rahmadhona",
       "nrp": "5026231217",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-22",
@@ -312,7 +328,7 @@
       "nickname": "Aqzha",
       "nrp": "5026241053",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-23",
@@ -320,7 +336,7 @@
       "nickname": "Muhammad",
       "nrp": "5026231161",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-24",
@@ -328,7 +344,7 @@
       "nickname": "Crystal",
       "nrp": "5026241055",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-25",
@@ -336,7 +352,7 @@
       "nickname": "Irhab",
       "nrp": "5051231041",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-26",
@@ -344,7 +360,7 @@
       "nickname": "Avatar",
       "nrp": "5026241066",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-27",
@@ -352,7 +368,7 @@
       "nickname": "Auliya",
       "nrp": "5026231141",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-28",
@@ -360,7 +376,7 @@
       "nickname": "Kezia",
       "nrp": "5026241076",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-29",
@@ -368,7 +384,7 @@
       "nickname": "Mochammad",
       "nrp": "5026231172",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-30",
@@ -376,7 +392,7 @@
       "nickname": "Irene",
       "nrp": "5026241080",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-31",
@@ -384,7 +400,7 @@
       "nickname": "Fadhiil",
       "nrp": "5026231128",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-32",
@@ -392,7 +408,7 @@
       "nickname": "Alwida",
       "nrp": "5026241090",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-f-33",
@@ -400,7 +416,7 @@
       "nickname": "Burhan",
       "nrp": "5026231074",
       "type": "fungsionaris",
-      "year": 2025
+      "year": 2023
     },
     {
       "id": "m-i-34",
@@ -408,7 +424,7 @@
       "nickname": "Claudio",
       "nrp": "5026241112",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-35",
@@ -416,7 +432,7 @@
       "nickname": "Adel",
       "nrp": "5026241120",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-36",
@@ -424,7 +440,7 @@
       "nickname": "Aqil",
       "nrp": "5026241128",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-37",
@@ -432,7 +448,7 @@
       "nickname": "Franz",
       "nrp": "5026241156",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-38",
@@ -440,7 +456,7 @@
       "nickname": "Nicho",
       "nrp": "5026241187",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-39",
@@ -448,7 +464,7 @@
       "nickname": "Izaaz",
       "nrp": "5026241194",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-40",
@@ -456,7 +472,7 @@
       "nickname": "Thalia",
       "nrp": "5026241201",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-41",
@@ -464,7 +480,7 @@
       "nickname": "Andro",
       "nrp": "5026241204",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-42",
@@ -472,7 +488,7 @@
       "nickname": "Fairuz/Babeh",
       "nrp": "5051241003",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-43",
@@ -480,7 +496,7 @@
       "nickname": "Suci",
       "nrp": "5051241013",
       "type": "intern",
-      "year": 2025
+      "year": 2024
     },
     {
       "id": "m-i-44",
@@ -488,7 +504,87 @@
       "nickname": "Hayyu",
       "nrp": "5051241024",
       "type": "intern",
-      "year": 2025
+      "year": 2024
+    },
+    {
+      "id": "dm-1",
+      "event_id": "ov-demo",
+      "name": "Budi Santoso",
+      "nickname": "Budi",
+      "nrp": "5026221001",
+      "type": "fungsionaris",
+      "year": 2022,
+      "division": "EVENT"
+    },
+    {
+      "id": "dm-2",
+      "event_id": "ov-demo",
+      "name": "Siti Rahma",
+      "nickname": "Siti",
+      "nrp": "5026221002",
+      "type": "fungsionaris",
+      "year": 2022,
+      "division": "SECRETARY"
+    },
+    {
+      "id": "dm-3",
+      "event_id": "ov-demo",
+      "name": "Andi Wijaya",
+      "nickname": "Andi",
+      "nrp": "5026231003",
+      "type": "fungsionaris",
+      "year": 2023,
+      "division": "LO"
+    },
+    {
+      "id": "dm-4",
+      "event_id": "ov-demo",
+      "name": "Dewi Lestari",
+      "nickname": "Dewi",
+      "nrp": "5026231004",
+      "type": "fungsionaris",
+      "year": 2023,
+      "division": "CREATIVE"
+    },
+    {
+      "id": "dm-5",
+      "event_id": "ov-demo",
+      "name": "Rizky Pratama",
+      "nickname": "Rizky",
+      "nrp": "5026231005",
+      "type": "fungsionaris",
+      "year": 2023,
+      "division": "MARKETING"
+    },
+    {
+      "id": "dm-6",
+      "event_id": "ov-demo",
+      "name": "Putri Anggraini",
+      "nickname": "Putri",
+      "nrp": "5026241006",
+      "type": "intern",
+      "year": 2024,
+      "division": "CONSUMPTION"
+    },
+    {
+      "id": "dm-7",
+      "event_id": "ov-demo",
+      "name": "Fajar Nugroho",
+      "nickname": "Fajar",
+      "nrp": "5026241007",
+      "type": "intern",
+      "year": 2024,
+      "division": "OPERATIONAL"
+    },
+    {
+      "id": "dm-8",
+      "event_id": "ov-demo",
+      "name": "Maya Kusuma",
+      "nickname": "Maya",
+      "nrp": "5026241008",
+      "type": "intern",
+      "year": 2024,
+      "division": "EVENT"
     }
   ],
   "tasks": [
@@ -3461,6 +3557,186 @@
       "notes": "Request ini bisa menggunakan desain yang lalu, yang hanya diganti logo dan nama benchmarkingnya, hubungi staff jika intern tidak bisa mengaksesnya Baca SOP dan Tata Cara Request IM dengan seksama (lihat: Deadline pengajuan Request IM) Request IM : LINK",
       "result": "",
       "status": "done"
+    },
+    {
+      "id": "dt-1",
+      "event_id": "ov-demo",
+      "division": "EVENT",
+      "no": "1",
+      "pic": "Budi",
+      "title": "Susun konsep acara Ormawa Visit Demo",
+      "start_date": "2026-08-01",
+      "start_raw": "",
+      "end_date": "2026-08-10",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "ongoing"
+    },
+    {
+      "id": "dt-2",
+      "event_id": "ov-demo",
+      "division": "EVENT",
+      "no": "2",
+      "pic": "Maya",
+      "title": "Buat rundown acara",
+      "start_date": "2026-08-11",
+      "start_raw": "",
+      "end_date": "2026-08-20",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-3",
+      "event_id": "ov-demo",
+      "division": "EVENT",
+      "no": "3",
+      "pic": "Budi",
+      "title": "Evaluasi & laporan akhir",
+      "start_date": "2026-09-21",
+      "start_raw": "",
+      "end_date": "2026-09-30",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-4",
+      "event_id": "ov-demo",
+      "division": "SECRETARY",
+      "no": "1",
+      "pic": "Siti",
+      "title": "Buat proposal & surat-menyurat",
+      "start_date": "2026-08-01",
+      "start_raw": "",
+      "end_date": "2026-08-08",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "done"
+    },
+    {
+      "id": "dt-5",
+      "event_id": "ov-demo",
+      "division": "SECRETARY",
+      "no": "2",
+      "pic": "Siti",
+      "title": "Notulensi & absensi peserta",
+      "start_date": "2026-09-20",
+      "start_raw": "",
+      "end_date": "2026-09-20",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-6",
+      "event_id": "ov-demo",
+      "division": "LO",
+      "no": "1",
+      "pic": "Andi",
+      "title": "Koordinasi dengan himpunan partner",
+      "start_date": "2026-08-05",
+      "start_raw": "",
+      "end_date": "2026-08-25",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "ongoing"
+    },
+    {
+      "id": "dt-7",
+      "event_id": "ov-demo",
+      "division": "LO",
+      "no": "2",
+      "pic": "Andi",
+      "title": "Follow up konfirmasi kehadiran",
+      "start_date": "2026-09-01",
+      "start_raw": "",
+      "end_date": "2026-09-15",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-8",
+      "event_id": "ov-demo",
+      "division": "CREATIVE",
+      "no": "1",
+      "pic": "Dewi",
+      "title": "Desain feeds & poster publikasi",
+      "start_date": "2026-08-10",
+      "start_raw": "",
+      "end_date": "2026-08-18",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "done"
+    },
+    {
+      "id": "dt-9",
+      "event_id": "ov-demo",
+      "division": "CREATIVE",
+      "no": "2",
+      "pic": "Dewi",
+      "title": "Siapkan dokumentasi acara",
+      "start_date": "2026-09-19",
+      "start_raw": "",
+      "end_date": "2026-09-20",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-10",
+      "event_id": "ov-demo",
+      "division": "MARKETING",
+      "no": "1",
+      "pic": "Rizky",
+      "title": "Publikasi di media sosial",
+      "start_date": "2026-08-18",
+      "start_raw": "",
+      "end_date": "2026-09-18",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "ongoing"
+    },
+    {
+      "id": "dt-11",
+      "event_id": "ov-demo",
+      "division": "CONSUMPTION",
+      "no": "1",
+      "pic": "Putri",
+      "title": "Pesan konsumsi peserta",
+      "start_date": "2026-09-10",
+      "start_raw": "",
+      "end_date": "2026-09-19",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "todo"
+    },
+    {
+      "id": "dt-12",
+      "event_id": "ov-demo",
+      "division": "OPERATIONAL",
+      "no": "1",
+      "pic": "Fajar",
+      "title": "Siapkan perlengkapan & ruangan",
+      "start_date": "2026-09-15",
+      "start_raw": "",
+      "end_date": "2026-09-19",
+      "end_raw": "",
+      "notes": "",
+      "result": "",
+      "status": "overtime"
     }
   ],
   "prospects": [
@@ -4500,6 +4776,78 @@
       "our_response": "TOLAK",
       "done": true,
       "source": "2026"
+    },
+    {
+      "id": "dp-1",
+      "event_id": "ov-demo",
+      "batch": "Demo",
+      "no": "1",
+      "date_text": "",
+      "month": "",
+      "contact": "",
+      "org_name": "Himpunan Demo A",
+      "campus": "Universitas Contoh",
+      "location": "",
+      "pic": "Andi",
+      "contact_status": "DIHUBUNGI",
+      "their_response": "DITERIMA",
+      "our_response": "",
+      "done": false,
+      "source": "demo"
+    },
+    {
+      "id": "dp-2",
+      "event_id": "ov-demo",
+      "batch": "Demo",
+      "no": "2",
+      "date_text": "",
+      "month": "",
+      "contact": "",
+      "org_name": "Himpunan Demo B",
+      "campus": "Institut Sample",
+      "location": "",
+      "pic": "Andi",
+      "contact_status": "MENGHUBUNGI",
+      "their_response": "DITUNGGU",
+      "our_response": "",
+      "done": false,
+      "source": "demo"
+    },
+    {
+      "id": "dp-3",
+      "event_id": "ov-demo",
+      "batch": "Demo",
+      "no": "3",
+      "date_text": "",
+      "month": "",
+      "contact": "",
+      "org_name": "Himpunan Demo C",
+      "campus": "Politeknik Uji",
+      "location": "",
+      "pic": "Budi",
+      "contact_status": "DIHUBUNGI",
+      "their_response": "DITOLAK",
+      "our_response": "",
+      "done": false,
+      "source": "demo"
+    },
+    {
+      "id": "dp-4",
+      "event_id": "ov-demo",
+      "batch": "Demo",
+      "no": "4",
+      "date_text": "",
+      "month": "",
+      "contact": "",
+      "org_name": "Himpunan Demo D",
+      "campus": "Universitas Placeholder",
+      "location": "",
+      "pic": "",
+      "contact_status": "",
+      "their_response": "",
+      "our_response": "",
+      "done": false,
+      "source": "demo"
     }
   ],
   "links": [
@@ -5442,6 +5790,46 @@
       "note": "",
       "source": "main",
       "event_id": "ov1-2025"
+    },
+    {
+      "id": "dl-1",
+      "event_id": "ov-demo",
+      "section": "Proposal",
+      "division": "SECRETARY",
+      "name": "Proposal Ormawa Visit Demo",
+      "url": "https://example.com/proposal-demo",
+      "note": "",
+      "source": "demo"
+    },
+    {
+      "id": "dl-2",
+      "event_id": "ov-demo",
+      "section": "Desain",
+      "division": "CREATIVE",
+      "name": "Folder Desain",
+      "url": "https://example.com/desain-demo",
+      "note": "",
+      "source": "demo"
+    },
+    {
+      "id": "dl-3",
+      "event_id": "ov-demo",
+      "section": "Dokumentasi",
+      "division": "CREATIVE",
+      "name": "Drive Dokumentasi",
+      "url": "https://example.com/dokumentasi-demo",
+      "note": "",
+      "source": "demo"
+    },
+    {
+      "id": "dl-4",
+      "event_id": "ov-demo",
+      "section": "Formulir",
+      "division": "EVENT",
+      "name": "Form Pendaftaran Peserta",
+      "url": "https://example.com/form-demo",
+      "note": "",
+      "source": "demo"
     }
   ],
   "budgetPlans": [
@@ -5827,326 +6215,69 @@
       ]
     },
     {
-      "id": "b-4",
-      "name": "Plan Luar: RAB OV Keluar (Malang) MAKSIMAL",
-      "event_id": "ov2-2026",
+      "id": "dbp-1",
+      "name": "RAB Ormawa Visit Demo",
+      "event_id": "ov-demo",
       "items": [
         {
+          "id": "dbi-1",
           "category": "KONSUMSI",
           "no": 1,
-          "name": "Makan Peserta (170x3)",
-          "qty": 510,
-          "unit": "Kotak",
+          "name": "Snack peserta",
+          "qty": 30,
+          "unit": "box",
           "unit_price": 15000,
-          "total": 7650000,
-          "id": "bi-37"
+          "total": 450000
         },
         {
+          "id": "dbi-2",
           "category": "KONSUMSI",
           "no": 2,
-          "name": "Makan Panitia (17x3)",
-          "qty": 51,
-          "unit": "Kotak",
-          "unit_price": 15000,
-          "total": 765000,
-          "id": "bi-38"
-        },
-        {
-          "category": "KONSUMSI",
-          "no": 3,
-          "name": "Snack (187x2)",
-          "qty": 374,
-          "unit": "Kotak",
-          "unit_price": 10000,
-          "total": 3740000,
-          "id": "bi-39"
-        },
-        {
-          "category": "KONSUMSI",
-          "no": 4,
-          "name": "Galon",
-          "qty": 10,
-          "unit": "Galon",
+          "name": "Air mineral",
+          "qty": 5,
+          "unit": "dus",
           "unit_price": 20000,
-          "total": 200000,
-          "id": "bi-40"
+          "total": 100000
         },
         {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 1,
-          "name": "Sewa Bus",
-          "qty": 3,
-          "unit": "Unit",
-          "unit_price": 4000000,
-          "total": 12000000,
-          "id": "bi-41"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 2,
-          "name": "E-Toll ( PP SBY-MLG)",
-          "qty": 3,
-          "unit": "Unit",
-          "unit_price": 200000,
-          "total": 600000,
-          "id": "bi-42"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
+          "id": "dbi-3",
+          "category": "KESEKRETARIATAN",
           "no": 3,
-          "name": "Parkir",
+          "name": "Cetak proposal",
           "qty": 3,
-          "unit": "Unit",
-          "unit_price": 200000,
-          "total": 600000,
-          "id": "bi-43"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 4,
-          "name": "Penginapan",
-          "qty": 43,
-          "unit": "Kamar",
-          "unit_price": 400000,
-          "total": 17200000,
-          "id": "bi-44"
-        },
-        {
-          "category": "LAIN-LAIN",
-          "no": 1,
-          "name": "Obat-Obatan",
-          "qty": 1,
-          "unit": "Pack",
-          "unit_price": 250000,
-          "total": 250000,
-          "id": "bi-45"
-        },
-        {
-          "category": "LAIN-LAIN",
-          "no": 2,
-          "name": "Dana Cadangan",
-          "qty": 1,
-          "unit": "",
-          "unit_price": 2000000,
-          "total": 2000000,
-          "id": "bi-46"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 1,
-          "name": "Plakat untuk HIMA",
-          "qty": 1,
-          "unit": "Unit",
-          "unit_price": 165000,
-          "total": 165000,
-          "id": "bi-47"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 2,
-          "name": "Banner (4x1)",
-          "qty": 1,
-          "unit": "unit",
-          "unit_price": 80000,
-          "total": 80000,
-          "id": "bi-48"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 3,
-          "name": "Lanyard",
-          "qty": 1,
-          "unit": "Pack",
-          "unit_price": 80000,
-          "total": 80000,
-          "id": "bi-49"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 4,
-          "name": "ID Card",
-          "qty": 17,
-          "unit": "Unit",
-          "unit_price": 10000,
-          "total": 170000,
-          "id": "bi-50"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 5,
-          "name": "Case ID Card",
-          "qty": 3,
-          "unit": "Lembar",
-          "unit_price": 15000,
-          "total": 45000,
-          "id": "bi-51"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 6,
-          "name": "Cuecard MC",
-          "qty": 4,
-          "unit": "Unit",
-          "unit_price": 5000,
-          "total": 20000,
-          "id": "bi-52"
-        }
-      ]
-    },
-    {
-      "id": "b-5",
-      "name": "Plan Luar: RAB OV Keluar (Malang) MINIMAL",
-      "event_id": "ov2-2026",
-      "items": [
-        {
-          "category": "KONSUMSI",
-          "no": 1,
-          "name": "Makan Peserta (150x3)",
-          "qty": 450,
-          "unit": "Kotak",
-          "unit_price": 15000,
-          "total": 6750000,
-          "id": "bi-53"
-        },
-        {
-          "category": "KONSUMSI",
-          "no": 2,
-          "name": "Makan Panitia (17x3)",
-          "qty": 51,
-          "unit": "Kotak",
-          "unit_price": 15000,
-          "total": 765000,
-          "id": "bi-54"
-        },
-        {
-          "category": "KONSUMSI",
-          "no": 3,
-          "name": "Snack (187x2)",
-          "qty": 374,
-          "unit": "Kotak",
-          "unit_price": 8000,
-          "total": 2992000,
-          "id": "bi-55"
-        },
-        {
-          "category": "KONSUMSI",
-          "no": 4,
-          "name": "Galon",
-          "qty": 10,
-          "unit": "Galon",
+          "unit": "eksemplar",
           "unit_price": 25000,
-          "total": 250000,
-          "id": "bi-56"
+          "total": 75000
         },
         {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 1,
-          "name": "Sewa Bus",
-          "qty": 3,
-          "unit": "Unit",
-          "unit_price": 4200000,
-          "total": 12600000,
-          "id": "bi-57"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 2,
-          "name": "E-Toll ( PP SBY-MLG)",
-          "qty": 3,
-          "unit": "Unit",
-          "unit_price": 300000,
-          "total": 900000,
-          "id": "bi-58"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
-          "no": 3,
-          "name": "Parkir",
-          "qty": 3,
-          "unit": "Unit",
-          "unit_price": 150000,
-          "total": 450000,
-          "id": "bi-59"
-        },
-        {
-          "category": "TRANSPORTASI & AKOMODASI",
+          "id": "dbi-4",
+          "category": "ACARA",
           "no": 4,
-          "name": "Penginapan",
-          "qty": 42,
-          "unit": "Kamar",
-          "unit_price": 200000,
-          "total": 8400000,
-          "id": "bi-60"
-        },
-        {
-          "category": "LAIN-LAIN",
-          "no": 1,
-          "name": "Obat-Obatan",
+          "name": "Plakat / cinderamata",
           "qty": 1,
-          "unit": "Pack",
-          "unit_price": 300000,
-          "total": 300000,
-          "id": "bi-61"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 1,
-          "name": "Plakat untuk HIMA",
-          "qty": 1,
-          "unit": "Unit",
+          "unit": "buah",
           "unit_price": 150000,
-          "total": 150000,
-          "id": "bi-62"
+          "total": 150000
         },
         {
-          "category": "PERALATAN & CETAKAN",
-          "no": 2,
-          "name": "Banner (4x1)",
-          "qty": 1,
-          "unit": "unit",
-          "unit_price": 80000,
-          "total": 80000,
-          "id": "bi-63"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 3,
-          "name": "Lanyard",
-          "qty": 1,
-          "unit": "Pack",
-          "unit_price": 80000,
-          "total": 80000,
-          "id": "bi-64"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
-          "no": 4,
-          "name": "ID Card",
-          "qty": 17,
-          "unit": "Unit",
-          "unit_price": 5000,
-          "total": 85000,
-          "id": "bi-65"
-        },
-        {
-          "category": "PERALATAN & CETAKAN",
+          "id": "dbi-5",
+          "category": "KREATIF",
           "no": 5,
-          "name": "Case ID Card",
-          "qty": 3,
-          "unit": "Lembar",
-          "unit_price": 15000,
-          "total": 45000,
-          "id": "bi-66"
+          "name": "Cetak banner",
+          "qty": 1,
+          "unit": "buah",
+          "unit_price": 120000,
+          "total": 120000
         },
         {
-          "category": "PERALATAN & CETAKAN",
+          "id": "dbi-6",
+          "category": "OPERASIONAL",
           "no": 6,
-          "name": "Cuecard MC",
-          "qty": 4,
-          "unit": "Unit",
-          "unit_price": 5000,
-          "total": 20000,
-          "id": "bi-67"
+          "name": "Sewa perlengkapan",
+          "qty": 1,
+          "unit": "paket",
+          "unit_price": 200000,
+          "total": 200000
         }
       ]
     }
@@ -7253,6 +7384,101 @@
       "job_consump": "",
       "job_creative": "",
       "job_opr": ""
+    },
+    {
+      "id": "dr-1",
+      "event_id": "ov-demo",
+      "variant": "A",
+      "no": 1,
+      "time_start": "08:00",
+      "time_end": "08:30",
+      "duration": "",
+      "activity": "Registrasi peserta",
+      "keterangan": "Semua panitia",
+      "host": "",
+      "opr_link": "",
+      "mc": "",
+      "job_lo": "",
+      "job_event": "",
+      "job_consump": "",
+      "job_creative": "",
+      "job_opr": ""
+    },
+    {
+      "id": "dr-2",
+      "event_id": "ov-demo",
+      "variant": "A",
+      "no": 2,
+      "time_start": "08:30",
+      "time_end": "09:00",
+      "duration": "",
+      "activity": "Pembukaan & sambutan",
+      "keterangan": "MC",
+      "host": "",
+      "opr_link": "",
+      "mc": "",
+      "job_lo": "",
+      "job_event": "",
+      "job_consump": "",
+      "job_creative": "",
+      "job_opr": ""
+    },
+    {
+      "id": "dr-3",
+      "event_id": "ov-demo",
+      "variant": "A",
+      "no": 3,
+      "time_start": "09:00",
+      "time_end": "10:30",
+      "duration": "",
+      "activity": "Sesi sharing & FGD",
+      "keterangan": "Moderator",
+      "host": "",
+      "opr_link": "",
+      "mc": "",
+      "job_lo": "",
+      "job_event": "",
+      "job_consump": "",
+      "job_creative": "",
+      "job_opr": ""
+    },
+    {
+      "id": "dr-4",
+      "event_id": "ov-demo",
+      "variant": "A",
+      "no": 4,
+      "time_start": "10:30",
+      "time_end": "11:30",
+      "duration": "",
+      "activity": "Games & networking",
+      "keterangan": "Event",
+      "host": "",
+      "opr_link": "",
+      "mc": "",
+      "job_lo": "",
+      "job_event": "",
+      "job_consump": "",
+      "job_creative": "",
+      "job_opr": ""
+    },
+    {
+      "id": "dr-5",
+      "event_id": "ov-demo",
+      "variant": "A",
+      "no": 5,
+      "time_start": "11:30",
+      "time_end": "12:00",
+      "duration": "",
+      "activity": "Penutupan & dokumentasi",
+      "keterangan": "MC",
+      "host": "",
+      "opr_link": "",
+      "mc": "",
+      "job_lo": "",
+      "job_event": "",
+      "job_consump": "",
+      "job_creative": "",
+      "job_opr": ""
     }
   ],
   "jobHariH": [
@@ -7567,6 +7793,46 @@
       "pic": "Zain",
       "job": "Pengarah tempat duduk peserta selama FGD",
       "notes": ""
+    },
+    {
+      "id": "dj-1",
+      "event_id": "ov-demo",
+      "no": "1",
+      "pic": "Maya",
+      "job": "MC Acara",
+      "notes": ""
+    },
+    {
+      "id": "dj-2",
+      "event_id": "ov-demo",
+      "no": "2",
+      "pic": "Siti",
+      "job": "Registrasi & absensi",
+      "notes": ""
+    },
+    {
+      "id": "dj-3",
+      "event_id": "ov-demo",
+      "no": "3",
+      "pic": "Dewi",
+      "job": "Dokumentasi foto/video",
+      "notes": ""
+    },
+    {
+      "id": "dj-4",
+      "event_id": "ov-demo",
+      "no": "4",
+      "pic": "Andi",
+      "job": "LO himpunan partner",
+      "notes": ""
+    },
+    {
+      "id": "dj-5",
+      "event_id": "ov-demo",
+      "no": "5",
+      "pic": "Putri, Fajar",
+      "job": "Konsumsi & perlengkapan",
+      "notes": ""
     }
   ],
   "faqs": [
@@ -7790,6 +8056,55 @@
       "division": "OUTSOURCE",
       "fungsionaris": "",
       "intern": ""
+    },
+    {
+      "id": "dtm-1",
+      "event_id": "ov-demo",
+      "division": "EVENT",
+      "fungsionaris": "Budi, Maya",
+      "intern": ""
+    },
+    {
+      "id": "dtm-2",
+      "event_id": "ov-demo",
+      "division": "SECRETARY",
+      "fungsionaris": "Siti",
+      "intern": ""
+    },
+    {
+      "id": "dtm-3",
+      "event_id": "ov-demo",
+      "division": "LO",
+      "fungsionaris": "Andi",
+      "intern": ""
+    },
+    {
+      "id": "dtm-4",
+      "event_id": "ov-demo",
+      "division": "CREATIVE",
+      "fungsionaris": "Dewi",
+      "intern": ""
+    },
+    {
+      "id": "dtm-5",
+      "event_id": "ov-demo",
+      "division": "MARKETING",
+      "fungsionaris": "Rizky",
+      "intern": ""
+    },
+    {
+      "id": "dtm-6",
+      "event_id": "ov-demo",
+      "division": "CONSUMPTION",
+      "fungsionaris": "",
+      "intern": "Putri"
+    },
+    {
+      "id": "dtm-7",
+      "event_id": "ov-demo",
+      "division": "OPERATIONAL",
+      "fungsionaris": "",
+      "intern": "Fajar"
     }
   ]
 }

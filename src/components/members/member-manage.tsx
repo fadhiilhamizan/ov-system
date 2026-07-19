@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, MoreHorizontal, Pencil, Trash2, Check, ChevronsUpDown, X } from "lucide-react";
+import { Loader2, MoreHorizontal, Pencil, Trash2, Check, ChevronsUpDown, X, LayoutGrid, Users } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -14,9 +14,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   createMemberAction, updateMemberAction, deleteMemberAction,
+  bulkDeleteMembersAction, bulkUpdateMembersAction,
   createTeamAction, updateTeamAction, deleteTeamAction,
 } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
+import { angkatanFromNrp } from "@/lib/format";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
 // ---------------- Member ----------------
@@ -108,11 +110,28 @@ export function MemberFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>NRP</Label>
-              <Input value={f.nrp} onChange={(e) => setF({ ...f, nrp: e.target.value })} />
+              <Input
+                value={f.nrp}
+                onChange={(e) => {
+                  const nrp = e.target.value;
+                  const derived = angkatanFromNrp(nrp);
+                  setF({ ...f, nrp, year: derived ?? f.year });
+                }}
+                placeholder="5026231128"
+              />
             </div>
             <div className="grid gap-1.5">
               <Label>{t("Angkatan (tahun)")}</Label>
-              <Input type="number" value={f.year} onChange={(e) => setF({ ...f, year: Number(e.target.value) })} />
+              <Input
+                type="number"
+                value={f.year}
+                onChange={(e) => setF({ ...f, year: Number(e.target.value) })}
+                readOnly={angkatanFromNrp(f.nrp) !== null}
+                className={angkatanFromNrp(f.nrp) !== null ? "bg-muted/50 text-muted-foreground" : undefined}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {angkatanFromNrp(f.nrp) !== null ? t("Otomatis dari NRP") : t("Isi manual jika NRP kosong")}
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -186,6 +205,90 @@ export function MemberActions({
         open={editOpen} onOpenChange={setEditOpen}
       />
     </>
+  );
+}
+
+// ---------------- Bulk actions bar (multi-select) ----------------
+export function MemberBulkBar({
+  ids, divisions, onClear,
+}: { ids: string[]; divisions: Division[]; onClear: () => void }) {
+  const t = useT();
+  const [pending, start] = React.useTransition();
+  const [delOpen, setDelOpen] = React.useState(false);
+
+  function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, ok: string) {
+    start(async () => {
+      const res = await fn();
+      if (res.ok) { toast.success(ok); onClear(); setDelOpen(false); }
+      else toast.error(res.error);
+    });
+  }
+
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+      <span className="text-sm font-medium">{ids.length} {t("dipilih")}</span>
+      <div className="ml-auto flex flex-wrap items-center gap-2">
+        {/* Bulk change division */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={pending}>
+              <LayoutGrid className="size-4" /> {t("Ubah Divisi")}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+            {divisions.map((d) => (
+              <DropdownMenuItem
+                key={d.key}
+                onSelect={() => run(() => bulkUpdateMembersAction(ids, { division: d.key }), t("Divisi anggota diperbarui"))}
+              >
+                <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} /> {d.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {/* Bulk change type */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={pending}>
+              <Users className="size-4" /> {t("Ubah Tipe")}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => run(() => bulkUpdateMembersAction(ids, { type: "fungsionaris" }), t("Tipe anggota diperbarui"))}>
+              {t("Fungsionaris")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(() => bulkUpdateMembersAction(ids, { type: "intern" }), t("Tipe anggota diperbarui"))}>
+              {t("Intern")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {/* Bulk delete */}
+        <Button variant="destructive" size="sm" disabled={pending} onClick={() => setDelOpen(true)}>
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onClear} disabled={pending}>
+          <X className="size-4" /> {t("Batal")}
+        </Button>
+      </div>
+
+      <Dialog open={delOpen} onOpenChange={setDelOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Hapus anggota terpilih?")}</DialogTitle>
+            <DialogDescription>
+              {ids.length} {t("anggota akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
+            <Button variant="destructive" disabled={pending}
+              onClick={() => run(() => bulkDeleteMembersAction(ids), t("Anggota dihapus"))}>
+              {pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 

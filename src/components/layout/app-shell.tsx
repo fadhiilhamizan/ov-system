@@ -7,6 +7,7 @@ import { Logo } from "./logo";
 import type { AppUser, Division, OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { APP_VERSION } from "@/lib/version";
 
 export function AppShell({
   user,
@@ -73,7 +74,7 @@ export function AppShell({
               <Logo size={18} />
               <span>Ormawa Visit Command Center - External Affairs HMSI ITS</span>
             </div>
-            <span>Dibangun dari Main Sheet OV · v1.0</span>
+            <span>Dibangun dari Main Sheet OV · v{APP_VERSION}</span>
           </div>
         </footer>
       </div>

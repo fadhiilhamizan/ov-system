@@ -7,7 +7,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "2.0.0",
+    version: "1.5.0",
+    date: "2026-07-19",
+    title: "Ormawa Visit Demo, template pembuatan, & integrasi anggota",
+    changes: [
+      "Ormawa Visit Demo: edisi sandbox berisi data mockup untuk coba-coba tanpa mengubah data asli — tidak bisa dihapus, dan bisa direset ke data awal kapan saja.",
+      "Template pembuatan Ormawa Visit: saat membuat edisi baru, data (tugas, rundown, job hari-H, struktur tim, anggaran) bisa disalin dari Ormawa Visit sebelumnya, tidak lagi diisi satu per satu.",
+      "PIC tugas & job hari-H kini dipilih langsung dari daftar anggota, bukan diketik manual.",
+      "Anggota & Tim: pilih banyak anggota sekaligus untuk hapus atau ubah divisi/tipe massal.",
+      "Angkatan anggota kini otomatis dari NRP (mis. 5026(23)1128 → angkatan 2023).",
+      "Data anggaran Ormawa Visit 'HMSI ITS x HMD Eksternal' yang keliru dihapus.",
+      "Skema versi diseragamkan menjadi v1.x.y dan matriks hak akses membedakan akses penuh, hanya-lihat, dan tanpa akses.",
+    ],
+  },
+  {
+    version: "1.4.0",
     date: "2026-07-18",
     title: "Perombakan besar: penomoran otomatis, RAB & Anggota penuh CRUD, backup",
     changes: [

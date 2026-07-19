@@ -4,6 +4,8 @@ import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { uid } from "../utils";
+import { DEMO_EVENT_ID, isDemoEvent } from "../demo";
+import { getDemoSeed } from "../seed/demo-seed";
 import type {
   BudgetItem,
   BudgetPlan,
@@ -67,7 +69,8 @@ export const getEvent = cache(async (id: string): Promise<OVEvent | null> => {
 });
 export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
   if (!USE_SUPABASE) return local.getDefaultEvent();
-  const events = await getEvents();
+  // The demo edition is a sandbox — never auto-select it as the landing event.
+  const events = (await getEvents()).filter((e) => !isDemoEvent(e.id));
   const active = events.find((e) => e.status === "active");
   if (active) return active;
   const { data } = await (await sb()).from("tasks").select("event_id");
@@ -394,8 +397,138 @@ export async function updateEvent(id: string, patch: Partial<OVEvent>) {
   await (await sb()).from("events").update(rest).eq("id", id);
 }
 export async function deleteEvent(id: string) {
+  if (isDemoEvent(id)) return; // demo edition is protected — cannot be deleted
   if (!USE_SUPABASE) return local.deleteEvent(id);
   await (await sb()).from("events").delete().eq("id", id);
+}
+
+/**
+ * Rebuild the demo edition from its original mockup: clear every ov-demo-scoped
+ * row, then re-insert from the seed. Real Ormawa Visit data is untouched.
+ */
+export async function resetDemoData() {
+  const demo = getDemoSeed();
+  if (!demo.event) return;
+  if (!USE_SUPABASE) return local.resetDemoData(demo);
+
+  const client = await sb();
+  // Clear demo-scoped rows (children before parents).
+  await client.from("links").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("prospects").delete().eq("event_id", DEMO_EVENT_ID);
+  const { data: oldPlans } = await client.from("budget_plans").select("id").eq("event_id", DEMO_EVENT_ID);
+  const oldPlanIds = (oldPlans ?? []).map((p: { id: string }) => p.id);
+  if (oldPlanIds.length) await client.from("budget_items").delete().in("plan_id", oldPlanIds);
+  await client.from("budget_plans").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("job_harih").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("rundown").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("teams").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("tasks").delete().eq("event_id", DEMO_EVENT_ID);
+  await client.from("members").delete().eq("event_id", DEMO_EVENT_ID);
+
+  // Upsert the demo event itself.
+  const e = demo.event;
+  await client.from("events").upsert({
+    id: e.id, code: e.code, title: e.title, partner: e.partner, campus: e.campus,
+    type: e.type, mode: e.mode, cabinet: e.cabinet, event_date: e.event_date,
+    plan_start: e.plan_start ?? null, plan_end: e.plan_end ?? null,
+    location: e.location, status: e.status, order: e.order,
+  });
+
+  // Re-insert scoped rows (drop client ids; DB generates uuids).
+  if (demo.members.length)
+    await client.from("members").insert(demo.members.map((m) => stripId(m)));
+  if (demo.tasks.length)
+    await client.from("tasks").insert(demo.tasks.map((t) => stripId(t)));
+  for (const plan of demo.budgetPlans) {
+    const { data: created } = await client
+      .from("budget_plans")
+      .insert({ name: plan.name, event_id: plan.event_id })
+      .select("id")
+      .single();
+    if (created && plan.items.length)
+      await client.from("budget_items").insert(
+        plan.items.map((i, idx) => ({
+          plan_id: created.id, category: i.category, no: i.no, name: i.name,
+          qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total, order: idx,
+        })),
+      );
+  }
+  if (demo.rundown.length)
+    await client.from("rundown").insert(demo.rundown.map((r) => stripId(r)));
+  if (demo.jobHariH.length)
+    await client.from("job_harih").insert(demo.jobHariH.map((j) => stripId(j)));
+  if (demo.teams.length)
+    await client.from("teams").insert(demo.teams.map((t) => stripId(t)));
+  if (demo.prospects.length)
+    await client.from("prospects").insert(demo.prospects.map((p) => stripId(p)));
+  if (demo.links.length)
+    await client.from("links").insert(demo.links.map((l) => stripId(l)));
+}
+
+export interface CloneOptions {
+  tasks?: boolean;
+  rundown?: boolean;
+  jobs?: boolean;
+  budget?: boolean;
+}
+
+/**
+ * Copy data from one Ormawa Visit to another, as a starting template for a new
+ * edition. Tasks & jobs are copied as a fresh skeleton (status reset, PIC and
+ * dates cleared) so only reusable content (division, job description, notes,
+ * rundown structure, budget estimate) carries over.
+ */
+export async function cloneEventData(sourceId: string, targetId: string, opts: CloneOptions) {
+  if (!USE_SUPABASE) return local.cloneEventData(sourceId, targetId, opts);
+  const client = await sb();
+
+  if (opts.tasks) {
+    const src = await getTasks({ event_id: sourceId });
+    const noByDiv: Record<string, number> = {};
+    const rows = src.map((t) => {
+      noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
+      return {
+        event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
+        pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
+        notes: t.notes, result: "", status: "todo" as TaskStatus,
+      };
+    });
+    if (rows.length) await client.from("tasks").insert(rows);
+  }
+
+  if (opts.rundown) {
+    const src = await getRundown(sourceId);
+    const rows = src.map((r) => ({
+      event_id: targetId, variant: r.variant, no: r.no, time_start: r.time_start, time_end: r.time_end,
+      duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,
+      mc: r.mc, job_lo: r.job_lo, job_event: r.job_event, job_consump: r.job_consump, job_creative: r.job_creative, job_opr: r.job_opr,
+    }));
+    if (rows.length) await client.from("rundown").insert(rows);
+  }
+
+  if (opts.jobs) {
+    const src = await getJobs(sourceId);
+    const rows = src.map((j) => ({ event_id: targetId, no: j.no, pic: "", job: j.job, notes: j.notes }));
+    if (rows.length) await client.from("job_harih").insert(rows);
+  }
+
+  if (opts.budget) {
+    const plans = await getBudgetPlans(sourceId);
+    for (const plan of plans) {
+      const { data: created } = await client
+        .from("budget_plans")
+        .insert({ name: plan.name, event_id: targetId })
+        .select("id")
+        .single();
+      if (created && plan.items.length)
+        await client.from("budget_items").insert(
+          plan.items.map((i, idx) => ({
+            plan_id: created.id, category: i.category, no: i.no, name: i.name,
+            qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total, order: idx,
+          })),
+        );
+    }
+  }
 }
 
 export async function createMember(input: Partial<Member>) {
@@ -419,6 +552,24 @@ export async function updateMember(id: string, patch: Partial<Member>) {
 export async function deleteMember(id: string) {
   if (!USE_SUPABASE) return local.deleteMember(id);
   await (await sb()).from("members").delete().eq("id", id);
+}
+export async function bulkDeleteMembers(ids: string[]) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) {
+    for (const id of ids) local.deleteMember(id);
+    return;
+  }
+  await (await sb()).from("members").delete().in("id", ids);
+}
+export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) {
+    for (const id of ids) local.updateMember(id, patch);
+    return;
+  }
+  const { id: _drop, ...rest } = patch;
+  void _drop;
+  await (await sb()).from("members").update(rest).in("id", ids);
 }
 
 export async function createDivision(input: Partial<Division>) {

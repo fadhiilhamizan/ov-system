@@ -2,6 +2,8 @@ import "server-only";
 import { getDb, mutate } from "./store";
 import { uid } from "../utils";
 import { prospectStage } from "../constants";
+import { DEMO_EVENT_ID, isDemoEvent } from "../demo";
+import type { getDemoSeed } from "../seed/demo-seed";
 import type {
   BudgetPlan,
   Division,
@@ -33,7 +35,8 @@ export function getEvent(id: string) {
   return getDb().events.find((e) => e.id === id) ?? null;
 }
 export function getDefaultEvent(): OVEvent {
-  const events = getEvents();
+  // The demo edition is a sandbox — never auto-select it as the landing event.
+  const events = getEvents().filter((e) => !isDemoEvent(e.id));
   const tasks = getDb().tasks;
   const withTasks = events.filter((e) => tasks.some((t) => t.event_id === e.id));
   return (
@@ -365,8 +368,73 @@ export function updateEvent(id: string, patch: Partial<OVEvent>) {
   });
 }
 export function deleteEvent(id: string) {
+  if (isDemoEvent(id)) return; // demo edition is protected
   mutate((db) => {
     db.events = db.events.filter((e) => e.id !== id);
+  });
+}
+
+/** Rebuild the demo edition rows from the provided demo seed subset. */
+export function resetDemoData(demo: ReturnType<typeof getDemoSeed>) {
+  mutate((db) => {
+    const D = DEMO_EVENT_ID;
+    db.events = db.events.filter((e) => e.id !== D);
+    db.members = db.members.filter((m) => m.event_id !== D);
+    db.tasks = db.tasks.filter((t) => t.event_id !== D);
+    db.budgetPlans = db.budgetPlans.filter((b) => b.event_id !== D);
+    db.rundown = db.rundown.filter((r) => r.event_id !== D);
+    db.jobHariH = db.jobHariH.filter((j) => j.event_id !== D);
+    db.teams = db.teams.filter((t) => t.event_id !== D);
+    db.prospects = db.prospects.filter((p) => p.event_id !== D);
+    db.links = db.links.filter((l) => l.event_id !== D);
+    if (demo.event) db.events.push(demo.event);
+    db.members.push(...demo.members);
+    db.tasks.push(...demo.tasks);
+    db.budgetPlans.push(...demo.budgetPlans);
+    db.rundown.push(...demo.rundown);
+    db.jobHariH.push(...demo.jobHariH);
+    db.teams.push(...demo.teams);
+    db.prospects.push(...demo.prospects);
+    db.links.push(...demo.links);
+  });
+}
+
+export function cloneEventData(
+  sourceId: string,
+  targetId: string,
+  opts: { tasks?: boolean; rundown?: boolean; jobs?: boolean; budget?: boolean },
+) {
+  mutate((db) => {
+    if (opts.tasks) {
+      const src = db.tasks.filter((t) => t.event_id === sourceId);
+      const noByDiv: Record<string, number> = {};
+      for (const t of src) {
+        noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
+        db.tasks.push({
+          id: uid("t"), event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
+          pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
+          notes: t.notes, result: "", status: "todo",
+        });
+      }
+    }
+    if (opts.rundown) {
+      for (const r of db.rundown.filter((x) => x.event_id === sourceId)) {
+        db.rundown.push({ ...r, id: uid("r"), event_id: targetId });
+      }
+    }
+    if (opts.jobs) {
+      for (const j of db.jobHariH.filter((x) => x.event_id === sourceId)) {
+        db.jobHariH.push({ ...j, id: uid("j"), event_id: targetId, pic: "" });
+      }
+    }
+    if (opts.budget) {
+      for (const plan of db.budgetPlans.filter((p) => p.event_id === sourceId)) {
+        db.budgetPlans.push({
+          id: uid("bp"), name: plan.name, event_id: targetId,
+          items: plan.items.map((i) => ({ ...i, id: uid("bi") })),
+        });
+      }
+    }
   });
 }
 

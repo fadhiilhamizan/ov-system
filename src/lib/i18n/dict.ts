@@ -169,6 +169,8 @@ export const EN: Record<string, string> = {
   "Nama lengkap": "Full name",
   "Nama panggilan": "Nickname",
   "Angkatan (tahun)": "Cohort (year)",
+  "Otomatis dari NRP": "Auto from NRP",
+  "Isi manual jika NRP kosong": "Enter manually if NRP is empty",
   "Anggota dihapus": "Member deleted",
   "Pilih anggota…": "Select members…",
   "Belum ada anggota untuk Ormawa Visit ini.": "No members for this Ormawa Visit yet.",
@@ -260,7 +262,42 @@ export const EN: Record<string, string> = {
   "Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).": "Backups are only available when the system is connected to Supabase (cloud mode).",
   "Gagal memuat backup.": "Failed to load backups.",
   "Hak Akses per Peran": "Access by Role",
+  "Akses penuh (kelola)": "Full access (manage)",
+  "Hanya lihat": "View only",
+  "Tidak ada akses": "No access",
   "Modul": "Module",
+
+  // Demo edition
+  "Demo": "Demo",
+  "Ormawa Visit Demo": "Demo Ormawa Visit",
+  "Sandbox untuk coba-coba — data mockup, tidak memengaruhi data asli.": "Sandbox to explore — mockup data, does not affect real data.",
+  "Reset Data Demo": "Reset Demo Data",
+  "Reset Data Demo?": "Reset demo data?",
+  "Kembalikan edisi Ormawa Visit Demo ke data mockup awal. Hanya data demo yang terpengaruh — data Ormawa Visit asli tidak berubah.": "Restore the Demo Ormawa Visit edition to its original mockup data. Only demo data is affected — real Ormawa Visit data is unchanged.",
+  "Semua perubahan pada edisi Demo akan dihapus dan dikembalikan ke data mockup awal. Tindakan ini tidak memengaruhi data Ormawa Visit asli.": "All changes in the Demo edition will be discarded and restored to the original mockup data. This does not affect real Ormawa Visit data.",
+  "Data demo direset": "Demo data reset",
+
+  // Member picker (PIC)
+  "dipilih": "selected",
+  "Pilih dari anggota (opsional)": "Pick from members (optional)",
+  "Pilih dari anggota": "Pick from members",
+
+  // Event template (clone)
+  "Salin data dari Ormawa Visit lain (template)": "Copy data from another Ormawa Visit (template)",
+  "Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Bisa diedit setelahnya.": "Save time — data is copied as a starting skeleton (status, PIC, and dates are cleared). Editable afterwards.",
+  "Tidak menyalin (kosong)": "Don't copy (empty)",
+  "Tugas (WBS)": "Tasks (WBS)",
+  "Job Hari-H": "D-Day jobs",
+  "Anggaran (RAB)": "Budget (RAB)",
+
+  // Member bulk actions
+  "Pilih": "Select",
+  "Ubah Divisi": "Change division",
+  "Ubah Tipe": "Change type",
+  "Divisi anggota diperbarui": "Members' division updated",
+  "Tipe anggota diperbarui": "Members' type updated",
+  "Hapus anggota terpilih?": "Delete selected members?",
+  "anggota akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.": "members will be permanently deleted. This action cannot be undone.",
   "Tentang": "About",
   "Sistem manajemen program kerja Ormawa Visit - Departemen External Affairs HMSI ITS.": "Ormawa Visit work-program management system - External Affairs Department, HMSI ITS.",
   "Ada pertanyaan atau masukan? Hubungi": "Questions or feedback? Contact",

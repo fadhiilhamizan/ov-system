@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/charts/donut";
 import { AddEventButton, EventActions } from "@/components/events/event-manage";
+import { isDemoEvent } from "@/lib/demo";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
 
@@ -36,7 +37,7 @@ export default async function EventsPage() {
       <PageHeader
         title={t("Daftar Ormawa Visit")}
         description={t("Riwayat & rencana semua Ormawa Visit lintas kabinet. Ganti yang aktif dari pemilih di kanan atas.")}
-        actions={manage ? <AddEventButton /> : undefined}
+        actions={manage ? <AddEventButton events={events} /> : undefined}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -52,12 +53,15 @@ export default async function EventsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {isDemoEvent(e.id) && <Badge variant="warning">{t("Demo")}</Badge>}
                     <Badge variant={st.variant}>{t(st.label)}</Badge>
                     <Badge variant="outline">{e.code}</Badge>
                     {isActive && <Badge variant="primary">{t("Sedang dilihat")}</Badge>}
                   </div>
                   <h3 className="mt-2 text-lg font-bold leading-tight">{e.title}</h3>
-                  <p className="text-sm text-muted-foreground">{e.cabinet}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isDemoEvent(e.id) ? t("Sandbox untuk coba-coba — data mockup, tidak memengaruhi data asli.") : e.cabinet}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {stats.total > 0 && <ProgressRing value={stats.progress} size={54} />}

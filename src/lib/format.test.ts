@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct } from "./format";
+import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct, angkatanFromNrp } from "./format";
 
 describe("formatRupiah", () => {
   it("formats Indonesian thousands", () => {
@@ -63,5 +63,27 @@ describe("pct", () => {
   });
   it("guards against divide-by-zero", () => {
     expect(pct(5, 0)).toBe(0);
+  });
+});
+
+describe("angkatanFromNrp", () => {
+  it("derives the enrollment year from the NRP", () => {
+    expect(angkatanFromNrp("5026231128")).toBe(2023);
+    expect(angkatanFromNrp("5026221210")).toBe(2022);
+    expect(angkatanFromNrp("5026241003")).toBe(2024);
+  });
+  it("works regardless of the study-program prefix", () => {
+    expect(angkatanFromNrp("5051231041")).toBe(2023);
+  });
+  it("ignores non-digit characters", () => {
+    expect(angkatanFromNrp("5026(23)1128")).toBe(2023);
+  });
+  it("returns null for too-short or empty input", () => {
+    expect(angkatanFromNrp("")).toBeNull();
+    expect(angkatanFromNrp(null)).toBeNull();
+    expect(angkatanFromNrp("12345")).toBeNull();
+  });
+  it("returns null for an implausible future year", () => {
+    expect(angkatanFromNrp("5026991128")).toBeNull();
   });
 });

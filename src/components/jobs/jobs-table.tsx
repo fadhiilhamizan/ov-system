@@ -17,6 +17,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
 import { createJobAction, updateJobAction, deleteJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
+import { MemberPicker } from "@/components/members/member-picker";
+import { useMembers } from "@/components/members/members-context";
 import type { JobHariH } from "@/lib/types";
 
 function JobFormDialog({
@@ -30,6 +32,7 @@ function JobFormDialog({
   trigger?: React.ReactNode;
 }) {
   const t = useT();
+  const members = useMembers();
   const [io, setIo] = React.useState(false);
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
@@ -67,8 +70,13 @@ function JobFormDialog({
             <Input value={f.job} onChange={(e) => setF({ ...f, job: e.target.value })} placeholder="MC Acara" />
           </div>
           <div className="grid gap-1.5">
-            <Label>{t("PIC (pisahkan koma)")}</Label>
-            <Input value={f.pic} onChange={(e) => setF({ ...f, pic: e.target.value })} placeholder="Nama1, Nama2" />
+            <Label>{t("PIC")}</Label>
+            <MemberPicker
+              members={members}
+              value={f.pic}
+              onChange={(v) => setF({ ...f, pic: v })}
+              placeholder={t("Pilih dari anggota")}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>{t("Catatan (opsional)")}</Label>

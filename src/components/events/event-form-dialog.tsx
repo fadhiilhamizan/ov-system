@@ -1,23 +1,27 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createEventAction, updateEventAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
 import type { OVEvent } from "@/lib/types";
 
+const NO_TEMPLATE = "__none__";
+
 export function EventFormDialog({
-  mode, event, open, onOpenChange, trigger,
+  mode, event, events = [], open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   event?: OVEvent;
+  events?: OVEvent[];
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -27,6 +31,10 @@ export function EventFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
+
+  // Template: copy data from an existing Ormawa Visit into the new one.
+  const [templateSource, setTemplateSource] = React.useState<string>(NO_TEMPLATE);
+  const [copy, setCopy] = React.useState({ tasks: true, rundown: true, jobs: true, budget: false });
 
   const [f, setF] = React.useState(() => ({
     title: event?.title ?? "",
@@ -61,11 +69,26 @@ export function EventFormDialog({
         plan_end: f.plan_end || null,
         event_date: f.event_date || null,
       };
-      const res = mode === "create" ? await createEventAction(payload) : await updateEventAction(event!.id, payload);
+      const template =
+        mode === "create" && templateSource !== NO_TEMPLATE
+          ? { sourceEventId: templateSource, ...copy }
+          : undefined;
+      const res =
+        mode === "create"
+          ? await createEventAction(payload, template)
+          : await updateEventAction(event!.id, payload);
       if (res.ok) { toast.success(mode === "create" ? t("Ormawa Visit ditambahkan") : t("Ormawa Visit diperbarui")); setOpen(false); }
       else toast.error(res.error);
     });
   }
+
+  const templateOptions = events.filter((e) => e.id !== event?.id);
+  const copyItems: { key: keyof typeof copy; label: string }[] = [
+    { key: "tasks", label: t("Tugas (WBS)") },
+    { key: "rundown", label: t("Rundown") },
+    { key: "jobs", label: t("Job Hari-H") },
+    { key: "budget", label: t("Anggaran (RAB)") },
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -162,6 +185,40 @@ export function EventFormDialog({
             <Label>{t("Rencana tanggal pelaksanaan")}</Label>
             <Input type="date" value={f.event_date} onChange={(e) => setF({ ...f, event_date: e.target.value })} />
           </div>
+
+          {mode === "create" && templateOptions.length > 0 && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="mb-2 flex items-center gap-1.5">
+                <Copy className="size-3.5 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">{t("Salin data dari Ormawa Visit lain (template)")}</p>
+              </div>
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                {t("Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Bisa diedit setelahnya.")}
+              </p>
+              <Select value={templateSource} onValueChange={setTemplateSource}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_TEMPLATE}>{t("Tidak menyalin (kosong)")}</SelectItem>
+                  {templateOptions.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {templateSource !== NO_TEMPLATE && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {copyItems.map((item) => (
+                    <label key={item.key} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={copy[item.key]}
+                        onCheckedChange={(v) => setCopy((c) => ({ ...c, [item.key]: v === true }))}
+                      />
+                      {item.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

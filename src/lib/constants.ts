@@ -66,23 +66,38 @@ export function prospectStage(p: {
   return "belum";
 }
 
-/** Which roles can OPEN which modules (route keys). Per access matrix:
- *  RAB (budget) hanya Admin & Koordinator; Super Link (links) tanpa Tamu. */
-export const MODULE_ACCESS: Record<string, Role[]> = {
-  dashboard: ["admin", "coordinator", "staff", "intern", "guest"],
-  tasks: ["admin", "coordinator", "staff", "intern", "guest"],
-  divisions: ["admin", "coordinator", "staff", "intern", "guest"],
-  prospects: ["admin", "coordinator", "staff", "intern", "guest"],
-  budget: ["admin", "coordinator"],
-  links: ["admin", "coordinator", "staff", "intern"],
-  calendar: ["admin", "coordinator", "staff", "intern", "guest"],
-  rundown: ["admin", "coordinator", "staff", "intern", "guest"],
-  members: ["admin", "coordinator", "staff", "intern", "guest"],
-  jobs: ["admin", "coordinator", "staff", "intern", "guest"],
-  faq: ["admin", "coordinator", "staff", "intern", "guest"],
-  events: ["admin", "coordinator", "staff", "intern", "guest"],
-  settings: ["admin"],
+/** Per-module, per-role access LEVEL used by the settings matrix.
+ *  - "full" = bisa kelola penuh (buat/ubah/hapus entitas utama modul).
+ *  - "view" = bisa membuka & melihat (kadang update progres/kontribusi ringan).
+ *  - "none" = tidak punya akses sama sekali (modul tidak bisa dibuka).
+ *  MODULE_ACCESS (yang menggerbang navigasi) diturunkan dari sini. */
+export type AccessLevel = "full" | "view" | "none";
+
+export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
+  //             admin   coordinator  staff   intern  guest
+  dashboard: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  tasks: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
+  divisions: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
+  calendar: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  rundown: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
+  jobs: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
+  prospects: { admin: "full", coordinator: "full", staff: "full", intern: "view", guest: "view" },
+  links: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "none" },
+  budget: { admin: "full", coordinator: "full", staff: "none", intern: "none", guest: "none" },
+  members: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  events: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  settings: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
 };
+
+/** Which roles can OPEN which modules (route keys) — any level except "none".
+ *  Derived from MODULE_ACCESS_LEVEL so the two never drift apart. */
+export const MODULE_ACCESS: Record<string, Role[]> = Object.fromEntries(
+  Object.entries(MODULE_ACCESS_LEVEL).map(([key, byRole]) => [
+    key,
+    (Object.keys(byRole) as Role[]).filter((r) => byRole[r] !== "none"),
+  ]),
+);
 
 export const DIVISION_ICON: Record<DivisionKey, string> = {
   PIC: "crown",
