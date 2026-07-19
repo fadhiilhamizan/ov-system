@@ -2,9 +2,9 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { isUrl } from "@/lib/format";
 import { createLink, deleteLink, updateLink } from "@/lib/data/repo";
 import type { LinkItem } from "@/lib/types";
+import { createLinkSchema, urlSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -17,8 +17,8 @@ async function guard(): Promise<Result> {
 export async function createLinkAction(input: Partial<LinkItem>): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
-  if (!input.name?.trim()) return { ok: false, error: "Nama tautan wajib diisi." };
-  if (!isUrl(input.url)) return { ok: false, error: "URL wajib diisi dan berupa tautan yang valid." };
+  const v = parse(createLinkSchema, input);
+  if (!v.ok) return v;
   await createLink(input);
   revalidatePath("/", "layout");
   return { ok: true };
@@ -27,10 +27,13 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
 export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  if (patch.url !== undefined && !isUrl(patch.url)) {
-    return { ok: false, error: "URL wajib diisi dan berupa tautan yang valid." };
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  if (patch.url !== undefined) {
+    const u = parse(urlSchema, patch.url);
+    if (!u.ok) return u;
   }
-  await updateLink(id, patch);
+  await updateLink(idv.data, patch);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -38,7 +41,9 @@ export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Pr
 export async function deleteLinkAction(id: string): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  await deleteLink(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteLink(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

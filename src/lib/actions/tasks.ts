@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createTask, deleteTask, getTask, updateTask } from "@/lib/data/repo";
 import type { DivisionKey, Task, TaskStatus } from "@/lib/types";
+import { createTaskSchema, updateTaskSchema, taskStatusSchema, idSchema, parse } from "./schemas";
 
 export interface TaskInput {
   event_id: string;
@@ -25,29 +26,37 @@ export async function createTaskAction(input: TaskInput): Promise<Result> {
   if (!can.manageTasks(user, input.division)) {
     return { ok: false, error: "Kamu tidak punya akses membuat tugas di divisi ini." };
   }
-  if (!input.title?.trim()) return { ok: false, error: "Judul tugas wajib diisi." };
-  await createTask({ ...input, title: input.title.trim() });
+  const v = parse(createTaskSchema, input);
+  if (!v.ok) return v;
+  await createTask(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function updateTaskAction(id: string, patch: Partial<Task>): Promise<Result> {
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const v = parse(updateTaskSchema, patch);
+  if (!v.ok) return v;
+
   const user = await getCurrentUser();
-  const task = await getTask(id);
+  const task = await getTask(idv.data);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
 
-  const keys = Object.keys(patch);
+  const keys = Object.keys(v.data);
   const onlyProgress = keys.every((k) => k === "status" || k === "result");
   const allowed = onlyProgress ? can.editTaskProgress(user, task) : can.editTask(user, task);
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
 
-  await updateTask(id, patch);
+  await updateTask(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function setTaskStatusAction(id: string, status: TaskStatus): Promise<Result> {
-  return updateTaskAction(id, { status });
+  const v = parse(taskStatusSchema, status);
+  if (!v.ok) return v;
+  return updateTaskAction(id, { status: v.data });
 }
 
 export async function bulkSetStatusAction(

@@ -490,6 +490,14 @@ export const EN: Record<string, string> = {
 
   // Layout a11y
   "Tutup menu": "Close menu",
+
+  // Error boundary
+  "Terjadi kesalahan": "Something went wrong",
+  "Halaman ini gagal dimuat. Coba muat ulang, atau kembali ke dashboard.":
+    "This page failed to load. Try reloading, or go back to the dashboard.",
+  "Kode": "Code",
+  "Coba lagi": "Try again",
+  "Ke Dashboard": "Back to Dashboard",
 };
 
 export function translate(lang: Lang, s: string): string {

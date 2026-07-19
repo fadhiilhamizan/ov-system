@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createProspect, deleteProspect, updateProspect } from "@/lib/data/repo";
 import type { Prospect } from "@/lib/types";
+import { prospectSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -16,8 +17,8 @@ async function guard(): Promise<Result> {
 export async function createProspectAction(input: Partial<Prospect>): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  if (!input.org_name?.trim() && !input.contact?.trim())
-    return { ok: false, error: "Isi minimal nama ormawa atau kontak." };
+  const v = parse(prospectSchema, input);
+  if (!v.ok) return v;
   await createProspect(input);
   revalidatePath("/", "layout");
   return { ok: true };
@@ -26,7 +27,9 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
 export async function updateProspectAction(id: string, patch: Partial<Prospect>): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  await updateProspect(id, patch);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await updateProspect(idv.data, patch);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -34,7 +37,9 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
 export async function deleteProspectAction(id: string): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;
-  await deleteProspect(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteProspect(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

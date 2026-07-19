@@ -36,8 +36,24 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Touch the session so it stays fresh.
-  await supabase.auth.getUser();
+  // Touch the session so it stays fresh (also tells us if the user is signed in).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Defense-in-depth route protection: block unauthenticated access to the
+  // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts —
+  // the guest cookie is an allowed read-only bypass. Public paths (login,
+  // API routes with their own auth) are exempt. The per-page redirect in the
+  // layout stays as a second layer.
+  const path = request.nextUrl.pathname;
+  const isPublic = path === "/login" || path.startsWith("/api");
+  const isGuest = request.cookies.get("ov_guest")?.value === "1";
+  if (!user && !isGuest && !isPublic) {
+    const redirectUrl = new URL("/login", request.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   return response;
 }
 

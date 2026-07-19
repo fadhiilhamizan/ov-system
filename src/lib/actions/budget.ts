@@ -6,6 +6,7 @@ import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem,
   createBudgetPlan, deleteBudgetPlan,
 } from "@/lib/data/repo";
+import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses mengelola anggaran." };
@@ -15,7 +16,11 @@ export async function updateBudgetItemAction(
   patch: { qty?: number | null; unit_price?: number | null; name?: string; category?: string; unit?: string },
 ): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
-  await updateBudgetItem(itemId, patch);
+  const idv = parse(idSchema, itemId);
+  if (!idv.ok) return idv;
+  const v = parse(updateBudgetItemSchema, patch);
+  if (!v.ok) return v;
+  await updateBudgetItem(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -25,30 +30,38 @@ export async function createBudgetItemAction(
   input: { category: string; name: string; qty?: number | null; unit?: string; unit_price?: number | null },
 ): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
-  if (!input.name?.trim()) return { ok: false, error: "Nama item wajib diisi." };
-  await createBudgetItem(planId, input);
+  const idv = parse(idSchema, planId);
+  if (!idv.ok) return idv;
+  const v = parse(budgetItemSchema, input);
+  if (!v.ok) return v;
+  await createBudgetItem(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
-  await deleteBudgetItem(itemId);
+  const idv = parse(idSchema, itemId);
+  if (!idv.ok) return idv;
+  await deleteBudgetItem(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function createBudgetPlanAction(input: { name: string; event_id: string }): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
-  if (!input.name?.trim()) return { ok: false, error: "Nama rencana anggaran wajib diisi." };
-  await createBudgetPlan(input);
+  const v = parse(budgetPlanSchema, input);
+  if (!v.ok) return v;
+  await createBudgetPlan(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function deleteBudgetPlanAction(id: string): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
-  await deleteBudgetPlan(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteBudgetPlan(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

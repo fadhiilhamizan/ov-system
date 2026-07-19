@@ -9,6 +9,7 @@ import {
   createTeam, updateTeam, deleteTeam,
 } from "@/lib/data/repo";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import { eventSchema, memberSchema, divisionSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
@@ -16,20 +17,27 @@ const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
 // ---------------- Events (Ormawa Visit) ----------------
 export async function createEventAction(input: Partial<OVEvent>): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
-  if (!input.title?.trim()) return { ok: false, error: "Nama Ormawa Visit wajib diisi." };
-  await createEvent(input);
+  const v = parse(eventSchema, input);
+  if (!v.ok) return v;
+  await createEvent(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function updateEventAction(id: string, patch: Partial<OVEvent>): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
-  await updateEvent(id, patch);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const v = parse(eventSchema.partial(), patch);
+  if (!v.ok) return v;
+  await updateEvent(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function deleteEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
-  await deleteEvent(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteEvent(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -37,21 +45,27 @@ export async function deleteEventAction(id: string): Promise<Result> {
 // ---------------- Members ----------------
 export async function createMemberAction(input: Partial<Member>): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
-  if (!input.name?.trim()) return { ok: false, error: "Nama anggota wajib diisi." };
-  if (!input.division) return { ok: false, error: "Divisi wajib dipilih." };
-  await createMember(input);
+  const v = parse(memberSchema, input);
+  if (!v.ok) return v;
+  await createMember(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function updateMemberAction(id: string, patch: Partial<Member>): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
-  await updateMember(id, patch);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const v = parse(memberSchema.partial(), patch);
+  if (!v.ok) return v;
+  await updateMember(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function deleteMemberAction(id: string): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
-  await deleteMember(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteMember(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -59,20 +73,27 @@ export async function deleteMemberAction(id: string): Promise<Result> {
 // ---------------- Divisions ----------------
 export async function createDivisionAction(input: Partial<Division>): Promise<Result> {
   if (!can.manageDivisions(await getCurrentUser())) return DENY;
-  if (!input.name?.trim()) return { ok: false, error: "Nama divisi wajib diisi." };
-  await createDivision(input);
+  const v = parse(divisionSchema, input);
+  if (!v.ok) return v;
+  await createDivision(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function updateDivisionAction(key: string, patch: Partial<Division>): Promise<Result> {
   if (!can.manageDivisions(await getCurrentUser())) return DENY;
-  await updateDivision(key, patch);
+  const idv = parse(idSchema, key);
+  if (!idv.ok) return idv;
+  const v = parse(divisionSchema.partial(), patch);
+  if (!v.ok) return v;
+  await updateDivision(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function deleteDivisionAction(key: string): Promise<Result> {
   if (!can.manageDivisions(await getCurrentUser())) return DENY;
-  await deleteDivision(key);
+  const idv = parse(idSchema, key);
+  if (!idv.ok) return idv;
+  await deleteDivision(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
