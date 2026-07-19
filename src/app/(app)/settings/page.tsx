@@ -1,4 +1,4 @@
-import { Check, ListChecks, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
+import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
 import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
@@ -130,7 +130,7 @@ export default async function SettingsPage() {
               <Check className="size-4 text-emerald-500" /> {t("Akses penuh (kelola)")}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <ListChecks className="size-4 text-sky-500" /> {t("Hanya lihat")}
+              <Check className="size-4 text-sky-500" /> {t("Hanya lihat")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Minus className="size-4 text-muted-foreground/40" /> {t("Tidak ada akses")}
@@ -159,7 +159,7 @@ export default async function SettingsPage() {
                           {level === "full" ? (
                             <Check className="mx-auto size-4 text-emerald-500" aria-label={t("Akses penuh (kelola)")} />
                           ) : level === "view" ? (
-                            <ListChecks className="mx-auto size-4 text-sky-500" aria-label={t("Hanya lihat")} />
+                            <Check className="mx-auto size-4 text-sky-500" aria-label={t("Hanya lihat")} />
                           ) : (
                             <Minus className="mx-auto size-4 text-muted-foreground/40" aria-label={t("Tidak ada akses")} />
                           )}
