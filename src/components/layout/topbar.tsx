@@ -19,6 +19,7 @@ export function Topbar({
   divisions,
   activeDivision,
   demoMode,
+  sandboxMode,
   onMenu,
 }: {
   user: AppUser;
@@ -27,6 +28,7 @@ export function Topbar({
   divisions: Division[];
   activeDivision: string;
   demoMode: boolean;
+  sandboxMode: boolean;
   onMenu: () => void;
 }) {
   const pathname = usePathname();
@@ -53,7 +55,7 @@ export function Topbar({
         {divisions.length > 0 && <DivisionFilter divisions={divisions} active={activeDivision} />}
         <LangToggle />
         <ThemeToggle />
-        {demoMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} />}
+        {demoMode || sandboxMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} />}
       </div>
     </header>
   );

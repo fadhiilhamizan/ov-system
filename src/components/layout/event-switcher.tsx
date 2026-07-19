@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import type { OVEvent } from "@/lib/types";
-import { isDemoEvent } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 
@@ -65,9 +64,7 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
                   {e.cabinet} · {e.code}
                 </div>
               </div>
-              <Badge variant={isDemoEvent(e.id) ? "warning" : st.variant}>
-                {isDemoEvent(e.id) ? t("Demo") : t(st.label)}
-              </Badge>
+              <Badge variant={st.variant}>{t(st.label)}</Badge>
             </DropdownMenuItem>
           );
         })}

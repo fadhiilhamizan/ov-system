@@ -22,9 +22,9 @@ Ormawa Visit adalah program kunjungan benchmarking antar organisasi mahasiswa. S
 | Rundown | Susunan acara (juklak-juknis) beberapa versi beserta job per divisi. |
 | Hari-H | Pembagian tugas panitia saat hari pelaksanaan. |
 | Anggota & Tim | Direktori fungsionaris dan intern, struktur tim per divisi, angkatan otomatis dari NRP. |
-| Ormawa Visit | Riwayat dan rencana seluruh gelaran lintas kabinet, termasuk edisi Demo. |
+| Ormawa Visit | Riwayat dan rencana seluruh gelaran lintas kabinet. Edisi baru bisa dibuat dari template edisi sebelumnya. |
 | FAQ | Panduan dan pertanyaan umum. |
-| Pengaturan | Status backend, matriks hak akses, changelog, reset data demo, serta backup dan rollback. |
+| Pengaturan | Status backend, matriks hak akses tiga tingkat, changelog, serta backup dan rollback. |
 
 ## Peran dan Hak Akses
 
@@ -42,7 +42,7 @@ Sistem memakai hak akses berjenjang (RBAC). Matriks lengkapnya dapat dilihat di 
 
 1. **Masuk.** Buka https://ov-system.vercel.app/ lalu login dengan email dan kata sandi yang didaftarkan admin. Belum punya akun tetapi ingin melihat-lihat? Gunakan **Mode Tamu** di halaman login (hanya bisa melihat).
 2. **Pilih Ormawa Visit.** Gunakan pemilih edisi di kanan atas untuk berpindah antar gelaran. Semua modul menyesuaikan dengan edisi yang sedang dipilih.
-3. **Coba dulu lewat Ormawa Visit Demo.** Ada edisi khusus bernama **Ormawa Visit Demo** yang berisi data contoh. Edisi ini aman untuk bereksperimen (menambah, mengubah, menghapus) tanpa memengaruhi data asli, dan tidak dapat dihapus. Admin dapat mengembalikannya ke data awal kapan saja melalui Pengaturan > Ormawa Visit Demo > Reset Data Demo.
+3. **Coba dulu lewat Mode Demo.** Di halaman login ada tombol **Coba Mode Demo** (jika diaktifkan). Mode ini berjalan di **database Supabase yang benar-benar terpisah** berisi data contoh, tanpa perlu akun. Karena databasenya berbeda, apa pun yang Anda lakukan di Mode Demo tidak dapat menyentuh data asli, dan sebaliknya. Ada indikator "Mode Demo" di atas layar dengan tombol Keluar untuk kembali ke halaman login. Penyiapannya dijelaskan di bawah pada bagian Mode Demo.
 4. **Kelola tugas.** Buka Work Breakdown, tambah atau ubah tugas, pilih PIC langsung dari daftar anggota, lalu pantau progres lewat Tabel, Kanban, atau Timeline.
 5. **Buat Ormawa Visit baru dari template.** Saat menambah edisi baru, pilih "Salin data dari Ormawa Visit lain" untuk menyalin tugas, rundown, job hari-H, dan/atau anggaran dari edisi sebelumnya sebagai kerangka awal, sehingga tidak perlu mengisi semuanya satu per satu.
 6. **Fokus per divisi.** Gunakan filter "Fokus divisi" agar tampilan menyoroti satu divisi saja.
@@ -77,18 +77,32 @@ npm run build      # build produksi
 npm test           # jalankan unit test (Vitest)
 npm run lint       # ESLint
 npm run db:seed    # regenerasi supabase/seed.sql dari seed.json
-npm run db:demo    # regenerasi migrasi data edisi Demo
+npm run db:demo    # regenerasi seed & skrip akses untuk project Supabase demo
 ```
 
 ## Konfigurasi Supabase (Cloud)
 
 1. Buat proyek di [supabase.com](https://supabase.com) (free tier mencukupi).
-2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0014), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan.
+2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0013), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012 dan 0013).
 3. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings > API pada dashboard Supabase).
 4. Buat user pertama (Authentication > Users), kemudian set `role = 'admin'` pada tabel `profiles`.
 5. `npm run dev` — `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
 
 Selama variabel Supabase kosong, aplikasi tetap berjalan penuh dalam mode demo lokal.
+
+## Mode Demo (database terpisah)
+
+Mode Demo memungkinkan siapa pun mencoba sistem tanpa akun dan tanpa risiko, karena berjalan di **project Supabase yang benar-benar terpisah** dari produksi. Data demo dan data asli tidak dapat saling mengakses. Fitur ini opsional dan hanya muncul bila dikonfigurasi.
+
+1. Buat **project Supabase kedua** khusus demo.
+2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011), lalu:
+   - `supabase/demo/demo-open-access.sql` — menonaktifkan RLS agar demo bisa dipakai tanpa login (jalankan **hanya** di project demo, jangan di produksi).
+   - `supabase/demo/demo-seed.sql` — mengisi data mockup contoh.
+   - Berkas ini dihasilkan oleh `npm run db:demo`.
+3. Tambahkan env berikut (di `.env.local` dan di Vercel) dari **Settings > API project demo**:
+   - `NEXT_PUBLIC_SUPABASE_DEMO_URL`
+   - `NEXT_PUBLIC_SUPABASE_DEMO_ANON_KEY`
+4. Setelah env terisi, tombol **Coba Mode Demo** otomatis muncul di halaman login. Klik untuk masuk (tanpa akun); tombol **Keluar** pada bilah "Mode Demo" mengembalikan ke halaman login.
 
 ## Struktur Proyek
 
@@ -104,7 +118,7 @@ ov-system/
       actions/*.ts        # server actions (mutasi + guard hak akses + validasi Zod)
       permissions.ts      # aturan RBAC (pure, dipakai client dan server)
       auth.ts, session.ts # identitas dan edisi aktif (cookie/Supabase Auth)
-      demo.ts             # edisi Demo (sandbox terlindungi)
+      demo.ts             # Mode Demo (pemilihan database demo vs produksi)
       seed/seed.json      # data awal
   supabase/               # migrasi, RLS, dan seed.sql
 ```

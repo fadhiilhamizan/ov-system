@@ -20,7 +20,6 @@ insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,pla
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov2-2025','OV2 2025','HMSI ITS × HMTG ITS','HMTG','ITS','internal','offline','Niskalarasi 2025','2025-09-28',null,null,'ITS','done',2) on conflict (id) do nothing;
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov1-2026','OV1 2026','HMSI ITS × HIMASTA ITS','HIMASTA ITS','ITS','internal','offline','PilarAksi 2026','2026-05-30',null,null,'Tower 2 Lt.2 ITS','done',3) on conflict (id) do nothing;
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov2-2026','OV2 2026','HMSI ITS × HMD Eksternal','TBD','TBD','external','offline','PilarAksi 2026',null,null,null,'TBD','planning',4) on conflict (id) do nothing;
-insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov-demo','DEMO','Ormawa Visit Demo','Himpunan Demo','Universitas Contoh','external','offline','Sandbox','2026-09-20','2026-08-01','2026-09-19','Ruang Demo, Gedung Contoh','planning',100) on conflict (id) do nothing;
 
 -- members
 insert into members(event_id,name,nickname,nrp,type,year,division) values (null,'Arjuna Putra Kharisma','Arjuna','5026221210','fungsionaris',2022,null);
@@ -67,14 +66,6 @@ insert into members(event_id,name,nickname,nrp,type,year,division) values (null,
 insert into members(event_id,name,nickname,nrp,type,year,division) values (null,'Sheva Rafid Fairuz Rifa''i','Fairuz/Babeh','5051241003','intern',2024,null);
 insert into members(event_id,name,nickname,nrp,type,year,division) values (null,'Suci Nur Aisyah','Suci','5051241013','intern',2024,null);
 insert into members(event_id,name,nickname,nrp,type,year,division) values (null,'Hayyu Izza M SHidqi','Hayyu','5051241024','intern',2024,null);
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Budi Santoso','Budi','5026221001','fungsionaris',2022,'EVENT');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Siti Rahma','Siti','5026221002','fungsionaris',2022,'SECRETARY');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Andi Wijaya','Andi','5026231003','fungsionaris',2023,'LO');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Dewi Lestari','Dewi','5026231004','fungsionaris',2023,'CREATIVE');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Rizky Pratama','Rizky','5026231005','fungsionaris',2023,'MARKETING');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Putri Anggraini','Putri','5026241006','intern',2024,'CONSUMPTION');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Fajar Nugroho','Fajar','5026241007','intern',2024,'OPERATIONAL');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('ov-demo','Maya Kusuma','Maya','5026241008','intern',2024,'EVENT');
 
 -- tasks
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov2-2025','PIC','1','Fadhiil, Dona','Reach PIC Benchmarking di Himpunan tujuan',null,'10 Agustus',null,'27 Agustus','Chat dan cari kontak berbagai PIC Benchmark di jurusan dalam ITS','Cek sheet Offer','done');
@@ -275,18 +266,6 @@ insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,e
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov1-2026','CREATIVE','11','Aul','Request IM Ormawa Visit Recap','2026-05-09',null,null,null,'Req recap OV ke IM, recap nantinya dipost IM ke Feeds Instagram (tipe recap biasanya akan bersamaan dengan proker/agenda dari Departemen HMSI lain pada bulan tersebut) Baca SOP dan Tata Cara Request IM dengan seksama (lihat: Deadline pengajuan Request IM) Request IM : LINK',null,'done');
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov1-2026','CREATIVE','12','Aul','Request IM Dokumentasi','2026-05-09',null,null,null,'Req foto dan video ke IM untuk dokumentasi acara, nantinya akan diberikan link google drive oleh IM setelah selesai acara Baca SOP dan Tata Cara Request IM dengan seksama (lihat: Deadline pengajuan Request IM) Request IM : LINK',null,'done');
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov1-2026','CREATIVE','13','Aul','Request IM Bumper','2026-05-09',null,null,null,'Request ini bisa menggunakan desain yang lalu, yang hanya diganti logo dan nama benchmarkingnya, hubungi staff jika intern tidak bisa mengaksesnya Baca SOP dan Tata Cara Request IM dengan seksama (lihat: Deadline pengajuan Request IM) Request IM : LINK',null,'done');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','EVENT','1','Budi','Susun konsep acara Ormawa Visit Demo','2026-08-01',null,'2026-08-10',null,null,null,'ongoing');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','EVENT','2','Maya','Buat rundown acara','2026-08-11',null,'2026-08-20',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','EVENT','3','Budi','Evaluasi & laporan akhir','2026-09-21',null,'2026-09-30',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','SECRETARY','1','Siti','Buat proposal & surat-menyurat','2026-08-01',null,'2026-08-08',null,null,null,'done');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','SECRETARY','2','Siti','Notulensi & absensi peserta','2026-09-20',null,'2026-09-20',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','LO','1','Andi','Koordinasi dengan himpunan partner','2026-08-05',null,'2026-08-25',null,null,null,'ongoing');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','LO','2','Andi','Follow up konfirmasi kehadiran','2026-09-01',null,'2026-09-15',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','CREATIVE','1','Dewi','Desain feeds & poster publikasi','2026-08-10',null,'2026-08-18',null,null,null,'done');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','CREATIVE','2','Dewi','Siapkan dokumentasi acara','2026-09-19',null,'2026-09-20',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','MARKETING','1','Rizky','Publikasi di media sosial','2026-08-18',null,'2026-09-18',null,null,null,'ongoing');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','CONSUMPTION','1','Putri','Pesan konsumsi peserta','2026-09-10',null,'2026-09-19',null,null,null,'todo');
-insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov-demo','OPERATIONAL','1','Fajar','Siapkan perlengkapan & ruangan','2026-09-15',null,'2026-09-19',null,null,null,'overtime');
 
 -- prospects
 insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (null,'Ormawa Visit Kedua 2026','1',null,null,'628986563680 (Berliana Aisyah)','Metalurgi ITB','ITB',null,'Mega','MENGHUBUNGI','DITUNGGU',null,false,'2026');
@@ -350,10 +329,6 @@ insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,
 insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (null,'Ormawa Visit Kedua 2025','14',null,null,'62 899-6637-304','HMTG','Teknik Geofisika ITS',null,'Fadhiil','MENGHUBUNGI','DITERIMA',null,true,'2026');
 insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (null,'Ormawa Visit Kedua 2025','33',null,null,'wa.me/085776143714','HIMATEKKOM','ITS',null,'Vika','DIHUBUNGI',null,'TOLAK',true,'2026');
 insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (null,'Ormawa Visit Kedua 2025','34',null,null,'62 895-1726-1193','Hima Sisform UNP Kediri','UNP KEDIRI',null,'Nisrina, Athilah & Fadhiil','DIHUBUNGI',null,'TOLAK',true,'2026');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('ov-demo','Demo','1',null,null,null,'Himpunan Demo A','Universitas Contoh',null,'Andi','DIHUBUNGI','DITERIMA',null,false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('ov-demo','Demo','2',null,null,null,'Himpunan Demo B','Institut Sample',null,'Andi','MENGHUBUNGI','DITUNGGU',null,false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('ov-demo','Demo','3',null,null,null,'Himpunan Demo C','Politeknik Uji',null,'Budi','DIHUBUNGI','DITOLAK',null,false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('ov-demo','Demo','4',null,null,null,'Himpunan Demo D','Universitas Placeholder',null,null,null,null,null,false,'demo');
 
 -- links
 insert into links(event_id,section,division,name,url,note,source) values ('ov1-2026','HMSI ITS x HMD MEI 2026 (INTERNAL)','PIC OV & TREASURER & SECRETARY & KOORDINATOR','PROPOSAL ORMAWA VISIT','https://docs.google.com/document/d/1qh1oKuL0GBZR8wOVMc1SBhZEzczi8bv0kyhTcPvRMQg/edit?tab=t.0','https://docs.google.com/document/d/1b75NR8Zz9kYUS9yqX_AQG4_9LamQsFxTogMmOlrjW5k/edit?usp=sharing','2026');
@@ -450,10 +425,6 @@ insert into links(event_id,section,division,name,url,note,source) values ('ov1-2
 insert into links(event_id,section,division,name,url,note,source) values ('ov1-2025','ORMAWA VISIT 2024 RECAP',null,'[CONTEKAN] PEMBAGIAN TEAM FGD','https://docs.google.com/spreadsheets/d/1YO7FHp86NUb5bvnvl54ffLRiP9l3CEvd-omzMwMOY_I/edit?gid=0#gid=0',null,'main');
 insert into links(event_id,section,division,name,url,note,source) values ('ov1-2025','ORMAWA VISIT 2024 RECAP',null,'[CONTEKAN] GUIDEBOOK FGD','https://docs.google.com/document/d/1s9BqVFFwVsY_WnhNM2Z6zfgkD3-Sv2XP4pGS3TXVygE/edit?tab=t.0',null,'main');
 insert into links(event_id,section,division,name,url,note,source) values ('ov1-2025','ORMAWA VISIT 2024 RECAP',null,'[CONTEKAN] GFORM FEEDBACK','https://docs.google.com/forms/d/e/1FAIpQLSeHyfdkWieE4COhGJZhp69iWBsuYLwz2oSHV6qt5h5eWU5RfA/viewform',null,'main');
-insert into links(event_id,section,division,name,url,note,source) values ('ov-demo','Proposal','SECRETARY','Proposal Ormawa Visit Demo','https://example.com/proposal-demo',null,'demo');
-insert into links(event_id,section,division,name,url,note,source) values ('ov-demo','Desain','CREATIVE','Folder Desain','https://example.com/desain-demo',null,'demo');
-insert into links(event_id,section,division,name,url,note,source) values ('ov-demo','Dokumentasi','CREATIVE','Drive Dokumentasi','https://example.com/dokumentasi-demo',null,'demo');
-insert into links(event_id,section,division,name,url,note,source) values ('ov-demo','Formulir','EVENT','Form Pendaftaran Peserta','https://example.com/form-demo',null,'demo');
 
 -- budget
 with p as (insert into budget_plans(name,event_id) values ('FIX: RAB OV FIX(HMTG ITS)','ov2-2025') returning id)
@@ -505,17 +476,6 @@ with p as (insert into budget_plans(name,event_id) values ('Plan: RAB OV Keluar 
     ('PERALATAN & CETAKAN',2,'Banner (4x1)',1,'unit',80000,80000,3),
     ('PERALATAN & CETAKAN',4,'ID Card',17,'Unit',15000,255000,4),
     ('PERALATAN & CETAKAN',6,'Cuecard MC',2,'Unit',5000,10000,5)
-  ) as v(category,no,name,qty,unit,unit_price,total,ord);
-
-with p as (insert into budget_plans(name,event_id) values ('RAB Ormawa Visit Demo','ov-demo') returning id)
-  insert into budget_items(plan_id,category,no,name,qty,unit,unit_price,total,"order")
-  select p.id, v.* from p, (values
-    ('KONSUMSI',1,'Snack peserta',30,'box',15000,450000,0),
-    ('KONSUMSI',2,'Air mineral',5,'dus',20000,100000,1),
-    ('KESEKRETARIATAN',3,'Cetak proposal',3,'eksemplar',25000,75000,2),
-    ('ACARA',4,'Plakat / cinderamata',1,'buah',150000,150000,3),
-    ('KREATIF',5,'Cetak banner',1,'buah',120000,120000,4),
-    ('OPERASIONAL',6,'Sewa perlengkapan',1,'paket',200000,200000,5)
   ) as v(category,no,name,qty,unit,unit_price,total,ord);
 
 -- rundown
@@ -577,11 +537,6 @@ insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,ke
 insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov1-2026','B',17,'12:35','12.40','5’','Pengisian Kesan Pesan',null,'MC','Feedback',null,null,null,null,null,null);
 insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov1-2026','B',18,'12.40','12.55','15’','Foto dan Konten Bersama',null,'Creative',null,null,null,null,null,null,null);
 insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov1-2026','B',19,'12.55','13.00','5’','Penutupan',null,'MC',null,null,null,null,null,null,null);
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov-demo','A',1,'08:00','08:30',null,'Registrasi peserta','Semua panitia',null,null,null,null,null,null,null,null);
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov-demo','A',2,'08:30','09:00',null,'Pembukaan & sambutan','MC',null,null,null,null,null,null,null,null);
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov-demo','A',3,'09:00','10:30',null,'Sesi sharing & FGD','Moderator',null,null,null,null,null,null,null,null);
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov-demo','A',4,'10:30','11:30',null,'Games & networking','Event',null,null,null,null,null,null,null,null);
-insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,host,opr_link,mc,job_lo,job_event,job_consump,job_creative,job_opr) values ('ov-demo','A',5,'11:30','12:00',null,'Penutupan & dokumentasi','MC',null,null,null,null,null,null,null,null);
 
 -- job hari-h
 insert into job_harih(event_id,no,pic,job,notes) values ('ov1-2025','1','Juno, Aul','Mengatur berjalannya acara',null);
@@ -623,11 +578,6 @@ insert into job_harih(event_id,no,pic,job,notes) values ('ov1-2026','14','Mas Da
 insert into job_harih(event_id,no,pic,job,notes) values ('ov1-2026','10','Mas Fadhiil','Pengarah tempat duduk peserta selama acara',null);
 insert into job_harih(event_id,no,pic,job,notes) values ('ov1-2026','11','Mega','Pengarah tempat duduk peserta selama FGD',null);
 insert into job_harih(event_id,no,pic,job,notes) values ('ov1-2026','15','Zain','Pengarah tempat duduk peserta selama FGD',null);
-insert into job_harih(event_id,no,pic,job,notes) values ('ov-demo','1','Maya','MC Acara',null);
-insert into job_harih(event_id,no,pic,job,notes) values ('ov-demo','2','Siti','Registrasi & absensi',null);
-insert into job_harih(event_id,no,pic,job,notes) values ('ov-demo','3','Dewi','Dokumentasi foto/video',null);
-insert into job_harih(event_id,no,pic,job,notes) values ('ov-demo','4','Andi','LO himpunan partner',null);
-insert into job_harih(event_id,no,pic,job,notes) values ('ov-demo','5','Putri, Fajar','Konsumsi & perlengkapan',null);
 
 -- faqs
 insert into faqs(question,answer,"order") values ('Apa itu Ormawa Visit?','Ormawa Visit adalah kegiatan kunjungan antar Organisasi Mahasiswa (Ormawa) yang bertujuan untuk berbagi informasi, melakukan benchmarking sistem organisasi dan program kerja, memperluas relasi, serta membuka peluang kolaborasi antar himpunan.',0);
@@ -667,12 +617,5 @@ insert into teams(event_id,division,fungsionaris,intern) values ('ov2-2026','EVE
 insert into teams(event_id,division,fungsionaris,intern) values ('ov2-2026','CONSUMPTION',null,null);
 insert into teams(event_id,division,fungsionaris,intern) values ('ov2-2026','OPERATIONAL',null,null);
 insert into teams(event_id,division,fungsionaris,intern) values ('ov2-2026','OUTSOURCE',null,null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','EVENT','Budi, Maya',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','SECRETARY','Siti',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','LO','Andi',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','CREATIVE','Dewi',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','MARKETING','Rizky',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','CONSUMPTION',null,'Putri');
-insert into teams(event_id,division,fungsionaris,intern) values ('ov-demo','OPERATIONAL',null,'Fajar');
 
 commit;

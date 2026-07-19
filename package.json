@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:seed": "node scripts/gen-seed-sql.mjs",
-    "db:demo": "node scripts/gen-demo-sql.mjs"
+    "db:demo": "node scripts/gen-demo-seed.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

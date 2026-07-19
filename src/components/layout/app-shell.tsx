@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Logo } from "./logo";
+import { DemoBanner } from "./demo-banner";
 import type { AppUser, Division, OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -16,6 +17,7 @@ export function AppShell({
   divisions,
   activeDivision,
   demoMode,
+  sandboxMode,
   children,
 }: {
   user: AppUser;
@@ -24,6 +26,7 @@ export function AppShell({
   divisions: Division[];
   activeDivision: string;
   demoMode: boolean;
+  sandboxMode: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -58,6 +61,7 @@ export function AppShell({
 
       {/* Main */}
       <div className={cn("lg:pl-64")}>
+        {sandboxMode && <DemoBanner />}
         <Topbar
           user={user}
           events={events}
@@ -65,6 +69,7 @@ export function AppShell({
           divisions={divisions}
           activeDivision={activeDivision}
           demoMode={demoMode}
+          sandboxMode={sandboxMode}
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>

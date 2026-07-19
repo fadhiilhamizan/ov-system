@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteEventAction } from "@/lib/actions/manage";
-import { isDemoEvent } from "@/lib/demo";
 import { useT } from "@/lib/i18n/provider";
 import type { OVEvent } from "@/lib/types";
 
@@ -33,7 +32,6 @@ export function EventActions({ event }: { event: OVEvent }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
-  const isDemo = isDemoEvent(event.id);
   return (
     <>
       <DropdownMenu>
@@ -42,9 +40,7 @@ export function EventActions({ event }: { event: OVEvent }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          {!isDemo && (
-            <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
-          )}
+          <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

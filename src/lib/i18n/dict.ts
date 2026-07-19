@@ -267,15 +267,9 @@ export const EN: Record<string, string> = {
   "Tidak ada akses": "No access",
   "Modul": "Module",
 
-  // Demo edition
-  "Demo": "Demo",
-  "Ormawa Visit Demo": "Demo Ormawa Visit",
-  "Sandbox untuk coba-coba — data mockup, tidak memengaruhi data asli.": "Sandbox to explore — mockup data, does not affect real data.",
-  "Reset Data Demo": "Reset Demo Data",
-  "Reset Data Demo?": "Reset demo data?",
-  "Kembalikan edisi Ormawa Visit Demo ke data mockup awal. Hanya data demo yang terpengaruh — data Ormawa Visit asli tidak berubah.": "Restore the Demo Ormawa Visit edition to its original mockup data. Only demo data is affected — real Ormawa Visit data is unchanged.",
-  "Semua perubahan pada edisi Demo akan dihapus dan dikembalikan ke data mockup awal. Tindakan ini tidak memengaruhi data Ormawa Visit asli.": "All changes in the Demo edition will be discarded and restored to the original mockup data. This does not affect real Ormawa Visit data.",
-  "Data demo direset": "Demo data reset",
+  // Demo mode (separate database)
+  "Coba Mode Demo (database terpisah)": "Try Demo Mode (separate database)",
+  "Mode Demo — database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.": "Demo Mode — separate database, safe to experiment. Changes don't affect real data.",
 
   // Member picker (PIC)
   "dipilih": "selected",

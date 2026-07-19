@@ -1,4 +1,4 @@
-import { Check, Eye, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical } from "lucide-react";
+import { Check, Eye, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
 import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { BackupPanel } from "@/components/settings/backup-panel";
-import { DemoResetPanel } from "@/components/settings/demo-reset";
 import { ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
 import { formatDate } from "@/lib/format";
@@ -117,17 +116,6 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Ormawa Visit Demo */}
-      <Card>
-        <CardHeader className="flex-row items-center gap-2">
-          <FlaskConical className="size-4 text-primary" />
-          <CardTitle>{t("Ormawa Visit Demo")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DemoResetPanel />
-        </CardContent>
-      </Card>
 
       {/* Roles matrix */}
       <Card>

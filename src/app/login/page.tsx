@@ -1,9 +1,9 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogIn, Eye } from "lucide-react";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { enterGuestMode } from "@/lib/actions/session";
+import { Loader2, LogIn, Eye, FlaskConical } from "lucide-react";
+import { createClient, isSupabaseConfigured, isDemoConfigured } from "@/lib/supabase/client";
+import { enterGuestMode, enterDemoMode } from "@/lib/actions/session";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [guestPending, startGuest] = React.useTransition();
+  const [demoPending, startDemo] = React.useTransition();
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) router.replace("/dashboard");
@@ -98,6 +99,19 @@ export default function LoginPage() {
             {guestPending ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
             {t("Masuk sebagai Tamu (hanya lihat)")}
           </Button>
+
+          {isDemoConfigured && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 w-full border-amber-400/60 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-500/10"
+              disabled={demoPending}
+              onClick={() => startDemo(() => enterDemoMode())}
+            >
+              {demoPending ? <Loader2 className="size-4 animate-spin" /> : <FlaskConical className="size-4" />}
+              {t("Coba Mode Demo (database terpisah)")}
+            </Button>
+          )}
         </Card>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           {t("Belum punya akun? Hubungi PIC Ormawa Visit untuk dibuatkan.")}

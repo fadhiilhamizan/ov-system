@@ -9,9 +9,9 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.5.0",
     date: "2026-07-19",
-    title: "Ormawa Visit Demo, template pembuatan, & integrasi anggota",
+    title: "Mode Demo, template pembuatan, & integrasi anggota",
     changes: [
-      "Ormawa Visit Demo: edisi sandbox berisi data mockup untuk coba-coba tanpa mengubah data asli — tidak bisa dihapus, dan bisa direset ke data awal kapan saja.",
+      "Mode Demo: sandbox dengan database Supabase terpisah — dari halaman login, coba-coba tanpa akun. Data demo dan data asli benar-benar terisolasi (tidak bisa saling mengakses).",
       "Template pembuatan Ormawa Visit: saat membuat edisi baru, data (tugas, rundown, job hari-H, struktur tim, anggaran) bisa disalin dari Ormawa Visit sebelumnya, tidak lagi diisi satu per satu.",
       "PIC tugas & job hari-H kini dipilih langsung dari daftar anggota, bukan diketik manual.",
       "Anggota & Tim: pilih banyak anggota sekaligus untuk hapus atau ubah divisi/tipe massal.",

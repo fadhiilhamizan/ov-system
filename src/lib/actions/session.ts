@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
 import { LANG_COOKIE } from "@/lib/i18n/config";
+import { DEMO_COOKIE, demoConfigured } from "@/lib/demo";
 
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -43,5 +44,22 @@ export async function enterGuestMode() {
 export async function exitGuestMode() {
   const store = await cookies();
   store.delete(GUEST_COOKIE);
+  redirect("/login");
+}
+
+/** Enter the demo sandbox (separate Supabase database, no account needed). */
+export async function enterDemoMode() {
+  if (!demoConfigured()) redirect("/login");
+  const store = await cookies();
+  store.set(DEMO_COOKIE, "1", { path: "/", maxAge: YEAR, sameSite: "lax" });
+  // Reset the demo identity to the default (admin) each time.
+  store.delete(AUTH_COOKIE);
+  redirect("/dashboard");
+}
+
+export async function exitDemoMode() {
+  const store = await cookies();
+  store.delete(DEMO_COOKIE);
+  store.delete(AUTH_COOKIE);
   redirect("/login");
 }

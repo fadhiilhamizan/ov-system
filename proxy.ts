@@ -8,6 +8,15 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  // Demo mode runs against a separate Supabase project with the anon key and no
+  // login — skip the production session refresh + auth redirect entirely.
+  const demoConfigured =
+    !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_URL &&
+    !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_ANON_KEY;
+  if (demoConfigured && request.cookies.get("ov_demo")?.value === "1") {
+    return NextResponse.next();
+  }
+
   // Demo / local mode — do nothing.
   if (!url || !anon) return NextResponse.next();
 

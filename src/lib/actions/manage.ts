@@ -10,7 +10,6 @@ import {
 } from "@/lib/data/repo";
 import type { CloneOptions } from "@/lib/data/repo";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
-import { isDemoEvent } from "@/lib/demo";
 import { uid } from "@/lib/utils";
 import { eventSchema, memberSchema, divisionSchema, idSchema, parse } from "./schemas";
 
@@ -60,8 +59,6 @@ export async function deleteEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  if (isDemoEvent(idv.data))
-    return { ok: false, error: "Ormawa Visit Demo tidak bisa dihapus." };
   await deleteEvent(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
