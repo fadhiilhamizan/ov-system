@@ -134,11 +134,15 @@ export const eventSchema = z.object({
 });
 
 // ---------------- Members ----------------
+// Names must not contain a comma: PIC / team rosters are stored as a
+// comma-joined string of display names, so a comma in a name would corrupt
+// the parse and silently drop the member association (data loss).
+const NO_COMMA = "Tidak boleh mengandung tanda koma (,).";
 export const memberSchema = z.object({
-  name: nonEmpty("Nama anggota", 200),
+  name: nonEmpty("Nama anggota", 200).refine((v) => !v.includes(","), NO_COMMA),
   division: nonEmpty("Divisi", 128),
   event_id: z.string().trim().max(128).optional().nullable(),
-  nickname: z.string().trim().max(120).optional(),
+  nickname: z.string().trim().max(120).refine((v) => !v.includes(","), NO_COMMA).optional(),
   nrp: z.string().trim().max(40).optional(),
   type: z.enum(["fungsionaris", "intern"]).optional(),
   year: z.number().int().min(2000).max(2100).optional(),
@@ -163,21 +167,79 @@ export const divisionSchema = z.object({
 });
 
 // ---------------- Prospects ----------------
-export const prospectSchema = z
-  .object({
-    org_name: z.string().trim().max(200).optional(),
-    contact: z.string().trim().max(200).optional(),
-  })
-  .passthrough()
-  .refine((v) => !!(v.org_name?.trim() || v.contact?.trim()), {
-    error: "Isi minimal nama ormawa atau kontak.",
-    path: ["org_name"],
-  });
+// Freeform pipeline table: enumerate every known field with a length cap so the
+// action can pass the *validated* data (trimmed, unknown keys stripped) to the
+// repo instead of the raw client payload (mass-assignment protection).
+const prospectBase = z.object({
+  event_id: z.string().trim().max(128).optional().nullable(),
+  batch: z.string().trim().max(120).optional(),
+  no: z.string().trim().max(32).optional(),
+  date_text: z.string().trim().max(60).optional(),
+  month: z.string().trim().max(40).optional(),
+  contact: z.string().trim().max(200).optional(),
+  org_name: z.string().trim().max(200).optional(),
+  campus: z.string().trim().max(200).optional(),
+  location: z.string().trim().max(200).optional(),
+  pic: z.string().trim().max(200).optional(),
+  contact_status: z.string().trim().max(60).optional(),
+  their_response: z.string().trim().max(60).optional(),
+  our_response: z.string().trim().max(60).optional(),
+  done: z.boolean().optional(),
+  source: z.string().trim().max(120).optional(),
+});
+/** Create: require at least an org name or a contact. */
+export const prospectSchema = prospectBase.refine(
+  (v) => !!(v.org_name?.trim() || v.contact?.trim()),
+  { error: "Isi minimal nama ormawa atau kontak.", path: ["org_name"] },
+);
+/** Update: any subset of fields (no minimum-one-field rule). */
+export const prospectUpdateSchema = prospectBase.partial();
 
 // ---------------- Links ----------------
 export const createLinkSchema = z.object({
+  event_id: z.string().trim().max(128).optional().nullable(),
+  section: z.string().trim().max(200).optional(),
+  division: z.string().trim().max(128).optional(),
   name: nonEmpty("Nama tautan", 200),
   url: urlSchema,
+  note: optionalText(1000),
+  source: z.string().trim().max(120).optional(),
+});
+/** Update: any subset; `url` (when present) still validated as an http(s) URL. */
+export const linkUpdateSchema = createLinkSchema.partial();
+
+// ---------------- Rundown ----------------
+// Empty rows are allowed (the table lets you add a blank row and fill inline),
+// so every field is optional. division_jobs is a division-key → text map.
+export const rundownSchema = z.object({
+  event_id: z.string().trim().max(128).optional(),
+  variant: z.string().trim().max(40).optional(),
+  no: z.number().int().min(0).optional(),
+  time_start: z.string().trim().max(20).optional(),
+  time_end: z.string().trim().max(20).optional(),
+  duration: z.string().trim().max(40).optional(),
+  activity: z.string().trim().max(500).optional(),
+  keterangan: z.string().trim().max(1000).optional(),
+  mc: z.string().trim().max(300).optional(),
+  operator: z.string().trim().max(500).optional(),
+  division_jobs: z.record(z.string().max(128), z.string().max(1000)).optional(),
+});
+
+// ---------------- Jobs (Hari-H) ----------------
+export const jobSchema = z.object({
+  event_id: z.string().trim().max(128).optional(),
+  no: z.string().trim().max(32).optional(),
+  pic: z.string().trim().max(300).optional(),
+  job: z.string().trim().max(500).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+// ---------------- Teams (division structure) ----------------
+export const teamSchema = z.object({
+  event_id: z.string().trim().max(128).optional().nullable(),
+  division: z.string().trim().max(128).optional(),
+  fungsionaris: z.string().trim().max(2000).optional(),
+  intern: z.string().trim().max(2000).optional(),
 });
 
 // ---------------- FAQ ----------------

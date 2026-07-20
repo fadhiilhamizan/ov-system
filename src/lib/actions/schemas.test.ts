@@ -9,7 +9,12 @@ import {
   memberSchema,
   divisionSchema,
   prospectSchema,
+  prospectUpdateSchema,
   createLinkSchema,
+  linkUpdateSchema,
+  rundownSchema,
+  jobSchema,
+  teamSchema,
   urlSchema,
   idSchema,
 } from "./schemas";
@@ -157,5 +162,53 @@ describe("idSchema", () => {
   it("rejects empty ids", () => {
     expect(parse(idSchema, "").ok).toBe(false);
     expect(parse(idSchema, "abc-123").ok).toBe(true);
+  });
+});
+
+describe("member name comma guard", () => {
+  it("rejects commas in name / nickname (they'd corrupt PIC parsing)", () => {
+    expect(parse(memberSchema, { name: "Budi, S.T.", division: "EVENT" }).ok).toBe(false);
+    expect(parse(memberSchema, { name: "Budi", nickname: "Bu,di", division: "EVENT" }).ok).toBe(false);
+    expect(parse(memberSchema, { name: "Budi", nickname: "Budi", division: "EVENT" }).ok).toBe(true);
+  });
+});
+
+describe("prospect schemas", () => {
+  it("create validates, trims, and strips unknown keys", () => {
+    const r = parse(prospectSchema, { org_name: "  HIMA X  ", evil: "<script>" });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.org_name).toBe("HIMA X");
+      expect((r.data as Record<string, unknown>).evil).toBeUndefined();
+    }
+  });
+  it("update allows a lone field with no minimum-one rule", () => {
+    expect(parse(prospectUpdateSchema, { done: true }).ok).toBe(true);
+    expect(parse(prospectUpdateSchema, {}).ok).toBe(true);
+  });
+});
+
+describe("link update schema", () => {
+  it("carries the full field set on create and validates url on partial update", () => {
+    const c = parse(createLinkSchema, { name: "Drive", url: "https://a.com", section: "Docs", division: "EVENT" });
+    expect(c.ok).toBe(true);
+    if (c.ok) expect(c.data.section).toBe("Docs");
+    expect(parse(linkUpdateSchema, { note: "catatan" }).ok).toBe(true);
+    expect(parse(linkUpdateSchema, { url: "not-a-url" }).ok).toBe(false);
+  });
+});
+
+describe("rundown / job / team schemas", () => {
+  it("rundown accepts empty rows and trims text", () => {
+    expect(parse(rundownSchema, {}).ok).toBe(true);
+    const r = parse(rundownSchema, { activity: "  Sambutan  ", division_jobs: { EVENT: "setup" } });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.activity).toBe("Sambutan");
+  });
+  it("job & team strip unknown keys", () => {
+    const j = parse(jobSchema, { job: "Angkut kursi", hacker: 1 });
+    expect(j.ok).toBe(true);
+    if (j.ok) expect((j.data as Record<string, unknown>).hacker).toBeUndefined();
+    expect(parse(teamSchema, { division: "EVENT", fungsionaris: "A, B" }).ok).toBe(true);
   });
 });

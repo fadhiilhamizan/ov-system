@@ -234,7 +234,7 @@ export function BudgetView({
         items: p.items.map((it) => {
           if (it.id !== itemId) return it;
           const next = { ...it, ...patch };
-          next.total = (next.qty ?? 0) * (next.unit_price ?? 0);
+          next.total = Math.round((next.qty ?? 0) * (next.unit_price ?? 0));
           return next;
         }),
       })),
@@ -415,8 +415,9 @@ function NumCell({
   return (
     <input
       type="number"
+      min={0}
       value={v}
-      onChange={(e) => setV(Number(e.target.value))}
+      onChange={(e) => setV(Math.max(0, Number(e.target.value) || 0))}
       onBlur={() => v !== (value ?? 0) && onCommit(v)}
       className={cn(
         "rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-right tabular-nums transition hover:border-border focus:border-ring focus:bg-card focus:outline-none",

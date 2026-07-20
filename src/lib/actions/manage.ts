@@ -11,7 +11,7 @@ import {
 import type { CloneOptions } from "@/lib/data/repo";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 import { uid } from "@/lib/utils";
-import { eventSchema, memberSchema, divisionSchema, idSchema, parse } from "./schemas";
+import { eventSchema, memberSchema, divisionSchema, teamSchema, idSchema, parse } from "./schemas";
 
 export interface EventTemplate extends CloneOptions {
   sourceEventId: string;
@@ -155,19 +155,27 @@ export async function deleteDivisionAction(key: string): Promise<Result> {
 // ---------------- Teams (division structure) ----------------
 export async function createTeamAction(input: Partial<Team>): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
-  await createTeam(input);
+  const v = parse(teamSchema, input);
+  if (!v.ok) return v;
+  await createTeam(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function updateTeamAction(id: string, patch: Partial<Team>): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
-  await updateTeam(id, patch);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const v = parse(teamSchema, patch);
+  if (!v.ok) return v;
+  await updateTeam(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function deleteTeamAction(id: string): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
-  await deleteTeam(id);
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await deleteTeam(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -55,6 +55,11 @@ export const getCurrentUser = cache(async (): Promise<AppUser> => {
       redirect("/login");
     }
 
+    // Guest mode signs in anonymously (so reads pass RLS without exposing the
+    // tables to the bare anon key). Anonymous users are always the read-only
+    // guest identity — never look up a profile / real role for them.
+    if (user.is_anonymous) return GUEST_USER;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")

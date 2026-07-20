@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { createTask, deleteTask, getTask, updateTask } from "@/lib/data/repo";
+import { createTask, deleteTask, getTask, updateTask, bulkUpdateTasks, bulkDeleteTasks } from "@/lib/data/repo";
 import type { DivisionKey, Task, TaskStatus } from "@/lib/types";
 import { createTaskSchema, updateTaskSchema, taskStatusSchema, idSchema, parse } from "./schemas";
 
@@ -59,37 +59,32 @@ export async function setTaskStatusAction(id: string, status: TaskStatus): Promi
   return updateTaskAction(id, { status: v.data });
 }
 
-export async function bulkSetStatusAction(
-  ids: string[],
-  status: TaskStatus,
-): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+type BulkResult = { ok: true; count: number; skipped: number } | { ok: false; error: string };
+
+export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Promise<BulkResult> {
+  const sv = parse(taskStatusSchema, status);
+  if (!sv.ok) return sv;
   const user = await getCurrentUser();
-  let count = 0;
-  for (const id of ids) {
-    const task = await getTask(id);
-    if (task && can.editTaskProgress(user, task)) {
-      await updateTask(id, { status });
-      count++;
-    }
-  }
+  // Authorization is per-row (division-scoped), so fetch the rows to check —
+  // but apply the change in ONE batched write instead of N round-trips.
+  const tasks = await Promise.all(ids.map((id) => getTask(id)));
+  const allowed = tasks
+    .filter((t): t is Task => !!t && can.editTaskProgress(user, t))
+    .map((t) => t.id);
+  if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
   revalidatePath("/", "layout");
-  return { ok: true, count };
+  return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
-export async function bulkDeleteTasksAction(
-  ids: string[],
-): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> {
   const user = await getCurrentUser();
-  let count = 0;
-  for (const id of ids) {
-    const task = await getTask(id);
-    if (task && can.manageTasks(user, task.division)) {
-      await deleteTask(id);
-      count++;
-    }
-  }
+  const tasks = await Promise.all(ids.map((id) => getTask(id)));
+  const allowed = tasks
+    .filter((t): t is Task => !!t && can.manageTasks(user, t.division))
+    .map((t) => t.id);
+  if (allowed.length) await bulkDeleteTasks(allowed);
   revalidatePath("/", "layout");
-  return { ok: true, count };
+  return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
 export async function deleteTaskAction(id: string): Promise<Result> {

@@ -93,7 +93,7 @@ export interface TaskFilter {
   division?: string;
   status?: TaskStatus;
 }
-export async function getTasks(filter: TaskFilter = {}): Promise<Task[]> {
+export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> => {
   if (!USE_SUPABASE) return local.getTasks(filter);
   let q = (await sb()).from("tasks").select("*").order("created_at", { ascending: true });
   if (filter.event_id) q = q.eq("event_id", filter.event_id);
@@ -103,26 +103,22 @@ export async function getTasks(filter: TaskFilter = {}): Promise<Task[]> {
   return coalesce((data ?? []) as Task[], [
     "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
   ]);
-}
-export async function getTask(id: string): Promise<Task | null> {
+});
+export const getTask = cache(async (id: string): Promise<Task | null> => {
   if (!USE_SUPABASE) return local.getTask(id);
   const { data } = await (await sb()).from("tasks").select("*").eq("id", id).maybeSingle();
   return (data as Task) ?? null;
-}
+});
 export async function createTask(input: Partial<Task> & { event_id: string; division: Task["division"]; title: string }) {
   if (!USE_SUPABASE) return local.createTask(input);
   const client = await sb();
-  // Auto-number: next sequential "no" within this event + division.
-  const { data: existing } = await client
-    .from("tasks")
-    .select("no")
-    .eq("event_id", input.event_id)
-    .eq("division", input.division);
-  const maxNo = Math.max(0, ...(existing ?? []).map((t: { no: string }) => parseInt(t.no, 10) || 0));
+  // Auto-number: `no` is assigned atomically by the assign_task_no() BEFORE-INSERT
+  // trigger (advisory-locked per event+division) when left null, so concurrent
+  // creates can't collide. An explicit `no` (manual/clone) is preserved.
   await client.from("tasks").insert({
     event_id: input.event_id,
     division: input.division,
-    no: input.no ?? String(maxNo + 1),
+    no: input.no ?? null,
     pic: input.pic ?? "",
     title: input.title,
     start_date: input.start_date ?? null,
@@ -141,6 +137,22 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 export async function deleteTask(id: string) {
   if (!USE_SUPABASE) return local.deleteTask(id);
   await (await sb()).from("tasks").delete().eq("id", id);
+}
+export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) {
+    for (const id of ids) local.updateTask(id, patch);
+    return;
+  }
+  await (await sb()).from("tasks").update(patch).in("id", ids);
+}
+export async function bulkDeleteTasks(ids: string[]) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) {
+    for (const id of ids) local.deleteTask(id);
+    return;
+  }
+  await (await sb()).from("tasks").delete().in("id", ids);
 }
 
 // ---------------- Prospects ----------------
@@ -190,8 +202,15 @@ export async function deleteLink(id: string) {
 export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan[]> => {
   if (!USE_SUPABASE) return local.getBudgetPlans(eventId);
   const client = await sb();
-  const { data: plans } = await client.from("budget_plans").select("*");
-  const { data: items } = await client.from("budget_items").select("*").order("order");
+  // Filter plans at the DB (not in JS) so a single-event lookup doesn't scan
+  // every event's budget, then fetch only those plans' items.
+  let pq = client.from("budget_plans").select("*");
+  if (eventId) pq = pq.eq("event_id", eventId);
+  const { data: plans } = await pq;
+  const planIds = (plans ?? []).map((p: { id: string }) => p.id);
+  const { data: items } = planIds.length
+    ? await client.from("budget_items").select("*").in("plan_id", planIds).order("order")
+    : { data: [] as (BudgetItem & { plan_id: string })[] };
   const list = (plans ?? []).map((p: { id: string; name: string; event_id: string }) => ({
     id: p.id,
     name: p.name,
@@ -225,7 +244,7 @@ export async function updateBudgetItem(
   const up = patch.unit_price ?? item.unit_price;
   await client
     .from("budget_items")
-    .update({ ...patch, total: (qty ?? 0) * (up ?? 0) })
+    .update({ ...patch, total: Math.round((qty ?? 0) * (up ?? 0)) })
     .eq("id", itemId);
 }
 export async function createBudgetItem(
@@ -241,7 +260,7 @@ export async function createBudgetItem(
     .order("order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const total = (input.qty ?? 0) * (input.unit_price ?? 0);
+  const total = Math.round((input.qty ?? 0) * (input.unit_price ?? 0));
   await client.from("budget_items").insert({
     plan_id: planId,
     category: input.category || "LAIN-LAIN",
@@ -623,11 +642,11 @@ export async function deleteRundown(id: string) {
 export async function createJob(input: Partial<JobHariH>) {
   if (!USE_SUPABASE) return local.createJob(input);
   const client = await sb();
-  const { data: existing } = await client.from("job_harih").select("no").eq("event_id", input.event_id ?? "");
-  const maxNo = Math.max(0, ...(existing ?? []).map((j: { no: string }) => parseInt(j.no, 10) || 0));
+  // `no` assigned atomically by the assign_job_no() BEFORE-INSERT trigger
+  // (advisory-locked per event) when null; an explicit `no` is preserved.
   await client.from("job_harih").insert({
     event_id: input.event_id ?? null,
-    no: input.no ?? String(maxNo + 1),
+    no: input.no ?? null,
     pic: input.pic ?? "",
     job: input.job ?? "",
     notes: input.notes ?? "",

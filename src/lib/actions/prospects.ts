@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createProspect, deleteProspect, updateProspect } from "@/lib/data/repo";
 import type { Prospect } from "@/lib/types";
-import { prospectSchema, idSchema, parse } from "./schemas";
+import { prospectSchema, prospectUpdateSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -19,7 +19,7 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
   if (!g.ok) return g;
   const v = parse(prospectSchema, input);
   if (!v.ok) return v;
-  await createProspect(input);
+  await createProspect(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -29,7 +29,9 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
   if (!g.ok) return g;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  await updateProspect(idv.data, patch);
+  const v = parse(prospectUpdateSchema, patch);
+  if (!v.ok) return v;
+  await updateProspect(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -25,6 +25,23 @@ export default function LoginPage() {
     if (!isSupabaseConfigured) router.replace("/dashboard");
   }, [router]);
 
+  function enterGuest() {
+    setError(null);
+    startGuest(async () => {
+      // In Supabase mode, establish an anonymous session so guest reads pass
+      // RLS (`auth.uid() is not null`) without the tables being world-readable
+      // via the bare anon key. In local/demo mode there's no auth to do.
+      if (isSupabaseConfigured) {
+        const { error } = await createClient().auth.signInAnonymously();
+        if (error) {
+          setError(error.message);
+          return;
+        }
+      }
+      await enterGuestMode();
+    });
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -94,7 +111,7 @@ export default function LoginPage() {
             variant="outline"
             className="w-full"
             disabled={guestPending}
-            onClick={() => startGuest(() => enterGuestMode())}
+            onClick={enterGuest}
           >
             {guestPending ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
             {t("Masuk sebagai Tamu (hanya lihat)")}

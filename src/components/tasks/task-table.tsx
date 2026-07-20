@@ -60,7 +60,7 @@ export function TaskTable({
     const dir = sort.dir === "asc" ? 1 : -1;
     const val = (t: Task): string | number => {
       switch (sort.key) {
-        case "no": return parseInt(t.no, 10) || Number.MAX_SAFE_INTEGER;
+        case "no": { const n = parseInt(t.no, 10); return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n; }
         case "title": return t.title.toLowerCase();
         case "division": return divMap.get(t.division)?.order ?? 99;
         case "pic": return (t.pic || "").toLowerCase();
@@ -98,16 +98,20 @@ export function TaskTable({
     const ids = [...selected];
     start(async () => {
       const res = await bulkSetStatusAction(ids, status);
-      if (res.ok) toast.success(`${res.count} ${tr("tugas")} -> ${STATUS_META[status].label}`);
-      else toast.error(res.error);
+      if (res.ok) {
+        toast.success(`${res.count} ${tr("tugas")} -> ${STATUS_META[status].label}`);
+        if (res.skipped > 0) toast.warning(`${res.skipped} ${tr("tugas dilewati (tanpa akses)")}`);
+      } else toast.error(res.error);
     });
   }
   function bulkDelete() {
     const ids = [...selected];
     start(async () => {
       const res = await bulkDeleteTasksAction(ids);
-      if (res.ok) toast.success(`${res.count} ${tr("tugas dihapus")}`);
-      else toast.error(res.error);
+      if (res.ok) {
+        toast.success(`${res.count} ${tr("tugas dihapus")}`);
+        if (res.skipped > 0) toast.warning(`${res.skipped} ${tr("tugas dilewati (tanpa akses)")}`);
+      } else toast.error(res.error);
     });
   }
 

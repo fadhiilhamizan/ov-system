@@ -10,6 +10,10 @@ describe("formatRupiah", () => {
     expect(formatRupiah(undefined)).toBe("-");
     expect(formatRupiah(NaN)).toBe("-");
   });
+  it("rounds float artifacts to whole rupiah", () => {
+    expect(formatRupiah(110.00000000000001)).toBe("Rp110");
+    expect(formatRupiah(0.30000000000000004)).toBe("Rp0");
+  });
 });
 
 describe("formatRupiahShort", () => {
@@ -88,5 +92,10 @@ describe("angkatanFromNrp", () => {
   });
   it("returns null for an implausible future year", () => {
     expect(angkatanFromNrp("5026991128")).toBeNull();
+  });
+  it("requires a canonical NRP length (9–10 digits)", () => {
+    expect(angkatanFromNrp("50262311")).toBeNull(); // 8 digits — too short
+    expect(angkatanFromNrp("50262311280000")).toBeNull(); // 14 digits — too long
+    expect(angkatanFromNrp("502623112")).toBe(2023); // 9 digits — ok
   });
 });

@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createLink, deleteLink, updateLink } from "@/lib/data/repo";
 import type { LinkItem } from "@/lib/types";
-import { createLinkSchema, urlSchema, idSchema, parse } from "./schemas";
+import { createLinkSchema, linkUpdateSchema, idSchema, parse } from "./schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -19,7 +19,7 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
   if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
   const v = parse(createLinkSchema, input);
   if (!v.ok) return v;
-  await createLink(input);
+  await createLink(v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -29,11 +29,9 @@ export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Pr
   if (!g.ok) return g;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  if (patch.url !== undefined) {
-    const u = parse(urlSchema, patch.url);
-    if (!u.ok) return u;
-  }
-  await updateLink(idv.data, patch);
+  const v = parse(linkUpdateSchema, patch);
+  if (!v.ok) return v;
+  await updateLink(idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

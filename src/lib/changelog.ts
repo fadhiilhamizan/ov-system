@@ -7,6 +7,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.7.0",
+    date: "2026-07-20",
+    title: "Penguatan keamanan, validasi, & ketepatan data",
+    changes: [
+      "Keamanan: data (termasuk NRP anggota) tidak lagi bisa dibaca tanpa sesi login; Mode Tamu kini memakai sesi anonim sehingga tetap bisa melihat tanpa membuka data ke publik.",
+      "Hak akses database (RLS) diselaraskan dengan aturan aplikasi: Koordinator kini benar-benar bisa mengelola rundown, job hari-H, & struktur tim; Staff/Intern hanya bisa menambah Super Link, bukan mengubah/menghapus milik orang lain.",
+      "Semua input Reach & Offer, Super Link, Rundown, Job Hari-H, dan Tim kini divalidasi penuh (anti data rusak & field liar).",
+      "Anggaran: perhitungan total dibulatkan ke rupiah utuh (tidak ada lagi angka desimal aneh), dan kolom tidak menerima nilai negatif.",
+      "Penomoran tugas & job hari-H kini otomatis dan aman dari tabrakan saat dua orang menambah bersamaan.",
+      "Aksi massal tugas kini memberi tahu jika ada tugas yang dilewati karena tanpa akses.",
+      "Nama & panggilan anggota tidak boleh mengandung koma (mencegah kesalahan pemilihan PIC/anggota tim).",
+      "Berbagai perbaikan performa & konsistensi data internal.",
+    ],
+  },
+  {
     version: "1.6.1",
     date: "2026-07-20",
     title: "Identitas baru, penyempurnaan rundown & divisi",

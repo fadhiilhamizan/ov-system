@@ -5,7 +5,9 @@ const ID_MONTHS = [
 
 export function formatRupiah(n: number | null | undefined) {
   if (n === null || n === undefined || Number.isNaN(n)) return "-";
-  return "Rp" + n.toLocaleString("id-ID");
+  // Rupiah has no sub-unit in practice; round so float artifacts
+  // (e.g. 110.00000000000001) never surface as "Rp110,0…".
+  return "Rp" + Math.round(n).toLocaleString("id-ID");
 }
 
 export function formatRupiahShort(n: number | null | undefined) {
@@ -60,7 +62,9 @@ export function pct(part: number, whole: number) {
  */
 export function angkatanFromNrp(nrp: string | null | undefined): number | null {
   const digits = (nrp ?? "").replace(/\D/g, "");
-  if (digits.length < 6) return null;
+  // A real ITS NRP is 9–10 digits (DDDD YY SSSS). Requiring the canonical
+  // length avoids deriving a bogus year from an arbitrary ≥6-digit string.
+  if (digits.length < 9 || digits.length > 10) return null;
   const yy = parseInt(digits.slice(4, 6), 10);
   if (Number.isNaN(yy)) return null;
   const year = 2000 + yy;

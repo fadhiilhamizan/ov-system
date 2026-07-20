@@ -213,7 +213,7 @@ export function updateBudgetItem(
       if (!it) continue;
       Object.assign(it, patch);
       if (patch.qty !== undefined || patch.unit_price !== undefined) {
-        it.total = (it.qty ?? 0) * (it.unit_price ?? 0);
+        it.total = Math.round((it.qty ?? 0) * (it.unit_price ?? 0));
       }
       return it;
     }
@@ -235,7 +235,7 @@ export function createBudgetItem(
       qty: input.qty ?? null,
       unit: input.unit ?? "",
       unit_price: input.unit_price ?? null,
-      total: (input.qty ?? 0) * (input.unit_price ?? 0),
+      total: Math.round((input.qty ?? 0) * (input.unit_price ?? 0)),
     };
     p.items.push(item);
     return item;

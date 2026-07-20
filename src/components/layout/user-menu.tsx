@@ -25,6 +25,9 @@ export function UserMenu({ user }: { user: AppUser }) {
   function signOut() {
     start(async () => {
       if (user.role === "guest") {
+        // Drop the anonymous session too (guest mode signs in anonymously),
+        // otherwise the anon session would linger after "logout".
+        await createClient().auth.signOut();
         await exitGuestMode();
         return;
       }
