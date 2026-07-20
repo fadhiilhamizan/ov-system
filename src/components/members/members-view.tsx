@@ -245,6 +245,16 @@ export function MembersView({
                       </div>
                     )}
                   </div>
+                  {t.coordinator && t.coordinator !== "-" && (
+                    <div className="mb-2">
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{tr("Koordinator")}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {t.coordinator.split(/\s{2,}|,|·/).filter(Boolean).map((n, i) => (
+                          <span key={i} className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/25">{n.trim()}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {t.fungsionaris && (
                     <div className="mb-2">
                       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{tr("Fungsionaris")}</p>

@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.0",
+    date: "2026-07-20",
+    title: "Koordinator sebagai peran & data roster asli",
+    changes: [
+      "Koordinator kini menjadi peran (atasan) di dalam divisi, bukan divisi tersendiri — setiap divisi punya satu koordinator pada struktur tim.",
+      "Data divisi, anggota, dan struktur tim diisi dengan data asli External Affairs untuk tiap Ormawa Visit (nama dipertahankan apa adanya).",
+      "Divisi tiap Ormawa Visit kini persis sesuai struktur tim aslinya; divisi lama yang tidak sesuai dihapus.",
+      "Angkatan anggota otomatis dari NRP; panggilan mengikuti nama yang ditulis atau kata pertama nama.",
+      "Catatan: tugas lama pada divisi yang dihapus (mis. PIC/Coordinator) tetap ada namun tanpa label divisi sampai ditata ulang.",
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-07-20",
     title: "Divisi & anggota kini per Ormawa Visit",

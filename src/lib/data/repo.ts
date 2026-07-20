@@ -354,7 +354,7 @@ export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
   let q = (await sb()).from("teams").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   const { data } = await q;
-  return coalesce((data ?? []) as Team[], ["division", "fungsionaris", "intern"]);
+  return coalesce((data ?? []) as Team[], ["division", "coordinator", "fungsionaris", "intern"]);
 });
 
 // ================= Aggregations (backend-agnostic) =================
@@ -616,6 +616,7 @@ export async function createTeam(input: Partial<Team>) {
   await (await sb()).from("teams").insert({
     event_id: input.event_id ?? null,
     division: input.division ?? "EVENT",
+    coordinator: input.coordinator ?? "",
     fungsionaris: input.fungsionaris ?? "",
     intern: input.intern ?? "",
   });

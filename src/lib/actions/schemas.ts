@@ -238,6 +238,7 @@ export const jobSchema = z.object({
 export const teamSchema = z.object({
   event_id: z.string().trim().max(128).optional().nullable(),
   division: z.string().trim().max(128).optional(),
+  coordinator: z.string().trim().max(200).optional(),
   fungsionaris: z.string().trim().max(2000).optional(),
   intern: z.string().trim().max(2000).optional(),
 });

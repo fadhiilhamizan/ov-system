@@ -167,6 +167,10 @@ export interface Team {
   id: string;
   event_id: string | null;
   division: DivisionKey;
+  /** The division's coordinator (atasan) — a role, not a division. One per
+   *  division per Ormawa Visit. Stored as a display name (usually also present
+   *  in `fungsionaris`). */
+  coordinator: string;
   fungsionaris: string;
   intern: string;
 }

@@ -505,6 +505,7 @@ export function createTeam(input: Partial<Team>): Team {
     id: uid("tm"),
     event_id: input.event_id ?? null,
     division: input.division ?? "EVENT",
+    coordinator: input.coordinator ?? "",
     fungsionaris: input.fungsionaris ?? "",
     intern: input.intern ?? "",
   };

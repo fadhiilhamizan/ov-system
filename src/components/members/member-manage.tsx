@@ -403,11 +403,12 @@ export function TeamFormDialog({
   const [pending, start] = React.useTransition();
   const [f, setF] = React.useState(() => ({
     division: team?.division ?? divisions[0]?.key ?? "EVENT",
+    coordinator: team?.coordinator ?? "",
     fungsionaris: team?.fungsionaris ?? "",
     intern: team?.intern ?? "",
   }));
   React.useEffect(() => {
-    if (isOpen && team) setF({ division: team.division, fungsionaris: team.fungsionaris, intern: team.intern });
+    if (isOpen && team) setF({ division: team.division, coordinator: team.coordinator, fungsionaris: team.fungsionaris, intern: team.intern });
   }, [isOpen, team]);
 
   const fungsionarisPool = React.useMemo(() => members.filter((m) => m.type === "fungsionaris"), [members]);
@@ -441,6 +442,15 @@ export function TeamFormDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>{t("Koordinator")} <span className="text-[10px] text-muted-foreground">({t("atasan divisi")})</span></Label>
+            <MemberMultiSelect
+              members={fungsionarisPool}
+              value={f.coordinator}
+              onChange={(v) => setF({ ...f, coordinator: v })}
+              placeholder={t("Pilih koordinator…")}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>{t("Fungsionaris")}</Label>
