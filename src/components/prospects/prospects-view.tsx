@@ -1,9 +1,13 @@
 "use client";
 import * as React from "react";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { toast } from "sonner";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DialogTrigger } from "@/components/ui/dialog";
+import { useMultiSelect } from "@/lib/use-multi-select";
+import { bulkDeleteProspectsAction } from "@/lib/actions/prospects";
 import {
   Select,
   SelectContent,
@@ -61,6 +65,9 @@ export function ProspectsView({
   const [batch, setBatch] = React.useState("all");
   const [stage, setStage] = React.useState("all");
   const [sort, setSort] = React.useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const sel = useMultiSelect();
+  React.useEffect(() => sel.clear(), [prospects]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [bulkPending, startBulk] = React.useTransition();
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
@@ -116,6 +123,14 @@ export function ProspectsView({
   );
 
   const hasFilters = q || batch !== "all" || stage !== "all";
+  const allSelected = rows.length > 0 && rows.every((p) => sel.selected.has(p.id));
+  function bulkDelete() {
+    startBulk(async () => {
+      const res = await bulkDeleteProspectsAction(sel.ids);
+      if (res.ok) { toast.success(`${sel.count} ${t("prospek dihapus")}`); sel.clear(); }
+      else toast.error(res.error);
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -191,7 +206,19 @@ export function ProspectsView({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">{filtered.length} {t("prospek")}</p>
+      {manage && sel.count > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+          <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
+              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">{filtered.length} {t("prospek")}</p>
+      )}
 
       {view === "table" ? (
         filtered.length ? (
@@ -199,6 +226,15 @@ export function ProspectsView({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  {manage && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={(c) => sel.set(rows.map((p) => p.id), c === true)}
+                        aria-label={t("Pilih semua")}
+                      />
+                    </TableHead>
+                  )}
                   <SortHead k="org_name">{t("Himpunan")}</SortHead>
                   <SortHead k="campus">{t("Kampus")}</SortHead>
                   <SortHead k="contact">{t("Kontak")}</SortHead>
@@ -210,7 +246,12 @@ export function ProspectsView({
               </TableHeader>
               <TableBody>
                 {rows.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} data-state={sel.selected.has(p.id) ? "selected" : undefined}>
+                    {manage && (
+                      <TableCell>
+                        <Checkbox checked={sel.selected.has(p.id)} onCheckedChange={() => sel.toggle(p.id)} aria-label={t("Pilih")} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">{p.org_name || <span className="text-muted-foreground">-</span>}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.campus || "-"}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>

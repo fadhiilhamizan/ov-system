@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Search, Users2, IdCard, Plus, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Users2, IdCard, Plus, ChevronsUpDown, ChevronUp, ChevronDown, LayoutGrid } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty";
 import {
   MemberFormDialog, MemberActions, MemberBulkBar, TeamFormDialog, TeamActions,
 } from "./member-manage";
+import { DivisionsGrid, type DivisionStat } from "@/components/divisions/divisions-grid";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
@@ -25,20 +26,24 @@ export function MembersView({
   members,
   teams,
   divisions,
+  divisionStats,
   events,
   eventId,
   eventTitle,
   canManageMembers,
   canManageTeams,
+  canManageDivisions,
 }: {
   members: Member[];
   teams: Team[];
   divisions: Division[];
+  divisionStats: DivisionStat[];
   events: OVEvent[];
   eventId: string;
   eventTitle: string;
   canManageMembers: boolean;
   canManageTeams: boolean;
+  canManageDivisions: boolean;
 }) {
   const tr = useT();
   const [q, setQ] = React.useState("");
@@ -96,8 +101,11 @@ export function MembersView({
   const internCount = members.filter((m) => m.type === "intern").length;
 
   return (
-    <Tabs defaultValue="anggota">
+    <Tabs defaultValue="divisi">
       <TabsList>
+        <TabsTrigger value="divisi">
+          <LayoutGrid /> {tr("Divisi")}
+        </TabsTrigger>
         <TabsTrigger value="anggota">
           <IdCard /> {tr("Anggota EA")}
         </TabsTrigger>
@@ -105,6 +113,10 @@ export function MembersView({
           <Users2 /> {tr("Struktur Tim")}
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="divisi">
+        <DivisionsGrid divisions={divisions} stats={divisionStats} teams={teams} canManage={canManageDivisions} />
+      </TabsContent>
 
       <TabsContent value="anggota">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

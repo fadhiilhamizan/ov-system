@@ -1,18 +1,20 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Wallet, ChevronDown, Plus, Trash2, Loader2 } from "lucide-react";
+import { Wallet, ChevronDown, Plus, Trash2, Loader2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useMultiSelect } from "@/lib/use-multi-select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction,
+  updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
   createBudgetPlanAction, deleteBudgetPlanAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
@@ -223,9 +225,20 @@ export function BudgetView({
   events: OVEvent[];
   canManage: boolean;
 }) {
+  const t = useT();
   const evMap = new Map(events.map((e) => [e.id, e]));
   const [state, setState] = React.useState(plans);
   React.useEffect(() => setState(plans), [plans]);
+  const sel = useMultiSelect();
+  React.useEffect(() => sel.clear(), [plans]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [bulkPending, startBulk] = React.useTransition();
+  function bulkDelete() {
+    startBulk(async () => {
+      const res = await bulkDeleteBudgetItemsAction(sel.ids);
+      if (res.ok) { toast.success(`${sel.count} ${t("item dihapus")}`); sel.clear(); }
+      else toast.error(res.error);
+    });
+  }
 
   function edit(itemId: string, patch: { qty?: number; unit_price?: number }) {
     setState((prev) =>
@@ -249,6 +262,17 @@ export function BudgetView({
 
   return (
     <div className="space-y-5">
+      {canManage && sel.count > 0 && (
+        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 backdrop-blur">
+          <span className="text-sm font-medium">{sel.count} {t("item dipilih")}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
+              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+          </div>
+        </div>
+      )}
       {state.map((plan) => (
         <PlanCard
           key={plan.id}
@@ -256,6 +280,7 @@ export function BudgetView({
           event={evMap.get(plan.event_id)}
           canManage={canManage}
           onEdit={edit}
+          sel={sel}
         />
       ))}
     </div>
@@ -267,15 +292,18 @@ function PlanCard({
   event,
   canManage,
   onEdit,
+  sel,
 }: {
   plan: BudgetPlan;
   event?: OVEvent;
   canManage: boolean;
   onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
+  sel: ReturnType<typeof useMultiSelect>;
 }) {
   const t = useT();
   const [open, setOpen] = React.useState(true);
   const grand = plan.items.reduce((s, i) => s + (i.total ?? 0), 0);
+  const allSelected = plan.items.length > 0 && plan.items.every((i) => sel.selected.has(i.id));
 
   // group by category preserving order
   const cats: { name: string; items: BudgetPlan["items"]; subtotal: number }[] = [];
@@ -338,6 +366,15 @@ function PlanCard({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+                  {canManage && (
+                    <th className="w-8 px-3">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={(c) => sel.set(plan.items.map((i) => i.id), c === true)}
+                        aria-label={t("Pilih semua")}
+                      />
+                    </th>
+                  )}
                   <th className="px-5 py-2 text-left font-medium">{t("Item")}</th>
                   <th className="px-2 py-2 text-right font-medium">{t("Qty")}</th>
                   <th className="px-2 py-2 text-left font-medium">{t("Satuan")}</th>
@@ -350,12 +387,17 @@ function PlanCard({
                 {cats.map((c) => (
                   <React.Fragment key={c.name}>
                     <tr className="bg-muted/30">
-                      <td colSpan={canManage ? 6 : 5} className="px-5 py-1.5 text-xs font-semibold" style={{ color: catColor(c.name) }}>
+                      <td colSpan={canManage ? 7 : 5} className="px-5 py-1.5 text-xs font-semibold" style={{ color: catColor(c.name) }}>
                         {c.name}
                       </td>
                     </tr>
                     {c.items.map((it) => (
-                      <tr key={it.id} className="border-b border-border/60 last:border-0">
+                      <tr key={it.id} className="border-b border-border/60 last:border-0" data-state={sel.selected.has(it.id) ? "selected" : undefined}>
+                        {canManage && (
+                          <td className="px-3">
+                            <Checkbox checked={sel.selected.has(it.id)} onCheckedChange={() => sel.toggle(it.id)} aria-label={t("Pilih")} />
+                          </td>
+                        )}
                         <td className="px-5 py-2">{it.name}</td>
                         <td className="px-2 py-2 text-right tabular-nums">
                           {canManage ? (
@@ -381,14 +423,14 @@ function PlanCard({
                       </tr>
                     ))}
                     <tr className="border-b border-border">
-                      <td colSpan={4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
+                      <td colSpan={canManage ? 5 : 4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
                       <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums">{formatRupiah(c.subtotal)}</td>
                       {canManage && <td />}
                     </tr>
                   </React.Fragment>
                 ))}
                 <tr className="bg-muted/40">
-                  <td colSpan={4} className="px-5 py-2.5 text-right font-semibold">{t("Total Pengeluaran")}</td>
+                  <td colSpan={canManage ? 5 : 4} className="px-5 py-2.5 text-right font-semibold">{t("Total Pengeluaran")}</td>
                   <td className="px-5 py-2.5 text-right text-base font-bold tabular-nums">{formatRupiah(grand)}</td>
                   {canManage && <td />}
                 </tr>

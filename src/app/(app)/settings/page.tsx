@@ -1,7 +1,9 @@
-import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History } from "lucide-react";
+import { cookies } from "next/headers";
+import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical } from "lucide-react";
 import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
+import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { APP_VERSION } from "@/lib/version";
 import { CHANGELOG } from "@/lib/changelog";
 import { PageHeader } from "@/components/page-header";
@@ -9,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { BackupPanel } from "@/components/settings/backup-panel";
+import { DemoReset } from "@/components/settings/demo-reset";
 import { ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
 import { formatDate } from "@/lib/format";
@@ -21,9 +24,13 @@ const WHATSAPP_URL = "https://wa.me/6281311598126";
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   const t = await getT();
+  const store = await cookies();
+  const isDemo = demoActive(store.get(DEMO_COOKIE)?.value);
   const modules = NAV.flatMap((g) => g.items);
   const canBackup = can.manageBackups(user);
-  const backupsResult = canBackup ? await listBackupsAction() : null;
+  // Backup only makes sense against the real (production) DB — in the demo
+  // sandbox we offer a "reset to initial data" instead.
+  const backupsResult = canBackup && !isDemo ? await listBackupsAction() : null;
 
   return (
     <div className="space-y-5">
@@ -96,25 +103,37 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Backup & Rollback */}
-      {canBackup && (
+      {/* Demo: reset to initial data (replaces backup while in the sandbox) */}
+      {isDemo ? (
         <Card>
           <CardHeader className="flex-row items-center gap-2">
-            <DatabaseBackup className="size-4 text-primary" />
-            <CardTitle>{t("Backup & Rollback")}</CardTitle>
+            <FlaskConical className="size-4 text-amber-500" />
+            <CardTitle>{t("Data Mode Demo")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {!USE_SUPABASE ? (
-              <p className="text-sm text-muted-foreground">
-                {t("Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).")}
-              </p>
-            ) : backupsResult && backupsResult.ok ? (
-              <BackupPanel initialBackups={backupsResult.backups} />
-            ) : (
-              <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : t("Gagal memuat backup.")}</p>
-            )}
+            <DemoReset />
           </CardContent>
         </Card>
+      ) : (
+        canBackup && (
+          <Card>
+            <CardHeader className="flex-row items-center gap-2">
+              <DatabaseBackup className="size-4 text-primary" />
+              <CardTitle>{t("Backup & Rollback")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!USE_SUPABASE ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).")}
+                </p>
+              ) : backupsResult && backupsResult.ok ? (
+                <BackupPanel initialBackups={backupsResult.backups} />
+              ) : (
+                <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : t("Gagal memuat backup.")}</p>
+              )}
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Roles matrix */}

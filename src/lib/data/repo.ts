@@ -183,6 +183,11 @@ export async function deleteProspect(id: string) {
   if (!USE_SUPABASE) return local.deleteProspect(id);
   await (await sb()).from("prospects").delete().eq("id", id);
 }
+export async function bulkDeleteProspects(ids: string[]) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) { for (const id of ids) local.deleteProspect(id); return; }
+  await (await sb()).from("prospects").delete().in("id", ids);
+}
 
 // ---------------- Links ----------------
 export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
@@ -202,6 +207,11 @@ export async function updateLink(id: string, patch: Partial<LinkItem>) {
 export async function deleteLink(id: string) {
   if (!USE_SUPABASE) return local.deleteLink(id);
   await (await sb()).from("links").delete().eq("id", id);
+}
+export async function bulkDeleteLinks(ids: string[]) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) { for (const id of ids) local.deleteLink(id); return; }
+  await (await sb()).from("links").delete().in("id", ids);
 }
 
 // ---------------- Budget ----------------
@@ -281,6 +291,11 @@ export async function createBudgetItem(
 export async function deleteBudgetItem(itemId: string) {
   if (!USE_SUPABASE) return local.deleteBudgetItem(itemId);
   await (await sb()).from("budget_items").delete().eq("id", itemId);
+}
+export async function bulkDeleteBudgetItems(ids: string[]) {
+  if (!ids.length) return;
+  if (!USE_SUPABASE) { for (const id of ids) local.deleteBudgetItem(id); return; }
+  await (await sb()).from("budget_items").delete().in("id", ids);
 }
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
   if (!USE_SUPABASE) return local.createBudgetPlan(input);
@@ -610,6 +625,18 @@ export async function deleteDivision(eventId: string, key: string) {
   if (!USE_SUPABASE) return local.deleteDivision(eventId, key);
   await (await sb()).from("divisions").delete().eq("event_id", eventId).eq("key", key);
 }
+export async function bulkDeleteDivisions(eventId: string, keys: string[]) {
+  if (!keys.length) return;
+  if (!USE_SUPABASE) { for (const k of keys) local.deleteDivision(eventId, k); return; }
+  await (await sb()).from("divisions").delete().eq("event_id", eventId).in("key", keys);
+}
+export async function bulkUpdateDivisions(eventId: string, keys: string[], patch: Partial<Division>) {
+  if (!keys.length) return;
+  if (!USE_SUPABASE) { for (const k of keys) local.updateDivision(eventId, k, patch); return; }
+  const { id: _i, event_id: _e, ...rest } = patch;
+  void _i; void _e;
+  await (await sb()).from("divisions").update(rest).eq("event_id", eventId).in("key", keys);
+}
 
 export async function createTeam(input: Partial<Team>) {
   if (!USE_SUPABASE) return local.createTeam(input);
@@ -691,4 +718,13 @@ export async function updateJob(id: string, patch: Partial<JobHariH>) {
 export async function deleteJob(id: string) {
   if (!USE_SUPABASE) return local.deleteJob(id);
   await (await sb()).from("job_harih").delete().eq("id", id);
+}
+/** Persist a new order for Hari-H jobs: each id gets its 1-based `no`. */
+export async function reorderJobs(orderedIds: string[]) {
+  if (!orderedIds.length) return;
+  if (!USE_SUPABASE) return local.reorderJobs(orderedIds);
+  const client = await sb();
+  await Promise.all(
+    orderedIds.map((id, i) => client.from("job_harih").update({ no: String(i + 1) }).eq("id", id)),
+  );
 }

@@ -1,7 +1,15 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, ClipboardList } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, ClipboardList, GripVertical } from "lucide-react";
+import {
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -15,10 +23,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
-import { createJobAction, updateJobAction, deleteJobAction } from "@/lib/actions/schedule";
+import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
+import { cn } from "@/lib/utils";
 import type { JobHariH } from "@/lib/types";
 
 function JobFormDialog({
@@ -117,50 +126,114 @@ function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
   );
 }
 
+function PicChips({ pic }: { pic: string }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {pic ? pic.split(",").map((p, i) => (
+        <span key={i} className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pl-0.5 pr-2 text-xs">
+          <Avatar name={p.trim()} size={18} /> {p.trim()}
+        </span>
+      )) : <span className="text-sm text-muted-foreground">-</span>}
+    </div>
+  );
+}
+
+function SortableJobRow({ job, index, eventId, canManage }: { job: JobHariH; index: number; eventId: string; canManage: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id, disabled: !canManage });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "border-b border-border transition-colors hover:bg-muted/50",
+        isDragging && "relative z-10 bg-muted shadow-lg",
+      )}
+    >
+      {canManage && (
+        <TableCell className="w-8 pr-0">
+          <button
+            {...attributes}
+            {...listeners}
+            className="flex cursor-grab touch-none items-center justify-center rounded p-1 text-muted-foreground/60 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
+            aria-label="Geser untuk mengurutkan"
+          >
+            <GripVertical className="size-4" />
+          </button>
+        </TableCell>
+      )}
+      <TableCell className="text-sm font-medium tabular-nums text-muted-foreground">{index + 1}</TableCell>
+      <TableCell className="font-medium">{job.job}</TableCell>
+      <TableCell><PicChips pic={job.pic} /></TableCell>
+      <TableCell className="text-xs text-muted-foreground">{job.notes || "-"}</TableCell>
+      {canManage && <TableCell><JobActions job={job} eventId={eventId} /></TableCell>}
+    </tr>
+  );
+}
+
 export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; eventId: string; canManage: boolean }) {
   const t = useT();
+  // Local order for optimistic drag; synced from server props on change.
+  const sorted = React.useMemo(
+    () => [...jobs].sort((a, b) => (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0)),
+    [jobs],
+  );
+  const [items, setItems] = React.useState(sorted);
+  const orderKey = sorted.map((j) => j.id).join(",");
+  React.useEffect(() => setItems(sorted), [orderKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = items.findIndex((j) => j.id === active.id);
+    const to = items.findIndex((j) => j.id === over.id);
+    if (from < 0 || to < 0) return;
+    const next = arrayMove(items, from, to);
+    setItems(next); // optimistic
+    reorderJobsAction(next.map((j) => j.id)).then((res) => {
+      if (!res.ok) { toast.error(res.error); setItems(sorted); }
+    });
+  }
+
   return (
     <div className="space-y-4">
       {canManage && (
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">{t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}</p>
           <JobFormDialog mode="create" eventId={eventId} trigger={
             <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
           } />
         </div>
       )}
 
-      {jobs.length ? (
+      {items.length ? (
         <div className="rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12">{t("No")}</TableHead>
-                <TableHead className="min-w-[240px]">{t("Job Description")}</TableHead>
-                <TableHead className="min-w-[160px]">{t("PIC")}</TableHead>
-                <TableHead>{t("Catatan")}</TableHead>
-                {canManage && <TableHead className="w-10" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((j) => (
-                <TableRow key={j.id}>
-                  <TableCell className="text-sm font-medium text-muted-foreground">{j.no || "-"}</TableCell>
-                  <TableCell className="font-medium">{j.job}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {j.pic ? j.pic.split(",").map((p, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pl-0.5 pr-2 text-xs">
-                          <Avatar name={p.trim()} size={18} /> {p.trim()}
-                        </span>
-                      )) : <span className="text-sm text-muted-foreground">-</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{j.notes || "-"}</TableCell>
-                  {canManage && <TableCell><JobActions job={j} eventId={eventId} /></TableCell>}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {canManage && <TableHead className="w-8" />}
+                  <TableHead className="w-12">{t("No")}</TableHead>
+                  <TableHead className="min-w-[240px]">{t("Job Description")}</TableHead>
+                  <TableHead className="min-w-[160px]">{t("PIC")}</TableHead>
+                  <TableHead>{t("Catatan")}</TableHead>
+                  {canManage && <TableHead className="w-10" />}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                <SortableContext items={items.map((j) => j.id)} strategy={verticalListSortingStrategy}>
+                  {items.map((j, i) => (
+                    <SortableJobRow key={j.id} job={j} index={i} eventId={eventId} canManage={canManage} />
+                  ))}
+                </SortableContext>
+              </TableBody>
+            </Table>
+          </DndContext>
         </div>
       ) : (
         <EmptyState icon={<ClipboardList />} title={t("Belum ada pembagian tugas")} description={t("Tambahkan pembagian tugas hari-H untuk Ormawa Visit ini.")} />

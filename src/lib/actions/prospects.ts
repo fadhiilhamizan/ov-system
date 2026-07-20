@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { createProspect, deleteProspect, updateProspect } from "@/lib/data/repo";
+import { createProspect, deleteProspect, updateProspect, bulkDeleteProspects } from "@/lib/data/repo";
 import type { Prospect } from "@/lib/types";
 import { prospectSchema, prospectUpdateSchema, idSchema, parse } from "./schemas";
 
@@ -42,6 +42,16 @@ export async function deleteProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteProspect(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function bulkDeleteProspectsAction(ids: string[]): Promise<Result> {
+  const g = await guard();
+  if (!g.ok) return g;
+  const clean: string[] = [];
+  for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  await bulkDeleteProspects(clean);
   revalidatePath("/", "layout");
   return { ok: true };
 }

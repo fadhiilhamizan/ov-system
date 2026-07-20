@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
-  updateBudgetItem, createBudgetItem, deleteBudgetItem,
+  updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
   createBudgetPlan, deleteBudgetPlan,
 } from "@/lib/data/repo";
 import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
@@ -44,6 +44,15 @@ export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   const idv = parse(idSchema, itemId);
   if (!idv.ok) return idv;
   await deleteBudgetItem(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result> {
+  if (!can.manageBudget(await getCurrentUser())) return DENY;
+  const clean: string[] = [];
+  for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  await bulkDeleteBudgetItems(clean);
   revalidatePath("/", "layout");
   return { ok: true };
 }

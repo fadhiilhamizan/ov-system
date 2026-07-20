@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
+import { useMultiSelect } from "@/lib/use-multi-select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -19,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createLinkAction, updateLinkAction, deleteLinkAction } from "@/lib/actions/links";
+import { createLinkAction, updateLinkAction, deleteLinkAction, bulkDeleteLinksAction } from "@/lib/actions/links";
 import { isUrl } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, LinkItem, OVEvent, Team } from "@/lib/types";
@@ -251,6 +253,16 @@ export function LinksView({
   const [q, setQ] = React.useState("");
   const [eventFilter, setEventFilter] = React.useState<string>("all");
   const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
+  const sel = useMultiSelect();
+  React.useEffect(() => sel.clear(), [links]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [bulkPending, startBulk] = React.useTransition();
+  function bulkDelete() {
+    startBulk(async () => {
+      const res = await bulkDeleteLinksAction(sel.ids);
+      if (res.ok) { toast.success(`${sel.count} ${t("tautan dihapus")}`); sel.clear(); }
+      else toast.error(res.error);
+    });
+  }
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
@@ -320,6 +332,18 @@ export function LinksView({
         )}
       </div>
 
+      {canManage && sel.count > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+          <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
+              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+          </div>
+        </div>
+      )}
+
       {grouped.length === 0 ? (
         <EmptyState icon={<Link2 />} title={t("Tidak ada tautan")} description={t("Sesuaikan pencarian atau tambah tautan baru.")} />
       ) : (
@@ -346,6 +370,9 @@ export function LinksView({
                     <div className="divide-y divide-border">
                       {items.map((l) => (
                         <div key={l.id} className="flex items-center gap-3 px-4 py-2.5">
+                          {canManage && (
+                            <Checkbox checked={sel.selected.has(l.id)} onCheckedChange={() => sel.toggle(l.id)} aria-label={t("Pilih")} />
+                          )}
                           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                             <Link2 className="size-4" />
                           </span>

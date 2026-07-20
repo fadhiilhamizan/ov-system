@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createRundown, updateRundown, deleteRundown,
-  createJob, updateJob, deleteJob,
+  createJob, updateJob, deleteJob, reorderJobs,
 } from "@/lib/data/repo";
 import type { JobHariH, RundownItem } from "@/lib/types";
 import { rundownSchema, jobSchema, idSchema, parse } from "./schemas";
@@ -67,6 +67,14 @@ export async function deleteJobAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteJob(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function reorderJobsAction(orderedIds: string[]): Promise<Result> {
+  if (!can.manageJobs(await getCurrentUser())) return DENY;
+  const clean: string[] = [];
+  for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  await reorderJobs(clean);
   revalidatePath("/", "layout");
   return { ok: true };
 }

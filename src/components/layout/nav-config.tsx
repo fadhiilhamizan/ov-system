@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   ListChecks,
-  LayoutGrid,
   CalendarDays,
   Clock,
   ClipboardList,
@@ -51,13 +50,6 @@ export const NAV: NavGroup[] = [
         href: "/tasks",
         icon: ListChecks,
         description: "Semua tugas: tabel, kanban & timeline",
-      },
-      {
-        key: "divisions",
-        label: "Divisi",
-        href: "/divisions",
-        icon: LayoutGrid,
-        description: "Tugas per divisi, otomatis tersinkron",
       },
       {
         key: "calendar",
@@ -113,10 +105,10 @@ export const NAV: NavGroup[] = [
     items: [
       {
         key: "members",
-        label: "Anggota & Tim",
+        label: "Divisi & Anggota",
         href: "/members",
         icon: Users,
-        description: "Daftar anggota & struktur tim tiap divisi",
+        description: "Divisi, anggota, & struktur tim tiap Ormawa Visit",
       },
       {
         key: "events",
@@ -154,5 +146,7 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV.flatMap((g) => g.items);
 
 export function navItemForPath(pathname: string): NavItem | undefined {
   const seg = "/" + (pathname.split("/")[1] ?? "");
-  return ALL_NAV_ITEMS.find((i) => i.href === seg);
+  // Division boards (/divisions/[key]) live under the merged "Divisi & Anggota".
+  const resolved = seg === "/divisions" ? "/members" : seg;
+  return ALL_NAV_ITEMS.find((i) => i.href === resolved);
 }

@@ -587,3 +587,11 @@ export function deleteJob(id: string) {
     db.jobHariH = db.jobHariH.filter((j) => j.id !== id);
   });
 }
+export function reorderJobs(orderedIds: string[]) {
+  mutate((db) => {
+    orderedIds.forEach((id, i) => {
+      const j = db.jobHariH.find((x) => x.id === id);
+      if (j) j.no = String(i + 1);
+    });
+  });
+}

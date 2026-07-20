@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.0",
+    date: "2026-07-20",
+    title: "Menu Divisi & Anggota digabung, multi-select, & drag-and-drop Hari-H",
+    changes: [
+      "Menu 'Divisi' dan 'Anggota & Tim' digabung menjadi satu menu 'Divisi & Anggota' dengan tab Divisi, Anggota, dan Struktur Tim.",
+      "Daftar Divisi kini bisa multi-select untuk hapus massal atau ubah status ikut/tanpa rundown sekaligus.",
+      "Job Hari-H kini bisa diurutkan dengan drag-and-drop; nomor tersusun otomatis.",
+      "Reach & Offer, Super Link, dan item Anggaran kini bisa multi-select untuk hapus massal.",
+      "Mode Demo: opsi Backup diganti dengan 'Reset ke data awal' untuk mengembalikan sandbox ke contoh semula.",
+    ],
+  },
+  {
     version: "1.9.0",
     date: "2026-07-20",
     title: "Koordinator sebagai peran & data roster asli",

@@ -5,7 +5,7 @@ import { can } from "@/lib/permissions";
 import {
   createEvent, updateEvent, deleteEvent, cloneEventData,
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
-  createDivision, updateDivision, deleteDivision,
+  createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
   createTeam, updateTeam, deleteTeam,
 } from "@/lib/data/repo";
 import type { CloneOptions } from "@/lib/data/repo";
@@ -155,6 +155,26 @@ export async function deleteDivisionAction(key: string): Promise<Result> {
   if (!idv.ok) return idv;
   const event = await getActiveEvent();
   await deleteDivision(event.id, idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result> {
+  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const idv = parseIds(keys);
+  if (!idv.ok) return idv;
+  const event = await getActiveEvent();
+  await bulkDeleteDivisions(event.id, idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<Division>): Promise<Result> {
+  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const idv = parseIds(keys);
+  if (!idv.ok) return idv;
+  const v = parse(divisionSchema.partial(), patch);
+  if (!v.ok) return v;
+  const event = await getActiveEvent();
+  await bulkUpdateDivisions(event.id, idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
