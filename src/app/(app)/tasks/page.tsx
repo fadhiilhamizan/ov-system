@@ -18,7 +18,7 @@ export default async function TasksPage() {
   ]);
   const [tasks, divisions, events, members] = await Promise.all([
     getTasks({ event_id: event.id }),
-    getDivisions(),
+    getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
   ]);

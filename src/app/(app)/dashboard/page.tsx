@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     divisionStats(event.id),
     prospectStats(event.id),
     budgetTotal(event.id),
-    getDivisions(),
+    getDivisions(event.id),
     getMembers(event.id),
   ]);
   const memberCount = members.length;

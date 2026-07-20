@@ -121,15 +121,16 @@ let out = `-- ============================================================
 -- ============================================================
 begin;
 
--- divisions
+-- demo edition (active = the landing edition) — created first so divisions can
+-- reference it (divisions are per-event since migration 0018).
 `;
-for (const [key, name, short, color, order, excl] of divisions)
-  out += `insert into divisions(key,name,short,color,"order",exclude_from_rundown) values (${q(key)},${q(name)},${q(short)},${q(color)},${order},${b(excl)}) on conflict (key) do nothing;\n`;
-
-out += `\n-- demo edition (active = the landing edition)\n`;
 out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order")
 values (${q(EV)},'DEMO','Ormawa Visit Demo','Himpunan Demo','Universitas Contoh','external','offline','Sandbox','2026-09-20','2026-08-01','2026-09-19','Ruang Demo, Gedung Contoh','active',1)
 on conflict (id) do nothing;\n`;
+
+out += `\n-- divisions (scoped to the demo edition)\n`;
+for (const [key, name, short, color, order, excl] of divisions)
+  out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(EV)},${q(key)},${q(name)},${q(short)},${q(color)},${order},${b(excl)}) on conflict (event_id,key) do nothing;\n`;
 
 out += `\n-- members\n`;
 for (const [name, nickname, nrp, type, division] of members)

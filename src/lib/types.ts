@@ -17,6 +17,11 @@ export type EventStatus = "planning" | "active" | "done";
 export type DivisionKey = string;
 
 export interface Division {
+  /** Surrogate id (Supabase). Optional so the local store can address by key. */
+  id?: string;
+  /** Divisions are per-Ormawa-Visit; `key` is unique WITHIN an event, not
+   *  globally. Legacy/local rows may leave this null (treated as global). */
+  event_id?: string | null;
   key: DivisionKey;
   name: string;
   short: string;

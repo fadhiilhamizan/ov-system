@@ -6,23 +6,24 @@
 -- ============================================================
 begin;
 
--- divisions
-insert into divisions(key,name,short,color,"order") values ('PIC','PIC Ormawa Visit','PIC','#6366f1',1) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('COORDINATOR','Coordinator','COORD','#8b5cf6',2) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('SECRETARY','Secretary','SEC','#ec4899',3) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('TREASURER','Treasurer','TRE','#f59e0b',4) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('LO','Liaison Officer','LO','#0ea5e9',5) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('EVENT','Event','EVE','#10b981',6) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('CONSUMPTION','Consumption','CON','#f97316',7) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('OPERATIONAL','Operational','OPR','#64748b',8) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('CREATIVE','Creative','CRE','#d946ef',9) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('MARKETING','Marketing','MRT','#f43f5e',10) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order") values ('OUTSOURCE','Outsource','OUT','#14b8a6',11) on conflict (key) do nothing;
-
--- demo edition (active = the landing edition)
+-- demo edition (active = the landing edition) — created first so divisions can
+-- reference it (divisions are per-event since migration 0018).
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order")
 values ('demo-ov','DEMO','Ormawa Visit Demo','Himpunan Demo','Universitas Contoh','external','offline','Sandbox','2026-09-20','2026-08-01','2026-09-19','Ruang Demo, Gedung Contoh','active',1)
 on conflict (id) do nothing;
+
+-- divisions (scoped to the demo edition)
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','EVENT','Event','EVE','#10b981',6,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
 
 -- members
 insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Budi Santoso','Budi','5026221001','fungsionaris',2022,'EVENT');

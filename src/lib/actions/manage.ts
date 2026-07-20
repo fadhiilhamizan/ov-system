@@ -11,6 +11,7 @@ import {
 import type { CloneOptions } from "@/lib/data/repo";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 import { uid } from "@/lib/utils";
+import { getActiveEvent } from "@/lib/session";
 import { eventSchema, memberSchema, divisionSchema, teamSchema, idSchema, parse } from "./schemas";
 
 export interface EventTemplate extends CloneOptions {
@@ -35,6 +36,8 @@ export async function createEventAction(
     const sv = parse(idSchema, template.sourceEventId);
     if (sv.ok) {
       await cloneEventData(sv.data, id, {
+        divisions: !!template.divisions,
+        members: !!template.members,
         tasks: !!template.tasks,
         rundown: !!template.rundown,
         jobs: !!template.jobs,
@@ -129,7 +132,9 @@ export async function createDivisionAction(input: Partial<Division>): Promise<Re
   if (!can.manageDivisions(await getCurrentUser())) return DENY;
   const v = parse(divisionSchema, input);
   if (!v.ok) return v;
-  await createDivision(v.data);
+  // Divisions belong to the currently-active Ormawa Visit.
+  const event = await getActiveEvent();
+  await createDivision({ ...v.data, event_id: event.id });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -139,7 +144,8 @@ export async function updateDivisionAction(key: string, patch: Partial<Division>
   if (!idv.ok) return idv;
   const v = parse(divisionSchema.partial(), patch);
   if (!v.ok) return v;
-  await updateDivision(idv.data, v.data);
+  const event = await getActiveEvent();
+  await updateDivision(event.id, idv.data, v.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -147,7 +153,8 @@ export async function deleteDivisionAction(key: string): Promise<Result> {
   if (!can.manageDivisions(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, key);
   if (!idv.ok) return idv;
-  await deleteDivision(idv.data);
+  const event = await getActiveEvent();
+  await deleteDivision(event.id, idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

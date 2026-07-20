@@ -8,12 +8,12 @@ import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Runs on every navigation — keep it light. The division filter uses the
   // (small, cached) divisions table rather than fetching all tasks.
-  const [user, activeEvent, events, activeDivision, divisions, store] = await Promise.all([
+  const activeEvent = await getActiveEvent();
+  const [user, events, activeDivision, divisions, store] = await Promise.all([
     getCurrentUser(),
-    getActiveEvent(),
     getEvents(),
     getActiveDivision(),
-    getDivisions(),
+    getDivisions(activeEvent.id),
     cookies(),
   ]);
   const sandboxMode = demoActive(store.get(DEMO_COOKIE)?.value);

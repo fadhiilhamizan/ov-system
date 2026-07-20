@@ -15,13 +15,16 @@ const jb = (v) => `'${JSON.stringify(v ?? {}).replace(/'/g, "''")}'::jsonb`;
 
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
-out += `-- divisions\n`;
-for (const x of seed.divisions)
-  out += `insert into divisions(key,name,short,color,"order",exclude_from_rundown) values (${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (key) do nothing;\n`;
-
-out += `\n-- events\n`;
+// Events first — divisions are per-event (migration 0018) and reference them.
+out += `-- events\n`;
 for (const e of seed.events)
   out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values (${q(e.id)},${q(e.code)},${q(e.title)},${q(e.partner)},${q(e.campus)},${q(e.type)},${q(e.mode)},${q(e.cabinet)},${d(e.event_date)},${d(e.plan_start)},${d(e.plan_end)},${q(e.location)},${q(e.status)},${e.order}) on conflict (id) do nothing;\n`;
+
+// Each event gets its own copy of the division set (per-event divisions).
+out += `\n-- divisions (per event)\n`;
+for (const e of seed.events)
+  for (const x of seed.divisions)
+    out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(e.id)},${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (event_id,key) do nothing;\n`;
 
 out += `\n-- members\n`;
 for (const m of seed.members)

@@ -7,6 +7,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.8.0",
+    date: "2026-07-20",
+    title: "Divisi & anggota kini per Ormawa Visit",
+    changes: [
+      "Divisi sekarang milik masing-masing Ormawa Visit — tiap OV bisa punya nama, singkatan, warna, dan susunan divisi sendiri tanpa memengaruhi OV lain.",
+      "Anggota & tim juga per Ormawa Visit; roster lama otomatis ditautkan ke Ormawa Visit paling awal.",
+      "Template pembuatan OV baru kini bisa ikut menyalin Divisi dan Anggota & Tim dari OV sumber.",
+      "Data lama tetap aman: divisi yang sebelumnya dipakai bersama disalin ke tiap OV yang sudah ada, jadi semua tugas tetap terhubung ke divisinya.",
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-07-20",
     title: "Penguatan keamanan, validasi, & ketepatan data",

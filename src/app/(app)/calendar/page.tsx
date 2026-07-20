@@ -13,7 +13,7 @@ export default async function CalendarPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
   const [tasks, divisions, events, members] = await Promise.all([
     getTasks({ event_id: event.id }),
-    getDivisions(),
+    getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
   ]);

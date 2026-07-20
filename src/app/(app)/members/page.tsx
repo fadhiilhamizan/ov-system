@@ -14,7 +14,7 @@ export default async function MembersPage() {
   const [members, teams, divisions, events] = await Promise.all([
     getMembers(event.id),
     getTeams(event.id),
-    getDivisions(),
+    getDivisions(event.id),
     getEvents(),
   ]);
   const t = await getT();

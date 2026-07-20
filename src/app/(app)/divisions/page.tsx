@@ -20,7 +20,7 @@ export default async function DivisionsPage() {
   const [stats, teams, divisions] = await Promise.all([
     divisionStats(event.id),
     getTeams(event.id),
-    getDivisions(),
+    getDivisions(event.id),
   ]);
   const manage = can.manageDivisions(user);
   const statMap = new Map(stats.map((s) => [s.division.key, s]));

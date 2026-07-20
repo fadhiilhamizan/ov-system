@@ -2,24 +2,57 @@
 -- HMSI ITS Ormawa Visit
 begin;
 
--- divisions
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('EVENT','Event','EVE','#10b981',6,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (key) do nothing;
-insert into divisions(key,name,short,color,"order",exclude_from_rundown) values ('OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (key) do nothing;
-
 -- events
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov1-2025','OV1 2025','HMSI ITS × HIMASTA UNAIR','HIMASTA','Universitas Airlangga','external','offline','Niskalarasi 2025','2025-05-25',null,null,'GKB UNAIR','done',1) on conflict (id) do nothing;
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov2-2025','OV2 2025','HMSI ITS × HMTG ITS','HMTG','ITS','internal','offline','Niskalarasi 2025','2025-09-28',null,null,'ITS','done',2) on conflict (id) do nothing;
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov1-2026','OV1 2026','HMSI ITS × HIMASTA ITS','HIMASTA ITS','ITS','internal','offline','PilarAksi 2026','2026-05-30',null,null,'Tower 2 Lt.2 ITS','done',3) on conflict (id) do nothing;
 insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values ('ov2-2026','OV2 2026','HMSI ITS × HMD Eksternal','TBD','TBD','external','offline','PilarAksi 2026',null,null,null,'TBD','planning',4) on conflict (id) do nothing;
+
+-- divisions (per event)
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','EVENT','Event','EVE','#10b981',6,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2025','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','EVENT','Event','EVE','#10b981',6,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2025','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','EVENT','Event','EVE','#10b981',6,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov1-2026','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','PIC','PIC Ormawa Visit','PIC','#6366f1',1,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','COORDINATOR','Coordinator','CORD','#8b5cf6',2,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','SECRETARY','Secretary','SEC','#ec4899',3,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','TREASURER','Treasurer','TRE','#f59e0b',4,true) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','LO','Liaison Officer','LO','#0ea5e9',5,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','EVENT','Event','EVE','#10b981',6,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','CONSUMPTION','Consumption','CON','#f97316',7,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','OPERATIONAL','Operational','OPR','#64748b',8,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','CREATIVE','Creative','CRE','#d946ef',9,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','MARKETING','Marketing','MRT','#f43f5e',10,false) on conflict (event_id,key) do nothing;
+insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('ov2-2026','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
 
 -- members
 insert into members(event_id,name,nickname,nrp,type,year,division) values (null,'Arjuna Putra Kharisma','Arjuna','5026221210','fungsionaris',2022,null);

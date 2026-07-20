@@ -17,13 +17,13 @@ export default async function DivisionDetailPage({
   params: Promise<{ key: string }>;
 }) {
   const { key } = await params;
-  const division = await getDivision(key);
+  const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
+  const division = await getDivision(event.id, key);
   if (!division) notFound();
 
-  const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
   const [tasks, divisions, events, teams, members] = await Promise.all([
     getTasks({ event_id: event.id, division: division.key }),
-    getDivisions(),
+    getDivisions(event.id),
     getEvents(),
     getTeams(event.id),
     getMembers(event.id),

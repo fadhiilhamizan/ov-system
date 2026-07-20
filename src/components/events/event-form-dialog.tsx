@@ -34,7 +34,7 @@ export function EventFormDialog({
 
   // Template: copy data from an existing Ormawa Visit into the new one.
   const [templateSource, setTemplateSource] = React.useState<string>(NO_TEMPLATE);
-  const [copy, setCopy] = React.useState({ tasks: true, rundown: true, jobs: true, budget: false });
+  const [copy, setCopy] = React.useState({ divisions: true, members: false, tasks: true, rundown: true, jobs: true, budget: false });
 
   const [f, setF] = React.useState(() => ({
     title: event?.title ?? "",
@@ -84,6 +84,8 @@ export function EventFormDialog({
 
   const templateOptions = events.filter((e) => e.id !== event?.id);
   const copyItems: { key: keyof typeof copy; label: string }[] = [
+    { key: "divisions", label: t("Divisi") },
+    { key: "members", label: t("Anggota & Tim") },
     { key: "tasks", label: t("Tugas (WBS)") },
     { key: "rundown", label: t("Rundown") },
     { key: "jobs", label: t("Job Hari-H") },

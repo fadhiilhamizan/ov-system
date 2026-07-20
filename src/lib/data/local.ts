@@ -18,11 +18,12 @@ import type {
 } from "../types";
 
 // ---------------- Divisions ----------------
-export function getDivisions(): Division[] {
-  return [...getDb().divisions].sort((a, b) => a.order - b.order);
+export function getDivisions(eventId?: string): Division[] {
+  const list = [...getDb().divisions].sort((a, b) => a.order - b.order);
+  return eventId ? list.filter((d) => !d.event_id || d.event_id === eventId) : list;
 }
-export function getDivision(key: string) {
-  return getDb().divisions.find((d) => d.key === key) ?? null;
+export function getDivision(eventId: string, key: string) {
+  return getDivisions(eventId).find((d) => d.key === key) ?? null;
 }
 
 // ---------------- Events ----------------
@@ -318,7 +319,7 @@ export function taskStats(eventId?: string) {
 
 export function divisionStats(eventId?: string) {
   const tasks = getTasks(eventId ? { event_id: eventId } : {});
-  const divs = getDivisions();
+  const divs = getDivisions(eventId);
   return divs
     .map((d) => {
       const dt = tasks.filter((t) => t.division === d.key);
@@ -393,9 +394,19 @@ export function deleteEvent(id: string) {
 export function cloneEventData(
   sourceId: string,
   targetId: string,
-  opts: { tasks?: boolean; rundown?: boolean; jobs?: boolean; budget?: boolean },
+  opts: { divisions?: boolean; members?: boolean; tasks?: boolean; rundown?: boolean; jobs?: boolean; budget?: boolean },
 ) {
   mutate((db) => {
+    if (opts.divisions) {
+      for (const d of db.divisions.filter((x) => x.event_id === sourceId)) {
+        db.divisions.push({ ...d, id: uid("DIV"), event_id: targetId });
+      }
+    }
+    if (opts.members) {
+      for (const m of db.members.filter((x) => x.event_id === sourceId)) {
+        db.members.push({ ...m, id: uid("m"), event_id: targetId });
+      }
+    }
     if (opts.tasks) {
       const src = db.tasks.filter((t) => t.event_id === sourceId);
       const noByDiv: Record<string, number> = {};
@@ -458,8 +469,9 @@ export function deleteMember(id: string) {
 }
 
 export function createDivision(input: Partial<Division>): Division {
-  const divs = getDb().divisions;
+  const divs = getDb().divisions.filter((x) => !input.event_id || x.event_id === input.event_id);
   const d: Division = {
+    event_id: input.event_id ?? null,
     key: input.key ?? uid("DIV").toUpperCase(),
     name: input.name ?? "",
     short: input.short ?? "",
@@ -470,17 +482,21 @@ export function createDivision(input: Partial<Division>): Division {
   mutate((db) => db.divisions.push(d));
   return d;
 }
-export function updateDivision(key: string, patch: Partial<Division>) {
+const divMatch = (d: Division, eventId: string, key: string) =>
+  d.key === key && (d.event_id ? d.event_id === eventId : true);
+export function updateDivision(eventId: string, key: string, patch: Partial<Division>) {
   return mutate((db) => {
-    const d = db.divisions.find((x) => x.key === key);
+    const d = db.divisions.find((x) => divMatch(x, eventId, key));
     if (!d) return null;
-    Object.assign(d, patch);
+    const { id: _i, event_id: _e, ...rest } = patch;
+    void _i; void _e;
+    Object.assign(d, rest);
     return d;
   });
 }
-export function deleteDivision(key: string) {
+export function deleteDivision(eventId: string, key: string) {
   mutate((db) => {
-    db.divisions = db.divisions.filter((d) => d.key !== key);
+    db.divisions = db.divisions.filter((d) => !divMatch(d, eventId, key));
   });
 }
 

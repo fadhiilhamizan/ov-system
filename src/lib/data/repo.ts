@@ -46,15 +46,21 @@ function coalesce<T>(rows: T[], keys: string[]): T[] {
 // only once. Cache is keyed by primitive args.
 
 // ---------------- Divisions ----------------
-export const getDivisions = cache(async (): Promise<Division[]> => {
-  if (!USE_SUPABASE) return local.getDivisions();
-  const { data } = await (await sb()).from("divisions").select("*").order("order");
+// Divisions are per-Ormawa-Visit. In Supabase mode this is a STRICT match on
+// event_id (filtered in-query) so a row can never leak across OVs — after
+// migration 0018 every division has an event_id. (The local/demo JSON store
+// keeps a lenient match so its global seed still renders without a migration.)
+export const getDivisions = cache(async (eventId?: string): Promise<Division[]> => {
+  if (!USE_SUPABASE) return local.getDivisions(eventId);
+  let q = (await sb()).from("divisions").select("*").order("order");
+  if (eventId) q = q.eq("event_id", eventId);
+  const { data } = await q;
   return (data ?? []) as Division[];
 });
-export const getDivision = cache(async (key: string): Promise<Division | null> => {
-  if (!USE_SUPABASE) return local.getDivision(key);
-  const { data } = await (await sb()).from("divisions").select("*").eq("key", key).maybeSingle();
-  return (data as Division) ?? null;
+export const getDivision = cache(async (eventId: string, key: string): Promise<Division | null> => {
+  if (!USE_SUPABASE) return local.getDivision(eventId, key);
+  const list = await getDivisions(eventId);
+  return list.find((d) => d.key === key) ?? null;
 });
 
 // ---------------- Events ----------------
@@ -367,7 +373,7 @@ export async function taskStats(eventId?: string) {
 export async function divisionStats(eventId?: string) {
   const [tasks, divs] = await Promise.all([
     eventId ? getEventTasks(eventId) : getTasks({}),
-    getDivisions(),
+    getDivisions(eventId),
   ]);
   return divs
     .map((d) => {
@@ -449,6 +455,8 @@ export async function deleteEvent(id: string) {
 }
 
 export interface CloneOptions {
+  divisions?: boolean;
+  members?: boolean;
   tasks?: boolean;
   rundown?: boolean;
   jobs?: boolean;
@@ -464,6 +472,26 @@ export interface CloneOptions {
 export async function cloneEventData(sourceId: string, targetId: string, opts: CloneOptions) {
   if (!USE_SUPABASE) return local.cloneEventData(sourceId, targetId, opts);
   const client = await sb();
+
+  // Divisions first (tasks/rundown/teams resolve their division by key within
+  // the new event, so the keys must exist there before the rest is copied).
+  if (opts.divisions) {
+    const src = await getDivisions(sourceId);
+    const rows = src.map((d) => ({
+      event_id: targetId, key: d.key, name: d.name, short: d.short, color: d.color,
+      order: d.order, exclude_from_rundown: d.exclude_from_rundown ?? false,
+    }));
+    if (rows.length) await client.from("divisions").insert(rows);
+  }
+
+  if (opts.members) {
+    const src = await getMembers(sourceId);
+    const rows = src.map((m) => ({
+      event_id: targetId, name: m.name, nickname: m.nickname, nrp: m.nrp,
+      type: m.type, year: m.year, division: m.division ?? null,
+    }));
+    if (rows.length) await client.from("members").insert(rows);
+  }
 
   if (opts.tasks) {
     const src = await getTasks({ event_id: sourceId });
@@ -558,13 +586,12 @@ export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
 export async function createDivision(input: Partial<Division>) {
   if (!USE_SUPABASE) return local.createDivision(input);
   const client = await sb();
-  const { data: maxRow } = await client
-    .from("divisions")
-    .select("order")
-    .order("order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Order is per-event so each Ormawa Visit numbers its own divisions from 1.
+  let mq = client.from("divisions").select("order").order("order", { ascending: false }).limit(1);
+  if (input.event_id) mq = mq.eq("event_id", input.event_id);
+  const { data: maxRow } = await mq.maybeSingle();
   await client.from("divisions").insert({
+    event_id: input.event_id ?? null,
     key: input.key ?? uid("DIV").toUpperCase(),
     name: input.name ?? "",
     short: input.short ?? "",
@@ -573,13 +600,15 @@ export async function createDivision(input: Partial<Division>) {
     exclude_from_rundown: input.exclude_from_rundown ?? false,
   });
 }
-export async function updateDivision(key: string, patch: Partial<Division>) {
-  if (!USE_SUPABASE) return local.updateDivision(key, patch);
-  await (await sb()).from("divisions").update(patch).eq("key", key);
+export async function updateDivision(eventId: string, key: string, patch: Partial<Division>) {
+  if (!USE_SUPABASE) return local.updateDivision(eventId, key, patch);
+  const { id: _i, event_id: _e, ...rest } = patch;
+  void _i; void _e;
+  await (await sb()).from("divisions").update(rest).eq("event_id", eventId).eq("key", key);
 }
-export async function deleteDivision(key: string) {
-  if (!USE_SUPABASE) return local.deleteDivision(key);
-  await (await sb()).from("divisions").delete().eq("key", key);
+export async function deleteDivision(eventId: string, key: string) {
+  if (!USE_SUPABASE) return local.deleteDivision(eventId, key);
+  await (await sb()).from("divisions").delete().eq("event_id", eventId).eq("key", key);
 }
 
 export async function createTeam(input: Partial<Team>) {
