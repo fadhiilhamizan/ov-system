@@ -1,12 +1,12 @@
 "use client";
 import * as React from "react";
-import { Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { EventFormDialog } from "./event-form-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { deleteEventAction } from "@/lib/actions/manage";
+import { deleteEventAction, duplicateEventAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
 import type { OVEvent } from "@/lib/types";
 
@@ -40,6 +40,10 @@ export function EventActions({ event }: { event: OVEvent }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => start(async () => {
+            const res = await duplicateEventAction(event.id);
+            if (res.ok) toast.success(t("Ormawa Visit diduplikat")); else toast.error(res.error);
+          })}><Copy /> {t("Duplikat")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

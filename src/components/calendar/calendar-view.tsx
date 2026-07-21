@@ -100,11 +100,14 @@ export function CalendarView({
             const isToday = key === todayStr;
             const isEvent = event.event_date === key;
             return (
-              <button
+              <div
                 key={i}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelected(day)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(day); } }}
                 className={cn(
-                  "min-h-[92px] border-b border-r border-border p-1.5 text-left transition hover:bg-muted/40 last:border-r-0 [&:nth-child(7n)]:border-r-0",
+                  "group relative min-h-[92px] cursor-pointer border-b border-r border-border p-1.5 text-left transition hover:bg-muted/40 last:border-r-0 [&:nth-child(7n)]:border-r-0",
                   !inMonth && "bg-muted/20 text-muted-foreground/50",
                   isEvent && "bg-accent/40",
                 )}
@@ -115,6 +118,17 @@ export function CalendarView({
                   </span>
                   {isEvent && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
                 </div>
+                {canAdd && (
+                  <button
+                    type="button"
+                    aria-label={t("Tambah tugas di tanggal ini")}
+                    title={t("Tambah tugas di tanggal ini")}
+                    onClick={(e) => { e.stopPropagation(); setSelected(day); }}
+                    className="absolute right-1 top-1 hidden size-5 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition hover:brightness-110 group-hover:flex focus:flex"
+                  >
+                    <Plus className="size-3.5" />
+                  </button>
+                )}
                 <div className="space-y-1">
                   {isEvent && (
                     <div className="truncate rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">🎉 {t("Hari-H")}</div>
@@ -133,7 +147,7 @@ export function CalendarView({
                     <span className="px-1 text-[10px] font-medium text-muted-foreground">+{dayTasks.length - 3} {t("lagi")}</span>
                   )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Wallet, ChevronDown, Plus, Trash2, Loader2, X } from "lucide-react";
+import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
-  createBudgetPlanAction, deleteBudgetPlanAction,
+  duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -184,6 +184,24 @@ function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DuplicateItemButton({ itemId }: { itemId: string }) {
+  const t = useT();
+  const [pending, start] = React.useTransition();
+  return (
+    <button
+      title={t("Duplikat")}
+      disabled={pending}
+      onClick={() => start(async () => {
+        const res = await duplicateBudgetItemAction(itemId);
+        if (res.ok) toast.success(t("Item diduplikat")); else toast.error(res.error);
+      })}
+      className="inline-flex size-6 items-center justify-center rounded text-muted-foreground/60 transition hover:bg-muted hover:text-foreground"
+    >
+      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+    </button>
   );
 }
 
@@ -417,7 +435,10 @@ function PlanCard({
                         <td className="px-5 py-2 text-right font-medium tabular-nums">{formatRupiah(it.total)}</td>
                         {canManage && (
                           <td className="px-2 py-2">
-                            <DeleteItemButton itemId={it.id} itemName={it.name} />
+                            <div className="flex items-center gap-0.5">
+                              <DuplicateItemButton itemId={it.id} />
+                              <DeleteItemButton itemId={it.id} itemName={it.name} />
+                            </div>
                           </td>
                         )}
                       </tr>

@@ -1,8 +1,7 @@
 "use client";
 import * as React from "react";
-import { Search, Users2, IdCard, Plus, ChevronsUpDown, ChevronUp, ChevronDown, LayoutGrid } from "lucide-react";
+import { Search, IdCard, Plus, LayoutGrid } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DivisionBadge } from "@/components/division-badge";
 import { EmptyState } from "@/components/ui/empty";
 import {
-  MemberFormDialog, MemberActions, MemberBulkBar, TeamFormDialog, TeamActions,
+  MemberFormDialog, MemberActions, MemberBulkBar,
 } from "./member-manage";
 import { DivisionsGrid, type DivisionStat } from "@/components/divisions/divisions-grid";
+import { SortIndicator } from "@/components/ui/sort-indicator";
+import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
@@ -29,7 +30,6 @@ export function MembersView({
   divisionStats,
   events,
   eventId,
-  eventTitle,
   canManageMembers,
   canManageTeams,
   canManageDivisions,
@@ -40,7 +40,6 @@ export function MembersView({
   divisionStats: DivisionStat[];
   events: OVEvent[];
   eventId: string;
-  eventTitle: string;
   canManageMembers: boolean;
   canManageTeams: boolean;
   canManageDivisions: boolean;
@@ -49,7 +48,7 @@ export function MembersView({
   const [q, setQ] = React.useState("");
   const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
-  const [sort, setSort] = React.useState<{ col: SortCol; dir: 1 | -1 }>({ col: "name", dir: 1 });
+  const sort = useMultiSort<SortCol>([{ key: "name", dir: "asc" }]);
   const divMap = React.useMemo(() => new Map(divisions.map((d) => [d.key, d])), [divisions]);
 
   const filtered = React.useMemo(() => {
@@ -58,8 +57,8 @@ export function MembersView({
       if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
-    const val = (m: Member): string | number => {
-      switch (sort.col) {
+    const val = (m: Member, col: SortCol): string | number => {
+      switch (col) {
         case "nrp": return m.nrp ?? "";
         case "division": return divMap.get(m.division ?? "")?.name ?? "";
         case "type": return m.type;
@@ -67,17 +66,8 @@ export function MembersView({
         default: return (m.name ?? "").toLowerCase();
       }
     };
-    return [...list].sort((a, b) => {
-      const av = val(a), bv = val(b);
-      if (av < bv) return -1 * sort.dir;
-      if (av > bv) return 1 * sort.dir;
-      return 0;
-    });
-  }, [members, type, q, sort, divMap]);
-
-  function toggleSort(col: SortCol) {
-    setSort((prev) => (prev.col === col ? { col, dir: (prev.dir === 1 ? -1 : 1) as 1 | -1 } : { col, dir: 1 }));
-  }
+    return sortRows(list, sort.rules, val);
+  }, [members, type, q, sort.rules, divMap]);
 
   // Only ever act on selections that are still visible under the current filter
   // (ids selected then filtered away, or deleted, are simply ignored — no effect
@@ -109,13 +99,19 @@ export function MembersView({
         <TabsTrigger value="anggota">
           <IdCard /> {tr("Anggota EA")}
         </TabsTrigger>
-        <TabsTrigger value="tim">
-          <Users2 /> {tr("Struktur Tim")}
-        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="divisi">
-        <DivisionsGrid divisions={divisions} stats={divisionStats} teams={teams} canManage={canManageDivisions} />
+        {/* Struktur Tim is merged into each division card (Divisi-led UI). */}
+        <DivisionsGrid
+          divisions={divisions}
+          stats={divisionStats}
+          teams={teams}
+          members={members}
+          eventId={eventId}
+          canManage={canManageDivisions}
+          canManageTeams={canManageTeams}
+        />
       </TabsContent>
 
       <TabsContent value="anggota">
@@ -171,11 +167,11 @@ export function MembersView({
                       />
                     </TableHead>
                   )}
-                  <SortHead col="name" label={tr("Nama")} sort={sort} onSort={toggleSort} />
-                  <SortHead col="nrp" label="NRP" sort={sort} onSort={toggleSort} />
-                  <SortHead col="division" label={tr("Divisi")} sort={sort} onSort={toggleSort} />
-                  <SortHead col="type" label={tr("Tipe")} sort={sort} onSort={toggleSort} />
-                  <SortHead col="year" label={tr("Angkatan")} sort={sort} onSort={toggleSort} />
+                  <SortHead col="name" label={tr("Nama")} sort={sort} />
+                  <SortHead col="nrp" label="NRP" sort={sort} />
+                  <SortHead col="division" label={tr("Divisi")} sort={sort} />
+                  <SortHead col="type" label={tr("Tipe")} sort={sort} />
+                  <SortHead col="year" label={tr("Angkatan")} sort={sort} />
                   {canManageMembers && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -225,105 +221,30 @@ export function MembersView({
           <EmptyState icon={<IdCard />} title={tr("Tidak ditemukan")} description={tr("Tidak ada anggota yang cocok.")} />
         )}
       </TabsContent>
-
-      <TabsContent value="tim">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">{tr("Struktur tim untuk")} {eventTitle}</p>
-          {canManageTeams && (
-            <TeamFormDialog mode="create" divisions={divisions} members={members} eventId={eventId} trigger={
-              <DialogTrigger asChild>
-                <Button size="sm"><Plus className="size-4" /> {tr("Tambah Tim")}</Button>
-              </DialogTrigger>
-            } />
-          )}
-        </div>
-        {teams.length ? (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {teams.map((t) => {
-              const div = divMap.get(t.division);
-              return (
-                <Card key={t.id} className="p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span
-                      className="flex size-8 items-center justify-center rounded-lg text-xs font-bold text-white"
-                      style={{ backgroundColor: div?.color ?? "#888" }}
-                    >
-                      {div?.short ?? "?"}
-                    </span>
-                    <h4 className="font-semibold">{div?.name ?? t.division}</h4>
-                    {canManageTeams && (
-                      <div className="ml-auto">
-                        <TeamActions team={t} divisions={divisions} members={members} eventId={eventId} />
-                      </div>
-                    )}
-                  </div>
-                  {t.coordinator && t.coordinator !== "-" && (
-                    <div className="mb-2">
-                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{tr("Koordinator")}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {t.coordinator.split(/\s{2,}|,|·/).filter(Boolean).map((n, i) => (
-                          <span key={i} className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/25">{n.trim()}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {t.fungsionaris && (
-                    <div className="mb-2">
-                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{tr("Fungsionaris")}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {t.fungsionaris.split(/\s{2,}|,|·/).filter(Boolean).map((n, i) => (
-                          <span key={i} className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.trim()}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {t.intern && t.intern !== "-" && (
-                    <div>
-                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Intern</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {t.intern.split(/\s{2,}|,|·/).filter(Boolean).map((n, i) => (
-                          <span key={i} className="rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground">{n.trim()}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState icon={<Users2 />} title={tr("Belum ada struktur tim")} description={tr("Struktur tim untuk Ormawa Visit ini belum diisi.")} />
-        )}
-      </TabsContent>
     </Tabs>
   );
 }
 
 function SortHead({
-  col, label, sort, onSort,
+  col, label, sort,
 }: {
   col: SortCol;
   label: string;
-  sort: { col: SortCol; dir: 1 | -1 };
-  onSort: (c: SortCol) => void;
+  sort: ReturnType<typeof useMultiSort<SortCol>>;
 }) {
-  const active = sort.col === col;
+  const dir = sort.dirOf(col);
   return (
     <TableHead>
       <button
         type="button"
-        onClick={() => onSort(col)}
+        onClick={() => sort.toggle(col)}
         className={cn(
           "inline-flex items-center gap-1 transition hover:text-foreground",
-          active ? "font-semibold text-foreground" : "text-muted-foreground",
+          dir ? "font-semibold text-foreground" : "text-muted-foreground",
         )}
       >
         {label}
-        {active ? (
-          sort.dir === 1 ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
-        ) : (
-          <ChevronsUpDown className="size-3.5 opacity-50" />
-        )}
+        <SortIndicator dir={dir} rank={sort.rankOf(col)} showRank={sort.rules.length > 1} />
       </button>
     </TableHead>
   );

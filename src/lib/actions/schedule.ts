@@ -3,8 +3,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
-  createRundown, updateRundown, deleteRundown,
-  createJob, updateJob, deleteJob, reorderJobs,
+  createRundown, updateRundown, deleteRundown, getRundown,
+  createJob, updateJob, deleteJob, reorderJobs, getJobs,
 } from "@/lib/data/repo";
 import type { JobHariH, RundownItem } from "@/lib/types";
 import { rundownSchema, jobSchema, idSchema, parse } from "./schemas";
@@ -30,6 +30,21 @@ export async function updateRundownAction(id: string, patch: Partial<RundownItem
   const v = parse(rundownSchema, patch);
   if (!v.ok) return v;
   await updateRundown(idv.data, v.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function duplicateRundownAction(id: string): Promise<Result> {
+  if (!can.manageRundown(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const row = (await getRundown()).find((r) => r.id === idv.data);
+  if (!row) return { ok: false, error: "Baris rundown tidak ditemukan." };
+  await createRundown({
+    event_id: row.event_id, variant: row.variant,
+    time_start: row.time_start, time_end: row.time_end, duration: row.duration,
+    activity: row.activity, keterangan: row.keterangan,
+    mc: row.mc, operator: row.operator, division_jobs: row.division_jobs,
+  });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -59,6 +74,18 @@ export async function updateJobAction(id: string, patch: Partial<JobHariH>): Pro
   const v = parse(jobSchema, patch);
   if (!v.ok) return v;
   await updateJob(idv.data, v.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function duplicateJobAction(id: string): Promise<Result> {
+  if (!can.manageJobs(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const job = (await getJobs()).find((j) => j.id === idv.data);
+  if (!job) return { ok: false, error: "Tugas tidak ditemukan." };
+  await createJob({
+    event_id: job.event_id, job: `${job.job} (salinan)`, pic: job.pic, notes: job.notes,
+  });
   revalidatePath("/", "layout");
   return { ok: true };
 }

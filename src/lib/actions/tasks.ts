@@ -87,6 +87,30 @@ export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> 
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
+export async function duplicateTaskAction(id: string): Promise<Result> {
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const user = await getCurrentUser();
+  const task = await getTask(idv.data);
+  if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
+  if (!can.manageTasks(user, task.division)) {
+    return { ok: false, error: "Kamu tidak punya akses membuat tugas di divisi ini." };
+  }
+  // Fresh copy: keeps the plan (division/PIC/dates/notes), resets progress.
+  await createTask({
+    event_id: task.event_id,
+    division: task.division,
+    title: `${task.title} (salinan)`,
+    pic: task.pic,
+    start_date: task.start_date,
+    end_date: task.end_date,
+    notes: task.notes,
+    status: "todo",
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function deleteTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   const task = await getTask(id);

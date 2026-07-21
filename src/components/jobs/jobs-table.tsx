@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, ClipboardList, GripVertical } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, ClipboardList, GripVertical, Copy } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
   type DragEndEvent,
@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
-import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction } from "@/lib/actions/schedule";
+import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction, duplicateJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
@@ -115,6 +115,10 @@ function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => start(async () => {
+            const res = await duplicateJobAction(job.id);
+            if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
+          })}><Copy /> {t("Duplikat")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => start(async () => {
             const res = await deleteJobAction(job.id);
             if (res.ok) toast.success(t("Tugas dihapus")); else toast.error(res.error);

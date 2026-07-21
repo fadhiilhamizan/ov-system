@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/charts/donut";
 import { AddEventButton, EventActions } from "@/components/events/event-manage";
+import { EventSelectButton } from "@/components/events/event-select-button";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
 
@@ -78,6 +79,10 @@ export default async function EventsPage() {
                 </Badge>
                 <Badge variant="outline">{e.mode === "offline" ? "Offline" : "Online"}</Badge>
                 {budget > 0 && <span className="ml-auto font-medium text-muted-foreground">RAB {formatRupiah(budget)}</span>}
+              </div>
+
+              <div className="mt-3">
+                <EventSelectButton eventId={e.id} isActive={isActive} />
               </div>
             </Card>
           );

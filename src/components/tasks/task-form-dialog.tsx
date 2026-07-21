@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -92,10 +92,13 @@ export function TaskFormDialog({
     }
   }, [isOpen, task]);
 
-  function submit() {
+  /** `markDone` = the "Simpan & Selesai" shortcut: save and flip status to done
+   *  in one go, so submitting a result doesn't need a second status edit. */
+  function submit(markDone = false) {
     start(async () => {
       const payload = {
         ...form,
+        ...(markDone ? { status: "done" as const } : {}),
         start_date: form.start_date || null,
         end_date: form.end_date || null,
       };
@@ -104,7 +107,11 @@ export function TaskFormDialog({
           ? await createTaskAction(payload)
           : await updateTaskAction(task!.id, payload);
       if (res.ok) {
-        toast.success(mode === "create" ? t("Tugas ditambahkan") : t("Tugas diperbarui"));
+        toast.success(
+          markDone
+            ? t("Tugas disimpan & ditandai selesai")
+            : mode === "create" ? t("Tugas ditambahkan") : t("Tugas diperbarui"),
+        );
         setOpen(false);
       } else {
         toast.error(res.error);
@@ -264,7 +271,18 @@ export function TaskFormDialog({
           <DialogClose asChild>
             <Button variant="outline">{t("Batal")}</Button>
           </DialogClose>
-          <Button onClick={submit} disabled={pending || !form.title.trim()}>
+          {form.status !== "done" && (
+            <Button
+              variant="outline"
+              className="border-emerald-500/60 text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+              onClick={() => submit(true)}
+              disabled={pending || !form.title.trim()}
+            >
+              {pending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+              {t("Simpan & Selesai")}
+            </Button>
+          )}
+          <Button onClick={() => submit(false)} disabled={pending || !form.title.trim()}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {mode === "create" ? t("Tambah Tugas") : t("Simpan Perubahan")}
           </Button>

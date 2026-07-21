@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { ListChecks, ChevronUp, ChevronDown, ChevronsUpDown, ExternalLink, Loader2, Check, Trash2, X } from "lucide-react";
+import { ListChecks, ChevronDown, ExternalLink, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -14,16 +14,16 @@ import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { EmptyState } from "@/components/ui/empty";
+import { SortIndicator } from "@/components/ui/sort-indicator";
+import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { formatDate, daysUntil, isUrl } from "@/lib/format";
-import { updateTaskAction, bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
-import { can } from "@/lib/permissions";
+import { bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
 import { STATUS_ORDER, STATUS_META } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 type SortKey = "no" | "title" | "division" | "pic" | "deadline" | "status";
-type SortDir = "asc" | "desc";
 
 export function TaskTable({
   tasks,
@@ -41,7 +41,7 @@ export function TaskTable({
   const tr = useT();
   const divMap = new Map(divisions.map((d) => [d.key, d]));
   const evMap = new Map(events.map((e) => [e.id, e]));
-  const [sort, setSort] = React.useState<{ key: SortKey; dir: SortDir } | null>(null);
+  const sort = useMultiSort<SortKey>();
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, start] = React.useTransition();
 
@@ -51,15 +51,9 @@ export function TaskTable({
   // Reset selection whenever the task set changes (filter/revalidate).
   React.useEffect(() => setSelected(new Set()), [tasks]);
 
-  function toggleSort(key: SortKey) {
-    setSort((s) => (s?.key === key ? (s.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" }));
-  }
-
   const rows = React.useMemo(() => {
-    if (!sort) return tasks;
-    const dir = sort.dir === "asc" ? 1 : -1;
-    const val = (t: Task): string | number => {
-      switch (sort.key) {
+    const val = (t: Task, key: SortKey): string | number => {
+      switch (key) {
         case "no": { const n = parseInt(t.no, 10); return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n; }
         case "title": return t.title.toLowerCase();
         case "division": return divMap.get(t.division)?.order ?? 99;
@@ -68,13 +62,8 @@ export function TaskTable({
         case "status": return STATUS_ORDER.indexOf(t.status);
       }
     };
-    return [...tasks].sort((a, b) => {
-      const va = val(a), vb = val(b);
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
-  }, [tasks, sort, divMap]);
+    return sortRows(tasks, sort.rules, val);
+  }, [tasks, sort.rules, divMap]);
 
   if (!tasks.length) {
     return (
@@ -117,13 +106,9 @@ export function TaskTable({
 
   const SortHead = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
     <TableHead className={className}>
-      <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+      <button onClick={() => sort.toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
         {children}
-        {sort?.key === k ? (
-          sort.dir === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
-        ) : (
-          <ChevronsUpDown className="size-3.5 opacity-40" />
-        )}
+        <SortIndicator dir={sort.dirOf(k)} rank={sort.rankOf(k)} showRank={sort.rules.length > 1} />
       </button>
     </TableHead>
   );
@@ -221,7 +206,7 @@ export function TaskTable({
                     </span>
                   </TableCell>
                   <TableCell><StatusMenu task={t} user={user} /></TableCell>
-                  <TableCell><ResultCell task={t} user={user} /></TableCell>
+                  <TableCell><ResultCell task={t} /></TableCell>
                   <TableCell>
                     <TaskActions task={t} divisions={divisions} events={events} activeEventId={activeEventId} user={user} />
                   </TableCell>
@@ -236,57 +221,21 @@ export function TaskTable({
 }
 
 /** Inline result editor - lets assignees drop a link/result without opening Edit. */
-function ResultCell({ task, user }: { task: Task; user: AppUser }) {
+/** Read-only result preview. Editing happens in the task dialog only, so a
+ *  stray click in the table can't overwrite someone's submitted result. */
+function ResultCell({ task }: { task: Task }) {
   const tr = useT();
-  const canEdit = can.editTaskProgress(user, task);
-  const [val, setVal] = React.useState(task.result ?? "");
-  const [pending, start] = React.useTransition();
-  const [saved, setSaved] = React.useState(false);
-  React.useEffect(() => setVal(task.result ?? ""), [task.result]);
-
-  if (!canEdit) {
-    if (!task.result) return <span className="text-xs text-muted-foreground">-</span>;
-    return isUrl(task.result) ? (
-      <a href={task.result} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-        <ExternalLink className="size-3" /> {tr("Lihat hasil")}
-      </a>
-    ) : (
-      <span className="line-clamp-1 text-xs text-muted-foreground">{task.result}</span>
-    );
-  }
-
-  function persist(value: string) {
-    start(async () => {
-      const r = await updateTaskAction(task.id, { result: value });
-      if (r.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
-      } else toast.error(r.error);
-    });
-  }
-  function save() {
-    if (val !== (task.result ?? "")) persist(val);
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      <input
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        placeholder={tr("+ link hasil (Drive/Docs)")}
-        className="h-7 w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 text-xs transition hover:border-border focus:border-ring focus:bg-card focus:outline-none"
-      />
-      {pending ? (
-        <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
-      ) : saved ? (
-        <Check className="size-3.5 shrink-0 text-emerald-500" />
-      ) : val && isUrl(val) ? (
-        <a href={val} target="_blank" rel="noopener noreferrer" className="shrink-0 text-primary">
-          <ExternalLink className="size-3.5" />
-        </a>
-      ) : null}
-    </div>
+  if (!task.result) return <span className="text-xs text-muted-foreground">-</span>;
+  return isUrl(task.result) ? (
+    <a
+      href={task.result}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+    >
+      <ExternalLink className="size-3" /> {tr("Lihat hasil")}
+    </a>
+  ) : (
+    <span className="line-clamp-1 text-xs text-muted-foreground">{task.result}</span>
   );
 }

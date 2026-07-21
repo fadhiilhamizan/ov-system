@@ -5,7 +5,7 @@ import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
-import type { AppUser, Division, OVEvent } from "@/lib/types";
+import type { AppUser, OVEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { APP_VERSION } from "@/lib/version";
@@ -14,8 +14,6 @@ export function AppShell({
   user,
   events,
   activeEventId,
-  divisions,
-  activeDivision,
   demoMode,
   sandboxMode,
   children,
@@ -23,8 +21,6 @@ export function AppShell({
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
-  divisions: Division[];
-  activeDivision: string;
   demoMode: boolean;
   sandboxMode: boolean;
   children: React.ReactNode;
@@ -66,8 +62,6 @@ export function AppShell({
           user={user}
           events={events}
           activeEventId={activeEventId}
-          divisions={divisions}
-          activeDivision={activeDivision}
           demoMode={demoMode}
           sandboxMode={sandboxMode}
           onMenu={() => setMobileOpen(true)}

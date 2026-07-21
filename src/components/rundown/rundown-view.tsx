@@ -1,11 +1,11 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Clock, Plus, Trash2, Loader2, StickyNote } from "lucide-react";
+import { Clock, Plus, Trash2, Loader2, StickyNote, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { createRundownAction, updateRundownAction, deleteRundownAction } from "@/lib/actions/schedule";
+import { createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction } from "@/lib/actions/schedule";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, RundownItem } from "@/lib/types";
@@ -191,6 +191,12 @@ export function RundownView({
       if (res.ok) toast.success(t("Agenda dihapus")); else toast.error(res.error);
     });
   }
+  function duplicate(id: string) {
+    start(async () => {
+      const res = await duplicateRundownAction(id);
+      if (res.ok) toast.success(t("Agenda diduplikat")); else toast.error(res.error);
+    });
+  }
 
   if (!items.length && !canManage) {
     return <EmptyState icon={<Clock />} title={t("Belum ada rundown")} description={t("Rundown acara belum tersedia untuk Ormawa Visit ini.")} />;
@@ -272,14 +278,24 @@ export function RundownView({
                 <td className={td}><NoteCell value={item.keterangan} onSave={(v) => save(item.id, { keterangan: v })} readOnly={!canManage} /></td>
                 {canManage && (
                   <td className={cn(td, "text-center")}>
-                    <button
-                      type="button"
-                      onClick={() => remove(item.id)}
-                      className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
-                      title={t("Hapus")}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <div className="flex items-center justify-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => duplicate(item.id)}
+                        className="rounded p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        title={t("Duplikat")}
+                      >
+                        <Copy className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(item.id)}
+                        className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
+                        title={t("Hapus")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </td>
                 )}
               </tr>

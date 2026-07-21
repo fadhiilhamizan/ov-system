@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
-  createEvent, updateEvent, deleteEvent, cloneEventData,
+  createEvent, updateEvent, deleteEvent, cloneEventData, getEvent,
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
   createTeam, updateTeam, deleteTeam,
@@ -58,6 +58,21 @@ export async function updateEventAction(id: string, patch: Partial<OVEvent>): Pr
   revalidatePath("/", "layout");
   return { ok: true };
 }
+/** Copy an Ormawa Visit's metadata into a new draft (data is not cloned —
+ *  use the template picker on create for that). */
+export async function duplicateEventAction(id: string): Promise<Result> {
+  if (!can.manageEvents(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const ev = await getEvent(idv.data);
+  if (!ev) return { ok: false, error: "Ormawa Visit tidak ditemukan." };
+  const { id: _drop, order: _order, ...rest } = ev;
+  void _drop; void _order;
+  await createEvent({ ...rest, id: uid("ov"), title: `${ev.title} (salinan)`, status: "planning" });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function deleteEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);

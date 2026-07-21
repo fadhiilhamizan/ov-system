@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
-  createBudgetPlan, deleteBudgetPlan,
+  createBudgetPlan, deleteBudgetPlan, getBudgetPlans,
 } from "@/lib/data/repo";
 import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
 
@@ -44,6 +44,25 @@ export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   const idv = parse(idSchema, itemId);
   if (!idv.ok) return idv;
   await deleteBudgetItem(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function duplicateBudgetItemAction(itemId: string): Promise<Result> {
+  if (!can.manageBudget(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, itemId);
+  if (!idv.ok) return idv;
+  const plans = await getBudgetPlans();
+  const plan = plans.find((p) => p.items.some((i) => i.id === idv.data));
+  const item = plan?.items.find((i) => i.id === idv.data);
+  if (!plan || !item) return { ok: false, error: "Item tidak ditemukan." };
+  await createBudgetItem(plan.id, {
+    category: item.category,
+    name: `${item.name} (salinan)`,
+    qty: item.qty,
+    unit: item.unit,
+    unit_price: item.unit_price,
+  });
   revalidatePath("/", "layout");
   return { ok: true };
 }

@@ -7,6 +7,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.11.0",
+    date: "2026-07-20",
+    title: "Sortir bertingkat, duplikat, & penyegaran tampilan",
+    changes: [
+      "Pengurutan tabel kini bertingkat: klik kolom kedua tidak lagi menghapus urutan kolom pertama — urutan prioritas ditampilkan dengan angka (klik ketiga menghapus kolom itu dari urutan).",
+      "Tombol 'Duplikat' ditambahkan pada Tugas, item Anggaran, baris Rundown, Job Hari-H, dan Ormawa Visit.",
+      "Work Breakdown: kolom Hasil tidak lagi bisa diketik langsung di tabel — isi lewat pop-up tugas agar tidak tertimpa tak sengaja.",
+      "Work Breakdown: tombol 'Simpan & Selesai' untuk menyimpan sekaligus menandai tugas selesai.",
+      "Work Breakdown: pemilih 'Fokus divisi' dipindah dari pojok kanan atas ke toolbar Work Breakdown, bersama filter lainnya.",
+      "Kalender: ikon plus muncul di pojok kanan atas tanggal saat disorot untuk menambah tugas di tanggal itu.",
+      "Daftar Ormawa Visit: tiap kartu punya tombol untuk langsung menjadikannya Ormawa Visit yang sedang dilihat.",
+      "Dashboard: Akses Cepat dipindah ke bagian atas dengan tampilan geser (carousel).",
+      "Dashboard: diagram donat diperbarui — arahkan kursor ke tiap bagian untuk melihat jumlah & persentasenya.",
+      "Divisi & Anggota: Struktur Tim kini menyatu di kartu divisi (koordinator, fungsionaris, dan intern langsung terlihat & bisa diubah dari sana).",
+    ],
+  },
+  {
     version: "1.10.1",
     date: "2026-07-20",
     title: "Perbaikan: gagal kembali ke halaman login & kebocoran akses saat ganti peran",

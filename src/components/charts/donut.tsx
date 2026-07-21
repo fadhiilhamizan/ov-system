@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react";
 
 export interface DonutSegment {
@@ -6,10 +7,14 @@ export interface DonutSegment {
   color: string;
 }
 
+/**
+ * Donut chart with per-segment hover: the hovered slice thickens, the rest dim,
+ * and the centre swaps to that slice's detail (count + share).
+ */
 export function DonutChart({
   data,
   size = 180,
-  thickness = 20,
+  thickness = 22,
   centerLabel,
   centerSub,
 }: {
@@ -19,25 +24,37 @@ export function DonutChart({
   centerLabel?: React.ReactNode;
   centerSub?: React.ReactNode;
 }) {
+  const [hover, setHover] = React.useState<number | null>(null);
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const r = (size - thickness) / 2;
+  const r = (size - thickness - 8) / 2;
   const c = 2 * Math.PI * r;
-  let offset = 0;
+  const GAP = data.length > 1 ? 3 : 0; // px gap between slices
+
+  // Plain loop (not map+outer accumulator) so nothing is mutated from inside a
+  // render callback.
+  const arcs: { d: DonutSegment; i: number; len: number; offset: number; pct: number }[] = [];
+  for (let i = 0, off = 0; i < data.length; i++) {
+    const d = data[i];
+    const full = (d.value / total) * c;
+    arcs.push({ d, i, len: Math.max(full - GAP, 0.5), offset: off, pct: (d.value / total) * 100 });
+    off += full;
+  }
+
+  const active = hover !== null ? arcs[hover] : null;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="var(--muted)"
-          strokeWidth={thickness}
-        />
-        {data.map((d, i) => {
-          const len = (d.value / total) * c;
-          const el = (
+    <div
+      className="relative inline-flex select-none items-center justify-center"
+      style={{ width: size, height: size }}
+      onMouseLeave={() => setHover(null)}
+    >
+      <svg width={size} height={size} className="-rotate-90 overflow-visible">
+        {/* track */}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--muted)" strokeWidth={thickness} opacity={0.5} />
+        {arcs.map(({ d, i, len, offset: off, pct }) => {
+          const isActive = hover === i;
+          const dim = hover !== null && !isActive;
+          return (
             <circle
               key={i}
               cx={size / 2}
@@ -45,22 +62,37 @@ export function DonutChart({
               r={r}
               fill="none"
               stroke={d.color}
-              strokeWidth={thickness}
+              strokeWidth={isActive ? thickness + 6 : thickness}
               strokeDasharray={`${len} ${c - len}`}
-              strokeDashoffset={-offset}
-              strokeLinecap={d.value / total > 0.03 ? "round" : "butt"}
-            />
+              strokeDashoffset={-off}
+              strokeLinecap="round"
+              className="cursor-pointer transition-all duration-200"
+              style={{ opacity: dim ? 0.28 : 1 }}
+              onMouseEnter={() => setHover(i)}
+            >
+              <title>{`${d.label}: ${d.value} (${pct.toFixed(1)}%)`}</title>
+            </circle>
           );
-          offset += len;
-          return el;
         })}
       </svg>
-      {(centerLabel || centerSub) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          {centerLabel && <div className="text-2xl font-bold tabular-nums">{centerLabel}</div>}
-          {centerSub && <div className="text-[11px] text-muted-foreground">{centerSub}</div>}
-        </div>
-      )}
+
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+        {active ? (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full" style={{ backgroundColor: active.d.color }} />
+              <span className="text-[11px] font-medium text-muted-foreground">{active.d.label}</span>
+            </div>
+            <div className="text-2xl font-bold tabular-nums">{active.d.value}</div>
+            <div className="text-[11px] text-muted-foreground">{active.pct.toFixed(1)}%</div>
+          </>
+        ) : (
+          <>
+            {centerLabel && <div className="text-2xl font-bold tabular-nums">{centerLabel}</div>}
+            {centerSub && <div className="text-[11px] text-muted-foreground">{centerSub}</div>}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -94,6 +126,7 @@ export function ProgressRing({
           strokeWidth={thickness}
           strokeDasharray={`${len} ${c - len}`}
           strokeLinecap="round"
+          className="transition-all duration-300"
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums">

@@ -1,12 +1,14 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { useMultiSelect } from "@/lib/use-multi-select";
+import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
+import { SortIndicator } from "@/components/ui/sort-indicator";
 import { bulkDeleteProspectsAction } from "@/lib/actions/prospects";
 import {
   Select,
@@ -33,6 +35,8 @@ import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Prospect } from "@/lib/types";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
+
+type ProspectSortKey = "org_name" | "campus" | "contact" | "pic" | "stage" | "batch";
 
 function StageBadge({ p }: { p: Prospect }) {
   const t = useT();
@@ -64,7 +68,7 @@ export function ProspectsView({
   const [q, setQ] = React.useState("");
   const [batch, setBatch] = React.useState("all");
   const [stage, setStage] = React.useState("all");
-  const [sort, setSort] = React.useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const sort = useMultiSort<ProspectSortKey>();
   const sel = useMultiSelect();
   React.useEffect(() => sel.clear(), [prospects]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkPending, startBulk] = React.useTransition();
@@ -85,39 +89,24 @@ export function ProspectsView({
     [],
   );
   const rows = React.useMemo(() => {
-    if (!sort) return filtered;
-    const dir = sort.dir === "asc" ? 1 : -1;
-    const val = (p: Prospect): string | number => {
-      switch (sort.key) {
+    const val = (p: Prospect, key: ProspectSortKey): string | number => {
+      switch (key) {
         case "org_name": return p.org_name.toLowerCase();
         case "campus": return p.campus.toLowerCase();
         case "contact": return p.contact.toLowerCase();
         case "pic": return p.pic.toLowerCase();
         case "stage": return stageOrder[prospectStage(p)] ?? 99;
         case "batch": return p.batch.toLowerCase();
-        default: return "";
       }
     };
-    return [...filtered].sort((a, b) => {
-      const va = val(a), vb = val(b);
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
-  }, [filtered, sort, stageOrder]);
+    return sortRows(filtered, sort.rules, val);
+  }, [filtered, sort.rules, stageOrder]);
 
-  function toggleSort(key: string) {
-    setSort((s) => (s?.key === key ? (s.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" }));
-  }
-  const SortHead = ({ k, children }: { k: string; children: React.ReactNode }) => (
+  const SortHead = ({ k, children }: { k: ProspectSortKey; children: React.ReactNode }) => (
     <TableHead>
-      <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-foreground">
+      <button onClick={() => sort.toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
         {children}
-        {sort?.key === k ? (
-          sort.dir === "asc" ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />
-        ) : (
-          <ChevronsUpDown className="size-3.5 opacity-40" />
-        )}
+        <SortIndicator dir={sort.dirOf(k)} rank={sort.rankOf(k)} showRank={sort.rules.length > 1} />
       </button>
     </TableHead>
   );

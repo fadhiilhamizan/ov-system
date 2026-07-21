@@ -2,10 +2,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowRight, Users2, Trash2, Loader2, X, CalendarOff, Calendar } from "lucide-react";
+import { ArrowRight, Users2, Trash2, Loader2, X, CalendarOff, Calendar, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DialogTrigger } from "@/components/ui/dialog";
+import { TeamActions, TeamFormDialog } from "@/components/members/member-manage";
 import { ProgressRing } from "@/components/charts/donut";
 import { StackedBar } from "@/components/charts/bars";
 import { AddDivisionButton, DivisionActions } from "@/components/divisions/division-manage";
@@ -13,7 +15,7 @@ import { STATUS_META } from "@/lib/constants";
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
-import type { Division, Team } from "@/lib/types";
+import type { Division, Member, Team } from "@/lib/types";
 
 export interface DivisionStat {
   division: Division;
@@ -25,16 +27,106 @@ export interface DivisionStat {
   progress: number;
 }
 
+/** Split a comma/·/double-space joined roster string into display chips. */
+const roster = (s: string) => (s ?? "").split(/\s{2,}|,|·/).map((x) => x.trim()).filter(Boolean);
+
+function TeamBlock({
+  division, team, divisions, members, eventId, canManageTeams,
+}: {
+  division: Division;
+  team?: Team;
+  divisions: Division[];
+  members: Member[];
+  eventId: string;
+  canManageTeams: boolean;
+}) {
+  const t = useT();
+  const fung = roster(team?.fungsionaris ?? "");
+  const intern = roster(team?.intern ?? "");
+  const coord = roster(team?.coordinator ?? "");
+  const empty = !coord.length && !fung.length && !intern.length;
+
+  return (
+    <div className="mt-4 border-t border-border pt-3">
+      <div className="mb-2 flex items-center gap-1.5">
+        <Users2 className="size-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {t("Struktur Tim")}
+        </span>
+        {canManageTeams && (
+          <span className="ml-auto">
+            {team ? (
+              <TeamActions team={team} divisions={divisions} members={members} eventId={eventId} />
+            ) : (
+              <TeamFormDialog
+                mode="create"
+                divisions={divisions}
+                members={members}
+                eventId={eventId}
+                trigger={
+                  <DialogTrigger asChild>
+                    <button className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-primary transition hover:bg-muted">
+                      <Plus className="size-3" /> {t("Isi tim")}
+                    </button>
+                  </DialogTrigger>
+                }
+              />
+            )}
+          </span>
+        )}
+      </div>
+
+      {empty ? (
+        <p className="text-xs text-muted-foreground/70">{t("Belum diisi.")}</p>
+      ) : (
+        <div className="space-y-1.5">
+          {coord.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] uppercase text-muted-foreground">{t("Koordinator")}</span>
+              {coord.map((n, i) => (
+                <span key={i} className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary ring-1 ring-primary/25">{n}</span>
+              ))}
+            </div>
+          )}
+          {fung.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] uppercase text-muted-foreground">{t("Fungsionaris")}</span>
+              {fung.map((n, i) => (
+                <span key={i} className="rounded-full bg-muted px-2 py-0.5 text-[11px]">{n}</span>
+              ))}
+            </div>
+          )}
+          {intern.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] uppercase text-muted-foreground">Intern</span>
+              {intern.map((n, i) => (
+                <span key={i} className="rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground">{n}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <span className="sr-only">{division.name}</span>
+    </div>
+  );
+}
+
 export function DivisionsGrid({
   divisions,
   stats,
   teams,
+  members,
+  eventId,
   canManage,
+  canManageTeams,
 }: {
   divisions: Division[];
   stats: DivisionStat[];
   teams: Team[];
+  members: Member[];
+  eventId: string;
   canManage: boolean;
+  canManageTeams: boolean;
 }) {
   const t = useT();
   const sel = useMultiSelect();
@@ -135,21 +227,22 @@ export function DivisionsGrid({
                     </div>
                   )}
 
-                  {team && (team.coordinator || team.fungsionaris || team.intern) && (
-                    <div className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                      <Users2 className="mt-0.5 size-3.5 shrink-0" />
-                      <span className="line-clamp-2">
-                        {team.coordinator && <span className="font-medium text-foreground">{team.coordinator}</span>}
-                        {team.coordinator && (team.fungsionaris || team.intern) ? " · " : ""}
-                        {[team.fungsionaris, team.intern].filter(Boolean).join(" · ")}
-                      </span>
-                    </div>
-                  )}
-
                   <div className="mt-3 flex items-center justify-end text-xs font-medium text-primary opacity-0 transition group-hover:opacity-100">
                     {t("Buka papan")} <ArrowRight className="ml-1 size-3.5" />
                   </div>
                 </Link>
+
+                {/* Team structure lives on the division card — the separate
+                    "Struktur Tim" tab was merged in here. Outside the <Link>
+                    so its controls stay clickable. */}
+                <TeamBlock
+                  division={s.division}
+                  team={team}
+                  divisions={divisions}
+                  members={members}
+                  eventId={eventId}
+                  canManageTeams={canManageTeams}
+                />
               </Card>
             );
           })}

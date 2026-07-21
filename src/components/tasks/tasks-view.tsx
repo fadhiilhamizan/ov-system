@@ -19,6 +19,7 @@ import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
+import { DivisionFilter } from "@/components/layout/division-filter";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 type View = "table" | "kanban" | "timeline";
@@ -91,6 +92,10 @@ export function TasksView({
               className="pl-9"
             />
           </div>
+          {/* Division focus lives here (next to the other filters) rather than
+              in the topbar — it only ever affected the Work Breakdown. Hidden
+              on a per-division board, where the division is already fixed. */}
+          {!lockedDivision && <DivisionFilter divisions={divisions} active={division} />}
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-auto min-w-[130px]">
               <SelectValue placeholder={t("Status")} />

@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TaskFormDialog } from "./task-form-dialog";
 import { can } from "@/lib/permissions";
-import { deleteTaskAction } from "@/lib/actions/tasks";
+import { deleteTaskAction, duplicateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
 
@@ -66,6 +66,14 @@ export function TaskActions({
           {canEditAny && (
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
               <Pencil /> {t("Edit")}
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
+            <DropdownMenuItem onSelect={() => start(async () => {
+              const res = await duplicateTaskAction(task.id);
+              if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
+            })}>
+              <Copy /> {t("Duplikat")}
             </DropdownMenuItem>
           )}
           {canDelete && (

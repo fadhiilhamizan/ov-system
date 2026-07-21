@@ -34,7 +34,6 @@ export default async function MembersPage() {
         divisionStats={stats}
         events={events}
         eventId={event.id}
-        eventTitle={event.title}
         canManageMembers={can.manageMembers(user)}
         canManageTeams={can.manageTeams(user)}
         canManageDivisions={can.manageDivisions(user)}

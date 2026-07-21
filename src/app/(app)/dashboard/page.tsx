@@ -28,12 +28,12 @@ import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/charts/donut";
 import { BarList } from "@/components/charts/bars";
-import { StatusBadge } from "@/components/status-badge";
 import { DivisionBadge } from "@/components/division-badge";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty";
 import { getT } from "@/lib/i18n/server";
-import type { DivisionKey, TaskStatus } from "@/lib/types";
+import { QuickAccessCarousel } from "@/components/dashboard/quick-access";
+import type { TaskStatus } from "@/lib/types";
 
 const STATUS_HEX: Record<TaskStatus, string> = {
   todo: "var(--status-todo)",
@@ -91,6 +91,11 @@ export default async function DashboardPage() {
           </Link>
         }
       />
+
+      {/* Quick access — first thing on the page, scrollable on narrow screens */}
+      <div className="mb-5">
+        <QuickAccessCarousel links={QUICK_LINKS} />
+      </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -268,17 +273,17 @@ export default async function DashboardPage() {
       </div>
 
       {/* Event summary */}
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mt-4">
         <Card>
           <CardHeader>
             <CardTitle>{t("Ringkasan Ormawa Visit")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <InfoRow icon={<CalendarDays />} label={t("Tanggal")} value={formatDate(event.event_date, { long: true }) ?? t("Belum ditentukan")} />
             <InfoRow icon={<MapPin />} label={t("Lokasi")} value={event.location} />
             <InfoRow icon={<Target />} label={t("Partner")} value={`${event.partner} · ${event.campus}`} />
             <InfoRow icon={<Users />} label={t("Anggota EA")} value={`${memberCount} ${t("orang")}`} />
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1 sm:col-span-2 lg:col-span-4">
               <Badge variant={event.type === "internal" ? "info" : "primary"}>
                 {event.type === "internal" ? t("Internal ITS") : t("Eksternal")}
               </Badge>
@@ -288,33 +293,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("Akses Cepat")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {QUICK_LINKS.map((q) => (
-                <Link
-                  key={q.href}
-                  href={q.href}
-                  className="group flex items-center gap-3 rounded-xl border border-border p-3 transition hover:border-primary/40 hover:bg-accent/40"
-                >
-                  <span
-                    className="flex size-9 items-center justify-center rounded-lg text-white [&_svg]:size-4"
-                    style={{ backgroundColor: q.color }}
-                  >
-                    {q.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{t(q.label)}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{t(q.sub)}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
