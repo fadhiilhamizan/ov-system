@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth";
+import { requireModule } from "@/lib/guard";
 import { getActiveEvent } from "@/lib/session";
 import { getLinks, getEvents, getDivisions, getTeams } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
@@ -9,8 +9,9 @@ import { getT } from "@/lib/i18n/server";
 export const metadata = { title: "Super Link" };
 
 export default async function LinksPage() {
-  const [user, activeEvent, links, events, divisions, teams] = await Promise.all([
-    getCurrentUser(),
+  // Guard first: guests have no access to Super Link.
+  const user = await requireModule("links");
+  const [activeEvent, links, events, divisions, teams] = await Promise.all([
     getActiveEvent(),
     getLinks(),
     getEvents(),

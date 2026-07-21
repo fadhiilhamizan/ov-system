@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical } from "lucide-react";
-import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
+import { USE_SUPABASE } from "@/lib/auth";
+import { requireModule } from "@/lib/guard";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
@@ -22,7 +23,8 @@ export const metadata = { title: "Pengaturan" };
 const WHATSAPP_URL = "https://wa.me/6281311598126";
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
+  // Guard first: only admin can open Pengaturan.
+  const user = await requireModule("settings");
   const t = await getT();
   const store = await cookies();
   const isDemo = demoActive(store.get(DEMO_COOKIE)?.value);

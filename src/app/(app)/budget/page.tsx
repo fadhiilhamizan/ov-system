@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth";
+import { requireModule } from "@/lib/guard";
 import { getActiveEvent } from "@/lib/session";
 import { getBudgetPlans, getEvents } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
@@ -14,8 +14,9 @@ import { getT } from "@/lib/i18n/server";
 export const metadata = { title: "Anggaran" };
 
 export default async function BudgetPage() {
-  const [user, event, events] = await Promise.all([
-    getCurrentUser(),
+  // Guard first: staff/intern/guest have no access to Anggaran.
+  const user = await requireModule("budget");
+  const [event, events] = await Promise.all([
     getActiveEvent(),
     getEvents(),
   ]);

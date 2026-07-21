@@ -74,15 +74,23 @@ export const getEvent = cache(async (id: string): Promise<OVEvent | null> => {
   const { data } = await (await sb()).from("events").select("*").eq("id", id).maybeSingle();
   return (data as OVEvent) ?? null;
 });
+/** Placeholder so a genuinely empty (or RLS-blocked) events table degrades to
+ *  an empty-state UI instead of crashing on `event.id`. */
+const EMPTY_EVENT: OVEvent = {
+  id: "", code: "", title: "Belum ada Ormawa Visit", partner: "", campus: "",
+  type: "internal", mode: "offline", cabinet: "", event_date: null,
+  location: "", status: "planning", order: 0,
+};
+
 export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
-  if (!USE_SUPABASE) return local.getDefaultEvent();
+  if (!USE_SUPABASE) return local.getDefaultEvent() ?? EMPTY_EVENT;
   const events = await getEvents();
   const active = events.find((e) => e.status === "active");
   if (active) return active;
   const { data } = await (await sb()).from("tasks").select("event_id");
   const withTasks = new Set((data ?? []).map((r: { event_id: string }) => r.event_id));
   const list = events.filter((e) => withTasks.has(e.id));
-  return list[list.length - 1] ?? events[events.length - 1] ?? events[0];
+  return list[list.length - 1] ?? events[events.length - 1] ?? events[0] ?? EMPTY_EVENT;
 });
 
 // ---------------- Members ----------------

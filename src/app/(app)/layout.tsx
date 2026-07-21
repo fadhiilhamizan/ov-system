@@ -6,11 +6,16 @@ import { getEvents, getDivisions } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Auth FIRST: getCurrentUser() redirects unauthenticated visitors to /login.
+  // It must run before any data fetch — reads are RLS-gated, so an unauthed
+  // request would otherwise get zero rows and crash on `activeEvent.id`
+  // (rendering the error boundary instead of the login page).
+  const user = await getCurrentUser();
+
   // Runs on every navigation — keep it light. The division filter uses the
   // (small, cached) divisions table rather than fetching all tasks.
   const activeEvent = await getActiveEvent();
-  const [user, events, activeDivision, divisions, store] = await Promise.all([
-    getCurrentUser(),
+  const [events, activeDivision, divisions, store] = await Promise.all([
     getEvents(),
     getActiveDivision(),
     getDivisions(activeEvent.id),

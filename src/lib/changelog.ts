@@ -7,6 +7,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.10.1",
+    date: "2026-07-20",
+    title: "Perbaikan: gagal kembali ke halaman login & kebocoran akses saat ganti peran",
+    changes: [
+      "Membuka situs tanpa sesi login (mis. dari perangkat lain) kini benar diarahkan ke halaman Masuk, tidak lagi menampilkan error di dashboard.",
+      "Halaman Anggaran, Super Link, dan Pengaturan kini benar-benar tertutup untuk peran yang tidak berhak — termasuk saat berganti peran sambil membuka halaman tersebut.",
+      "Sistem tidak lagi gagal total saat daftar Ormawa Visit kosong atau belum bisa diakses.",
+    ],
+  },
+  {
     version: "1.10.0",
     date: "2026-07-20",
     title: "Menu Divisi & Anggota digabung, multi-select, & drag-and-drop Hari-H",
