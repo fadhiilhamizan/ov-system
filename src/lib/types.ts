@@ -75,6 +75,27 @@ export interface Task {
   status: TaskStatus;
 }
 
+/** A link attached to a task's result. When `in_super_link` is true it owns a
+ *  row in `links` (Super Link), tracked by `link_id` so re-saving updates that
+ *  row instead of creating a duplicate. */
+export interface TaskLink {
+  id: string;
+  task_id: string;
+  url: string;
+  label: string;
+  in_super_link: boolean;
+  link_id?: string | null;
+  order: number;
+}
+
+/** Shape the task form sends back; `id` is absent for newly-added rows. */
+export interface TaskLinkInput {
+  id?: string;
+  url: string;
+  label: string;
+  in_super_link: boolean;
+}
+
 export interface Prospect {
   id: string;
   event_id?: string | null;
@@ -180,6 +201,7 @@ export interface Database {
   events: OVEvent[];
   members: Member[];
   tasks: Task[];
+  taskLinks?: TaskLink[];
   prospects: Prospect[];
   links: LinkItem[];
   budgetPlans: BudgetPlan[];

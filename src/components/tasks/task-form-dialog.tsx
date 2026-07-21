@@ -28,6 +28,8 @@ import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
+import { useTaskLinks } from "./task-links-context";
+import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
@@ -76,6 +78,9 @@ export function TaskFormDialog({
     status: (task?.status ?? "todo") as TaskStatus,
   }));
 
+  const existingLinks = useTaskLinks(task?.id);
+  const [links, setLinks] = React.useState<DraftLink[]>(() => existingLinks.map(toDraft));
+
   React.useEffect(() => {
     if (isOpen && task) {
       setForm({
@@ -89,12 +94,28 @@ export function TaskFormDialog({
         result: task.result,
         status: task.status,
       });
+      setLinks(existingLinks.map(toDraft));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, task]);
 
   /** `markDone` = the "Simpan & Selesai" shortcut: save and flip status to done
    *  in one go, so submitting a result doesn't need a second status edit. */
   function submit(markDone = false) {
+    const problem = validateLinks(links);
+    if (problem === "invalid") {
+      toast.error(t("Ada tautan hasil yang tidak valid (harus diawali http:// atau https://)."));
+      return;
+    }
+    if (problem === "duplicate") {
+      toast.error(t("Ada tautan hasil yang sama lebih dari sekali."));
+      return;
+    }
+    // Drop empty rows and strip the client-only `key`.
+    const payloadLinks = links
+      .filter((l) => l.url.trim())
+      .map(({ id, url, label, in_super_link }) => ({ id, url: url.trim(), label, in_super_link }));
+
     start(async () => {
       const payload = {
         ...form,
@@ -104,8 +125,8 @@ export function TaskFormDialog({
       };
       const res =
         mode === "create"
-          ? await createTaskAction(payload)
-          : await updateTaskAction(task!.id, payload);
+          ? await createTaskAction(payload, payloadLinks)
+          : await updateTaskAction(task!.id, payload, payloadLinks);
       if (res.ok) {
         toast.success(
           markDone
@@ -256,15 +277,17 @@ export function TaskFormDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="result">{t("Result / Hasil (tempel link, sangat disarankan)")}</Label>
+            <Label htmlFor="result">{t("Hasil — deskripsi")}</Label>
             <Textarea
               id="result"
               value={form.result}
               onChange={(e) => setForm({ ...form, result: e.target.value })}
-              placeholder={t("Tempel link Google Drive/Docs/Foto, bisa lebih dari satu")}
+              placeholder={t("Ringkas apa yang sudah dikerjakan / hasilnya")}
               className="min-h-[60px]"
             />
           </div>
+
+          <ResultLinksEditor links={links} onChange={setLinks} />
         </div>
 
         <DialogFooter>

@@ -84,6 +84,31 @@ export const updateTaskSchema = z
 
 export const taskStatusSchema = taskStatus;
 
+/** One result link on a task. `url` must be a real http(s) link; `label` is the
+ *  name used for its Super Link entry when published. */
+export const taskLinkSchema = z.object({
+  id: z.string().trim().max(128).optional(),
+  url: urlSchema,
+  label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
+  in_super_link: z.boolean().optional().transform((v) => !!v),
+});
+export const taskLinksSchema = z
+  .array(taskLinkSchema)
+  .max(20, "Maksimal 20 tautan hasil per tugas.")
+  .superRefine((links, ctx) => {
+    // Guard against the same URL being attached twice to one task (which would
+    // also publish it to Super Link twice).
+    const seen = new Set<string>();
+    for (const l of links) {
+      const key = l.url.trim().toLowerCase().replace(/\/+$/, "");
+      if (seen.has(key)) {
+        ctx.addIssue({ code: "custom", message: "Ada tautan hasil yang sama lebih dari sekali." });
+        return;
+      }
+      seen.add(key);
+    }
+  });
+
 // ---------------- Budget ----------------
 const money = z
   .number()

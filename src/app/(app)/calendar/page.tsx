@@ -1,21 +1,23 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
-import { getDivisions, getEvents, getMembers, getTasks } from "@/lib/data/repo";
+import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { MembersProvider } from "@/components/members/members-context";
+import { TaskLinksProvider } from "@/components/tasks/task-links-context";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Kalender" };
 
 export default async function CalendarPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
-  const [tasks, divisions, events, members] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
+    getTaskLinksByEvent(event.id),
   ]);
 
   const dated = tasks.filter((t) => t.end_date);
@@ -31,7 +33,8 @@ export default async function CalendarPage() {
         description={t("Deadline tugas & hari pelaksanaan dalam satu tampilan. Klik tanggal untuk detail atau menambah tugas.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <MembersProvider members={members}>
+      <TaskLinksProvider value={taskLinks}>
+        <MembersProvider members={members}>
         <CalendarView
           tasks={tasks}
           divisions={divisions}
@@ -42,6 +45,7 @@ export default async function CalendarPage() {
           initialMonth={initialMonth}
         />
       </MembersProvider>
+      </TaskLinksProvider>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         {divisions

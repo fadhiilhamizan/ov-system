@@ -310,6 +310,48 @@ export const EN: Record<string, string> = {
   "Panduan": "Guide",
   "Panduan Penggunaan": "User Guide",
   "Alur penggunaan Ormawa Visit Management System dari awal sampai akhir.": "How to use Ormawa Visit Management System from start to finish.",
+  "Alur Singkat": "Quick Flow",
+  "Panduan Lengkap per Fitur": "Full Guide by Feature",
+  "Penjelasan rinci tiap menu: untuk apa, cara memakainya, hal yang perlu diperhatikan, dan siapa yang bisa mengaksesnya.":
+    "A detailed walkthrough of every menu: what it's for, how to use it, what to watch out for, and who can access it.",
+  // Divisi & Anggota (merged menu)
+  "Divisi & Anggota": "Divisions & Members",
+  "Divisi, anggota, & struktur tim tiap Ormawa Visit": "Divisions, members & team structure per Ormawa Visit",
+  "Divisi, daftar fungsionaris & intern, serta pembagian tim tiap divisi Ormawa Visit ini.":
+    "Divisions, the staff & intern roster, and each division's team for this Ormawa Visit.",
+  "Isi tim": "Fill team",
+  "Belum diisi.": "Not filled in yet.",
+  "atasan divisi": "division lead",
+  // Task result links
+  "Hasil — deskripsi": "Result — description",
+  "Ringkas apa yang sudah dikerjakan / hasilnya": "Summarise what was done / the outcome",
+  "Tautan hasil": "Result links",
+  "Tambah tautan": "Add link",
+  "Hapus tautan": "Remove link",
+  "Tampilkan juga di Super Link": "Also show in Super Link",
+  "Nama tautan di Super Link (mis. Proposal OV)": "Link name in Super Link (e.g. OV Proposal)",
+  "Kosongkan untuk memakai judul tugas. Mengubah/menghapus tautan ini juga memperbarui Super Link.":
+    "Leave blank to use the task title. Editing/removing this link also updates Super Link.",
+  "Belum ada tautan. Klik “Tambah tautan” untuk melampirkan Drive/Docs/Foto.":
+    "No links yet. Click “Add link” to attach a Drive/Docs/photo link.",
+  "Ada tautan yang sama lebih dari sekali.": "The same link appears more than once.",
+  "Ada tautan hasil yang sama lebih dari sekali.": "The same result link appears more than once.",
+  "Ada tautan hasil yang tidak valid (harus diawali http:// atau https://).":
+    "One of the result links is invalid (it must start with http:// or https://).",
+  "Simpan & Selesai": "Save & Done",
+  "Tugas disimpan & ditandai selesai": "Task saved & marked done",
+  // Duplicate
+  "Duplikat": "Duplicate",
+  "Tugas diduplikat": "Task duplicated",
+  "Item diduplikat": "Item duplicated",
+  "Agenda diduplikat": "Agenda row duplicated",
+  "Ormawa Visit diduplikat": "Ormawa Visit duplicated",
+  // Misc new
+  "Seret ikon untuk mengurutkan; nomor tersusun otomatis.": "Drag the handle to reorder; numbering updates automatically.",
+  "Lihat Ormawa Visit ini": "View this Ormawa Visit",
+  "Ormawa Visit aktif diganti": "Active Ormawa Visit changed",
+  "Reset ke data awal": "Reset to initial data",
+  "Data Mode Demo": "Demo Mode Data",
 
   // Member picker (PIC)
   "dipilih": "selected",

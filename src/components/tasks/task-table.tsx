@@ -13,6 +13,7 @@ import { DivisionBadge } from "@/components/division-badge";
 import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { useTaskLinks } from "./task-links-context";
 import { EmptyState } from "@/components/ui/empty";
 import { SortIndicator } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
@@ -221,21 +222,43 @@ export function TaskTable({
 }
 
 /** Inline result editor - lets assignees drop a link/result without opening Edit. */
-/** Read-only result preview. Editing happens in the task dialog only, so a
- *  stray click in the table can't overwrite someone's submitted result. */
+/** Read-only result preview: description + attached links. Editing happens in
+ *  the task dialog only, so a stray click can't overwrite a submitted result. */
 function ResultCell({ task }: { task: Task }) {
   const tr = useT();
-  if (!task.result) return <span className="text-xs text-muted-foreground">-</span>;
-  return isUrl(task.result) ? (
-    <a
-      href={task.result}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-    >
-      <ExternalLink className="size-3" /> {tr("Lihat hasil")}
-    </a>
-  ) : (
-    <span className="line-clamp-1 text-xs text-muted-foreground">{task.result}</span>
+  const links = useTaskLinks(task.id);
+  // Legacy rows stored a bare URL in `result` before links became structured.
+  const legacyUrl = !links.length && isUrl(task.result) ? task.result : null;
+
+  if (!task.result && !links.length) return <span className="text-xs text-muted-foreground">-</span>;
+
+  return (
+    <div className="space-y-1">
+      {task.result && !legacyUrl && (
+        <span className="line-clamp-2 text-xs text-muted-foreground">{task.result}</span>
+      )}
+      {legacyUrl && (
+        <a href={legacyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+          <ExternalLink className="size-3" /> {tr("Lihat hasil")}
+        </a>
+      )}
+      {links.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {links.map((l, i) => (
+            <a
+              key={l.id}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={l.url}
+              className="inline-flex max-w-[140px] items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground transition hover:brightness-95"
+            >
+              <ExternalLink className="size-2.5 shrink-0" />
+              <span className="truncate">{l.label?.trim() || `${tr("Tautan")} ${i + 1}`}</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

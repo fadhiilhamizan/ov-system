@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.12.0",
+    date: "2026-07-20",
+    title: "Hasil tugas terstruktur, sinkron Super Link, & panduan lengkap",
+    changes: [
+      "Hasil tugas kini dipisah: kolom deskripsi + daftar tautan tersendiri, bisa lebih dari satu tautan.",
+      "Setiap tautan hasil divalidasi (wajib http:// atau https://) dan tidak boleh sama dua kali dalam satu tugas.",
+      "Tautan hasil bisa ditampilkan di Super Link lengkap dengan nama tautannya — cukup centang saat mengisi hasil.",
+      "Tautan yang tampil di Super Link tidak akan terduplikat walau tugas disimpan berkali-kali; mengubah atau menghapus tautan di tugas otomatis memperbarui Super Link, dan menghapus tugas ikut menghapus tautannya.",
+      "Panduan: ditambah bagian 'Panduan Lengkap per Fitur' berisi tujuan, langkah pemakaian, hal penting, dan hak akses tiap menu.",
+      "Seluruh isi panduan tersedia dalam Bahasa Indonesia dan English, mengikuti tombol bahasa.",
+    ],
+  },
+  {
     version: "1.11.0",
     date: "2026-07-20",
     title: "Sortir bertingkat, duplikat, & penyegaran tampilan",

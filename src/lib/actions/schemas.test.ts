@@ -15,6 +15,7 @@ import {
   rundownSchema,
   jobSchema,
   teamSchema,
+  taskLinksSchema,
   urlSchema,
   idSchema,
 } from "./schemas";
@@ -162,6 +163,31 @@ describe("idSchema", () => {
   it("rejects empty ids", () => {
     expect(parse(idSchema, "").ok).toBe(false);
     expect(parse(idSchema, "abc-123").ok).toBe(true);
+  });
+});
+
+describe("taskLinksSchema (result links)", () => {
+  it("accepts valid links and defaults the publish flag", () => {
+    const r = parse(taskLinksSchema, [{ url: "https://a.com/x", label: " Proposal " }]);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data[0].in_super_link).toBe(false);
+      expect(r.data[0].label).toBe("Proposal");
+    }
+  });
+  it("rejects a non-http(s) link", () => {
+    expect(parse(taskLinksSchema, [{ url: "javascript:alert(1)" }]).ok).toBe(false);
+    expect(parse(taskLinksSchema, [{ url: "bukan-link" }]).ok).toBe(false);
+  });
+  it("rejects the same URL twice (would duplicate it in Super Link)", () => {
+    const dup = parse(taskLinksSchema, [
+      { url: "https://a.com/x" },
+      { url: "https://a.com/x/" }, // trailing slash still counts as the same
+    ]);
+    expect(dup.ok).toBe(false);
+  });
+  it("allows an empty list", () => {
+    expect(parse(taskLinksSchema, []).ok).toBe(true);
   });
 });
 

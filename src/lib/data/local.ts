@@ -13,6 +13,8 @@ import type {
   Prospect,
   RundownItem,
   Task,
+  TaskLink,
+  TaskLinkInput,
   TaskStatus,
   Team,
 } from "../types";
@@ -161,6 +163,55 @@ export function getLinks(eventId?: string): LinkItem[] {
   const list = getDb().links;
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 }
+// ---------------- Task result links ----------------
+const taskLinks = () => (getDb().taskLinks ??= []);
+
+export function getTaskLinks(taskId: string): TaskLink[] {
+  return taskLinks().filter((l) => l.task_id === taskId).sort((a, b) => a.order - b.order);
+}
+export function getTaskLinksByEvent(eventId: string): TaskLink[] {
+  const ids = new Set(getDb().tasks.filter((t) => t.event_id === eventId).map((t) => t.id));
+  return taskLinks().filter((l) => ids.has(l.task_id)).sort((a, b) => a.order - b.order);
+}
+export function deleteTaskLinksFor(taskId: string) {
+  mutate((db) => {
+    db.taskLinks = (db.taskLinks ?? []).filter((l) => l.task_id !== taskId);
+  });
+}
+export function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
+  const existing = getTaskLinks(task.id);
+  const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
+  for (const ex of existing) {
+    if (keep.has(ex.id)) continue;
+    if (ex.link_id) deleteLink(ex.link_id);
+  }
+  mutate((db) => {
+    db.taskLinks = (db.taskLinks ?? []).filter((l) => l.task_id !== task.id || keep.has(l.id));
+  });
+  inputs.forEach((input, i) => {
+    const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
+    const superRow = {
+      event_id: task.event_id, division: task.division, section: "Hasil Tugas",
+      name: input.label?.trim() || task.title, url: input.url, note: task.title, source: "task",
+    };
+    let linkId = ex?.link_id ?? null;
+    if (input.in_super_link) {
+      if (linkId) updateLink(linkId, superRow);
+      else linkId = createLink(superRow).id;
+    } else if (linkId) {
+      deleteLink(linkId);
+      linkId = null;
+    }
+    mutate((db) => {
+      const list = (db.taskLinks ??= []);
+      const row = { url: input.url, label: input.label ?? "", in_super_link: input.in_super_link, link_id: linkId, order: i };
+      const found = ex ? list.find((l) => l.id === ex.id) : undefined;
+      if (found) Object.assign(found, row);
+      else list.push({ id: uid("tl"), task_id: task.id, ...row });
+    });
+  });
+}
+
 export function createLink(input: Partial<LinkItem>): LinkItem {
   const l: LinkItem = {
     id: uid("l"),

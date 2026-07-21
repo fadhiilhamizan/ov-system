@@ -16,6 +16,8 @@ import type {
   Prospect,
   RundownItem,
   Task,
+  TaskLink,
+  TaskLinkInput,
   TaskStatus,
   Team,
 } from "../types";
@@ -123,13 +125,15 @@ export const getTask = cache(async (id: string): Promise<Task | null> => {
   const { data } = await (await sb()).from("tasks").select("*").eq("id", id).maybeSingle();
   return (data as Task) ?? null;
 });
-export async function createTask(input: Partial<Task> & { event_id: string; division: Task["division"]; title: string }) {
-  if (!USE_SUPABASE) return local.createTask(input);
+export async function createTask(
+  input: Partial<Task> & { event_id: string; division: Task["division"]; title: string },
+): Promise<string | null> {
+  if (!USE_SUPABASE) return local.createTask(input).id;
   const client = await sb();
   // Auto-number: `no` is assigned atomically by the assign_task_no() BEFORE-INSERT
   // trigger (advisory-locked per event+division) when left null, so concurrent
   // creates can't collide. An explicit `no` (manual/clone) is preserved.
-  await client.from("tasks").insert({
+  const { data } = await client.from("tasks").insert({
     event_id: input.event_id,
     division: input.division,
     no: input.no ?? null,
@@ -142,7 +146,8 @@ export async function createTask(input: Partial<Task> & { event_id: string; divi
     notes: input.notes ?? "",
     result: input.result ?? "",
     status: input.status ?? "todo",
-  });
+  }).select("id").single();
+  return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateTask(id: string, patch: Partial<Task>) {
   if (!USE_SUPABASE) return local.updateTask(id, patch);
@@ -167,6 +172,93 @@ export async function bulkDeleteTasks(ids: string[]) {
     return;
   }
   await (await sb()).from("tasks").delete().in("id", ids);
+}
+
+// ---------------- Task result links ----------------
+export const getTaskLinks = cache(async (taskId: string): Promise<TaskLink[]> => {
+  if (!USE_SUPABASE) return local.getTaskLinks(taskId);
+  const { data } = await (await sb()).from("task_links").select("*").eq("task_id", taskId).order("order");
+  return coalesce((data ?? []) as TaskLink[], ["url", "label"]);
+});
+
+/** All result links for an event's tasks, keyed by task id (one round trip). */
+export const getTaskLinksByEvent = cache(async (eventId: string): Promise<Record<string, TaskLink[]>> => {
+  const rows = USE_SUPABASE
+    ? await (async () => {
+        const client = await sb();
+        const { data: tasks } = await client.from("tasks").select("id").eq("event_id", eventId);
+        const ids = (tasks ?? []).map((t: { id: string }) => t.id);
+        if (!ids.length) return [] as TaskLink[];
+        const { data } = await client.from("task_links").select("*").in("task_id", ids).order("order");
+        return coalesce((data ?? []) as TaskLink[], ["url", "label"]);
+      })()
+    : local.getTaskLinksByEvent(eventId);
+  const map: Record<string, TaskLink[]> = {};
+  for (const r of rows) (map[r.task_id] ??= []).push(r);
+  return map;
+});
+
+/**
+ * Reconcile a task's result links with what the form submitted, keeping the
+ * mirrored Super Link rows in step:
+ *  - removed link  -> its Super Link row is deleted too
+ *  - "publish" off -> Super Link row deleted, link kept on the task
+ *  - "publish" on  -> creates the Super Link row once, then UPDATES it on later
+ *    saves (via link_id), so saving twice never duplicates it
+ */
+export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
+  if (!USE_SUPABASE) return local.syncTaskLinks(task, inputs);
+  const client = await sb();
+  const existing = await getTaskLinks(task.id);
+  const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
+
+  // 1) Deletions
+  for (const ex of existing) {
+    if (keep.has(ex.id)) continue;
+    if (ex.link_id) await deleteLink(ex.link_id);
+    await client.from("task_links").delete().eq("id", ex.id);
+  }
+
+  // 2) Upserts (order follows the form)
+  for (const [i, input] of inputs.entries()) {
+    const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
+    const superRow = {
+      event_id: task.event_id,
+      division: task.division,
+      section: "Hasil Tugas",
+      name: input.label?.trim() || task.title,
+      url: input.url,
+      note: task.title,
+      source: "task",
+    };
+
+    let linkId = ex?.link_id ?? null;
+    if (input.in_super_link) {
+      if (linkId) await updateLink(linkId, superRow);
+      else linkId = await createLink(superRow);
+    } else if (linkId) {
+      await deleteLink(linkId);
+      linkId = null;
+    }
+
+    const row = {
+      url: input.url,
+      label: input.label ?? "",
+      in_super_link: input.in_super_link,
+      link_id: linkId,
+      order: i,
+    };
+    if (ex) await client.from("task_links").update(row).eq("id", ex.id);
+    else await client.from("task_links").insert({ task_id: task.id, ...row });
+  }
+}
+
+/** Remove a task's Super Link rows before the task (and its task_links) go. */
+export async function purgeTaskLinks(taskId: string) {
+  const links = await getTaskLinks(taskId);
+  for (const l of links) if (l.link_id) await deleteLink(l.link_id);
+  if (!USE_SUPABASE) return local.deleteTaskLinksFor(taskId);
+  await (await sb()).from("task_links").delete().eq("task_id", taskId);
 }
 
 // ---------------- Prospects ----------------
@@ -204,9 +296,12 @@ export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
   const list = coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 });
-export async function createLink(input: Partial<LinkItem>) {
-  if (!USE_SUPABASE) return local.createLink(input);
-  await (await sb()).from("links").insert(stripId(input));
+/** Returns the new row's id so a task link can remember which Super Link row
+ *  it owns (see syncTaskLinks). */
+export async function createLink(input: Partial<LinkItem>): Promise<string | null> {
+  if (!USE_SUPABASE) return local.createLink(input).id;
+  const { data } = await (await sb()).from("links").insert(stripId(input)).select("id").single();
+  return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateLink(id: string, patch: Partial<LinkItem>) {
   if (!USE_SUPABASE) return local.updateLink(id, patch);
