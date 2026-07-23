@@ -36,14 +36,18 @@ export function EventFormDialog({
   const [templateSource, setTemplateSource] = React.useState<string>(NO_TEMPLATE);
   const [copy, setCopy] = React.useState({ divisions: true, members: false, tasks: true, rundown: true, jobs: true, budget: false });
 
+  const UNSET = "__unset__";
   const [f, setF] = React.useState(() => ({
     title: event?.title ?? "",
     partner: event?.partner ?? "",
     campus: event?.campus ?? "",
     cabinet: event?.cabinet ?? "",
     code: event?.code ?? "",
-    type: event?.type ?? "external",
-    mode: event?.mode ?? "offline",
+    // A brand-new OV is a plan; partner/campus/type/mode/location are usually
+    // unknown until the primary Reach & Offer prospect is chosen, so don't
+    // assume them on create.
+    type: event?.type ?? (event ? "external" : UNSET),
+    mode: event?.mode ?? (event ? "offline" : UNSET),
     status: event?.status ?? "planning",
     plan_start: event?.plan_start ?? "",
     plan_end: event?.plan_end ?? "",
@@ -65,6 +69,9 @@ export function EventFormDialog({
     start(async () => {
       const payload = {
         ...f,
+        // "Belum ditentukan" → leave the column empty rather than guessing.
+        type: f.type === UNSET ? undefined : (f.type as OVEvent["type"]),
+        mode: f.mode === UNSET ? undefined : (f.mode as OVEvent["mode"]),
         plan_start: f.plan_start || null,
         plan_end: f.plan_end || null,
         event_date: f.event_date || null,
@@ -102,6 +109,11 @@ export function EventFormDialog({
         </DialogHeader>
 
         <div className="grid max-h-[65vh] gap-4 overflow-y-auto px-0.5 py-1">
+          {mode === "create" && (
+            <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {t("Ini masih rencana — cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.")}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>{t("Nama Ormawa Visit")}</Label>
@@ -138,9 +150,10 @@ export function EventFormDialog({
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-1.5">
               <Label>{t("Tipe")}</Label>
-              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as OVEvent["type"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Belum ditentukan")} /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={UNSET}>{t("Belum ditentukan")}</SelectItem>
                   <SelectItem value="internal">{t("Internal ITS")}</SelectItem>
                   <SelectItem value="external">{t("Eksternal")}</SelectItem>
                 </SelectContent>
@@ -148,9 +161,10 @@ export function EventFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>{t("Mode")}</Label>
-              <Select value={f.mode} onValueChange={(v) => setF({ ...f, mode: v as OVEvent["mode"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={f.mode} onValueChange={(v) => setF({ ...f, mode: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Belum ditentukan")} /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={UNSET}>{t("Belum ditentukan")}</SelectItem>
                   <SelectItem value="offline">Offline</SelectItem>
                   <SelectItem value="online">Online</SelectItem>
                 </SelectContent>

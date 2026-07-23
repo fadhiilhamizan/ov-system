@@ -352,6 +352,16 @@ export const EN: Record<string, string> = {
   "Ormawa Visit aktif diganti": "Active Ormawa Visit changed",
   "Reset ke data awal": "Reset to initial data",
   "Data Mode Demo": "Demo Mode Data",
+  // Reach & Offer primary
+  "Jadikan data utama": "Set as primary",
+  "Lepas data utama": "Remove as primary",
+  "Data utama Ormawa Visit": "Ormawa Visit primary data",
+  "Dijadikan data utama Ormawa Visit": "Set as the Ormawa Visit's primary data",
+  "Data utama dilepas": "Primary data cleared",
+  "Pilih anggota EA": "Choose an EA member",
+  // Rundown
+  "Buka tautan": "Open link",
+  "Belum ada baris rundown.": "No rundown rows yet.",
 
   // Member picker (PIC)
   "dipilih": "selected",

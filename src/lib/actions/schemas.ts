@@ -205,6 +205,7 @@ const prospectBase = z.object({
   org_name: z.string().trim().max(200).optional(),
   campus: z.string().trim().max(200).optional(),
   location: z.string().trim().max(200).optional(),
+  mode: z.string().trim().max(40).optional(),
   pic: z.string().trim().max(200).optional(),
   contact_status: z.string().trim().max(60).optional(),
   their_response: z.string().trim().max(60).optional(),

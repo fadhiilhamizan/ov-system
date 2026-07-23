@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Loader2, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -19,15 +19,30 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ProspectFormDialog } from "./prospect-form-dialog";
-import { deleteProspectAction } from "@/lib/actions/prospects";
+import {
+  deleteProspectAction, setPrimaryProspectAction, unsetPrimaryProspectAction,
+} from "@/lib/actions/prospects";
 import { useT } from "@/lib/i18n/provider";
-import type { Prospect } from "@/lib/types";
+import type { Member, Prospect } from "@/lib/types";
 
-export function ProspectActions({ prospect, batches, eventId }: { prospect: Prospect; batches: string[]; eventId: string }) {
+export function ProspectActions({
+  prospect, batches, members, eventId,
+}: { prospect: Prospect; batches: string[]; members: Member[]; eventId: string }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
+
+  function togglePrimary() {
+    start(async () => {
+      const res = prospect.is_primary
+        ? await unsetPrimaryProspectAction(prospect.id)
+        : await setPrimaryProspectAction(prospect.id);
+      if (res.ok) {
+        toast.success(prospect.is_primary ? t("Data utama dilepas") : t("Dijadikan data utama Ormawa Visit"));
+      } else toast.error(res.error);
+    });
+  }
 
   return (
     <>
@@ -39,13 +54,16 @@ export function ProspectActions({ prospect, batches, eventId }: { prospect: Pros
           <DropdownMenuItem onSelect={() => setEditOpen(true)}>
             <Pencil /> {t("Edit")}
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={togglePrimary}>
+            {prospect.is_primary ? <><StarOff /> {t("Lepas data utama")}</> : <><Star /> {t("Jadikan data utama")}</>}
+          </DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}>
             <Trash2 /> {t("Hapus")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProspectFormDialog mode="edit" prospect={prospect} batches={batches} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
+      <ProspectFormDialog mode="edit" prospect={prospect} batches={batches} members={members} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">

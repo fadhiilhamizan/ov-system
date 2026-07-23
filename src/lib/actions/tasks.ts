@@ -24,6 +24,9 @@ export interface TaskInput {
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const errMsg = (e: unknown) =>
+  e instanceof Error ? `Gagal menyimpan: ${e.message}` : "Gagal menyimpan tugas.";
+
 export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageTasks(user, input.division)) {
@@ -34,10 +37,14 @@ export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]
   const lv = parse(taskLinksSchema, links ?? []);
   if (!lv.ok) return lv;
 
-  const id = await createTask(v.data);
-  if (id && lv.data.length) {
-    const created = await getTask(id);
-    if (created) await syncTaskLinks(created, lv.data);
+  try {
+    const id = await createTask(v.data);
+    if (id && lv.data.length) {
+      const created = await getTask(id);
+      if (created) await syncTaskLinks(created, lv.data);
+    }
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
   }
   revalidatePath("/", "layout");
   return { ok: true };
@@ -66,8 +73,12 @@ export async function updateTaskAction(
   const allowed = onlyProgress ? can.editTaskProgress(user, task) : can.editTask(user, task);
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
 
-  await updateTask(idv.data, v.data);
-  if (lv && lv.ok) await syncTaskLinks({ ...task, ...v.data }, lv.data);
+  try {
+    await updateTask(idv.data, v.data);
+    if (lv && lv.ok) await syncTaskLinks({ ...task, ...v.data }, lv.data);
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
   revalidatePath("/", "layout");
   return { ok: true };
 }

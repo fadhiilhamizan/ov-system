@@ -1,12 +1,13 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Clock, Plus, Trash2, Loader2, StickyNote, Copy } from "lucide-react";
+import { Clock, Plus, Trash2, Loader2, StickyNote, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction } from "@/lib/actions/schedule";
 import { cn } from "@/lib/utils";
+import { isUrl } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, RundownItem } from "@/lib/types";
 
@@ -154,13 +155,9 @@ export function RundownView({
     [divisions],
   );
 
-  const variants = React.useMemo(() => {
-    const set = [...new Set(items.map((i) => i.variant))].sort();
-    return set.length ? set : ["A"];
-  }, [items]);
-  const [variant, setVariant] = React.useState(variants[0] ?? "A");
-  const activeVariant = variants.includes(variant) ? variant : variants[0] ?? "A";
-  const list = items.filter((i) => i.variant === activeVariant).sort((a, b) => a.no - b.no);
+  // Single rundown (versions were removed) — show every row, ordered by no.
+  const activeVariant = "A";
+  const list = React.useMemo(() => [...items].sort((a, b) => a.no - b.no), [items]);
 
   function save(id: string, patch: Partial<RundownItem>) {
     start(async () => {
@@ -205,36 +202,30 @@ export function RundownView({
   const th = "border-b border-border bg-muted/40 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
   const td = "border-b border-border/60 align-top";
 
+  // Frozen (sticky) leftmost columns: No, Waktu, Durasi, Kegiatan.
+  const FZ = "sticky !bg-card"; // opaque so scrolled content doesn't bleed through
+  const noL = { left: 0 } as const;
+  const timeL = { left: 40 } as const;
+  const durL = { left: 136 } as const;
+  const actL = { left: 200 } as const;
+  const lastFrozen = "shadow-[2px_0_4px_-1px_rgba(0,0,0,0.12)]"; // edge of the frozen block
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {variants.length > 1 ? (
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            {variants.map((vr) => (
-              <button
-                key={vr}
-                onClick={() => setVariant(vr)}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition",
-                  activeVariant === vr ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t("Versi")} {vr}
-              </button>
-            ))}
-          </div>
-        ) : <div />}
-        {pending && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3 animate-spin" /> {t("Menyimpan…")}</span>}
-      </div>
+      {pending && (
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" /> {t("Menyimpan…")}
+        </span>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
             <tr>
-              <th className={cn(th, "w-10 text-center")}>{t("No")}</th>
-              <th className={cn(th, "w-24")}>{t("Waktu")}</th>
-              <th className={cn(th, "w-16")}>{t("Durasi")}</th>
-              <th className={cn(th, "min-w-[180px]")}>{t("Kegiatan")}</th>
+              <th className={cn(th, FZ, "z-20 w-10 text-center")} style={noL}>{t("No")}</th>
+              <th className={cn(th, FZ, "z-20 w-24")} style={timeL}>{t("Waktu")}</th>
+              <th className={cn(th, FZ, "z-20 w-16")} style={durL}>{t("Durasi")}</th>
+              <th className={cn(th, FZ, lastFrozen, "z-20 min-w-[180px]")} style={actL}>{t("Kegiatan")}</th>
               <th className={cn(th, "min-w-[120px]")}>MC</th>
               <th className={cn(th, "min-w-[140px]")}>{t("Kebutuhan Operator")}</th>
               {cols.map((d) => (
@@ -252,19 +243,34 @@ export function RundownView({
           <tbody>
             {list.map((item) => (
               <tr key={item.id} className="hover:bg-muted/20">
-                <td className={cn(td, "text-center text-xs font-medium text-muted-foreground")}>{item.no}</td>
-                <td className={td}>
+                <td className={cn(td, FZ, "z-10 text-center text-xs font-medium text-muted-foreground")} style={noL}>{item.no}</td>
+                <td className={cn(td, FZ, "z-10")} style={timeL}>
                   <div className="flex flex-col">
                     <EditCell value={item.time_start} onSave={(v) => saveTime(item, "time_start", v)} placeholder="08.00" readOnly={!canManage} className="tabular-nums" />
                     <EditCell value={item.time_end} onSave={(v) => saveTime(item, "time_end", v)} placeholder="08.30" readOnly={!canManage} className="tabular-nums text-muted-foreground" />
                   </div>
                 </td>
-                <td className={cn(td, "px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} title={t("Otomatis dari waktu")}>
+                <td className={cn(td, FZ, "z-10 px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} style={durL} title={t("Otomatis dari waktu")}>
                   {item.duration || <span className="text-muted-foreground/50">–</span>}
                 </td>
-                <td className={td}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
+                <td className={cn(td, FZ, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
                 <td className={td}><EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline /></td>
-                <td className={td}><EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline /></td>
+                <td className={td}>
+                  <div className="flex items-start gap-1">
+                    <EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline className="flex-1" />
+                    {isUrl(item.operator ?? "") && (
+                      <a
+                        href={(item.operator ?? "").trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t("Buka tautan")}
+                        className="mt-1 shrink-0 rounded p-1 text-primary transition hover:bg-muted"
+                      >
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </td>
                 {cols.map((d) => (
                   <td key={d.key} className={td}>
                     <EditCell
@@ -303,7 +309,7 @@ export function RundownView({
             {list.length === 0 && (
               <tr>
                 <td colSpan={7 + cols.length + (canManage ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  {t("Belum ada baris rundown untuk versi ini.")}
+                  {t("Belum ada baris rundown.")}
                 </td>
               </tr>
             )}

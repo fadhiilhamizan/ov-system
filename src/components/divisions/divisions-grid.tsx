@@ -195,7 +195,7 @@ export function DivisionsGrid({
                 <Link href={`/divisions/${s.division.key}`} className="group block">
                   <div className="flex items-start justify-between gap-3 pr-16">
                     <div className="flex items-center gap-3">
-                      <span className="flex size-11 items-center justify-center rounded-xl text-sm font-bold text-white" style={{ backgroundColor: s.division.color }}>
+                      <span className="flex aspect-square size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white" style={{ backgroundColor: s.division.color }}>
                         {s.division.short}
                       </span>
                       <div>

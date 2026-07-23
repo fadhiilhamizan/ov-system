@@ -108,10 +108,14 @@ export interface Prospect {
   campus: string;
   location: string;
   pic: string;
+  mode: string; // 'offline' | 'online' | ''
   contact_status: string; // MENGHUBUNGI | DIHUBUNGI | ''
   their_response: string; // DITERIMA | DITOLAK | DITUNGGU | ''
   our_response: string; // TERIMA | TOLAK | TUNGGU | ''
   done: boolean;
+  /** The confirmed partner for this OV — the OV pulls its partner/campus/
+   *  location/mode from this prospect. At most one per event. */
+  is_primary: boolean;
   source: string;
 }
 

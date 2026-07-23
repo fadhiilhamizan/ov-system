@@ -7,6 +7,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.13.0",
+    date: "2026-07-20",
+    title: "Perbaikan Work Breakdown & fitur data utama Reach & Offer",
+    changes: [
+      "Perbaikan penting: ubah status tugas dan simpan hasil kini berfungsi kembali (kesalahan tersembunyi dari database/izin sekarang ditampilkan, bukan diam-diam gagal).",
+      "PIC tugas: dropdown kini hanya menampilkan anggota divisi tersebut, dikelompokkan Koordinator / Fungsionaris / Intern.",
+      "Reach & Offer: PIC dipilih dari anggota EA; Lokasi & Mode dipisah; prospek yang selesai tampil berbeda di tabel.",
+      "Reach & Offer: tandai satu prospek sebagai 'data utama' Ormawa Visit — data OV (partner, kampus, lokasi, mode) otomatis mengikuti, dan hanya boleh satu per OV.",
+      "Rundown: dijadikan satu versi (versi B dihapus); kolom No/Waktu/Durasi/Kegiatan dibekukan; tombol buka tautan pada Kebutuhan Operator.",
+      "Ormawa Visit baru: form tidak lagi mengisi otomatis detail yang masih rencana (partner, tipe, mode); menyusul dari prospek utama.",
+      "Panduan: 'Alur Singkat' dan 'Panduan Lengkap' dipisah dengan tombol.",
+      "Mode Demo: nama pengguna kini sesuai peran (Admin, Koordinator, dst.).",
+      "Perbaikan tampilan: kotak singkatan divisi kini selalu persegi.",
+    ],
+  },
+  {
     version: "1.12.0",
     date: "2026-07-20",
     title: "Hasil tugas terstruktur, sinkron Super Link, & panduan lengkap",

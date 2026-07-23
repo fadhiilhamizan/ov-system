@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent, getActiveDivision } from "@/lib/session";
-import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent } from "@/lib/data/repo";
+import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
@@ -17,12 +17,13 @@ export default async function TasksPage() {
     getActiveDivision(),
     getT(),
   ]);
-  const [tasks, divisions, events, members, taskLinks] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks, teams] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
+    getTeams(event.id),
   ]);
 
   return (
@@ -33,7 +34,7 @@ export default async function TasksPage() {
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <TaskLinksProvider value={taskLinks}>
-        <MembersProvider members={members}>
+        <MembersProvider members={members} teams={teams}>
         <TasksView
           tasks={tasks}
           divisions={divisions}

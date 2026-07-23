@@ -55,7 +55,7 @@ export const GUIDE: GuideSection[] = [
       en: "The single source of truth for every task: who does what, when it's due, and what the result was.",
     },
     steps: [
-      { id: "Klik 'Tambah Tugas', isi judul, divisi, PIC (dipilih dari daftar anggota), dan tanggal mulai/selesai.", en: "Click 'Add Task', then fill in the title, division, PIC (picked from the member list), and start/end dates." },
+      { id: "Klik 'Tambah Tugas', isi judul, divisi, PIC, dan tanggal mulai/selesai. Pilihan PIC hanya menampilkan anggota divisi itu, dikelompokkan Koordinator / Fungsionaris / Intern.", en: "Click 'Add Task', then fill in the title, division, PIC, and start/end dates. The PIC picker only shows that division's members, grouped by Coordinator / Staff / Intern." },
       { id: "Saring dengan kolom pencarian, 'Fokus divisi', dan filter Status di toolbar.", en: "Narrow things down with the search box, the division focus picker, and the Status filter in the toolbar." },
       { id: "Urutkan dengan mengklik judul kolom. Klik kolom kedua untuk menambah urutan bertingkat — angka kecil menunjukkan prioritas urutan. Klik ketiga menghapus kolom itu dari urutan.", en: "Sort by clicking a column header. Click a second column to add a tiebreaker — the small number shows sort priority. A third click removes that column from the sort." },
       { id: "Untuk mengisi hasil, buka tugasnya (menu titik tiga → Edit). Kolom Hasil di tabel hanya bisa dilihat, tidak bisa diketik langsung.", en: "To submit a result, open the task (three-dot menu → Edit). The Result column in the table is read-only." },
@@ -123,8 +123,10 @@ export const GUIDE: GuideSection[] = [
       { id: "Tiap divisi punya kolom sendiri; isi kegiatan divisi tersebut pada sesi itu.", en: "Each division has its own column; fill in what that division does during the segment." },
       { id: "Gunakan ikon catatan untuk menulis evaluasi cepat seperti 'Terlalu cepat 5 menit'.", en: "Use the note icon to jot a quick evaluation such as 'Ran 5 minutes early'." },
       { id: "Gunakan ikon salin untuk menduplikat baris yang mirip.", en: "Use the copy icon to duplicate a similar row." },
+      { id: "Bila kolom 'Kebutuhan Operator' diisi tautan, tombol buka tautan otomatis muncul di sampingnya.", en: "If the 'Operator Needs' cell contains a link, an open-link button appears next to it." },
     ],
     tips: [
+      { id: "Rundown kini satu versi saja (versi B dihapus). Kolom No, Waktu, Durasi, dan Kegiatan dibekukan agar tetap terlihat saat menggeser tabel ke samping.", en: "The rundown is now a single version (version B was removed). The No, Time, Duration, and Activity columns are frozen so they stay visible while scrolling sideways." },
       { id: "Divisi yang dicentang 'tidak diikutsertakan pada rundown' (mis. Sekretaris/Bendahara) tidak akan muncul sebagai kolom.", en: "Divisions marked 'excluded from rundown' (e.g. Secretary/Treasurer) won't appear as columns." },
     ],
     access: { id: "Admin & Koordinator bisa mengubah; peran lain hanya melihat.", en: "Admins & Coordinators can edit; other roles view only." },
@@ -151,10 +153,14 @@ export const GUIDE: GuideSection[] = [
       en: "Track which student associations you've contacted, how far the process got, and the outcome.",
     },
     steps: [
-      { id: "Tambah prospek dengan minimal nama ormawa atau kontak.", en: "Add a prospect with at least an organisation name or a contact." },
+      { id: "Tambah prospek dengan minimal nama ormawa atau kontak. PIC dipilih dari daftar anggota EA; Lokasi dan Mode (offline/online) kini terpisah.", en: "Add a prospect with at least an organisation name or a contact. PIC is picked from the EA member list; Location and Mode (offline/online) are now separate fields." },
       { id: "Perbarui status kontak dan respons untuk menggerakkan prospek di pipeline.", en: "Update the contact status and response to move the prospect along the pipeline." },
-      { id: "Ganti tampilan antara Tabel dan Pipeline lewat tombol di kanan atas.", en: "Switch between Table and Pipeline views with the toggle at the top right." },
-      { id: "Di tampilan Tabel, centang beberapa baris untuk menghapus massal, dan urutkan kolom secara bertingkat.", en: "In Table view, tick rows to delete in bulk, and stack column sorts." },
+      { id: "Tandai 'selesai/terkonfirmasi' bila sudah fix — barisnya akan tampil berbeda (hijau, dicoret) di tabel.", en: "Mark it 'done/confirmed' once settled — the row then looks distinct (green, struck through) in the table." },
+      { id: "Lewat menu titik tiga, pilih 'Jadikan data utama' untuk menetapkan prospek ini sebagai partner resmi Ormawa Visit. Detail OV (partner, kampus, lokasi, mode) otomatis mengikuti prospek ini.", en: "From the three-dot menu, choose 'Set as primary' to make this the OV's official partner. The OV's details (partner, campus, location, mode) then follow this prospect." },
+      { id: "Ganti tampilan antara Tabel dan Pipeline; di Tabel bisa hapus massal & sortir bertingkat.", en: "Switch between Table and Pipeline; the Table supports bulk delete & stacked sorting." },
+    ],
+    tips: [
+      { id: "Hanya boleh ada satu data utama per Ormawa Visit. Menetapkan yang baru otomatis melepas yang lama, dan mengubah data prospek utama ikut memperbarui data Ormawa Visit.", en: "There can be only one primary per Ormawa Visit. Setting a new one clears the old; editing the primary prospect also updates the OV's data." },
     ],
     access: { id: "Admin, Koordinator, dan Staff bisa mengubah; Intern & Tamu hanya melihat.", en: "Admins, Coordinators, and Staff can edit; Interns & Guests view only." },
   },

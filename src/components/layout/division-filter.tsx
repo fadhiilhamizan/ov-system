@@ -28,7 +28,7 @@ export function DivisionFilter({ divisions, active }: { divisions: Division[]; a
         )}
       >
         <span
-          className="flex size-6 items-center justify-center rounded-md text-white"
+          className="flex aspect-square size-6 shrink-0 items-center justify-center rounded-md text-white"
           style={{ backgroundColor: current?.color ?? "var(--muted-foreground)" }}
         >
           {current ? (

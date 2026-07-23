@@ -23,17 +23,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createProspectAction, updateProspectAction } from "@/lib/actions/prospects";
+import { MemberPicker } from "@/components/members/member-picker";
 import { useT } from "@/lib/i18n/provider";
-import type { Prospect } from "@/lib/types";
+import type { Member, Prospect } from "@/lib/types";
 
 const CONTACT = ["none", "MENGHUBUNGI", "DIHUBUNGI"];
 const THEIRS = ["none", "DITUNGGU", "DITERIMA", "DITOLAK"];
 const OURS = ["none", "TUNGGU", "TERIMA", "TOLAK"];
+const PROSPECT_MODE = "__unset__";
 
 export function ProspectFormDialog({
   mode,
   prospect,
   batches,
+  members,
   eventId,
   open,
   onOpenChange,
@@ -42,6 +45,7 @@ export function ProspectFormDialog({
   mode: "create" | "edit";
   prospect?: Prospect;
   batches: string[];
+  members: Member[];
   eventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -60,6 +64,7 @@ export function ProspectFormDialog({
     contact: prospect?.contact ?? "",
     pic: prospect?.pic ?? "",
     location: prospect?.location ?? "",
+    prospectMode: prospect?.mode || PROSPECT_MODE,
     contact_status: prospect?.contact_status || "none",
     their_response: prospect?.their_response || "none",
     our_response: prospect?.our_response || "none",
@@ -75,6 +80,7 @@ export function ProspectFormDialog({
         contact: prospect.contact,
         pic: prospect.pic,
         location: prospect.location,
+        prospectMode: prospect.mode || PROSPECT_MODE,
         contact_status: prospect.contact_status || "none",
         their_response: prospect.their_response || "none",
         our_response: prospect.our_response || "none",
@@ -85,9 +91,11 @@ export function ProspectFormDialog({
 
   function submit() {
     start(async () => {
+      const { prospectMode, ...rest } = f;
       const payload = {
-        ...f,
+        ...rest,
         event_id: prospect?.event_id ?? eventId,
+        mode: prospectMode === PROSPECT_MODE ? "" : prospectMode,
         contact_status: f.contact_status === "none" ? "" : f.contact_status,
         their_response: f.their_response === "none" ? "" : f.their_response,
         our_response: f.our_response === "none" ? "" : f.our_response,
@@ -131,11 +139,16 @@ export function ProspectFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>{t("PIC (dari kita)")}</Label>
-              <Input value={f.pic} onChange={(e) => setF({ ...f, pic: e.target.value })} placeholder={t("Nama PIC")} />
+              <MemberPicker
+                members={members}
+                value={f.pic}
+                onChange={(v) => setF({ ...f, pic: v })}
+                placeholder={t("Pilih anggota EA")}
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-1.5">
               <Label>{t("Batch / Kampanye")}</Label>
               <Input value={f.batch} onChange={(e) => setF({ ...f, batch: e.target.value })} list="batches" />
@@ -146,8 +159,19 @@ export function ProspectFormDialog({
               </datalist>
             </div>
             <div className="grid gap-1.5">
-              <Label>{t("Lokasi / Mode")}</Label>
-              <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder={t("Offline / Online")} />
+              <Label>{t("Lokasi")}</Label>
+              <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="Gedung / kota…" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>{t("Mode")}</Label>
+              <Select value={f.prospectMode} onValueChange={(v) => setF({ ...f, prospectMode: v })}>
+                <SelectTrigger><SelectValue placeholder={t("Belum ditentukan")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PROSPECT_MODE}>{t("Belum ditentukan")}</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

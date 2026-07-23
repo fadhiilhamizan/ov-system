@@ -46,7 +46,7 @@ export default async function DivisionDetailPage({
         title={
           <span className="inline-flex items-center gap-2.5">
             <span
-              className="flex size-8 items-center justify-center rounded-lg text-xs font-bold text-white"
+              className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
               style={{ backgroundColor: division.color }}
             >
               {division.short}
@@ -68,7 +68,7 @@ export default async function DivisionDetailPage({
       />
 
       <TaskLinksProvider value={taskLinks}>
-        <MembersProvider members={members}>
+        <MembersProvider members={members} teams={teams}>
         <TasksView
           tasks={tasks}
           divisions={divisions}

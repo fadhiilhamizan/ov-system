@@ -26,8 +26,8 @@ import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
-import { MemberPicker } from "@/components/members/member-picker";
-import { useMembers } from "@/components/members/members-context";
+import { MemberPicker, type PickerRole } from "@/components/members/member-picker";
+import { useMembers, useTeams } from "@/components/members/members-context";
 import { useTaskLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
@@ -59,6 +59,7 @@ export function TaskFormDialog({
 }) {
   const t = useT();
   const members = useMembers();
+  const teams = useTeams();
   const [internalOpen, setInternalOpen] = React.useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -80,6 +81,30 @@ export function TaskFormDialog({
 
   const existingLinks = useTaskLinks(task?.id);
   const [links, setLinks] = React.useState<DraftLink[]>(() => existingLinks.map(toDraft));
+
+  // PIC picker: only this division's members, grouped by role (coordinator from
+  // the division's team, else the member's fungsionaris/intern type).
+  const divisionMembers = React.useMemo(
+    () => members.filter((m) => m.division === form.division),
+    [members, form.division],
+  );
+  const coordinatorNames = React.useMemo(() => {
+    const team = teams.find((tm) => tm.division === form.division);
+    return new Set(
+      (team?.coordinator ?? "")
+        .split(/\s{2,}|,|·/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    );
+  }, [teams, form.division]);
+  const roleOf = React.useCallback(
+    (m: { nickname: string; name: string; type: "fungsionaris" | "intern" }): PickerRole => {
+      const nn = (m.nickname || m.name).toLowerCase();
+      if (coordinatorNames.has(nn) || coordinatorNames.has(m.name.toLowerCase())) return "coordinator";
+      return m.type;
+    },
+    [coordinatorNames],
+  );
 
   React.useEffect(() => {
     if (isOpen && task) {
@@ -117,16 +142,24 @@ export function TaskFormDialog({
       .map(({ id, url, label, in_super_link }) => ({ id, url: url.trim(), label, in_super_link }));
 
     start(async () => {
-      const payload = {
+      const status = markDone ? ("done" as const) : form.status;
+      const fullPayload = {
         ...form,
-        ...(markDone ? { status: "done" as const } : {}),
+        status,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
       };
+      // When the user only has progress access (staff/intern on their task),
+      // send just status+result so the server keeps them in the "progress only"
+      // permission lane — sending every field would require full edit rights.
       const res =
         mode === "create"
-          ? await createTaskAction(payload, payloadLinks)
-          : await updateTaskAction(task!.id, payload, payloadLinks);
+          ? await createTaskAction(fullPayload, payloadLinks)
+          : await updateTaskAction(
+              task!.id,
+              progressOnly ? { status, result: form.result } : fullPayload,
+              payloadLinks,
+            );
       if (res.ok) {
         toast.success(
           markDone
@@ -215,10 +248,11 @@ export function TaskFormDialog({
               <div className="grid gap-1.5">
                 <Label>{t("PIC / Penanggung Jawab")}</Label>
                 <MemberPicker
-                  members={members}
+                  members={divisionMembers}
                   value={form.pic}
                   onChange={(v) => setForm({ ...form, pic: v })}
-                  placeholder={t("Pilih dari anggota (opsional)")}
+                  placeholder={t("Pilih dari anggota divisi ini")}
+                  roleOf={roleOf}
                 />
               </div>
 

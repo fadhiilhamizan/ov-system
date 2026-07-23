@@ -2,7 +2,10 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { createProspect, deleteProspect, updateProspect, bulkDeleteProspects } from "@/lib/data/repo";
+import {
+  createProspect, deleteProspect, updateProspect, bulkDeleteProspects,
+  getProspects, setPrimaryProspect, unsetPrimaryProspect, syncEventFromProspect,
+} from "@/lib/data/repo";
 import type { Prospect } from "@/lib/types";
 import { prospectSchema, prospectUpdateSchema, idSchema, parse } from "./schemas";
 
@@ -32,6 +35,30 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
   const v = parse(prospectUpdateSchema, patch);
   if (!v.ok) return v;
   await updateProspect(idv.data, v.data);
+  // Editing the primary prospect re-syncs the OV's partner/campus/location/mode.
+  const updated = (await getProspects()).find((p) => p.id === idv.data);
+  if (updated?.is_primary && updated.event_id) await syncEventFromProspect(updated.event_id, updated);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Mark a prospect as this OV's primary (confirmed partner) and copy its data
+ *  onto the OV. Clears any previous primary — only one per OV. */
+export async function setPrimaryProspectAction(id: string): Promise<Result> {
+  const g = await guard();
+  if (!g.ok) return g;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await setPrimaryProspect(idv.data);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+export async function unsetPrimaryProspectAction(id: string): Promise<Result> {
+  const g = await guard();
+  if (!g.ok) return g;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  await unsetPrimaryProspect(idv.data);
   revalidatePath("/", "layout");
   return { ok: true };
 }

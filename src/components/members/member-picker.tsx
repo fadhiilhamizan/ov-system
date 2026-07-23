@@ -12,16 +12,21 @@ import type { Member } from "@/lib/types";
 // Stores a comma-joined string of display names (nickname || name) so it is a
 // drop-in replacement for the old free-text PIC inputs. Free-text names that
 // don't match a known member are preserved as extra chips (no data loss).
+export type PickerRole = "coordinator" | "fungsionaris" | "intern";
+
 export function MemberPicker({
   members,
   value,
   onChange,
   placeholder,
+  roleOf,
 }: {
   members: Member[];
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  /** When provided, the list is grouped under role headers. */
+  roleOf?: (m: Member) => PickerRole;
 }) {
   const t = useT();
   const [query, setQuery] = React.useState("");
@@ -38,6 +43,31 @@ export function MemberPicker({
     if (!q) return members;
     return members.filter((m) => `${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q));
   }, [members, query]);
+
+  const ROLE_LABEL: Record<PickerRole, string> = {
+    coordinator: t("Koordinator"),
+    fungsionaris: t("Fungsionaris"),
+    intern: "Intern",
+  };
+  const groups = React.useMemo(() => {
+    if (!roleOf) return null;
+    const order: PickerRole[] = ["coordinator", "fungsionaris", "intern"];
+    return order
+      .map((role) => ({ role, items: filtered.filter((m) => roleOf(m) === role) }))
+      .filter((g) => g.items.length);
+  }, [filtered, roleOf]);
+
+  const Row = (m: Member) => (
+    <label
+      key={m.id}
+      className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+    >
+      <Checkbox checked={isSelected(m)} onCheckedChange={() => toggle(m)} />
+      <Avatar name={label(m)} size={22} />
+      <span className="flex-1 truncate">{label(m)}</span>
+      {isSelected(m) && <Check className="size-3.5 text-primary" />}
+    </label>
+  );
 
   function toggle(m: Member) {
     const next = isSelected(m)
@@ -80,18 +110,17 @@ export function MemberPicker({
               <p className="p-2 text-xs text-muted-foreground">{t("Belum ada anggota untuk Ormawa Visit ini.")}</p>
             ) : filtered.length === 0 ? (
               <p className="p-2 text-xs text-muted-foreground">{t("Tidak ada anggota yang cocok.")}</p>
-            ) : (
-              filtered.map((m) => (
-                <label
-                  key={m.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
-                >
-                  <Checkbox checked={isSelected(m)} onCheckedChange={() => toggle(m)} />
-                  <Avatar name={label(m)} size={22} />
-                  <span className="flex-1 truncate">{label(m)}</span>
-                  {isSelected(m) && <Check className="size-3.5 text-primary" />}
-                </label>
+            ) : groups ? (
+              groups.map((g) => (
+                <div key={g.role} className="mb-1 last:mb-0">
+                  <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {ROLE_LABEL[g.role]}
+                  </p>
+                  {g.items.map(Row)}
+                </div>
               ))
+            ) : (
+              filtered.map(Row)
             )}
           </div>
         </PopoverContent>

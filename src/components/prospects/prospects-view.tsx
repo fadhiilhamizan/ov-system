@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,7 +32,7 @@ import { PIPELINE_STAGES, prospectStage } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
-import type { AppUser, Prospect } from "@/lib/types";
+import type { AppUser, Member, Prospect } from "@/lib/types";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
 
@@ -54,10 +54,12 @@ function StageBadge({ p }: { p: Prospect }) {
 
 export function ProspectsView({
   prospects,
+  members,
   user,
   activeEventId,
 }: {
   prospects: Prospect[];
+  members: Member[];
   user: AppUser;
   activeEventId: string;
 }) {
@@ -182,6 +184,7 @@ export function ProspectsView({
             <ProspectFormDialog
               mode="create"
               batches={batches}
+              members={members}
               eventId={activeEventId}
               trigger={
                 <DialogTrigger asChild>
@@ -235,13 +238,29 @@ export function ProspectsView({
               </TableHeader>
               <TableBody>
                 {rows.map((p) => (
-                  <TableRow key={p.id} data-state={sel.selected.has(p.id) ? "selected" : undefined}>
+                  <TableRow
+                    key={p.id}
+                    data-state={sel.selected.has(p.id) ? "selected" : undefined}
+                    className={cn(p.done && "bg-emerald-50/40 dark:bg-emerald-500/[0.06]")}
+                  >
                     {manage && (
                       <TableCell>
                         <Checkbox checked={sel.selected.has(p.id)} onCheckedChange={() => sel.toggle(p.id)} aria-label={t("Pilih")} />
                       </TableCell>
                     )}
-                    <TableCell className="font-medium">{p.org_name || <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="font-medium">
+                      <span className="inline-flex items-center gap-1.5">
+                        {p.is_primary && (
+                          <span title={t("Data utama Ormawa Visit")} className="text-amber-500">
+                            <Star className="size-3.5 fill-amber-400" />
+                          </span>
+                        )}
+                        {p.done && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+                        <span className={cn(p.done && "text-muted-foreground line-through decoration-muted-foreground/40")}>
+                          {p.org_name || <span className="text-muted-foreground no-underline">-</span>}
+                        </span>
+                      </span>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.campus || "-"}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
                     <TableCell className="text-sm">{p.pic || "-"}</TableCell>
@@ -249,7 +268,7 @@ export function ProspectsView({
                     <TableCell className="text-xs text-muted-foreground">{p.batch}</TableCell>
                     {manage && (
                       <TableCell>
-                        <ProspectActions prospect={p} batches={batches} eventId={activeEventId} />
+                        <ProspectActions prospect={p} batches={batches} members={members} eventId={activeEventId} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -276,7 +295,7 @@ export function ProspectsView({
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium">{p.org_name || "-"}</p>
-                        {manage && <ProspectActions prospect={p} batches={batches} eventId={activeEventId} />}
+                        {manage && <ProspectActions prospect={p} batches={batches} members={members} eventId={activeEventId} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}
                       <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">

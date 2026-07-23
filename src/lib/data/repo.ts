@@ -151,11 +151,15 @@ export async function createTask(
 }
 export async function updateTask(id: string, patch: Partial<Task>) {
   if (!USE_SUPABASE) return local.updateTask(id, patch);
-  await (await sb()).from("tasks").update(patch).eq("id", id);
+  // Surface DB/RLS errors instead of swallowing them — a silently-ignored
+  // error here is why "changing status did nothing" with no feedback.
+  const { error } = await (await sb()).from("tasks").update(patch).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 export async function deleteTask(id: string) {
   if (!USE_SUPABASE) return local.deleteTask(id);
-  await (await sb()).from("tasks").delete().eq("id", id);
+  const { error } = await (await sb()).from("tasks").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
   if (!ids.length) return;
@@ -163,7 +167,8 @@ export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
     for (const id of ids) local.updateTask(id, patch);
     return;
   }
-  await (await sb()).from("tasks").update(patch).in("id", ids);
+  const { error } = await (await sb()).from("tasks").update(patch).in("id", ids);
+  if (error) throw new Error(error.message);
 }
 export async function bulkDeleteTasks(ids: string[]) {
   if (!ids.length) return;
@@ -267,10 +272,39 @@ export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> 
   const { data } = await (await sb()).from("prospects").select("*");
   const list = coalesce((data ?? []) as Prospect[], [
     "batch", "no", "date_text", "month", "contact", "org_name", "campus",
-    "location", "pic", "contact_status", "their_response", "our_response", "source",
+    "location", "mode", "pic", "contact_status", "their_response", "our_response", "source",
   ]);
   return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
 });
+
+/** Copy a primary prospect's identity onto its Ormawa Visit. */
+export async function syncEventFromProspect(eventId: string, p: Prospect) {
+  const patch: Partial<OVEvent> = {
+    partner: p.org_name || "",
+    campus: p.campus || "",
+    location: p.location || "",
+  };
+  if (p.mode === "online" || p.mode === "offline") patch.mode = p.mode;
+  await updateEvent(eventId, patch);
+}
+
+/** Make one prospect the event's primary (clearing any other), then sync the OV. */
+export async function setPrimaryProspect(prospectId: string) {
+  if (!USE_SUPABASE) return local.setPrimaryProspect(prospectId);
+  const client = await sb();
+  const { data: p } = await client.from("prospects").select("*").eq("id", prospectId).maybeSingle();
+  if (!p || !p.event_id) return;
+  // Clear the current primary FIRST (unique index forbids two at once).
+  await client.from("prospects").update({ is_primary: false }).eq("event_id", p.event_id).eq("is_primary", true);
+  await client.from("prospects").update({ is_primary: true }).eq("id", prospectId);
+  await syncEventFromProspect(p.event_id, { ...(p as Prospect), is_primary: true });
+}
+
+/** Clear the primary flag on a prospect (leaves the OV data as-is). */
+export async function unsetPrimaryProspect(prospectId: string) {
+  if (!USE_SUPABASE) return local.unsetPrimaryProspect(prospectId);
+  await (await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId);
+}
 export async function createProspect(input: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.createProspect(input);
   await (await sb()).from("prospects").insert(stripId(input));

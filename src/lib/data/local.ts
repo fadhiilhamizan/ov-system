@@ -134,11 +134,13 @@ export function createProspect(input: Partial<Prospect>): Prospect {
     org_name: input.org_name ?? "",
     campus: input.campus ?? "",
     location: input.location ?? "",
+    mode: input.mode ?? "",
     pic: input.pic ?? "",
     contact_status: input.contact_status ?? "",
     their_response: input.their_response ?? "",
     our_response: input.our_response ?? "",
     done: input.done ?? false,
+    is_primary: input.is_primary ?? false,
     source: input.source ?? "manual",
   };
   mutate((db) => db.prospects.unshift(p));
@@ -150,6 +152,27 @@ export function updateProspect(id: string, patch: Partial<Prospect>) {
     if (!p) return null;
     Object.assign(p, patch);
     return p;
+  });
+}
+export function setPrimaryProspect(prospectId: string) {
+  const p = getDb().prospects.find((x) => x.id === prospectId);
+  if (!p || !p.event_id) return;
+  mutate((db) => {
+    for (const x of db.prospects) if (x.event_id === p.event_id) x.is_primary = x.id === prospectId;
+  });
+  const ev = getDb().events.find((e) => e.id === p.event_id);
+  if (ev) {
+    Object.assign(ev, {
+      partner: p.org_name || "", campus: p.campus || "", location: p.location || "",
+      ...(p.mode === "online" || p.mode === "offline" ? { mode: p.mode } : {}),
+    });
+    mutate(() => {});
+  }
+}
+export function unsetPrimaryProspect(prospectId: string) {
+  mutate((db) => {
+    const p = db.prospects.find((x) => x.id === prospectId);
+    if (p) p.is_primary = false;
   });
 }
 export function deleteProspect(id: string) {

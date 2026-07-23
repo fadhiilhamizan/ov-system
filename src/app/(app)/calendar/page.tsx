@@ -1,6 +1,6 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
-import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent } from "@/lib/data/repo";
+import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
@@ -12,12 +12,13 @@ export const metadata = { title: "Kalender" };
 
 export default async function CalendarPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
-  const [tasks, divisions, events, members, taskLinks] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks, teams] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
+    getTeams(event.id),
   ]);
 
   const dated = tasks.filter((t) => t.end_date);
@@ -34,7 +35,7 @@ export default async function CalendarPage() {
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <TaskLinksProvider value={taskLinks}>
-        <MembersProvider members={members}>
+        <MembersProvider members={members} teams={teams}>
         <CalendarView
           tasks={tasks}
           divisions={divisions}
