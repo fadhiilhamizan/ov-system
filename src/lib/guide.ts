@@ -66,6 +66,7 @@ export const GUIDE: GuideSection[] = [
     ],
     tips: [
       { id: "Tautan hasil tidak akan terduplikat di Super Link walau tugas disimpan berkali-kali; mengubah atau menghapus tautan di tugas juga otomatis memperbarui Super Link.", en: "Result links never duplicate in Super Link no matter how many times you save; editing or removing a link on the task updates Super Link automatically." },
+      { id: "Tugas yang lewat tenggat dan belum selesai otomatis berstatus 'Overtime' — tanpa perlu diubah manual.", en: "A task past its deadline and not yet done automatically shows as 'Overtime' — no manual change needed." },
       { id: "Nomor tugas terisi otomatis per divisi — tidak perlu diketik manual.", en: "Task numbers are assigned automatically per division — no need to type them." },
       { id: "Tampilan bisa diganti antara Tabel, Kanban, dan Timeline.", en: "You can switch between Table, Kanban, and Timeline views." },
     ],

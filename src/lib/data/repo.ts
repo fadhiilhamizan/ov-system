@@ -3,6 +3,7 @@ import { cache } from "react";
 import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
+import { effectiveStatus } from "../format";
 import { uid } from "../utils";
 import type {
   BudgetItem,
@@ -32,6 +33,14 @@ import type {
 const USE_SUPABASE =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL || !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_URL;
 const sb = () => createClient();
+
+/** A task past its deadline and not yet done is automatically "overtime".
+ *  Derived at read time so it's always up to date without a cron job; the
+ *  stored status is only a floor (todo/ongoing get promoted, done is left). */
+function withOvertime(t: Task): Task {
+  const eff = effectiveStatus(t.status, t.end_date);
+  return eff === t.status ? t : { ...t, status: eff as TaskStatus };
+}
 
 /** Supabase returns NULL for empty text columns; coerce to "" so the UI
  *  (which calls .trim()/.toLowerCase()/.split()) never crashes. */
@@ -116,14 +125,15 @@ export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> =
   if (filter.division) q = q.eq("division", filter.division);
   if (filter.status) q = q.eq("status", filter.status);
   const { data } = await q;
-  return coalesce((data ?? []) as Task[], [
+  const rows = coalesce((data ?? []) as Task[], [
     "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
   ]);
+  return rows.map(withOvertime);
 });
 export const getTask = cache(async (id: string): Promise<Task | null> => {
   if (!USE_SUPABASE) return local.getTask(id);
   const { data } = await (await sb()).from("tasks").select("*").eq("id", id).maybeSingle();
-  return (data as Task) ?? null;
+  return data ? withOvertime(data as Task) : null;
 });
 export async function createTask(
   input: Partial<Task> & { event_id: string; division: Task["division"]; title: string },

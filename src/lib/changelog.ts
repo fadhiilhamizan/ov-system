@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.14.0",
+    date: "2026-07-20",
+    title: "Perbaikan Mode Demo, status otomatis Overtime, & rundown",
+    changes: [
+      "Mode Demo: ubah status & simpan hasil tugas kini berfungsi (skrip akses demo diperbarui agar bisa menulis, bukan hanya membaca).",
+      "Status tugas otomatis menjadi 'Overtime' bila melewati tenggat dan belum selesai — pengecekan berlaku setiap kali data dibuka.",
+      "Rundown: kolom beku (No/Waktu/Durasi/Kegiatan) tidak lagi tampak tembus pandang saat tabel digeser.",
+      "Reset data Mode Demo kini benar-benar mengembalikan SEMUA data, termasuk Ormawa Visit yang kamu buat.",
+      "Aksi massal status tugas kini menampilkan pesan bila gagal, tidak diam-diam.",
+      "Staff & Intern dapat memperbarui status dan mengisi hasil pada tugas divisinya (perbaikan izin database).",
+    ],
+  },
+  {
     version: "1.13.0",
     date: "2026-07-20",
     title: "Perbaikan Work Breakdown & fitur data utama Reach & Offer",

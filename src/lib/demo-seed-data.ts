@@ -2,6 +2,24 @@
 // Kept in sync with scripts/gen-demo-seed.mjs (same mockup).
 export const DEMO_EVENT_ID = "demo-ov";
 
+/** The single demo Ormawa Visit. Reset re-creates this and removes any others. */
+export const DEMO_EVENT = {
+  id: DEMO_EVENT_ID,
+  code: "DEMO",
+  title: "Ormawa Visit Demo",
+  partner: "Himpunan Demo",
+  campus: "Universitas Contoh",
+  type: "external",
+  mode: "offline",
+  cabinet: "Sandbox",
+  event_date: "2026-09-20",
+  plan_start: "2026-08-01",
+  plan_end: "2026-09-19",
+  location: "Ruang Demo, Gedung Contoh",
+  status: "active",
+  order: 1,
+} as const;
+
 export const demoSeed = {
   // [key, name, short, color, order, exclude_from_rundown]
   divisions: [

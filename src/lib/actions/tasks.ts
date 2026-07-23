@@ -101,7 +101,11 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
   const allowed = tasks
     .filter((t): t is Task => !!t && can.editTaskProgress(user, t))
     .map((t) => t.id);
-  if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
+  try {
+    if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
   revalidatePath("/", "layout");
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
@@ -112,8 +116,12 @@ export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> 
   const allowed = tasks
     .filter((t): t is Task => !!t && can.manageTasks(user, t.division))
     .map((t) => t.id);
-  for (const id of allowed) await purgeTaskLinks(id);
-  if (allowed.length) await bulkDeleteTasks(allowed);
+  try {
+    for (const id of allowed) await purgeTaskLinks(id);
+    if (allowed.length) await bulkDeleteTasks(allowed);
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
   revalidatePath("/", "layout");
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }

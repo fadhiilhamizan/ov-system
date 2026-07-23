@@ -49,6 +49,24 @@ export function isUrl(s: string | null | undefined) {
   return !!s && /^https?:\/\//i.test(s.trim());
 }
 
+/** Today's local date as YYYY-MM-DD (matches how task dates are stored). */
+export function todayYmd(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/** A task whose deadline has passed and isn't done is "overtime". Returns the
+ *  effective status; pure so it can be derived at read time (no cron needed). */
+export function effectiveStatus(
+  status: string,
+  endDate: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (status !== "done" && status !== "overtime" && endDate && endDate < todayYmd(now)) {
+    return "overtime";
+  }
+  return status;
+}
+
 export function pct(part: number, whole: number) {
   if (!whole) return 0;
   return Math.round((part / whole) * 1000) / 10;

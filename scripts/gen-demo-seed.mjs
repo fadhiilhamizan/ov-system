@@ -182,16 +182,22 @@ writeFileSync(join(outDir, "demo-seed.sql"), out, "utf8");
 
 // --- open access: the demo uses the anon key with no login, so disable RLS ---
 const tablesForRls = [
-  "divisions", "events", "members", "tasks", "prospects", "links",
+  "divisions", "events", "members", "tasks", "task_links", "prospects", "links",
   "budget_plans", "budget_items", "rundown", "job_harih", "faqs", "teams",
 ];
 let openSql = `-- ============================================================
 -- Demo project ONLY: the demo runs with the anon key and NO login, so the
 -- public anon role must be able to read AND write. This disables Row Level
--- Security on the app tables. NEVER run this on the production project.
+-- Security on the app tables AND grants the anon role write access (Supabase
+-- grants anon SELECT by default, so without this UPDATE/INSERT would fail with
+-- "permission denied for table …"). NEVER run this on the production project.
 -- ============================================================
 `;
 for (const t of tablesForRls) openSql += `alter table ${t} disable row level security;\n`;
+// Grants: without these, disabling RLS still leaves the anon role read-only.
+openSql += `\ngrant usage on schema public to anon;\n`;
+openSql += `grant select, insert, update, delete on all tables in schema public to anon;\n`;
+openSql += `alter default privileges in schema public grant select, insert, update, delete on tables to anon;\n`;
 writeFileSync(join(outDir, "demo-open-access.sql"), openSql, "utf8");
 
 console.log("Wrote supabase/demo/demo-seed.sql and supabase/demo/demo-open-access.sql");

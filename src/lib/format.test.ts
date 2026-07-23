@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct, angkatanFromNrp } from "./format";
+import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct, angkatanFromNrp, effectiveStatus } from "./format";
 
 describe("formatRupiah", () => {
   it("formats Indonesian thousands", () => {
@@ -70,6 +70,25 @@ describe("pct", () => {
   });
   it("guards against divide-by-zero", () => {
     expect(pct(5, 0)).toBe(0);
+  });
+});
+
+describe("effectiveStatus (auto overtime)", () => {
+  const NOW = new Date("2026-06-15T09:00:00");
+  it("promotes an overdue todo/ongoing task to overtime", () => {
+    expect(effectiveStatus("todo", "2026-06-14", NOW)).toBe("overtime");
+    expect(effectiveStatus("ongoing", "2026-01-01", NOW)).toBe("overtime");
+  });
+  it("leaves done tasks alone even if overdue", () => {
+    expect(effectiveStatus("done", "2020-01-01", NOW)).toBe("done");
+  });
+  it("does not touch tasks due today or in the future", () => {
+    expect(effectiveStatus("todo", "2026-06-15", NOW)).toBe("todo"); // due today
+    expect(effectiveStatus("ongoing", "2026-12-31", NOW)).toBe("ongoing");
+  });
+  it("is a no-op when there is no deadline", () => {
+    expect(effectiveStatus("todo", null, NOW)).toBe("todo");
+    expect(effectiveStatus("todo", "", NOW)).toBe("todo");
   });
 });
 

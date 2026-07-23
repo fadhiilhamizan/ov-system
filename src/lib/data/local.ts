@@ -2,6 +2,7 @@ import "server-only";
 import { getDb, mutate } from "./store";
 import { uid } from "../utils";
 import { prospectStage } from "../constants";
+import { effectiveStatus } from "../format";
 import type {
   BudgetPlan,
   Division,
@@ -61,8 +62,13 @@ export interface TaskFilter {
   pic?: string;
   q?: string;
 }
+/** Overdue + not done → shown as overtime (mirrors repo.withOvertime). */
+function withOvertime(t: Task): Task {
+  const eff = effectiveStatus(t.status, t.end_date);
+  return eff === t.status ? t : { ...t, status: eff as Task["status"] };
+}
 export function getTasks(filter: TaskFilter = {}): Task[] {
-  let list = getDb().tasks;
+  let list = getDb().tasks.map(withOvertime);
   if (filter.event_id) list = list.filter((t) => t.event_id === filter.event_id);
   if (filter.division) list = list.filter((t) => t.division === filter.division);
   if (filter.status) list = list.filter((t) => t.status === filter.status);
@@ -80,7 +86,8 @@ export function getTasks(filter: TaskFilter = {}): Task[] {
   return list;
 }
 export function getTask(id: string) {
-  return getDb().tasks.find((t) => t.id === id) ?? null;
+  const t = getDb().tasks.find((x) => x.id === id);
+  return t ? withOvertime(t) : null;
 }
 export function createTask(input: Partial<Task> & { event_id: string; division: Task["division"]; title: string }): Task {
   // Auto-number: next sequential "no" within this event + division.

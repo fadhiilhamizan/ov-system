@@ -218,8 +218,10 @@ export function RundownView({
         </span>
       )}
 
+      {/* border-separate (not collapse): sticky/frozen columns don't paint their
+          background reliably under border-collapse, which made them look hollow. */}
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
               <th className={cn(th, FZ, "z-20 w-10 text-center")} style={noL}>{t("No")}</th>

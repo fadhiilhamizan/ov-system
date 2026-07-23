@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
-import { DEMO_EVENT_ID as EV, demoSeed, angkatanFromNrpNum } from "@/lib/demo-seed-data";
+import { DEMO_EVENT_ID as EV, DEMO_EVENT, demoSeed, angkatanFromNrpNum } from "@/lib/demo-seed-data";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -11,7 +11,8 @@ type Result = { ok: true } | { ok: false; error: string };
  * Reset the DEMO sandbox to its initial mockup data. Gated to demo mode — the
  * server Supabase client only points at the demo project when the ov_demo
  * cookie is set, and we double-check `demoActive` so this can never touch
- * production. The event row itself is kept; all its data is wiped and re-seeded.
+ * production. Everything — including any OVs the user created — is wiped, then
+ * the single demo Ormawa Visit and its data are re-created.
  */
 export async function resetDemoDataAction(): Promise<Result> {
   const store = await cookies();
@@ -20,7 +21,8 @@ export async function resetDemoDataAction(): Promise<Result> {
   }
   const sb = await createClient();
 
-  // 1) Wipe every data table (demo DB holds only demo data). Keep the event row.
+  // 1) Wipe every data table (demo DB holds only demo data). task_links go with
+  //    tasks via ON DELETE CASCADE.
   const tables = [
     "teams", "job_harih", "rundown", "budget_items", "budget_plans",
     "links", "prospects", "tasks", "members", "divisions",
@@ -28,6 +30,14 @@ export async function resetDemoDataAction(): Promise<Result> {
   for (const tbl of tables) {
     const { error } = await sb.from(tbl).delete().not("id", "is", null);
     if (error) return { ok: false, error: `Gagal mengosongkan ${tbl}: ${error.message}` };
+  }
+  // Also remove any OVs the user created; keep only the demo edition, and
+  // upsert it back so the re-seed below always has an event to attach to.
+  {
+    const { error } = await sb.from("events").delete().neq("id", EV);
+    if (error) return { ok: false, error: `Gagal mengosongkan events: ${error.message}` };
+    const { error: upErr } = await sb.from("events").upsert(DEMO_EVENT, { onConflict: "id" });
+    if (upErr) return { ok: false, error: `Gagal menyiapkan edisi demo: ${upErr.message}` };
   }
 
   // 2) Re-seed.
