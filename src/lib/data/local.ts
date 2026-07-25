@@ -12,6 +12,7 @@ import type {
   Member,
   OVEvent,
   Prospect,
+  RoleRequest,
   RundownItem,
   Task,
   TaskLink,
@@ -674,5 +675,35 @@ export function reorderJobs(orderedIds: string[]) {
       const j = db.jobHariH.find((x) => x.id === id);
       if (j) j.no = String(i + 1);
     });
+  });
+}
+
+// ---------------- Role requests ----------------
+// The local/demo backend has no real accounts, so these are stored on the
+// JSON db just like everything else (the array is created on first write).
+export function getRoleRequests(): RoleRequest[] {
+  return [...(getDb().roleRequests ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+export function getRoleRequestsFor(userId: string): RoleRequest[] {
+  return getRoleRequests().filter((r) => r.user_id === userId);
+}
+export function createRoleRequest(input: Omit<RoleRequest, "id" | "status" | "created_at">): RoleRequest {
+  const req: RoleRequest = {
+    ...input,
+    id: uid("rr"),
+    status: "pending",
+    created_at: new Date().toISOString(),
+  };
+  mutate((db) => {
+    db.roleRequests = [...(db.roleRequests ?? []), req];
+  });
+  return req;
+}
+export function decideRoleRequest(id: string, approve: boolean) {
+  mutate((db) => {
+    const req = (db.roleRequests ?? []).find((r) => r.id === id);
+    if (!req) return;
+    req.status = approve ? "approved" : "ignored";
+    req.decided_at = new Date().toISOString();
   });
 }

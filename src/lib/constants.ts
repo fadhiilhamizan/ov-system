@@ -34,9 +34,21 @@ export const STATUS_ORDER: TaskStatus[] = ["todo", "ongoing", "overtime", "done"
 
 export const ROLE_META: Record<Role, { label: string; description: string; level: number }> = {
   admin: { label: "Admin / PIC", description: "Akses penuh ke semua fitur", level: 5 },
-  coordinator: { label: "Koordinator", description: "Kelola divisi, tugas, rundown & anggaran", level: 4 },
-  staff: { label: "Staff", description: "Update status & isi hasil tugasnya", level: 3 },
-  intern: { label: "Intern", description: "Update status & isi hasil tugasnya", level: 2 },
+  coordinator: {
+    label: "Koordinator",
+    description: "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat",
+    level: 4,
+  },
+  staff: {
+    label: "Staff",
+    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    level: 3,
+  },
+  intern: {
+    label: "Intern",
+    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    level: 2,
+  },
   guest: { label: "Tamu", description: "Hanya melihat", level: 1 },
 };
 
@@ -67,27 +79,47 @@ export function prospectStage(p: {
 }
 
 /** Per-module, per-role access LEVEL used by the settings matrix.
- *  - "full" = bisa kelola penuh (buat/ubah/hapus entitas utama modul).
- *  - "view" = bisa membuka & melihat (kadang update progres/kontribusi ringan).
- *  - "none" = tidak punya akses sama sekali (modul tidak bisa dibuka).
+ *  - "full"    = kelola penuh (buat / ubah / isi hasil / HAPUS).
+ *  - "limited" = buat, ubah & isi hasil, TAPI tidak boleh menghapus.
+ *  - "view"    = hanya membuka & melihat.
+ *  - "none"    = tidak punya akses sama sekali (modul tidak bisa dibuka).
  *  MODULE_ACCESS (yang menggerbang navigasi) diturunkan dari sini. */
-export type AccessLevel = "full" | "view" | "none";
+export type AccessLevel = "full" | "limited" | "view" | "none";
+
+/** Ordering used by `atLeast()` — a higher level implies every lower one. */
+export const ACCESS_RANK: Record<AccessLevel, number> = {
+  none: 0,
+  view: 1,
+  limited: 2,
+  full: 3,
+};
+
+export const ACCESS_LEVEL_META: Record<AccessLevel, { label: string; description: string }> = {
+  full: { label: "Akses penuh (kelola)", description: "Buat, ubah, isi hasil, dan hapus." },
+  limited: {
+    label: "Akses terbatas",
+    description: "Buat, ubah, dan isi hasil — tidak bisa menghapus.",
+  },
+  view: { label: "Hanya lihat", description: "Bisa membuka dan melihat isinya saja." },
+  none: { label: "Tidak ada akses", description: "Modul tidak bisa dibuka." },
+};
 
 export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   //             admin   coordinator  staff   intern  guest
   dashboard: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
-  tasks: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
-  divisions: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
+  tasks: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
+  divisions: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   calendar: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
-  rundown: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
-  jobs: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "view" },
-  prospects: { admin: "full", coordinator: "full", staff: "full", intern: "view", guest: "view" },
-  links: { admin: "full", coordinator: "full", staff: "view", intern: "view", guest: "none" },
-  budget: { admin: "full", coordinator: "full", staff: "none", intern: "none", guest: "none" },
+  rundown: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
+  jobs: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
+  prospects: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  links: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "none" },
+  budget: { admin: "full", coordinator: "view", staff: "none", intern: "none", guest: "none" },
   members: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   events: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  roles: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
   settings: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
 };
 

@@ -7,6 +7,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.15.0",
+    date: "2026-07-26",
+    title: "Akses Terbatas, daftar akun sendiri, permintaan peran & menu samping yang bisa diciutkan",
+    changes: [
+      "Tingkat akses baru 'Akses terbatas' (centang kuning): bisa membuat, mengubah, dan mengisi hasil — tapi tidak bisa menghapus.",
+      "Staff & Intern kini punya Akses terbatas di Work Breakdown, Rundown, Hari-H, dan Super Link.",
+      "Koordinator tetap akses penuh di keempat menu itu, dan menjadi hanya-lihat di menu lainnya (Anggaran, Reach & Offer, Divisi & Anggota, FAQ, Ormawa Visit).",
+      "Matriks Hak Akses di Pengaturan sekarang punya empat status: penuh (hijau), terbatas (kuning), hanya lihat (biru), tidak ada akses (strip).",
+      "Menu samping bisa diciutkan menjadi ikon saja lewat tombol panel — dan otomatis terbuka sementara saat kursor diarahkan ke bilah ikon. Pilihanmu diingat.",
+      "Halaman Daftar baru: bikin akun sendiri pakai email & kata sandi, atau lewat Google. Masuk dengan Google juga tersedia.",
+      "Akun yang baru mendaftar belum punya peran (setara Tamu) dan bisa mengajukan peran Koordinator / Staff / Intern lewat menu akun atau spanduk di atas halaman.",
+      "Menu baru 'Role Request' (khusus Admin): daftar akun yang mengajukan peran, lengkap dengan tombol Setujui dan Abaikan.",
+    ],
+  },
+  {
     version: "1.14.0",
     date: "2026-07-20",
     title: "Perbaikan Mode Demo, status otomatis Overtime, & rundown",

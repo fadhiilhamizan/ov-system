@@ -12,6 +12,7 @@ import {
   HelpCircle,
   BookOpen,
   Settings,
+  UserRoundCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -130,6 +131,13 @@ export const NAV: NavGroup[] = [
         href: "/panduan",
         icon: BookOpen,
         description: "Alur penggunaan website dari awal sampai akhir",
+      },
+      {
+        key: "roles",
+        label: "Role Request",
+        href: "/roles",
+        icon: UserRoundCheck,
+        description: "Permintaan peran dari akun yang baru mendaftar",
       },
       {
         key: "settings",

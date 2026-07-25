@@ -71,8 +71,8 @@ export const GUIDE: GuideSection[] = [
       { id: "Tampilan bisa diganti antara Tabel, Kanban, dan Timeline.", en: "You can switch between Table, Kanban, and Timeline views." },
     ],
     access: {
-      id: "Admin & Koordinator bisa membuat/mengubah tugas. Staff & Intern bisa memperbarui status dan mengisi hasil pada tugas mereka.",
-      en: "Admins & Coordinators can create/edit tasks. Staff & Interns can update status and fill in results on their own tasks.",
+      id: "Admin & Koordinator akses penuh (termasuk hapus). Staff & Intern akses terbatas: boleh membuat tugas baru, mengubah, dan mengisi hasil — tapi tidak boleh menghapus. Tamu hanya melihat.",
+      en: "Admins & Coordinators have full access (including delete). Staff & Interns have limited access: they can create new tasks, edit them, and fill in results — but never delete. Guests view only.",
     },
   },
   {
@@ -130,7 +130,10 @@ export const GUIDE: GuideSection[] = [
       { id: "Rundown kini satu versi saja (versi B dihapus). Kolom No, Waktu, Durasi, dan Kegiatan dibekukan agar tetap terlihat saat menggeser tabel ke samping.", en: "The rundown is now a single version (version B was removed). The No, Time, Duration, and Activity columns are frozen so they stay visible while scrolling sideways." },
       { id: "Divisi yang dicentang 'tidak diikutsertakan pada rundown' (mis. Sekretaris/Bendahara) tidak akan muncul sebagai kolom.", en: "Divisions marked 'excluded from rundown' (e.g. Secretary/Treasurer) won't appear as columns." },
     ],
-    access: { id: "Admin & Koordinator bisa mengubah; peran lain hanya melihat.", en: "Admins & Coordinators can edit; other roles view only." },
+    access: {
+      id: "Admin & Koordinator akses penuh. Staff & Intern akses terbatas: boleh menambah dan mengubah baris, tapi tidak boleh menghapus. Tamu hanya melihat.",
+      en: "Admins & Coordinators have full access. Staff & Interns have limited access: they can add and edit rows but not delete them. Guests view only.",
+    },
   },
   {
     key: "jobs",
@@ -142,9 +145,12 @@ export const GUIDE: GuideSection[] = [
     steps: [
       { id: "Klik 'Tambah Tugas', isi deskripsi tugas dan PIC (dipilih dari anggota).", en: "Click 'Add Task', then fill in the job description and PIC (chosen from members)." },
       { id: "Seret ikon titik-titik di kiri baris untuk mengurutkan; nomor urut menyesuaikan otomatis.", en: "Drag the grip icon on the left of a row to reorder; the numbering updates automatically." },
-      { id: "Gunakan menu titik tiga untuk mengubah, menduplikat, atau menghapus tugas.", en: "Use the three-dot menu to edit, duplicate, or delete a job." },
+      { id: "Gunakan menu titik tiga untuk mengubah, menduplikat, atau menghapus tugas. Pilihan 'Hapus' hanya muncul untuk peran yang berhak.", en: "Use the three-dot menu to edit, duplicate, or delete a job. 'Delete' only appears for roles allowed to remove rows." },
     ],
-    access: { id: "Admin & Koordinator bisa mengubah.", en: "Admins & Coordinators can edit." },
+    access: {
+      id: "Admin & Koordinator akses penuh. Staff & Intern akses terbatas: boleh menambah, mengubah, dan mengurutkan, tapi tidak boleh menghapus.",
+      en: "Admins & Coordinators have full access. Staff & Interns have limited access: they can add, edit, and reorder, but not delete.",
+    },
   },
   {
     key: "prospects",
@@ -163,7 +169,7 @@ export const GUIDE: GuideSection[] = [
     tips: [
       { id: "Hanya boleh ada satu data utama per Ormawa Visit. Menetapkan yang baru otomatis melepas yang lama, dan mengubah data prospek utama ikut memperbarui data Ormawa Visit.", en: "There can be only one primary per Ormawa Visit. Setting a new one clears the old; editing the primary prospect also updates the OV's data." },
     ],
-    access: { id: "Admin, Koordinator, dan Staff bisa mengubah; Intern & Tamu hanya melihat.", en: "Admins, Coordinators, and Staff can edit; Interns & Guests view only." },
+    access: { id: "Hanya Admin yang bisa mengubah; peran lain hanya melihat.", en: "Only Admins can edit; every other role views only." },
   },
   {
     key: "links",
@@ -181,7 +187,10 @@ export const GUIDE: GuideSection[] = [
       { id: "Tautan bertanda bagian 'Hasil Tugas' berasal dari hasil tugas di WBS. Ubah atau hapus lewat tugasnya agar keduanya tetap sinkron.", en: "Links under the 'Task Results' section come from WBS task results. Edit or remove them from the task itself so both stay in sync." },
       { id: "URL wajib diisi dan harus diawali http:// atau https://.", en: "A URL is required and must start with http:// or https://." },
     ],
-    access: { id: "Semua peran kecuali Tamu bisa menambah; hanya Admin & Koordinator bisa mengubah/menghapus.", en: "Every role except Guest can add; only Admins & Coordinators can edit/delete." },
+    access: {
+      id: "Admin & Koordinator akses penuh. Staff & Intern akses terbatas: boleh menambah dan mengubah tautan, tapi tidak boleh menghapus. Tamu tidak bisa membuka menu ini.",
+      en: "Admins & Coordinators have full access. Staff & Interns have limited access: they can add and edit links but not delete them. Guests cannot open this menu.",
+    },
   },
   {
     key: "budget",
@@ -197,7 +206,7 @@ export const GUIDE: GuideSection[] = [
       { id: "Centang beberapa item untuk menghapus sekaligus.", en: "Tick several items to delete them at once." },
     ],
     tips: [{ id: "Nilai negatif tidak diterima, dan total dibulatkan ke rupiah utuh.", en: "Negative values are rejected, and totals are rounded to whole rupiah." }],
-    access: { id: "Hanya Admin & Koordinator yang bisa membuka menu ini.", en: "Only Admins & Coordinators can open this menu." },
+    access: { id: "Admin & Koordinator bisa membuka menu ini; hanya Admin yang bisa mengubah.", en: "Admins & Coordinators can open this menu; only Admins can edit." },
   },
   {
     key: "events",
@@ -217,6 +226,25 @@ export const GUIDE: GuideSection[] = [
     access: { id: "Hanya Admin yang bisa membuat/mengubah edisi.", en: "Only Admins can create/edit editions." },
   },
   {
+    key: "roles",
+    title: { id: "Role Request (Permintaan Peran)", en: "Role Request" },
+    purpose: {
+      id: "Menyetujui atau mengabaikan permintaan peran dari akun yang baru mendaftar sendiri.",
+      en: "Approve or ignore role requests filed by accounts that signed themselves up.",
+    },
+    steps: [
+      { id: "Siapa pun bisa mendaftar sendiri lewat halaman Daftar (email & kata sandi, atau Google).", en: "Anyone can sign themselves up from the Sign Up page (email & password, or Google)." },
+      { id: "Akun baru belum punya peran — setara Tamu, hanya bisa melihat.", en: "A new account has no role — it is equivalent to a Guest and can only look around." },
+      { id: "Dari menu akun (pojok kanan atas) atau spanduk kuning di atas halaman, akun tersebut memilih 'Ajukan Peran', lalu memilih Koordinator, Staff, atau Intern.", en: "From the account menu (top right) or the amber banner at the top of the page, they pick 'Request Role' and choose Coordinator, Staff, or Intern." },
+      { id: "Admin membuka menu Role Request, lalu menekan 'Setujui' (peran langsung diberikan) atau 'Abaikan' (akun tetap Tamu).", en: "An admin opens the Role Request menu and clicks 'Approve' (the role is granted immediately) or 'Ignore' (the account stays a Guest)." },
+    ],
+    tips: [
+      { id: "Satu akun hanya boleh punya satu pengajuan yang menunggu keputusan. Riwayat pengajuan yang sudah diputuskan tetap tersimpan di bawah daftar.", en: "An account may only have one request awaiting a decision. Decided requests stay in the history list below." },
+      { id: "Masuk sebagai Tamu (tanpa akun) berbeda dengan mendaftar — Tamu tanpa akun tidak bisa mengajukan peran.", en: "Entering as a Guest (no account) is different from signing up — a guest without an account cannot request a role." },
+    ],
+    access: { id: "Hanya Admin yang bisa membuka dan memutuskan.", en: "Only Admins can open it and decide." },
+  },
+  {
     key: "settings",
     title: { id: "Pengaturan", en: "Settings" },
     purpose: {
@@ -224,7 +252,8 @@ export const GUIDE: GuideSection[] = [
       en: "Account info, backend status, the access matrix, backups, and the changelog.",
     },
     steps: [
-      { id: "Lihat 'Hak Akses per Peran' untuk memahami menu apa saja yang bisa dibuka tiap peran.", en: "Check 'Access by Role' to see which menus each role can open." },
+      { id: "Lihat 'Hak Akses per Peran' untuk memahami menu apa saja yang bisa dibuka tiap peran. Centang hijau = akses penuh, centang kuning = akses terbatas (bisa buat/ubah/isi hasil tapi tidak bisa hapus), centang biru = hanya lihat, strip = tidak ada akses.", en: "Check 'Access by Role' to see which menus each role can open. A green check = full access, an amber check = limited access (create/edit/fill in results, but no deleting), a blue check = view only, a dash = no access." },
+      { id: "Gunakan tombol panel di kepala menu samping untuk menciutkannya menjadi ikon saja; arahkan kursor ke bilah ikon untuk membukanya sementara.", en: "Use the panel button in the sidebar header to collapse it to icons only; hover the icon rail to expand it temporarily." },
       { id: "Gunakan Backup & Rollback untuk mencadangkan atau memulihkan data (khusus Admin, mode produksi).", en: "Use Backup & Rollback to snapshot or restore data (Admin only, production mode)." },
       { id: "Di Mode Demo, tersedia 'Reset ke data awal' untuk mengembalikan sandbox ke contoh semula.", en: "In Demo Mode you get 'Reset to initial data' to restore the sandbox to its original sample data." },
     ],

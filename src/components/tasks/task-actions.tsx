@@ -43,8 +43,11 @@ export function TaskActions({
   const [pending, start] = React.useTransition();
 
   const canEditAny = can.editTaskProgress(user, task);
-  const canDelete = can.manageTasks(user, task.division);
-  if (!canEditAny && !canDelete) return null;
+  // Duplicating creates a new task, so it follows "create" (limited) rights;
+  // deleting needs full access.
+  const canDuplicate = can.manageTasks(user, task.division);
+  const canDelete = can.deleteTask(user, task.division);
+  if (!canEditAny && !canDuplicate && !canDelete) return null;
 
   function doDelete() {
     start(async () => {
@@ -68,7 +71,7 @@ export function TaskActions({
               <Pencil /> {t("Edit")}
             </DropdownMenuItem>
           )}
-          {canDelete && (
+          {canDuplicate && (
             <DropdownMenuItem onSelect={() => start(async () => {
               const res = await duplicateTaskAction(task.id);
               if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);

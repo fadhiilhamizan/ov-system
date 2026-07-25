@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { can, isAssignedTo } from "./permissions";
+import { accessLevel, atLeast, can, isAssignedTo } from "./permissions";
 import type { AppUser, Task } from "./types";
 
 function user(role: AppUser["role"], division: string | null = null): AppUser {
@@ -42,17 +42,37 @@ describe("structural permissions (admin-only)", () => {
   });
 });
 
-describe("budget (admin + coordinator)", () => {
-  it("allows admin and coordinator only", () => {
+describe("budget (admin only)", () => {
+  it("allows admin only — coordinator is view-only since v1.15", () => {
     expect(can.manageBudget(user("admin"))).toBe(true);
-    expect(can.manageBudget(user("coordinator"))).toBe(true);
+    expect(can.manageBudget(user("coordinator"))).toBe(false);
     expect(can.manageBudget(user("staff"))).toBe(false);
     expect(can.manageBudget(user("intern"))).toBe(false);
     expect(can.manageBudget(user("guest"))).toBe(false);
   });
 });
 
-describe("manageTasks — coordinator scoped to own division", () => {
+describe("access levels", () => {
+  it("reports the matrix level per role", () => {
+    expect(accessLevel(user("admin"), "tasks")).toBe("full");
+    expect(accessLevel(user("coordinator"), "tasks")).toBe("full");
+    expect(accessLevel(user("staff"), "tasks")).toBe("limited");
+    expect(accessLevel(user("intern"), "rundown")).toBe("limited");
+    expect(accessLevel(user("guest"), "links")).toBe("none");
+    expect(accessLevel(user("coordinator"), "budget")).toBe("view");
+  });
+  it("atLeast is ordered none < view < limited < full", () => {
+    const staff = user("staff");
+    expect(atLeast(staff, "tasks", "view")).toBe(true);
+    expect(atLeast(staff, "tasks", "limited")).toBe(true);
+    expect(atLeast(staff, "tasks", "full")).toBe(false);
+  });
+  it("unknown modules fail closed", () => {
+    expect(accessLevel(user("admin"), "nope")).toBe("none");
+  });
+});
+
+describe("manageTasks — limited roles write, only full deletes", () => {
   it("admin can manage any division", () => {
     expect(can.manageTasks(user("admin"), "EVENT")).toBe(true);
     expect(can.manageTasks(user("admin"), "MARKETING")).toBe(true);
@@ -63,10 +83,70 @@ describe("manageTasks — coordinator scoped to own division", () => {
     expect(can.manageTasks(coord, "MARKETING")).toBe(false);
     expect(can.manageTasks(coord)).toBe(true); // no division given
   });
-  it("staff/intern/guest cannot manage tasks", () => {
-    expect(can.manageTasks(user("staff", "EVENT"), "EVENT")).toBe(false);
-    expect(can.manageTasks(user("intern", "EVENT"), "EVENT")).toBe(false);
+  it("staff/intern can create & edit tasks in their division", () => {
+    expect(can.manageTasks(user("staff", "EVENT"), "EVENT")).toBe(true);
+    expect(can.manageTasks(user("intern", "EVENT"), "EVENT")).toBe(true);
+    expect(can.manageTasks(user("staff", "EVENT"), "MARKETING")).toBe(false);
     expect(can.manageTasks(user("guest"), "EVENT")).toBe(false);
+  });
+  it("staff/intern can never delete a task", () => {
+    expect(can.deleteTask(user("admin"), "EVENT")).toBe(true);
+    expect(can.deleteTask(user("coordinator", "EVENT"), "EVENT")).toBe(true);
+    expect(can.deleteTask(user("staff", "EVENT"), "EVENT")).toBe(false);
+    expect(can.deleteTask(user("intern", "EVENT"), "EVENT")).toBe(false);
+    expect(can.deleteTask(user("guest"))).toBe(false);
+  });
+});
+
+describe("limited access — rundown / Hari-H / Super Link", () => {
+  it("staff & intern may write but not delete", () => {
+    for (const r of ["staff", "intern"] as const) {
+      expect(can.manageRundown(user(r))).toBe(true);
+      expect(can.deleteRundown(user(r))).toBe(false);
+      expect(can.manageJobs(user(r))).toBe(true);
+      expect(can.deleteJob(user(r))).toBe(false);
+      expect(can.createLink(user(r))).toBe(true);
+      expect(can.manageLinks(user(r))).toBe(true);
+      expect(can.deleteLink(user(r))).toBe(false);
+    }
+  });
+  it("coordinator keeps full access on those four modules", () => {
+    const c = user("coordinator");
+    expect(can.deleteRundown(c)).toBe(true);
+    expect(can.deleteJob(c)).toBe(true);
+    expect(can.deleteLink(c)).toBe(true);
+  });
+  it("guest writes nothing", () => {
+    expect(can.manageRundown(user("guest"))).toBe(false);
+    expect(can.manageJobs(user("guest"))).toBe(false);
+    expect(can.createLink(user("guest"))).toBe(false);
+  });
+});
+
+describe("view-only downgrade for coordinator/staff/intern", () => {
+  it("prospects are admin-managed only", () => {
+    expect(can.manageProspects(user("admin"))).toBe(true);
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(can.manageProspects(user(r))).toBe(false);
+    }
+  });
+  it("teams/divisions/faq are admin-managed only", () => {
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(can.manageTeams(user(r))).toBe(false);
+      expect(can.manageDivisions(user(r))).toBe(false);
+      expect(can.manageFaq(user(r))).toBe(false);
+    }
+  });
+});
+
+describe("role requests", () => {
+  it("only admin can approve/ignore", () => {
+    expect(can.manageRoleRequests(user("admin"))).toBe(true);
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(can.manageRoleRequests(user(r))).toBe(false);
+      expect(can.accessModule(user(r), "roles")).toBe(false);
+    }
+    expect(can.accessModule(user("admin"), "roles")).toBe(true);
   });
 });
 
@@ -79,6 +159,11 @@ describe("editTaskProgress — assignee-based for staff/intern", () => {
     const staff = user("staff", "EVENT");
     expect(can.editTaskProgress(staff, task({ division: "EVENT" }))).toBe(true);
     expect(can.editTaskProgress(staff, task({ division: "MARKETING" }))).toBe(false);
+  });
+  it("staff assigned by name can edit a task outside their division", () => {
+    const staff = user("staff", "EVENT");
+    staff.name = "Budi Santoso";
+    expect(can.editTaskProgress(staff, task({ division: "MARKETING", pic: "budi" }))).toBe(true);
   });
   it("guest can never edit progress", () => {
     expect(can.editTaskProgress(user("guest"), task())).toBe(false);
@@ -100,7 +185,7 @@ describe("isAssignedTo", () => {
 });
 
 describe("accessModule / isReadOnly", () => {
-  it("budget module is admin+coordinator only", () => {
+  it("budget module opens for admin+coordinator (coordinator read-only)", () => {
     expect(can.accessModule(user("admin"), "budget")).toBe(true);
     expect(can.accessModule(user("coordinator"), "budget")).toBe(true);
     expect(can.accessModule(user("staff"), "budget")).toBe(false);

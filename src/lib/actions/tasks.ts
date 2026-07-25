@@ -114,7 +114,7 @@ export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> 
   const user = await getCurrentUser();
   const tasks = await Promise.all(ids.map((id) => getTask(id)));
   const allowed = tasks
-    .filter((t): t is Task => !!t && can.manageTasks(user, t.division))
+    .filter((t): t is Task => !!t && can.deleteTask(user, t.division))
     .map((t) => t.id);
   try {
     for (const id of allowed) await purgeTaskLinks(id);
@@ -154,7 +154,9 @@ export async function deleteTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   const task = await getTask(id);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
-  if (!can.manageTasks(user, task.division)) {
+  // Deleting needs FULL access — "limited" roles (staff/intern) may create,
+  // edit and fill in results, but never delete.
+  if (!can.deleteTask(user, task.division)) {
     return { ok: false, error: "Kamu tidak punya akses menghapus tugas ini." };
   }
   // Drop the task's published Super Link rows first (task_links themselves

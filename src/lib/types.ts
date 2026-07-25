@@ -200,6 +200,30 @@ export interface Team {
   intern: string;
 }
 
+/** Roles a signed-up account may ask for. Admin is granted out of band and
+ *  "guest" is what a fresh account already is, so neither is requestable. */
+export type RequestableRole = Extract<Role, "coordinator" | "staff" | "intern">;
+
+export type RoleRequestStatus = "pending" | "approved" | "ignored";
+
+/** A signed-up (role-less) account asking to be given a real role. Admins
+ *  approve or ignore these from the "Role Request" menu. */
+export interface RoleRequest {
+  id: string;
+  user_id: string;
+  /** Denormalised at submit time so the admin list needs no profile join. */
+  name: string;
+  email: string;
+  requested_role: RequestableRole;
+  division?: DivisionKey | null;
+  event_id?: string | null;
+  message: string;
+  status: RoleRequestStatus;
+  created_at: string;
+  decided_at?: string | null;
+  decided_by?: string | null;
+}
+
 export interface Database {
   divisions: Division[];
   events: OVEvent[];
@@ -213,6 +237,7 @@ export interface Database {
   jobHariH: JobHariH[];
   faqs: Faq[];
   teams: Team[];
+  roleRequests?: RoleRequest[];
 }
 
 export interface AppUser {

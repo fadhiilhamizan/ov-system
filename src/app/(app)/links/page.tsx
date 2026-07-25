@@ -34,6 +34,7 @@ export default async function LinksPage() {
         defaultEventId={activeEvent.id}
         canCreate={can.createLink(user)}
         canManage={can.manageLinks(user)}
+        canDelete={can.deleteLink(user)}
       />
     </div>
   );

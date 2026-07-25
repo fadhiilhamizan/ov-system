@@ -145,10 +145,13 @@ export default async function SettingsPage() {
           <CardTitle>{t("Hak Akses per Peran")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Legend: three access states */}
+          {/* Legend: four access states */}
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Check className="size-4 text-emerald-500" /> {t("Akses penuh (kelola)")}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="size-4 text-amber-500" /> {t("Akses terbatas")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Check className="size-4 text-sky-500" /> {t("Hanya lihat")}
@@ -157,6 +160,9 @@ export default async function SettingsPage() {
               <Minus className="size-4 text-muted-foreground/40" /> {t("Tidak ada akses")}
             </span>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            {t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil — tapi tidak bisa menghapus.")}
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -179,6 +185,8 @@ export default async function SettingsPage() {
                         <td key={r} className="px-2 py-2 text-center">
                           {level === "full" ? (
                             <Check className="mx-auto size-4 text-emerald-500" aria-label={t("Akses penuh (kelola)")} />
+                          ) : level === "limited" ? (
+                            <Check className="mx-auto size-4 text-amber-500" aria-label={t("Akses terbatas")} />
                           ) : level === "view" ? (
                             <Check className="mx-auto size-4 text-sky-500" aria-label={t("Hanya lihat")} />
                           ) : (

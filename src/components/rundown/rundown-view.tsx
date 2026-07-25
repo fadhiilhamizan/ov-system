@@ -140,11 +140,15 @@ export function RundownView({
   divisions,
   eventId,
   canManage,
+  canDelete,
 }: {
   items: RundownItem[];
   divisions: Division[];
   eventId: string;
+  /** "limited" access and up: add rows, edit cells, duplicate. */
   canManage: boolean;
+  /** "full" access only: remove rows. */
+  canDelete: boolean;
 }) {
   const t = useT();
   const [pending, start] = React.useTransition();
@@ -295,14 +299,16 @@ export function RundownView({
                       >
                         <Copy className="size-3.5" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(item.id)}
-                        className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
-                        title={t("Hapus")}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => remove(item.id)}
+                          className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
+                          title={t("Hapus")}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 )}

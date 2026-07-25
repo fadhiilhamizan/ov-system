@@ -1,9 +1,11 @@
 "use client";
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, LogIn, Eye, FlaskConical } from "lucide-react";
 import { createClient, isSupabaseConfigured, isDemoConfigured } from "@/lib/supabase/client";
 import { enterGuestMode, enterDemoMode } from "@/lib/actions/session";
+import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/provider";
 
-export default function LoginPage() {
+function LoginForm() {
   const t = useT();
   const router = useRouter();
+  // The OAuth callback bounces back here with ?error=... when Google fails.
+  const oauthError = useSearchParams().get("error");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(oauthError);
   const [pending, setPending] = React.useState(false);
   const [guestPending, startGuest] = React.useTransition();
   const [demoPending, startDemo] = React.useTransition();
@@ -106,10 +110,12 @@ export default function LoginPage() {
             <span className="h-px flex-1 bg-border" /> {t("atau")} <span className="h-px flex-1 bg-border" />
           </div>
 
+          <GoogleButton label={t("Masuk dengan Google")} onError={setError} />
+
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="mt-2 w-full"
             disabled={guestPending}
             onClick={enterGuest}
           >
@@ -131,9 +137,21 @@ export default function LoginPage() {
           )}
         </Card>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          {t("Belum punya akun? Hubungi PIC Ormawa Visit untuk dibuatkan.")}
+          {t("Belum punya akun?")}{" "}
+          <Link href="/signup" className="font-medium text-primary hover:underline">
+            {t("Daftar")}
+          </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams needs a Suspense boundary during prerender.
+  return (
+    <React.Suspense fallback={null}>
+      <LoginForm />
+    </React.Suspense>
   );
 }

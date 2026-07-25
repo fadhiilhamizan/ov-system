@@ -20,6 +20,7 @@ import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { formatDate, daysUntil, isUrl } from "@/lib/format";
 import { bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
 import { STATUS_ORDER, STATUS_META } from "@/lib/constants";
+import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task, TaskStatus } from "@/lib/types";
@@ -47,7 +48,7 @@ export function TaskTable({
   const [pending, start] = React.useTransition();
 
   const canSelect = user.role !== "guest";
-  const canBulkDelete = user.role === "admin" || user.role === "coordinator";
+  const canBulkDelete = can.deleteTask(user);
 
   // Reset selection whenever the task set changes (filter/revalidate).
   React.useEffect(() => setSelected(new Set()), [tasks]);

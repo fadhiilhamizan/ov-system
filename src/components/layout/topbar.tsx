@@ -49,7 +49,7 @@ export function Topbar({
         <EventSwitcher events={events} activeId={activeEventId} />
         <LangToggle />
         <ThemeToggle />
-        {demoMode || sandboxMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} />}
+        {demoMode || sandboxMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} events={events} />}
       </div>
     </header>
   );

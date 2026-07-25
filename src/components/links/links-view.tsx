@@ -185,13 +185,14 @@ function LinkFormDialog({
 }
 
 function LinkActions({
-  link, events, divisions, teams, defaultEventId,
+  link, events, divisions, teams, defaultEventId, canDelete,
 }: {
   link: LinkItem;
   events: OVEvent[];
   divisions: Division[];
   teams: Team[];
   defaultEventId: string;
+  canDelete: boolean;
 }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
@@ -205,7 +206,9 @@ function LinkActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
+          {canDelete && (
+            <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <LinkFormDialog
@@ -240,6 +243,7 @@ export function LinksView({
   defaultEventId,
   canCreate,
   canManage,
+  canDelete,
 }: {
   links: LinkItem[];
   events: OVEvent[];
@@ -247,7 +251,10 @@ export function LinksView({
   teams: Team[];
   defaultEventId: string;
   canCreate: boolean;
+  /** "limited" access and up: edit existing entries. */
   canManage: boolean;
+  /** "full" access only: delete entries (single + bulk). */
+  canDelete: boolean;
 }) {
   const t = useT();
   const [q, setQ] = React.useState("");
@@ -332,7 +339,7 @@ export function LinksView({
         )}
       </div>
 
-      {canManage && sel.count > 0 && (
+      {canDelete && sel.count > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
@@ -370,7 +377,7 @@ export function LinksView({
                     <div className="divide-y divide-border">
                       {items.map((l) => (
                         <div key={l.id} className="flex items-center gap-3 px-4 py-2.5">
-                          {canManage && (
+                          {canDelete && (
                             <Checkbox checked={sel.selected.has(l.id)} onCheckedChange={() => sel.toggle(l.id)} aria-label={t("Pilih")} />
                           )}
                           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
@@ -387,7 +394,7 @@ export function LinksView({
                             {t("Buka")} <ExternalLink className="size-3" />
                           </a>
                           {canManage && (
-                            <LinkActions link={l} events={events} divisions={divisions} teams={teams} defaultEventId={defaultEventId} />
+                            <LinkActions link={l} events={events} divisions={divisions} teams={teams} defaultEventId={defaultEventId} canDelete={canDelete} />
                           )}
                         </div>
                       ))}

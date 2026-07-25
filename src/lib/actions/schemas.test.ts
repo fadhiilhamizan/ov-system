@@ -16,6 +16,7 @@ import {
   jobSchema,
   teamSchema,
   taskLinksSchema,
+  roleRequestSchema,
   urlSchema,
   idSchema,
 } from "./schemas";
@@ -236,5 +237,32 @@ describe("rundown / job / team schemas", () => {
     expect(j.ok).toBe(true);
     if (j.ok) expect((j.data as Record<string, unknown>).hacker).toBeUndefined();
     expect(parse(teamSchema, { division: "EVENT", fungsionaris: "A, B" }).ok).toBe(true);
+  });
+});
+
+describe("roleRequestSchema", () => {
+  it("accepts the three requestable roles", () => {
+    for (const r of ["coordinator", "staff", "intern"]) {
+      expect(parse(roleRequestSchema, { requested_role: r }).ok).toBe(true);
+    }
+  });
+  it("rejects admin and guest — those are never requestable", () => {
+    expect(parse(roleRequestSchema, { requested_role: "admin" }).ok).toBe(false);
+    expect(parse(roleRequestSchema, { requested_role: "guest" }).ok).toBe(false);
+    expect(parse(roleRequestSchema, {}).ok).toBe(false);
+  });
+  it("trims the message and strips unknown keys (no mass assignment)", () => {
+    const r = parse(roleRequestSchema, {
+      requested_role: "staff",
+      message: "  tolong ya  ",
+      status: "approved",
+      user_id: "someone-else",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.message).toBe("tolong ya");
+      expect((r.data as Record<string, unknown>).status).toBeUndefined();
+      expect((r.data as Record<string, unknown>).user_id).toBeUndefined();
+    }
   });
 });

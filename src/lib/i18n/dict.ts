@@ -613,6 +613,68 @@ export const EN: Record<string, string> = {
 
   // Layout a11y
   "Tutup menu": "Close menu",
+  "Buka menu samping": "Expand sidebar",
+  "Tutup menu samping": "Collapse sidebar",
+
+  // Access levels (settings matrix)
+  "Akses terbatas": "Limited access",
+  "Akses terbatas: bisa membuat, mengubah, dan mengisi hasil — tapi tidak bisa menghapus.":
+    "Limited access: can create, edit, and fill in results — but cannot delete.",
+  "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat":
+    "Manages Work Breakdown, Rundown, D-Day & Super Link; view-only elsewhere",
+  "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)":
+    "Create, edit & fill in results on Work Breakdown, Rundown, D-Day, Super Link (no deleting)",
+
+  // Sign up / Google auth
+  "Daftar": "Sign up",
+  "Ulangi kata sandi": "Repeat password",
+  "Minimal 8 karakter.": "At least 8 characters.",
+  "Kata sandi minimal 8 karakter.": "Password must be at least 8 characters.",
+  "Konfirmasi kata sandi tidak cocok.": "Password confirmation doesn't match.",
+  "Sudah punya akun?": "Already have an account?",
+  "Belum punya akun?": "No account yet?",
+  "Cek email kamu": "Check your email",
+  "Kami mengirim tautan konfirmasi ke": "We sent a confirmation link to",
+  "Buka tautan itu untuk mengaktifkan akun.": "Open that link to activate your account.",
+  "Kembali ke halaman masuk": "Back to sign in",
+  "Lanjut dengan Google": "Continue with Google",
+  "Masuk dengan Google": "Sign in with Google",
+  "Daftar dengan Google": "Sign up with Google",
+  "Kode otorisasi tidak ditemukan.": "Authorization code not found.",
+  "Akun baru belum punya peran — kamu bisa melihat data, lalu ajukan peran (Koordinator / Staff / Intern) lewat menu akun untuk disetujui admin.":
+    "A new account has no role — you can view data, then request a role (Coordinator / Staff / Intern) from the account menu for an admin to approve.",
+
+  // Role requests
+  "Role Request": "Role Request",
+  "Permintaan peran dari akun yang baru mendaftar": "Role requests from newly registered accounts",
+  "Akun yang baru mendaftar belum punya peran. Setujui atau abaikan permintaan peran di sini.":
+    "Newly registered accounts have no role. Approve or ignore their role requests here.",
+  "Belum ada permintaan peran": "No role requests yet",
+  "Permintaan dari akun yang baru mendaftar akan muncul di sini.":
+    "Requests from newly registered accounts will appear here.",
+  "Ajukan Peran": "Request Role",
+  "Peran yang diminta": "Requested role",
+  "Catatan untuk admin": "Note for the admin",
+  "Contoh: staff divisi Event OV1 2026": "e.g. staff of the Event division, OV1 2026",
+  "Kirim permintaan": "Send request",
+  "Akun barumu belum punya peran (masih setara Tamu). Pilih peran yang kamu inginkan — admin akan menyetujui atau mengabaikannya.":
+    "Your new account has no role yet (still equivalent to a Guest). Pick the role you want — an admin will approve or ignore it.",
+  "Permintaan peran terkirim. Tunggu persetujuan admin.":
+    "Role request sent. Wait for an admin to approve it.",
+  "Menunggu keputusan": "Awaiting a decision",
+  "Tidak ada permintaan yang menunggu.": "No requests are waiting.",
+  "Riwayat": "History",
+  "Disetujui": "Approved",
+  "Diabaikan": "Ignored",
+  "Setujui": "Approve",
+  "Abaikan": "Ignore",
+  "Diajukan": "Submitted",
+  "sekarang berperan sebagai": "is now a",
+  "Permintaan diabaikan": "Request ignored",
+  "Akunmu belum punya peran, jadi masih hanya bisa melihat.":
+    "Your account has no role yet, so you can only view.",
+  "Permintaan peran": "Role request",
+  "sedang menunggu persetujuan admin.": "is awaiting an admin's approval.",
 
   // Error boundary
   "Terjadi kesalahan": "Something went wrong",

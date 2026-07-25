@@ -25,23 +25,37 @@ Ormawa Visit adalah program kunjungan benchmarking antar organisasi mahasiswa. S
 | Ormawa Visit | Riwayat dan rencana seluruh gelaran lintas kabinet. Edisi baru bisa dibuat dari template edisi sebelumnya. |
 | FAQ | Pertanyaan umum dengan CRUD penuh (tambah/edit/hapus oleh admin). |
 | Panduan | Flowchart alur penggunaan website dari awal sampai akhir. |
-| Pengaturan | Status backend, matriks hak akses tiga tingkat, changelog, serta backup dan rollback. |
+| Pengaturan | Status backend, matriks hak akses empat tingkat, changelog, serta backup dan rollback. |
+| Role Request | Daftar akun yang meminta peran, dengan tombol setujui atau abaikan (khusus Admin). |
 
 ## Peran dan Hak Akses
 
-Sistem memakai hak akses berjenjang (RBAC). Matriks lengkapnya dapat dilihat di halaman **Pengaturan**, dengan tiga tingkat akses per modul: akses penuh (kelola), hanya lihat, dan tanpa akses.
+Sistem memakai hak akses berjenjang (RBAC). Matriks lengkapnya dapat dilihat di halaman **Pengaturan**, dengan empat tingkat akses per modul:
+
+| Tanda | Tingkat | Artinya |
+|-------|---------|---------|
+| Centang hijau | Akses penuh | Buat, ubah, isi hasil, dan **hapus**. |
+| Centang kuning | Akses terbatas | Buat, ubah, dan isi hasil — **tidak bisa menghapus**. |
+| Centang biru | Hanya lihat | Bisa membuka dan melihat isinya saja. |
+| Strip | Tidak ada akses | Modul tidak bisa dibuka. |
 
 | Peran | Ringkasan |
 |-------|-----------|
 | Admin / PIC OV | Akses penuh ke seluruh fitur dan pengaturan. |
-| Koordinator | Kelola divisi, tugas, rundown, job hari-H, dan anggaran. |
-| Staff | Perbarui status dan hasil tugasnya, serta kelola Reach & Offer. |
-| Intern | Perbarui status dan hasil tugasnya. |
-| Tamu | Hanya melihat (tanpa akun). |
+| Koordinator | Akses penuh di Work Breakdown, Rundown, Hari-H, dan Super Link; menu lain hanya lihat. |
+| Staff | Akses terbatas di Work Breakdown, Rundown, Hari-H, dan Super Link; menu lain hanya lihat. |
+| Intern | Sama seperti Staff. |
+| Tamu | Hanya melihat. Akun yang baru mendaftar juga setara Tamu sampai perannya disetujui admin. |
+
+### Daftar akun dan permintaan peran
+
+Siapa pun bisa mendaftar sendiri dari halaman **Daftar** (email dan kata sandi, atau lewat **Google**). Akun baru belum punya peran — setara Tamu, hanya bisa melihat. Dari menu akun di kanan atas (atau spanduk di atas halaman) akun tersebut memilih **Ajukan Peran** dan meminta Koordinator, Staff, atau Intern. Admin membuka menu **Role Request** untuk **Setujui** (peran langsung aktif) atau **Abaikan**.
+
+Masuk dengan Google perlu diaktifkan lebih dulu di dashboard Supabase (Authentication → Providers → Google), dengan URL callback `https://<domain-anda>/auth/callback`.
 
 ## Cara Memakai
 
-1. **Masuk.** Buka https://ov-system.vercel.app/ lalu login dengan email dan kata sandi yang didaftarkan admin. Belum punya akun tetapi ingin melihat-lihat? Gunakan **Mode Tamu** di halaman login (hanya bisa melihat).
+1. **Masuk.** Buka https://ov-system.vercel.app/ lalu login dengan email dan kata sandi, atau **Masuk dengan Google**. Belum punya akun? Klik **Daftar** untuk membuat sendiri, lalu ajukan peran agar bisa mengisi data. Ingin melihat-lihat saja tanpa akun? Gunakan **Mode Tamu** di halaman login.
 2. **Pilih Ormawa Visit.** Gunakan pemilih edisi di kanan atas untuk berpindah antar gelaran. Semua modul menyesuaikan dengan edisi yang sedang dipilih.
 3. **Coba dulu lewat Mode Demo.** Di halaman login ada tombol **Coba Mode Demo** (jika diaktifkan). Mode ini berjalan di **database Supabase yang benar-benar terpisah** berisi data contoh, tanpa perlu akun. Karena databasenya berbeda, apa pun yang Anda lakukan di Mode Demo tidak dapat menyentuh data asli, dan sebaliknya. Ada indikator "Mode Demo" di atas layar dengan tombol Keluar untuk kembali ke halaman login. Penyiapannya dijelaskan di bawah pada bagian Mode Demo.
 4. **Kelola tugas.** Buka Work Breakdown, tambah atau ubah tugas, pilih PIC langsung dari daftar anggota, lalu pantau progres lewat Tabel, Kanban, atau Timeline.

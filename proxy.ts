@@ -55,8 +55,14 @@ export async function proxy(request: NextRequest) {
   // the guest cookie is an allowed read-only bypass. Public paths (login,
   // API routes with their own auth) are exempt. The per-page redirect in the
   // layout stays as a second layer.
+  // /signup and /auth/* (the OAuth code exchange) must stay reachable without
+  // a session — that's the whole point of signing up.
   const path = request.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/api");
+  const isPublic =
+    path === "/login" ||
+    path === "/signup" ||
+    path.startsWith("/auth/") ||
+    path.startsWith("/api");
   const isGuest = request.cookies.get("ov_guest")?.value === "1";
   if (!user && !isGuest && !isPublic) {
     const redirectUrl = new URL("/login", request.url);

@@ -1,5 +1,5 @@
 import type { AppUser, Task } from "./types";
-import { MODULE_ACCESS } from "./constants";
+import { ACCESS_RANK, MODULE_ACCESS, MODULE_ACCESS_LEVEL, type AccessLevel } from "./constants";
 
 /** Does the user match the PIC string of a task (by name or nickname)? */
 export function isAssignedTo(user: AppUser, task: Task): boolean {
@@ -9,69 +9,104 @@ export function isAssignedTo(user: AppUser, task: Task): boolean {
   return (first.length > 1 && pic.includes(first)) || (!!user.division && task.division === user.division);
 }
 
-// Permission model derived from the access matrix.
+/** The user's access level for a module key (see MODULE_ACCESS_LEVEL). */
+export function accessLevel(user: AppUser, moduleKey: string): AccessLevel {
+  return MODULE_ACCESS_LEVEL[moduleKey]?.[user.role] ?? "none";
+}
+
+/** Does the user hold at least `level` on `moduleKey`? */
+export function atLeast(user: AppUser, moduleKey: string, level: AccessLevel): boolean {
+  return ACCESS_RANK[accessLevel(user, moduleKey)] >= ACCESS_RANK[level];
+}
+
+/** Non-admins with a division are confined to it; an unscoped profile isn't. */
+function inScope(user: AppUser, division?: string): boolean {
+  if (user.role === "admin") return true;
+  return !division || !user.division || division === user.division;
+}
+
+// Permission model derived from the access matrix in constants.ts. Every helper
+// reads MODULE_ACCESS_LEVEL so the settings matrix and the real rules can never
+// drift apart: "full" adds delete on top of what "limited" allows.
 export const can = {
-  // --- structural (Admin only) ---
+  // --- structural (module level "full") ---
   manageEvents(user: AppUser): boolean {
-    return user.role === "admin";
+    return atLeast(user, "events", "full");
   },
   manageDivisions(user: AppUser): boolean {
-    return user.role === "admin";
+    return atLeast(user, "divisions", "full");
   },
   manageMembers(user: AppUser): boolean {
-    return user.role === "admin";
+    return atLeast(user, "members", "full");
+  },
+  manageTeams(user: AppUser): boolean {
+    return atLeast(user, "members", "full");
   },
   manageFaq(user: AppUser): boolean {
-    return user.role === "admin";
+    return atLeast(user, "faq", "full");
   },
   manageBackups(user: AppUser): boolean {
-    return user.role === "admin";
-  },
-
-  // --- Admin + Koordinator ---
-  manageTeams(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator";
-  },
-  manageRundown(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator";
-  },
-  manageJobs(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator";
+    return atLeast(user, "settings", "full");
   },
   manageBudget(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator";
+    return atLeast(user, "budget", "full");
   },
-  /** Delete/edit an existing Super Link entry. */
-  manageLinks(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator";
-  },
-
-  /** Create / edit tasks. Koordinator limited to own division. */
-  manageTasks(user: AppUser, division?: string): boolean {
-    if (user.role === "admin") return true;
-    if (user.role === "coordinator") return !division || division === user.division;
-    return false;
-  },
-  editTask(user: AppUser, task: Task): boolean {
-    if (user.role === "admin") return true;
-    if (user.role === "coordinator") return task.division === user.division;
-    return false;
+  /** Approve / ignore role requests (Role Request menu). */
+  manageRoleRequests(user: AppUser): boolean {
+    return atLeast(user, "roles", "full");
   },
 
-  // --- includes Staff / Intern ---
-  /** Update Status & fill Result (per matrix, includes staff & intern on their tasks). */
-  editTaskProgress(user: AppUser, task: Task): boolean {
-    if (user.role === "admin" || user.role === "coordinator") return true;
-    if (user.role === "staff" || user.role === "intern") return isAssignedTo(user, task);
-    return false;
+  // --- rundown / Hari-H: "limited" writes, "full" deletes ---
+  manageRundown(user: AppUser): boolean {
+    return atLeast(user, "rundown", "limited");
   },
-  /** Add a link to Super Link (staff & intern allowed). */
+  deleteRundown(user: AppUser): boolean {
+    return atLeast(user, "rundown", "full");
+  },
+  manageJobs(user: AppUser): boolean {
+    return atLeast(user, "jobs", "limited");
+  },
+  deleteJob(user: AppUser): boolean {
+    return atLeast(user, "jobs", "full");
+  },
+
+  // --- Super Link ---
+  /** Add a link to Super Link. */
   createLink(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator" || user.role === "staff" || user.role === "intern";
+    return atLeast(user, "links", "limited");
   },
+  /** Edit an existing Super Link entry. */
+  manageLinks(user: AppUser): boolean {
+    return atLeast(user, "links", "limited");
+  },
+  deleteLink(user: AppUser): boolean {
+    return atLeast(user, "links", "full");
+  },
+
   /** Reach & Offer (prospect DB) create/edit. */
   manageProspects(user: AppUser): boolean {
-    return user.role === "admin" || user.role === "coordinator" || user.role === "staff";
+    return atLeast(user, "prospects", "limited");
+  },
+  deleteProspect(user: AppUser): boolean {
+    return atLeast(user, "prospects", "full");
+  },
+
+  // --- Work Breakdown ---
+  /** Create / edit tasks. Scoped roles are limited to their own division. */
+  manageTasks(user: AppUser, division?: string): boolean {
+    return atLeast(user, "tasks", "limited") && inScope(user, division);
+  },
+  editTask(user: AppUser, task: Task): boolean {
+    return can.manageTasks(user, task.division);
+  },
+  /** Delete a task — only "full" access (admin & koordinator). */
+  deleteTask(user: AppUser, division?: string): boolean {
+    return atLeast(user, "tasks", "full") && inScope(user, division);
+  },
+  /** Update Status & fill Result — also allowed on tasks assigned to the user. */
+  editTaskProgress(user: AppUser, task: Task): boolean {
+    if (can.manageTasks(user, task.division)) return true;
+    return atLeast(user, "tasks", "limited") && isAssignedTo(user, task);
   },
 
   // --- helpers ---

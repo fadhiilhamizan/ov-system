@@ -22,7 +22,12 @@ export default async function JobsPage() {
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <MembersProvider members={members}>
-        <JobsTable jobs={jobs} eventId={event.id} canManage={can.manageJobs(user)} />
+        <JobsTable
+          jobs={jobs}
+          eventId={event.id}
+          canManage={can.manageJobs(user)}
+          canDelete={can.deleteJob(user)}
+        />
       </MembersProvider>
     </div>
   );

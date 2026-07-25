@@ -15,6 +15,7 @@ import type {
   Member,
   OVEvent,
   Prospect,
+  RoleRequest,
   RundownItem,
   Task,
   TaskLink,
@@ -518,6 +519,63 @@ export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
   const { data } = await q;
   return coalesce((data ?? []) as Team[], ["division", "coordinator", "fungsionaris", "intern"]);
 });
+
+// ---------------- Role requests ----------------
+// RLS already narrows SELECT to "mine, or everything if admin", so the plain
+// list is safe to expose; `getRoleRequestsFor` is the explicit self-lookup.
+export const getRoleRequests = cache(async (): Promise<RoleRequest[]> => {
+  if (!USE_SUPABASE) return local.getRoleRequests();
+  const { data } = await (await sb())
+    .from("role_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return coalesce((data ?? []) as RoleRequest[], ["name", "email", "message"]);
+});
+
+export const getRoleRequestsFor = cache(async (userId: string): Promise<RoleRequest[]> => {
+  if (!USE_SUPABASE) return local.getRoleRequestsFor(userId);
+  const { data } = await (await sb())
+    .from("role_requests")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return coalesce((data ?? []) as RoleRequest[], ["name", "email", "message"]);
+});
+
+export async function createRoleRequest(
+  input: Omit<RoleRequest, "id" | "status" | "created_at">,
+): Promise<void> {
+  if (!USE_SUPABASE) {
+    local.createRoleRequest(input);
+    return;
+  }
+  const { error } = await (await sb()).from("role_requests").insert({
+    user_id: input.user_id,
+    name: input.name,
+    email: input.email,
+    requested_role: input.requested_role,
+    division: input.division || null,
+    event_id: input.event_id || null,
+    message: input.message,
+    status: "pending",
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Approve (grant the role) or ignore a request. In Supabase this goes through
+ *  the SECURITY DEFINER `decide_role_request` RPC — profiles.role is not
+ *  directly writable by design (see migration 0020/0023). */
+export async function decideRoleRequest(id: string, approve: boolean): Promise<void> {
+  if (!USE_SUPABASE) {
+    local.decideRoleRequest(id, approve);
+    return;
+  }
+  const { error } = await (await sb()).rpc("decide_role_request", {
+    request_id: id,
+    approve,
+  });
+  if (error) throw new Error(error.message);
+}
 
 // ================= Aggregations (backend-agnostic) =================
 /** Cached per-event task fetch so taskStats + divisionStats (dashboard) share one query. */

@@ -49,7 +49,9 @@ export async function duplicateRundownAction(id: string): Promise<Result> {
   return { ok: true };
 }
 export async function deleteRundownAction(id: string): Promise<Result> {
-  if (!can.manageRundown(await getCurrentUser())) return DENY;
+  // Deleting needs FULL access — "limited" roles (staff/intern) may add and
+  // edit rows but never remove them.
+  if (!can.deleteRundown(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteRundown(idv.data);
@@ -90,7 +92,8 @@ export async function duplicateJobAction(id: string): Promise<Result> {
   return { ok: true };
 }
 export async function deleteJobAction(id: string): Promise<Result> {
-  if (!can.manageJobs(await getCurrentUser())) return DENY;
+  // Deleting needs FULL access — see deleteRundownAction.
+  if (!can.deleteJob(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteJob(idv.data);

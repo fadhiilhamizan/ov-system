@@ -103,7 +103,7 @@ function JobFormDialog({
   );
 }
 
-function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
+function JobActions({ job, eventId, canDelete }: { job: JobHariH; eventId: string; canDelete: boolean }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -119,10 +119,12 @@ function JobActions({ job, eventId }: { job: JobHariH; eventId: string }) {
             const res = await duplicateJobAction(job.id);
             if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
           })}><Copy /> {t("Duplikat")}</DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => start(async () => {
-            const res = await deleteJobAction(job.id);
-            if (res.ok) toast.success(t("Tugas dihapus")); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+          {canDelete && (
+            <DropdownMenuItem destructive onSelect={() => start(async () => {
+              const res = await deleteJobAction(job.id);
+              if (res.ok) toast.success(t("Tugas dihapus")); else toast.error(res.error);
+            })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <JobFormDialog mode="edit" job={job} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
@@ -142,7 +144,7 @@ function PicChips({ pic }: { pic: string }) {
   );
 }
 
-function SortableJobRow({ job, index, eventId, canManage }: { job: JobHariH; index: number; eventId: string; canManage: boolean }) {
+function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: JobHariH; index: number; eventId: string; canManage: boolean; canDelete: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id, disabled: !canManage });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
@@ -170,12 +172,21 @@ function SortableJobRow({ job, index, eventId, canManage }: { job: JobHariH; ind
       <TableCell className="font-medium">{job.job}</TableCell>
       <TableCell><PicChips pic={job.pic} /></TableCell>
       <TableCell className="text-xs text-muted-foreground">{job.notes || "-"}</TableCell>
-      {canManage && <TableCell><JobActions job={job} eventId={eventId} /></TableCell>}
+      {canManage && <TableCell><JobActions job={job} eventId={eventId} canDelete={canDelete} /></TableCell>}
     </tr>
   );
 }
 
-export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; eventId: string; canManage: boolean }) {
+export function JobsTable({
+  jobs, eventId, canManage, canDelete,
+}: {
+  jobs: JobHariH[];
+  eventId: string;
+  /** "limited" access and up: add, edit, reorder, duplicate. */
+  canManage: boolean;
+  /** "full" access only: remove rows. */
+  canDelete: boolean;
+}) {
   const t = useT();
   // Local order for optimistic drag; synced from server props on change.
   const sorted = React.useMemo(
@@ -232,7 +243,7 @@ export function JobsTable({ jobs, eventId, canManage }: { jobs: JobHariH[]; even
               <TableBody>
                 <SortableContext items={items.map((j) => j.id)} strategy={verticalListSortingStrategy}>
                   {items.map((j, i) => (
-                    <SortableJobRow key={j.id} job={j} index={i} eventId={eventId} canManage={canManage} />
+                    <SortableJobRow key={j.id} job={j} index={i} eventId={eventId} canManage={canManage} canDelete={canDelete} />
                   ))}
                 </SortableContext>
               </TableBody>

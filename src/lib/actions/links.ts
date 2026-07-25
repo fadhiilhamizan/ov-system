@@ -14,6 +14,13 @@ async function guard(): Promise<Result> {
   return { ok: true };
 }
 
+/** Deleting needs FULL access — "limited" roles may add and edit only. */
+async function deleteGuard(): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.deleteLink(user)) return { ok: false, error: "Kamu tidak punya akses menghapus tautan." };
+  return { ok: true };
+}
+
 export async function createLinkAction(input: Partial<LinkItem>): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
@@ -37,7 +44,7 @@ export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Pr
 }
 
 export async function deleteLinkAction(id: string): Promise<Result> {
-  const g = await guard();
+  const g = await deleteGuard();
   if (!g.ok) return g;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
@@ -47,7 +54,7 @@ export async function deleteLinkAction(id: string): Promise<Result> {
 }
 
 export async function bulkDeleteLinksAction(ids: string[]): Promise<Result> {
-  const g = await guard();
+  const g = await deleteGuard();
   if (!g.ok) return g;
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
