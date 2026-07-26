@@ -16,17 +16,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useT } from "@/lib/i18n/provider";
-import type { AppUser, OVEvent } from "@/lib/types";
+import type { AppUser, RequestableRole, RoleRequest } from "@/lib/types";
 
-export function UserMenu({ user, events = [] }: { user: AppUser; events?: OVEvent[] }) {
+export function UserMenu({
+  user,
+  roleOptions = [],
+  pendingRoleRequest = null,
+}: {
+  user: AppUser;
+  roleOptions?: RequestableRole[];
+  pendingRoleRequest?: RoleRequest | null;
+}) {
   const t = useT();
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [requestOpen, setRequestOpen] = React.useState(false);
 
-  // A signed-up account starts with no role (= guest). Anonymous "Tamu"
-  // sessions have no email and nothing to promote, so they don't get this.
-  const canRequestRole = user.role === "guest" && !!user.email;
+  // Any real account except an admin can use the flow — a role-less account to
+  // get its first role, an existing one to move up or down. The server decides
+  // the option list (see `requestableRolesFor`).
+  const showRoleRequest = roleOptions.length > 0;
 
   function signOut() {
     start(async () => {
@@ -60,9 +69,14 @@ export function UserMenu({ user, events = [] }: { user: AppUser; events?: OVEven
             <div className="text-[11px] text-muted-foreground">{user.email}</div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {canRequestRole && (
+          {showRoleRequest && (
             <DropdownMenuItem onSelect={() => setRequestOpen(true)}>
-              <UserRoundCheck /> {t("Ajukan Peran")}
+              <UserRoundCheck />{" "}
+              {pendingRoleRequest
+                ? t("Ubah Pengajuan Peran")
+                : user.role === "guest"
+                  ? t("Ajukan Peran")
+                  : t("Ajukan Ubah Peran")}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem destructive onSelect={(e) => { e.preventDefault(); signOut(); }}>
@@ -71,8 +85,13 @@ export function UserMenu({ user, events = [] }: { user: AppUser; events?: OVEven
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {canRequestRole && (
-        <RoleRequestDialog events={events} open={requestOpen} onOpenChange={setRequestOpen} />
+      {showRoleRequest && (
+        <RoleRequestDialog
+          options={roleOptions}
+          existing={pendingRoleRequest}
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+        />
       )}
     </>
   );

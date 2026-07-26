@@ -9,7 +9,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { LangToggle } from "./lang-toggle";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/provider";
-import type { AppUser, OVEvent } from "@/lib/types";
+import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 
 export function Topbar({
   user,
@@ -17,6 +17,8 @@ export function Topbar({
   activeEventId,
   demoMode,
   sandboxMode,
+  roleOptions = [],
+  pendingRoleRequest = null,
   onMenu,
 }: {
   user: AppUser;
@@ -24,6 +26,8 @@ export function Topbar({
   activeEventId: string;
   demoMode: boolean;
   sandboxMode: boolean;
+  roleOptions?: RequestableRole[];
+  pendingRoleRequest?: RoleRequest | null;
   onMenu: () => void;
 }) {
   const pathname = usePathname();
@@ -49,7 +53,11 @@ export function Topbar({
         <EventSwitcher events={events} activeId={activeEventId} />
         <LangToggle />
         <ThemeToggle />
-        {demoMode || sandboxMode ? <RoleSwitcher user={user} /> : <UserMenu user={user} events={events} />}
+        {demoMode || sandboxMode ? (
+          <RoleSwitcher user={user} />
+        ) : (
+          <UserMenu user={user} roleOptions={roleOptions} pendingRoleRequest={pendingRoleRequest} />
+        )}
       </div>
     </header>
   );

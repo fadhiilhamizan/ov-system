@@ -65,7 +65,7 @@ export function TaskFormDialog({
   const setOpen = onOpenChange ?? setInternalOpen;
   const [pending, start] = React.useTransition();
 
-  const progressOnly = mode === "edit" && task ? !can.editTask(user, task) : false;
+  const progressOnly = mode === "edit" && task ? !can.editTask(user) : false;
 
   const [form, setForm] = React.useState(() => ({
     event_id: task?.event_id ?? activeEventId,

@@ -6,13 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import { DivisionBadge } from "@/components/division-badge";
 import { approveRoleRequestAction, ignoreRoleRequestAction } from "@/lib/actions/roles";
 import { ROLE_META } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { Division, OVEvent, RoleRequest } from "@/lib/types";
+import type { RoleRequest } from "@/lib/types";
 
 const STATUS_VARIANT = {
   pending: "warning",
@@ -20,20 +19,10 @@ const STATUS_VARIANT = {
   ignored: "outline",
 } as const;
 
-export function RoleRequestsView({
-  requests,
-  events,
-  divisions,
-}: {
-  requests: RoleRequest[];
-  events: OVEvent[];
-  divisions: Division[];
-}) {
+export function RoleRequestsView({ requests }: { requests: RoleRequest[] }) {
   const t = useT();
   const [pendingId, setPendingId] = React.useState<string | null>(null);
   const [, start] = React.useTransition();
-
-  const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
 
   const pending = requests.filter((r) => r.status === "pending");
   const decided = requests.filter((r) => r.status !== "pending");
@@ -56,8 +45,6 @@ export function RoleRequestsView({
   }
 
   function Row({ req }: { req: RoleRequest }) {
-    const division = divisions.find((d) => d.key === req.division) ?? null;
-    const event = req.event_id ? eventMap.get(req.event_id) : null;
     const busy = pendingId === req.id;
     const isPending = req.status === "pending";
 
@@ -69,8 +56,6 @@ export function RoleRequestsView({
             <div className="flex flex-wrap items-center gap-2">
               <p className="truncate text-sm font-semibold">{req.name}</p>
               <Badge variant="primary">{t(ROLE_META[req.requested_role].label)}</Badge>
-              {division && <DivisionBadge division={division} />}
-              {event && <Badge variant="outline">{event.title}</Badge>}
               <Badge variant={STATUS_VARIANT[req.status]}>
                 {t(
                   req.status === "pending"

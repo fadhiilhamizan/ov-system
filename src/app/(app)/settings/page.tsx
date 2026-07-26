@@ -105,8 +105,11 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Demo: reset to initial data (replaces backup while in the sandbox) */}
+      {/* Demo: reset to initial data (replaces backup while in the sandbox).
+          Both this and Backup are admin-only — the page itself is now readable
+          by coordinator/staff/intern, who get the matrix + changelog only. */}
       {isDemo ? (
+        canBackup && (
         <Card>
           <CardHeader className="flex-row items-center gap-2">
             <FlaskConical className="size-4 text-amber-500" />
@@ -116,6 +119,7 @@ export default async function SettingsPage() {
             <DemoReset />
           </CardContent>
         </Card>
+        )
       ) : (
         canBackup && (
           <Card>

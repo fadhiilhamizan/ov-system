@@ -707,3 +707,12 @@ export function decideRoleRequest(id: string, approve: boolean) {
     req.decided_at = new Date().toISOString();
   });
 }
+export function updateRoleRequest(
+  id: string,
+  patch: { requested_role?: RoleRequest["requested_role"]; message?: string },
+) {
+  mutate((db) => {
+    const req = (db.roleRequests ?? []).find((r) => r.id === id && r.status === "pending");
+    if (req) Object.assign(req, patch);
+  });
+}

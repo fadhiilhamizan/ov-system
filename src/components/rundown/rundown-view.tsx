@@ -207,11 +207,24 @@ export function RundownView({
   const td = "border-b border-border/60 align-top";
 
   // Frozen (sticky) leftmost columns: No, Waktu, Durasi, Kegiatan.
-  const FZ = "sticky !bg-card"; // opaque so scrolled content doesn't bleed through
+  //
+  // The sticky `left` offsets MUST equal the real rendered column widths, so
+  // the widths are pinned by a <colgroup> + `table-fixed` rather than left to
+  // the automatic table algorithm. (With `table-layout: auto` the browser sizes
+  // columns by content, the offsets drifted out of alignment, and the gaps let
+  // scrolled-under content show through the frozen block — the "hollow" look.)
+  const W = { no: 44, time: 96, dur: 72, act: 220, mc: 140, opr: 160, div: 150, note: 180, actions: 44 };
   const noL = { left: 0 } as const;
-  const timeL = { left: 40 } as const;
-  const durL = { left: 136 } as const;
-  const actL = { left: 200 } as const;
+  const timeL = { left: W.no } as const;
+  const durL = { left: W.no + W.time } as const;
+  const actL = { left: W.no + W.time + W.dur } as const;
+  // Below the minimum the table scrolls horizontally; above it the unsized
+  // Catatan column absorbs the slack, so the frozen offsets never shift.
+  const minTableWidth =
+    W.no + W.time + W.dur + W.act + W.mc + W.opr + cols.length * W.div + W.note +
+    (canManage ? W.actions : 0);
+
+  const FZ = "sticky !bg-card"; // opaque so scrolled content doesn't bleed through
   const lastFrozen = "shadow-[2px_0_4px_-1px_rgba(0,0,0,0.12)]"; // edge of the frozen block
 
   return (
@@ -225,29 +238,52 @@ export function RundownView({
       {/* border-separate (not collapse): sticky/frozen columns don't paint their
           background reliably under border-collapse, which made them look hollow. */}
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
+        <table
+          className="w-full table-fixed border-separate border-spacing-0 text-sm"
+          style={{ minWidth: minTableWidth }}
+        >
+          {/* Pins every column width so the sticky offsets above stay exact.
+              Catatan is deliberately unsized: it soaks up any leftover space. */}
+          <colgroup>
+            <col style={{ width: W.no }} />
+            <col style={{ width: W.time }} />
+            <col style={{ width: W.dur }} />
+            <col style={{ width: W.act }} />
+            <col style={{ width: W.mc }} />
+            <col style={{ width: W.opr }} />
+            {cols.map((d) => (
+              <col key={d.key} style={{ width: W.div }} />
+            ))}
+            <col />
+            {canManage && <col style={{ width: W.actions }} />}
+          </colgroup>
           <thead>
             <tr>
-              <th className={cn(th, FZ, "z-20 w-10 text-center")} style={noL}>{t("No")}</th>
-              <th className={cn(th, FZ, "z-20 w-24")} style={timeL}>{t("Waktu")}</th>
-              <th className={cn(th, FZ, "z-20 w-16")} style={durL}>{t("Durasi")}</th>
-              <th className={cn(th, FZ, lastFrozen, "z-20 min-w-[180px]")} style={actL}>{t("Kegiatan")}</th>
-              <th className={cn(th, "min-w-[120px]")}>MC</th>
-              <th className={cn(th, "min-w-[140px]")}>{t("Kebutuhan Operator")}</th>
+              <th className={cn(th, FZ, "z-20 text-center")} style={noL}>{t("No")}</th>
+              <th className={cn(th, FZ, "z-20")} style={timeL}>{t("Waktu")}</th>
+              <th className={cn(th, FZ, "z-20")} style={durL}>{t("Durasi")}</th>
+              <th className={cn(th, FZ, lastFrozen, "z-20")} style={actL}>{t("Kegiatan")}</th>
+              <th className={th}>MC</th>
+              <th className={th}>{t("Kebutuhan Operator")}</th>
               {cols.map((d) => (
-                <th key={d.key} className={cn(th, "min-w-[130px]")}>
+                <th key={d.key} className={th}>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: d.color }} />
-                    {d.short || d.name}
+                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                    <span className="truncate">{d.short || d.name}</span>
                   </span>
                 </th>
               ))}
-              <th className={cn(th, "min-w-[150px]")}>{t("Catatan")}</th>
-              {canManage && <th className={cn(th, "w-10")} />}
+              <th className={th}>{t("Catatan")}</th>
+              {canManage && <th className={th} />}
             </tr>
           </thead>
           <tbody>
-            {list.map((item) => (
+            {list.map((item) => {
+              // Derive at RENDER time, not only on blur: rows that already had
+              // a start+end (seeded, imported, or edited before auto-duration
+              // existed) never got a stored value and showed an empty cell.
+              const duration = computeDuration(item.time_start, item.time_end) ?? item.duration;
+              return (
               <tr key={item.id} className="hover:bg-muted/20">
                 <td className={cn(td, FZ, "z-10 text-center text-xs font-medium text-muted-foreground")} style={noL}>{item.no}</td>
                 <td className={cn(td, FZ, "z-10")} style={timeL}>
@@ -257,7 +293,7 @@ export function RundownView({
                   </div>
                 </td>
                 <td className={cn(td, FZ, "z-10 px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} style={durL} title={t("Otomatis dari waktu")}>
-                  {item.duration || <span className="text-muted-foreground/50">–</span>}
+                  {duration || <span className="text-muted-foreground/50">–</span>}
                 </td>
                 <td className={cn(td, FZ, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
                 <td className={td}><EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline /></td>
@@ -313,7 +349,8 @@ export function RundownView({
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
             {list.length === 0 && (
               <tr>
                 <td colSpan={7 + cols.length + (canManage ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">

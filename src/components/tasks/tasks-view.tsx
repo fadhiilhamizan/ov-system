@@ -141,7 +141,7 @@ export function TasksView({
               </button>
             ))}
           </div>
-          {can.manageTasks(user, lockedDivision) && (
+          {can.manageTasks(user) && (
             <TaskFormDialog
               mode="create"
               divisions={divisions}

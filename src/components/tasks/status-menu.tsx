@@ -16,7 +16,7 @@ import type { AppUser, Task, TaskStatus } from "@/lib/types";
 
 export function StatusMenu({ task, user }: { task: Task; user: AppUser }) {
   const [pending, start] = React.useTransition();
-  const editable = can.editTaskProgress(user, task);
+  const editable = can.editTaskProgress(user);
   const m = STATUS_META[task.status];
 
   if (!editable) {

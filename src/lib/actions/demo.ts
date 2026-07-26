@@ -2,6 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { DEMO_EVENT_ID as EV, DEMO_EVENT, demoSeed, angkatanFromNrpNum } from "@/lib/demo-seed-data";
 
@@ -18,6 +20,12 @@ export async function resetDemoDataAction(): Promise<Result> {
   const store = await cookies();
   if (!demoActive(store.get(DEMO_COOKIE)?.value)) {
     return { ok: false, error: "Reset hanya tersedia di Mode Demo." };
+  }
+  // Pengaturan is now readable by coordinator/staff/intern, so this destructive
+  // action needs its own admin check — opening the page is not permission to
+  // wipe it.
+  if (!can.manageBackups(await getCurrentUser())) {
+    return { ok: false, error: "Kamu tidak punya akses untuk ini." };
   }
   const sb = await createClient();
 

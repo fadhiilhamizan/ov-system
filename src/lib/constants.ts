@@ -114,13 +114,13 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   jobs: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
   prospects: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   links: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "none" },
-  budget: { admin: "full", coordinator: "view", staff: "none", intern: "none", guest: "none" },
+  budget: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "none" },
   members: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   events: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   roles: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
-  settings: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
+  settings: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "none" },
 };
 
 /** Which roles can OPEN which modules (route keys) — any level except "none".

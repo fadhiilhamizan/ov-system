@@ -1,5 +1,25 @@
-import type { AppUser, Task } from "./types";
+import { REQUESTABLE_ROLES, type AppUser, type RequestableRole, type Task } from "./types";
 import { ACCESS_RANK, MODULE_ACCESS, MODULE_ACCESS_LEVEL, type AccessLevel } from "./constants";
+
+/**
+ * Which roles this account may ask an admin for.
+ *
+ * - Admins get nothing: admin is granted out of band, and an existing admin
+ *   must not be able to demote themselves through this flow.
+ * - Anonymous "Tamu" sessions (no email) have no account to promote.
+ * - Everyone else may request any requestable role EXCEPT the one they already
+ *   hold — so a role-less account upgrades, and a staff member can move to
+ *   coordinator or down to intern.
+ */
+export function requestableRolesFor(user: AppUser): RequestableRole[] {
+  if (user.role === "admin" || !user.email) return [];
+  return REQUESTABLE_ROLES.filter((r) => r !== user.role);
+}
+
+/** Can this account use the role-request flow at all? */
+export function canRequestRole(user: AppUser): boolean {
+  return requestableRolesFor(user).length > 0;
+}
 
 /** Does the user match the PIC string of a task (by name or nickname)? */
 export function isAssignedTo(user: AppUser, task: Task): boolean {
@@ -17,12 +37,6 @@ export function accessLevel(user: AppUser, moduleKey: string): AccessLevel {
 /** Does the user hold at least `level` on `moduleKey`? */
 export function atLeast(user: AppUser, moduleKey: string, level: AccessLevel): boolean {
   return ACCESS_RANK[accessLevel(user, moduleKey)] >= ACCESS_RANK[level];
-}
-
-/** Non-admins with a division are confined to it; an unscoped profile isn't. */
-function inScope(user: AppUser, division?: string): boolean {
-  if (user.role === "admin") return true;
-  return !division || !user.division || division === user.division;
 }
 
 // Permission model derived from the access matrix in constants.ts. Every helper
@@ -92,21 +106,23 @@ export const can = {
   },
 
   // --- Work Breakdown ---
-  /** Create / edit tasks. Scoped roles are limited to their own division. */
-  manageTasks(user: AppUser, division?: string): boolean {
-    return atLeast(user, "tasks", "limited") && inScope(user, division);
+  // NOTE: task rights are NOT scoped to the user's division. An earlier cut
+  // confined non-admins to `profiles.division`, which made staff/intern able to
+  // edit only *some* tasks — the access matrix is the sole authority.
+  /** Create / edit tasks. */
+  manageTasks(user: AppUser): boolean {
+    return atLeast(user, "tasks", "limited");
   },
-  editTask(user: AppUser, task: Task): boolean {
-    return can.manageTasks(user, task.division);
+  editTask(user: AppUser): boolean {
+    return can.manageTasks(user);
   },
   /** Delete a task — only "full" access (admin & koordinator). */
-  deleteTask(user: AppUser, division?: string): boolean {
-    return atLeast(user, "tasks", "full") && inScope(user, division);
+  deleteTask(user: AppUser): boolean {
+    return atLeast(user, "tasks", "full");
   },
-  /** Update Status & fill Result — also allowed on tasks assigned to the user. */
-  editTaskProgress(user: AppUser, task: Task): boolean {
-    if (can.manageTasks(user, task.division)) return true;
-    return atLeast(user, "tasks", "limited") && isAssignedTo(user, task);
+  /** Update Status & fill Result. */
+  editTaskProgress(user: AppUser): boolean {
+    return atLeast(user, "tasks", "limited");
   },
 
   // --- helpers ---

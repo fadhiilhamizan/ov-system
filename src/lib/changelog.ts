@@ -7,6 +7,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.16.0",
+    date: "2026-07-26",
+    title: "Perbaikan hak akses tugas, pengajuan peran yang bisa diubah & rundown",
+    changes: [
+      "Perbaikan penting: Staff & Intern kini bisa mengubah dan mengisi hasil SEMUA tugas, bukan cuma sebagian. Sebelumnya hak akses ikut terkunci ke divisi di profil akun, sehingga tugas divisi lain tidak bisa disentuh.",
+      "Anggaran dan Pengaturan kini bisa dibuka Koordinator, Staff, dan Intern dalam mode hanya-lihat. Backup, rollback, dan reset data demo tetap khusus Admin.",
+      "Pengajuan peran tidak lagi meminta pilihan Ormawa Visit — satu peran berlaku untuk semua Ormawa Visit.",
+      "Pengajuan peran yang masih menunggu keputusan sekarang bisa diperbaiki dan dikirim ulang lewat 'Ubah pengajuan'.",
+      "Akun yang sudah punya peran bisa mengajukan perubahan peran (naik atau turun). Peran yang sedang dipakai tidak muncul sebagai pilihan, Admin tidak bisa diminta lewat pengajuan, dan akun Admin tidak bisa diturunkan.",
+      "Rundown: kolom Durasi kini otomatis terisi untuk semua baris yang punya waktu mulai & selesai, termasuk baris lama yang sebelumnya kosong.",
+      "Rundown: kolom beku (No, Waktu, Durasi, Kegiatan) tidak lagi tampak berlubang saat tabel digeser — lebar kolom kini dikunci sehingga posisi bekunya selalu pas.",
+    ],
+  },
+  {
     version: "1.15.0",
     date: "2026-07-26",
     title: "Akses Terbatas, daftar akun sendiri, permintaan peran & menu samping yang bisa diciutkan",

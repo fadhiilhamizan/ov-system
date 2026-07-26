@@ -120,14 +120,14 @@ export const GUIDE: GuideSection[] = [
     steps: [
       { id: "Klik 'Tambah baris' untuk menambah sesi; waktu mulai otomatis melanjutkan waktu selesai baris sebelumnya.", en: "Click 'Add row' to add a segment; the start time automatically continues from the previous row's end time." },
       { id: "Isi sel langsung di tabel — perubahan tersimpan otomatis saat kursor berpindah.", en: "Edit cells straight in the table — changes save automatically when the field loses focus." },
-      { id: "Durasi dihitung otomatis dari waktu mulai & selesai, jadi tidak perlu diisi manual.", en: "Duration is computed automatically from the start and end times, so you don't fill it in." },
+      { id: "Durasi dihitung otomatis dari waktu mulai & selesai setiap kali tabel dibuka, jadi tidak perlu diisi manual — baris lama yang dulu kosong pun ikut terisi.", en: "Duration is computed from the start and end times every time the table is opened, so you never fill it in — older rows that used to show nothing now display it too." },
       { id: "Tiap divisi punya kolom sendiri; isi kegiatan divisi tersebut pada sesi itu.", en: "Each division has its own column; fill in what that division does during the segment." },
       { id: "Gunakan ikon catatan untuk menulis evaluasi cepat seperti 'Terlalu cepat 5 menit'.", en: "Use the note icon to jot a quick evaluation such as 'Ran 5 minutes early'." },
       { id: "Gunakan ikon salin untuk menduplikat baris yang mirip.", en: "Use the copy icon to duplicate a similar row." },
       { id: "Bila kolom 'Kebutuhan Operator' diisi tautan, tombol buka tautan otomatis muncul di sampingnya.", en: "If the 'Operator Needs' cell contains a link, an open-link button appears next to it." },
     ],
     tips: [
-      { id: "Rundown kini satu versi saja (versi B dihapus). Kolom No, Waktu, Durasi, dan Kegiatan dibekukan agar tetap terlihat saat menggeser tabel ke samping.", en: "The rundown is now a single version (version B was removed). The No, Time, Duration, and Activity columns are frozen so they stay visible while scrolling sideways." },
+      { id: "Rundown kini satu versi saja (versi B dihapus). Kolom No, Waktu, Durasi, dan Kegiatan dibekukan agar tetap terlihat saat menggeser tabel ke samping, dan kini benar-benar menutupi kolom di belakangnya (tidak lagi tampak berlubang).", en: "The rundown is now a single version (version B was removed). The No, Time, Duration, and Activity columns are frozen so they stay visible while scrolling sideways, and they now fully cover the columns behind them (no more see-through gaps)." },
       { id: "Divisi yang dicentang 'tidak diikutsertakan pada rundown' (mis. Sekretaris/Bendahara) tidak akan muncul sebagai kolom.", en: "Divisions marked 'excluded from rundown' (e.g. Secretary/Treasurer) won't appear as columns." },
     ],
     access: {
@@ -206,7 +206,7 @@ export const GUIDE: GuideSection[] = [
       { id: "Centang beberapa item untuk menghapus sekaligus.", en: "Tick several items to delete them at once." },
     ],
     tips: [{ id: "Nilai negatif tidak diterima, dan total dibulatkan ke rupiah utuh.", en: "Negative values are rejected, and totals are rounded to whole rupiah." }],
-    access: { id: "Admin & Koordinator bisa membuka menu ini; hanya Admin yang bisa mengubah.", en: "Admins & Coordinators can open this menu; only Admins can edit." },
+    access: { id: "Semua peran kecuali Tamu bisa membuka dan melihat anggaran; hanya Admin yang bisa mengubah.", en: "Every role except Guest can open and read the budget; only Admins can edit it." },
   },
   {
     key: "events",
@@ -236,9 +236,13 @@ export const GUIDE: GuideSection[] = [
       { id: "Siapa pun bisa mendaftar sendiri lewat halaman Daftar (email & kata sandi, atau Google).", en: "Anyone can sign themselves up from the Sign Up page (email & password, or Google)." },
       { id: "Akun baru belum punya peran — setara Tamu, hanya bisa melihat.", en: "A new account has no role — it is equivalent to a Guest and can only look around." },
       { id: "Dari menu akun (pojok kanan atas) atau spanduk kuning di atas halaman, akun tersebut memilih 'Ajukan Peran', lalu memilih Koordinator, Staff, atau Intern.", en: "From the account menu (top right) or the amber banner at the top of the page, they pick 'Request Role' and choose Coordinator, Staff, or Intern." },
-      { id: "Admin membuka menu Role Request, lalu menekan 'Setujui' (peran langsung diberikan) atau 'Abaikan' (akun tetap Tamu).", en: "An admin opens the Role Request menu and clicks 'Approve' (the role is granted immediately) or 'Ignore' (the account stays a Guest)." },
+      { id: "Selama belum diputuskan, pengajuan masih bisa diperbaiki lewat 'Ubah pengajuan' — misalnya salah pilih peran atau ada salah ketik di catatan.", en: "While it is still undecided, the request can be corrected via 'Edit request' — for a wrong role choice or a typo in the note." },
+      { id: "Admin membuka menu Role Request, lalu menekan 'Setujui' (peran langsung diberikan) atau 'Abaikan' (peran tidak berubah).", en: "An admin opens the Role Request menu and clicks 'Approve' (the role is granted immediately) or 'Ignore' (the role is left unchanged)." },
+      { id: "Setelah punya peran, akun tetap bisa mengajukan perubahan peran lewat 'Ajukan Ubah Peran' — naik maupun turun.", en: "Once it has a role, the account can still ask to change it via 'Request a Role Change' — either up or down." },
     ],
     tips: [
+      { id: "Peran berlaku untuk SEMUA Ormawa Visit, jadi pengajuan tidak perlu memilih edisi.", en: "A role applies across EVERY Ormawa Visit, so a request doesn't pick an edition." },
+      { id: "Peran yang sedang dipakai tidak muncul sebagai pilihan, dan Admin tidak pernah bisa diminta lewat cara ini. Akun Admin juga tidak bisa diturunkan lewat pengajuan.", en: "The role you already hold isn't offered as an option, and Admin can never be requested this way. An admin account also can't be demoted through a request." },
       { id: "Satu akun hanya boleh punya satu pengajuan yang menunggu keputusan. Riwayat pengajuan yang sudah diputuskan tetap tersimpan di bawah daftar.", en: "An account may only have one request awaiting a decision. Decided requests stay in the history list below." },
       { id: "Masuk sebagai Tamu (tanpa akun) berbeda dengan mendaftar — Tamu tanpa akun tidak bisa mengajukan peran.", en: "Entering as a Guest (no account) is different from signing up — a guest without an account cannot request a role." },
     ],
@@ -257,6 +261,9 @@ export const GUIDE: GuideSection[] = [
       { id: "Gunakan Backup & Rollback untuk mencadangkan atau memulihkan data (khusus Admin, mode produksi).", en: "Use Backup & Rollback to snapshot or restore data (Admin only, production mode)." },
       { id: "Di Mode Demo, tersedia 'Reset ke data awal' untuk mengembalikan sandbox ke contoh semula.", en: "In Demo Mode you get 'Reset to initial data' to restore the sandbox to its original sample data." },
     ],
-    access: { id: "Hanya Admin.", en: "Admins only." },
+    access: {
+      id: "Semua peran kecuali Tamu bisa membuka untuk melihat matriks hak akses & changelog. Backup, rollback, dan reset data demo hanya untuk Admin.",
+      en: "Every role except Guest can open it to read the access matrix and changelog. Backup, rollback, and demo data reset are Admin-only.",
+    },
   },
 ];

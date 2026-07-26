@@ -653,12 +653,18 @@ export const EN: Record<string, string> = {
   "Permintaan dari akun yang baru mendaftar akan muncul di sini.":
     "Requests from newly registered accounts will appear here.",
   "Ajukan Peran": "Request Role",
+  "Ajukan Ubah Peran": "Request a Role Change",
+  "Ubah Pengajuan Peran": "Edit Role Request",
+  "Ubah pengajuan": "Edit request",
   "Peran yang diminta": "Requested role",
   "Catatan untuk admin": "Note for the admin",
-  "Contoh: staff divisi Event OV1 2026": "e.g. staff of the Event division, OV1 2026",
+  "Contoh: staff divisi Event": "e.g. staff of the Event division",
   "Kirim permintaan": "Send request",
-  "Akun barumu belum punya peran (masih setara Tamu). Pilih peran yang kamu inginkan — admin akan menyetujui atau mengabaikannya.":
-    "Your new account has no role yet (still equivalent to a Guest). Pick the role you want — an admin will approve or ignore it.",
+  "Pilih peran yang kamu inginkan — admin akan menyetujui atau mengabaikannya. Peran berlaku untuk semua Ormawa Visit.":
+    "Pick the role you want — an admin will approve or ignore it. A role applies across every Ormawa Visit.",
+  "Pengajuanmu belum diputuskan admin, jadi masih bisa diperbaiki.":
+    "An admin hasn't decided on your request yet, so you can still correct it.",
+  "Pengajuan peran diperbarui.": "Role request updated.",
   "Permintaan peran terkirim. Tunggu persetujuan admin.":
     "Role request sent. Wait for an admin to approve it.",
   "Menunggu keputusan": "Awaiting a decision",

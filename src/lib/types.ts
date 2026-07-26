@@ -200,9 +200,12 @@ export interface Team {
   intern: string;
 }
 
-/** Roles a signed-up account may ask for. Admin is granted out of band and
- *  "guest" is what a fresh account already is, so neither is requestable. */
+/** Roles an account may ask for — an upgrade OR a downgrade. Admin is never
+ *  requestable (it is granted out of band, and an admin can't be demoted this
+ *  way); "guest" is the no-role starting state, so it isn't requestable either. */
 export type RequestableRole = Extract<Role, "coordinator" | "staff" | "intern">;
+
+export const REQUESTABLE_ROLES: RequestableRole[] = ["coordinator", "staff", "intern"];
 
 export type RoleRequestStatus = "pending" | "approved" | "ignored";
 

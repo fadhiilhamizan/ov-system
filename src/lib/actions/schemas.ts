@@ -277,14 +277,13 @@ export const faqSchema = z.object({
 
 // ---------------- Role requests ----------------
 // Only these three roles are requestable: admin is granted out of band, and
-// "guest" is what a fresh account already is. The DB mirrors this with a
-// CHECK constraint (migration 0023).
+// "guest" is the no-role starting state. The DB mirrors this with a CHECK
+// constraint (migration 0023). A role applies across ALL Ormawa Visits, so
+// there is deliberately no event scope on a request.
 export const roleRequestSchema = z.object({
   requested_role: z.enum(["coordinator", "staff", "intern"], {
     error: "Pilih peran yang diminta (Koordinator, Staff, atau Intern).",
   }),
-  division: z.string().trim().max(128).optional(),
-  event_id: z.string().trim().max(128).optional(),
   message: optionalText(1000),
 });
 

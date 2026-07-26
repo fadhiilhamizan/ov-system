@@ -58,7 +58,7 @@ export function TaskKanban({
     const newStatus = overId.replace("col-", "") as TaskStatus;
     const task = items.find((t) => t.id === id);
     if (!task || task.status === newStatus) return;
-    if (!can.editTaskProgress(user, task)) {
+    if (!can.editTaskProgress(user)) {
       toast.error(t("Kamu tidak punya akses mengubah status tugas ini."));
       return;
     }
@@ -89,7 +89,7 @@ export function TaskKanban({
                   events={events}
                   activeEventId={activeEventId}
                   user={user}
-                  draggable={can.editTaskProgress(user, t)}
+                  draggable={can.editTaskProgress(user)}
                 />
               ))}
             </Column>

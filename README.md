@@ -47,9 +47,13 @@ Sistem memakai hak akses berjenjang (RBAC). Matriks lengkapnya dapat dilihat di 
 | Intern | Sama seperti Staff. |
 | Tamu | Hanya melihat. Akun yang baru mendaftar juga setara Tamu sampai perannya disetujui admin. |
 
+Hak akses tidak dibatasi per divisi: peran berlaku untuk seluruh divisi dan seluruh Ormawa Visit.
+
 ### Daftar akun dan permintaan peran
 
 Siapa pun bisa mendaftar sendiri dari halaman **Daftar** (email dan kata sandi, atau lewat **Google**). Akun baru belum punya peran — setara Tamu, hanya bisa melihat. Dari menu akun di kanan atas (atau spanduk di atas halaman) akun tersebut memilih **Ajukan Peran** dan meminta Koordinator, Staff, atau Intern. Admin membuka menu **Role Request** untuk **Setujui** (peran langsung aktif) atau **Abaikan**.
+
+Selama belum diputuskan, pengajuan masih bisa diperbaiki lewat **Ubah pengajuan**. Akun yang sudah punya peran juga bisa meminta perubahan peran (naik atau turun) lewat **Ajukan Ubah Peran**; peran yang sedang dipakai tidak ditawarkan, **Admin tidak pernah bisa diminta lewat pengajuan**, dan akun Admin tidak bisa diturunkan dengan cara ini.
 
 Masuk dengan Google perlu diaktifkan lebih dulu di dashboard Supabase (Authentication → Providers → Google), dengan URL callback `https://<domain-anda>/auth/callback`.
 

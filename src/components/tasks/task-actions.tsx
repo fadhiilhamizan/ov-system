@@ -42,11 +42,11 @@ export function TaskActions({
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
 
-  const canEditAny = can.editTaskProgress(user, task);
+  const canEditAny = can.editTaskProgress(user);
   // Duplicating creates a new task, so it follows "create" (limited) rights;
   // deleting needs full access.
-  const canDuplicate = can.manageTasks(user, task.division);
-  const canDelete = can.deleteTask(user, task.division);
+  const canDuplicate = can.manageTasks(user);
+  const canDelete = can.deleteTask(user);
   if (!canEditAny && !canDuplicate && !canDelete) return null;
 
   function doDelete() {

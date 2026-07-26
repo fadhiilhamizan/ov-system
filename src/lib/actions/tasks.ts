@@ -29,8 +29,8 @@ const errMsg = (e: unknown) =>
 
 export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]): Promise<Result> {
   const user = await getCurrentUser();
-  if (!can.manageTasks(user, input.division)) {
-    return { ok: false, error: "Kamu tidak punya akses membuat tugas di divisi ini." };
+  if (!can.manageTasks(user)) {
+    return { ok: false, error: "Kamu tidak punya akses membuat tugas." };
   }
   const v = parse(createTaskSchema, input);
   if (!v.ok) return v;
@@ -70,7 +70,7 @@ export async function updateTaskAction(
   // "progress only" permissions (staff/intern on their own tasks).
   const keys = Object.keys(v.data);
   const onlyProgress = keys.every((k) => k === "status" || k === "result");
-  const allowed = onlyProgress ? can.editTaskProgress(user, task) : can.editTask(user, task);
+  const allowed = onlyProgress ? can.editTaskProgress(user) : can.editTask(user);
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
 
   try {
@@ -95,12 +95,12 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
   const sv = parse(taskStatusSchema, status);
   if (!sv.ok) return sv;
   const user = await getCurrentUser();
-  // Authorization is per-row (division-scoped), so fetch the rows to check —
-  // but apply the change in ONE batched write instead of N round-trips.
+  // Fetch the rows so unknown ids are dropped, then apply the change in ONE
+  // batched write instead of N round-trips.
   const tasks = await Promise.all(ids.map((id) => getTask(id)));
-  const allowed = tasks
-    .filter((t): t is Task => !!t && can.editTaskProgress(user, t))
-    .map((t) => t.id);
+  const allowed = can.editTaskProgress(user)
+    ? tasks.filter((t): t is Task => !!t).map((t) => t.id)
+    : [];
   try {
     if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
   } catch (e) {
@@ -113,9 +113,9 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
 export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> {
   const user = await getCurrentUser();
   const tasks = await Promise.all(ids.map((id) => getTask(id)));
-  const allowed = tasks
-    .filter((t): t is Task => !!t && can.deleteTask(user, t.division))
-    .map((t) => t.id);
+  const allowed = can.deleteTask(user)
+    ? tasks.filter((t): t is Task => !!t).map((t) => t.id)
+    : [];
   try {
     for (const id of allowed) await purgeTaskLinks(id);
     if (allowed.length) await bulkDeleteTasks(allowed);
@@ -132,8 +132,8 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   const task = await getTask(idv.data);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
-  if (!can.manageTasks(user, task.division)) {
-    return { ok: false, error: "Kamu tidak punya akses membuat tugas di divisi ini." };
+  if (!can.manageTasks(user)) {
+    return { ok: false, error: "Kamu tidak punya akses membuat tugas." };
   }
   // Fresh copy: keeps the plan (division/PIC/dates/notes), resets progress.
   await createTask({
@@ -156,7 +156,7 @@ export async function deleteTaskAction(id: string): Promise<Result> {
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
   // Deleting needs FULL access — "limited" roles (staff/intern) may create,
   // edit and fill in results, but never delete.
-  if (!can.deleteTask(user, task.division)) {
+  if (!can.deleteTask(user)) {
     return { ok: false, error: "Kamu tidak punya akses menghapus tugas ini." };
   }
   // Drop the task's published Super Link rows first (task_links themselves

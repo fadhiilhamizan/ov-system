@@ -562,6 +562,25 @@ export async function createRoleRequest(
   if (error) throw new Error(error.message);
 }
 
+/** Edit one's own still-pending request (fix a wrong role or a typo). The
+ *  `status=pending` filter is belt-and-braces on top of RLS — a decided request
+ *  must never be rewritten. */
+export async function updateRoleRequest(
+  id: string,
+  patch: { requested_role?: RoleRequest["requested_role"]; message?: string },
+): Promise<void> {
+  if (!USE_SUPABASE) {
+    local.updateRoleRequest(id, patch);
+    return;
+  }
+  const { error } = await (await sb())
+    .from("role_requests")
+    .update(patch)
+    .eq("id", id)
+    .eq("status", "pending");
+  if (error) throw new Error(error.message);
+}
+
 /** Approve (grant the role) or ignore a request. In Supabase this goes through
  *  the SECURITY DEFINER `decide_role_request` RPC — profiles.role is not
  *  directly writable by design (see migration 0020/0023). */

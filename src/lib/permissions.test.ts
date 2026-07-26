@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { accessLevel, atLeast, can, isAssignedTo } from "./permissions";
+import { accessLevel, atLeast, can, canRequestRole, isAssignedTo, requestableRolesFor } from "./permissions";
 import type { AppUser, Task } from "./types";
 
 function user(role: AppUser["role"], division: string | null = null): AppUser {
@@ -73,27 +73,25 @@ describe("access levels", () => {
 });
 
 describe("manageTasks — limited roles write, only full deletes", () => {
-  it("admin can manage any division", () => {
-    expect(can.manageTasks(user("admin"), "EVENT")).toBe(true);
-    expect(can.manageTasks(user("admin"), "MARKETING")).toBe(true);
+  it("is NOT scoped to the user's division (regression: staff could only edit some tasks)", () => {
+    // profiles.division must not narrow task rights — the access matrix is the
+    // only authority. A staff member scoped to EVENT can still edit MARKETING.
+    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+      expect(can.manageTasks(user(r, "EVENT"))).toBe(true);
+      expect(can.editTask(user(r, "EVENT"))).toBe(true);
+      expect(can.editTaskProgress(user(r, "EVENT"))).toBe(true);
+    }
   });
-  it("coordinator only within own division", () => {
-    const coord = user("coordinator", "EVENT");
-    expect(can.manageTasks(coord, "EVENT")).toBe(true);
-    expect(can.manageTasks(coord, "MARKETING")).toBe(false);
-    expect(can.manageTasks(coord)).toBe(true); // no division given
-  });
-  it("staff/intern can create & edit tasks in their division", () => {
-    expect(can.manageTasks(user("staff", "EVENT"), "EVENT")).toBe(true);
-    expect(can.manageTasks(user("intern", "EVENT"), "EVENT")).toBe(true);
-    expect(can.manageTasks(user("staff", "EVENT"), "MARKETING")).toBe(false);
-    expect(can.manageTasks(user("guest"), "EVENT")).toBe(false);
+  it("guest can never write a task", () => {
+    expect(can.manageTasks(user("guest"))).toBe(false);
+    expect(can.editTask(user("guest"))).toBe(false);
+    expect(can.editTaskProgress(user("guest"))).toBe(false);
   });
   it("staff/intern can never delete a task", () => {
-    expect(can.deleteTask(user("admin"), "EVENT")).toBe(true);
-    expect(can.deleteTask(user("coordinator", "EVENT"), "EVENT")).toBe(true);
-    expect(can.deleteTask(user("staff", "EVENT"), "EVENT")).toBe(false);
-    expect(can.deleteTask(user("intern", "EVENT"), "EVENT")).toBe(false);
+    expect(can.deleteTask(user("admin"))).toBe(true);
+    expect(can.deleteTask(user("coordinator", "EVENT"))).toBe(true);
+    expect(can.deleteTask(user("staff", "EVENT"))).toBe(false);
+    expect(can.deleteTask(user("intern", "EVENT"))).toBe(false);
     expect(can.deleteTask(user("guest"))).toBe(false);
   });
 });
@@ -139,6 +137,29 @@ describe("view-only downgrade for coordinator/staff/intern", () => {
   });
 });
 
+describe("requestableRolesFor", () => {
+  const withEmail = (r: AppUser["role"]) => ({ ...user(r), email: "a@b.c" });
+
+  it("a role-less account may ask for any of the three roles", () => {
+    expect(requestableRolesFor(withEmail("guest"))).toEqual(["coordinator", "staff", "intern"]);
+  });
+  it("excludes the role the account already holds", () => {
+    expect(requestableRolesFor(withEmail("staff"))).toEqual(["coordinator", "intern"]);
+    expect(requestableRolesFor(withEmail("coordinator"))).toEqual(["staff", "intern"]);
+  });
+  it("admin can never be requested, and an admin cannot be downgraded this way", () => {
+    expect(requestableRolesFor(withEmail("admin"))).toEqual([]);
+    expect(canRequestRole(withEmail("admin"))).toBe(false);
+    for (const r of ["guest", "staff", "coordinator", "intern"] as const) {
+      expect(requestableRolesFor(withEmail(r))).not.toContain("admin");
+    }
+  });
+  it("an anonymous Tamu session (no email) has no account to promote", () => {
+    expect(requestableRolesFor(user("guest"))).toEqual([]);
+    expect(canRequestRole(user("guest"))).toBe(false);
+  });
+});
+
 describe("role requests", () => {
   it("only admin can approve/ignore", () => {
     expect(can.manageRoleRequests(user("admin"))).toBe(true);
@@ -150,23 +171,14 @@ describe("role requests", () => {
   });
 });
 
-describe("editTaskProgress — assignee-based for staff/intern", () => {
-  it("admin & coordinator can always edit progress", () => {
-    expect(can.editTaskProgress(user("admin"), task())).toBe(true);
-    expect(can.editTaskProgress(user("coordinator"), task())).toBe(true);
-  });
-  it("staff can edit only own division's task", () => {
-    const staff = user("staff", "EVENT");
-    expect(can.editTaskProgress(staff, task({ division: "EVENT" }))).toBe(true);
-    expect(can.editTaskProgress(staff, task({ division: "MARKETING" }))).toBe(false);
-  });
-  it("staff assigned by name can edit a task outside their division", () => {
-    const staff = user("staff", "EVENT");
-    staff.name = "Budi Santoso";
-    expect(can.editTaskProgress(staff, task({ division: "MARKETING", pic: "budi" }))).toBe(true);
+describe("editTaskProgress", () => {
+  it("every writing role can edit progress on any task", () => {
+    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+      expect(can.editTaskProgress(user(r, "EVENT"))).toBe(true);
+    }
   });
   it("guest can never edit progress", () => {
-    expect(can.editTaskProgress(user("guest"), task())).toBe(false);
+    expect(can.editTaskProgress(user("guest"))).toBe(false);
   });
 });
 
@@ -185,19 +197,24 @@ describe("isAssignedTo", () => {
 });
 
 describe("accessModule / isReadOnly", () => {
-  it("budget module opens for admin+coordinator (coordinator read-only)", () => {
-    expect(can.accessModule(user("admin"), "budget")).toBe(true);
-    expect(can.accessModule(user("coordinator"), "budget")).toBe(true);
-    expect(can.accessModule(user("staff"), "budget")).toBe(false);
+  it("budget opens for every role but guest; only admin can write", () => {
+    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+      expect(can.accessModule(user(r), "budget")).toBe(true);
+    }
     expect(can.accessModule(user("guest"), "budget")).toBe(false);
+    expect(can.manageBudget(user("admin"))).toBe(true);
+    expect(can.manageBudget(user("staff"))).toBe(false);
   });
   it("links module excludes guest", () => {
     expect(can.accessModule(user("intern"), "links")).toBe(true);
     expect(can.accessModule(user("guest"), "links")).toBe(false);
   });
-  it("settings is admin-only", () => {
-    expect(can.accessModule(user("admin"), "settings")).toBe(true);
-    expect(can.accessModule(user("coordinator"), "settings")).toBe(false);
+  it("settings is readable by every role but guest; backups stay admin-only", () => {
+    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+      expect(can.accessModule(user(r), "settings")).toBe(true);
+      expect(can.manageBackups(user(r))).toBe(r === "admin");
+    }
+    expect(can.accessModule(user("guest"), "settings")).toBe(false);
   });
   it("guest is read-only", () => {
     expect(can.isReadOnly(user("guest"))).toBe(true);

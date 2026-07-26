@@ -5,7 +5,8 @@ import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
 import { getEvents, getRoleRequestsFor } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
-import type { RequestableRole } from "@/lib/types";
+import { requestableRolesFor } from "@/lib/permissions";
+import type { RoleRequest } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Auth FIRST: getCurrentUser() redirects unauthenticated visitors to /login.
@@ -24,14 +25,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // right width (no expand-then-collapse flash).
   const sidebarCollapsed = store.get(SIDEBAR_COOKIE)?.value === SIDEBAR_COLLAPSED;
 
-  // Only a signed-up account with no role yet pays for this lookup; everyone
-  // else skips the query entirely.
-  const needsRole = user.role === "guest" && !!user.email && !sandboxMode;
-  let roleRequestState: RequestableRole | null | undefined;
-  if (needsRole) {
-    const mine = await getRoleRequestsFor(user.id);
-    roleRequestState = mine.find((r) => r.status === "pending")?.requested_role ?? null;
-  }
+  // Which roles this account may ask for (empty for admins, demo identities and
+  // anonymous Tamu sessions — none of which pay for the lookup below).
+  const roleOptions = sandboxMode ? [] : requestableRolesFor(user);
+  const pendingRoleRequest: RoleRequest | null = roleOptions.length
+    ? ((await getRoleRequestsFor(user.id)).find((r) => r.status === "pending") ?? null)
+    : null;
+  // Only accounts with NO role get nagged by the banner; those that already
+  // have one change roles from the user menu instead.
+  const showRoleBanner = roleOptions.length > 0 && user.role === "guest";
 
   return (
     <AppShell
@@ -41,7 +43,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       demoMode={!USE_SUPABASE}
       sandboxMode={sandboxMode}
       defaultCollapsed={sidebarCollapsed}
-      roleRequestState={roleRequestState}
+      roleOptions={roleOptions}
+      pendingRoleRequest={pendingRoleRequest}
+      showRoleBanner={showRoleBanner}
     >
       {children}
     </AppShell>

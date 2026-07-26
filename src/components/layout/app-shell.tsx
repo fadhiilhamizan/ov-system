@@ -6,7 +6,7 @@ import { Topbar } from "./topbar";
 import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
 import { RoleRequestBanner } from "@/components/roles/role-request-banner";
-import type { AppUser, OVEvent, RequestableRole } from "@/lib/types";
+import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { APP_VERSION } from "@/lib/version";
@@ -19,7 +19,9 @@ export function AppShell({
   demoMode,
   sandboxMode,
   defaultCollapsed = false,
-  roleRequestState,
+  roleOptions = [],
+  pendingRoleRequest = null,
+  showRoleBanner = false,
   children,
 }: {
   user: AppUser;
@@ -28,9 +30,12 @@ export function AppShell({
   demoMode: boolean;
   sandboxMode: boolean;
   defaultCollapsed?: boolean;
-  /** null = signed-up but no role and no open request; a role = awaiting a
-   *  decision; undefined = not applicable (has a role, or is a Tamu session). */
-  roleRequestState?: RequestableRole | null;
+  /** Roles this account may request (empty = the flow doesn't apply to them). */
+  roleOptions?: RequestableRole[];
+  /** Their request awaiting an admin decision, if any. */
+  pendingRoleRequest?: RoleRequest | null;
+  /** Only role-less accounts get the banner; others use the user menu. */
+  showRoleBanner?: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -96,8 +101,8 @@ export function AppShell({
           overlays the content instead of shoving it sideways. */}
       <div className={cn("transition-[padding] duration-200 ease-out", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
         {sandboxMode && <DemoBanner />}
-        {roleRequestState !== undefined && (
-          <RoleRequestBanner events={events} pendingRole={roleRequestState} />
+        {showRoleBanner && roleOptions.length > 0 && (
+          <RoleRequestBanner options={roleOptions} pending={pendingRoleRequest} />
         )}
         <Topbar
           user={user}
@@ -105,6 +110,8 @@ export function AppShell({
           activeEventId={activeEventId}
           demoMode={demoMode}
           sandboxMode={sandboxMode}
+          roleOptions={roleOptions}
+          pendingRoleRequest={pendingRoleRequest}
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>
