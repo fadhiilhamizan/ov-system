@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
@@ -46,7 +46,7 @@ export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }
 
@@ -79,7 +79,7 @@ export async function updateTaskAction(
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }
 
@@ -106,7 +106,7 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
@@ -122,7 +122,7 @@ export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> 
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
@@ -146,7 +146,7 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
     notes: task.notes,
     status: "todo",
   });
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }
 
@@ -163,6 +163,6 @@ export async function deleteTaskAction(id: string): Promise<Result> {
   // cascade with the task).
   await purgeTaskLinks(task.id);
   await deleteTask(id);
-  revalidatePath("/", "layout");
+  revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }

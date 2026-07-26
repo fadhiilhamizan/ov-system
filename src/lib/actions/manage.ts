@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
@@ -45,7 +45,7 @@ export async function createEventAction(
       });
     }
   }
-  revalidatePath("/", "layout");
+  revalidateEntities("events");
   return { ok: true };
 }
 export async function updateEventAction(id: string, patch: Partial<OVEvent>): Promise<Result> {
@@ -55,7 +55,7 @@ export async function updateEventAction(id: string, patch: Partial<OVEvent>): Pr
   const v = parse(eventSchema.partial(), patch);
   if (!v.ok) return v;
   await updateEvent(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("events");
   return { ok: true };
 }
 /** Copy an Ormawa Visit's metadata into a new draft (data is not cloned —
@@ -69,7 +69,7 @@ export async function duplicateEventAction(id: string): Promise<Result> {
   const { id: _drop, order: _order, ...rest } = ev;
   void _drop; void _order;
   await createEvent({ ...rest, id: uid("ov"), title: `${ev.title} (salinan)`, status: "planning" });
-  revalidatePath("/", "layout");
+  revalidateEntities("events");
   return { ok: true };
 }
 
@@ -78,7 +78,7 @@ export async function deleteEventAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteEvent(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("events");
   return { ok: true };
 }
 
@@ -88,7 +88,7 @@ export async function createMemberAction(input: Partial<Member>): Promise<Result
   const v = parse(memberSchema, input);
   if (!v.ok) return v;
   await createMember(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("members");
   return { ok: true };
 }
 export async function updateMemberAction(id: string, patch: Partial<Member>): Promise<Result> {
@@ -98,7 +98,7 @@ export async function updateMemberAction(id: string, patch: Partial<Member>): Pr
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
   await updateMember(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("members");
   return { ok: true };
 }
 export async function deleteMemberAction(id: string): Promise<Result> {
@@ -106,7 +106,7 @@ export async function deleteMemberAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteMember(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("members");
   return { ok: true };
 }
 
@@ -127,7 +127,7 @@ export async function bulkDeleteMembersAction(ids: string[]): Promise<Result> {
   const idv = parseIds(ids);
   if (!idv.ok) return idv;
   await bulkDeleteMembers(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("members");
   return { ok: true };
 }
 
@@ -138,7 +138,7 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
   await bulkUpdateMembers(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("members");
   return { ok: true };
 }
 
@@ -150,7 +150,7 @@ export async function createDivisionAction(input: Partial<Division>): Promise<Re
   // Divisions belong to the currently-active Ormawa Visit.
   const event = await getActiveEvent();
   await createDivision({ ...v.data, event_id: event.id });
-  revalidatePath("/", "layout");
+  revalidateEntities("divisions");
   return { ok: true };
 }
 export async function updateDivisionAction(key: string, patch: Partial<Division>): Promise<Result> {
@@ -161,7 +161,7 @@ export async function updateDivisionAction(key: string, patch: Partial<Division>
   if (!v.ok) return v;
   const event = await getActiveEvent();
   await updateDivision(event.id, idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("divisions");
   return { ok: true };
 }
 export async function deleteDivisionAction(key: string): Promise<Result> {
@@ -170,7 +170,7 @@ export async function deleteDivisionAction(key: string): Promise<Result> {
   if (!idv.ok) return idv;
   const event = await getActiveEvent();
   await deleteDivision(event.id, idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("divisions");
   return { ok: true };
 }
 export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result> {
@@ -179,7 +179,7 @@ export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result>
   if (!idv.ok) return idv;
   const event = await getActiveEvent();
   await bulkDeleteDivisions(event.id, idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("divisions");
   return { ok: true };
 }
 export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<Division>): Promise<Result> {
@@ -190,7 +190,7 @@ export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<D
   if (!v.ok) return v;
   const event = await getActiveEvent();
   await bulkUpdateDivisions(event.id, idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("divisions");
   return { ok: true };
 }
 
@@ -200,7 +200,7 @@ export async function createTeamAction(input: Partial<Team>): Promise<Result> {
   const v = parse(teamSchema, input);
   if (!v.ok) return v;
   await createTeam(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("teams");
   return { ok: true };
 }
 export async function updateTeamAction(id: string, patch: Partial<Team>): Promise<Result> {
@@ -210,7 +210,7 @@ export async function updateTeamAction(id: string, patch: Partial<Team>): Promis
   const v = parse(teamSchema, patch);
   if (!v.ok) return v;
   await updateTeam(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("teams");
   return { ok: true };
 }
 export async function deleteTeamAction(id: string): Promise<Result> {
@@ -218,6 +218,6 @@ export async function deleteTeamAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteTeam(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("teams");
   return { ok: true };
 }

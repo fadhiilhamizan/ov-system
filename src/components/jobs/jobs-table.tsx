@@ -25,6 +25,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
 import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction, duplicateJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
 import { cn } from "@/lib/utils";
@@ -46,12 +47,9 @@ function JobFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${job?.id ?? "new"}`, () => ({
     pic: job?.pic ?? "", job: job?.job ?? "", notes: job?.notes ?? "",
   }));
-  React.useEffect(() => {
-    if (isOpen && job) setF({ pic: job.pic, job: job.job, notes: job.notes });
-  }, [isOpen, job]);
 
   function submit() {
     start(async () => {
@@ -193,9 +191,8 @@ export function JobsTable({
     () => [...jobs].sort((a, b) => (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0)),
     [jobs],
   );
-  const [items, setItems] = React.useState(sorted);
   const orderKey = sorted.map((j) => j.id).join(",");
-  React.useEffect(() => setItems(sorted), [orderKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [items, setItems] = useResetOn(orderKey, () => sorted);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

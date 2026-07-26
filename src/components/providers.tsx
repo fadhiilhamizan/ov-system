@@ -5,11 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { I18nProvider } from "@/lib/i18n/provider";
 import type { Lang } from "@/lib/i18n/config";
+import type { Dict } from "@/lib/i18n/dict";
 
-export function Providers({ lang, children }: { lang: Lang; children: React.ReactNode }) {
+export function Providers({ lang, dict, children }: { lang: Lang; dict?: Dict | null; children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-      <I18nProvider lang={lang}>
+      <I18nProvider lang={lang} dict={dict}>
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster />
       </I18nProvider>

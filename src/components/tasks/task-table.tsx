@@ -15,8 +15,9 @@ import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { useTaskLinks } from "./task-links-context";
 import { EmptyState } from "@/components/ui/empty";
-import { SortIndicator } from "@/components/ui/sort-indicator";
+import { SortHead } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
+import { useResetOn } from "@/lib/use-synced";
 import { formatDate, daysUntil, isUrl } from "@/lib/format";
 import { bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
 import { STATUS_ORDER, STATUS_META } from "@/lib/constants";
@@ -41,17 +42,16 @@ export function TaskTable({
   user: AppUser;
 }) {
   const tr = useT();
-  const divMap = new Map(divisions.map((d) => [d.key, d]));
-  const evMap = new Map(events.map((e) => [e.id, e]));
+  const divMap = React.useMemo(() => new Map(divisions.map((d) => [d.key, d])), [divisions]);
+  const evMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
   const sort = useMultiSort<SortKey>();
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  // Selection resets whenever the task set changes (filter/revalidate).
+  const [selected, setSelected] = useResetOn(tasks, () => new Set<string>());
   const [pending, start] = React.useTransition();
 
   const canSelect = user.role !== "guest";
   const canBulkDelete = can.deleteTask(user);
 
-  // Reset selection whenever the task set changes (filter/revalidate).
-  React.useEffect(() => setSelected(new Set()), [tasks]);
 
   const rows = React.useMemo(() => {
     const val = (t: Task, key: SortKey): string | number => {
@@ -106,15 +106,6 @@ export function TaskTable({
     });
   }
 
-  const SortHead = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
-    <TableHead className={className}>
-      <button onClick={() => sort.toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
-        {children}
-        <SortIndicator dir={sort.dirOf(k)} rank={sort.rankOf(k)} showRank={sort.rules.length > 1} />
-      </button>
-    </TableHead>
-  );
-
   return (
     <div className="space-y-2">
       {/* Bulk action bar */}
@@ -168,12 +159,12 @@ export function TaskTable({
                   <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label={tr("Pilih semua")} />
                 </TableHead>
               )}
-              <SortHead k="no" className="w-10">#</SortHead>
-              <SortHead k="title" className="min-w-[220px]">{tr("Tugas")}</SortHead>
-              <SortHead k="division">{tr("Divisi")}</SortHead>
-              <SortHead k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
-              <SortHead k="deadline">{tr("Deadline")}</SortHead>
-              <SortHead k="status">{tr("Status")}</SortHead>
+              <SortHead sort={sort} k="no" className="w-10">#</SortHead>
+              <SortHead sort={sort} k="title" className="min-w-[220px]">{tr("Tugas")}</SortHead>
+              <SortHead sort={sort} k="division">{tr("Divisi")}</SortHead>
+              <SortHead sort={sort} k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
+              <SortHead sort={sort} k="deadline">{tr("Deadline")}</SortHead>
+              <SortHead sort={sort} k="status">{tr("Status")}</SortHead>
               <TableHead className="min-w-[180px]">{tr("Hasil")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>

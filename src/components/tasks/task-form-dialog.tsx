@@ -30,6 +30,7 @@ import { MemberPicker, type PickerRole } from "@/components/members/member-picke
 import { useMembers, useTeams } from "@/components/members/members-context";
 import { useTaskLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
+import { useResetOn } from "@/lib/use-synced";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
@@ -67,7 +68,12 @@ export function TaskFormDialog({
 
   const progressOnly = mode === "edit" && task ? !can.editTask(user) : false;
 
-  const [form, setForm] = React.useState(() => ({
+  const existingLinks = useTaskLinks(task?.id);
+
+  // Refill the form whenever the dialog opens (or targets a different task).
+  // Done during render rather than in an effect — see lib/use-synced.ts.
+  const formKey = `${isOpen}:${task?.id ?? "new"}`;
+  const [form, setForm] = useResetOn(formKey, () => ({
     event_id: task?.event_id ?? activeEventId,
     division: (task?.division ?? defaultDivision ?? "EVENT") as DivisionKey,
     pic: task?.pic ?? "",
@@ -78,9 +84,7 @@ export function TaskFormDialog({
     result: task?.result ?? "",
     status: (task?.status ?? "todo") as TaskStatus,
   }));
-
-  const existingLinks = useTaskLinks(task?.id);
-  const [links, setLinks] = React.useState<DraftLink[]>(() => existingLinks.map(toDraft));
+  const [links, setLinks] = useResetOn<DraftLink[]>(formKey, () => existingLinks.map(toDraft));
 
   // PIC picker: only this division's members, grouped by role (coordinator from
   // the division's team, else the member's fungsionaris/intern type).
@@ -106,23 +110,6 @@ export function TaskFormDialog({
     [coordinatorNames],
   );
 
-  React.useEffect(() => {
-    if (isOpen && task) {
-      setForm({
-        event_id: task.event_id,
-        division: task.division,
-        pic: task.pic,
-        title: task.title,
-        start_date: task.start_date ?? "",
-        end_date: task.end_date ?? "",
-        notes: task.notes,
-        result: task.result,
-        status: task.status,
-      });
-      setLinks(existingLinks.map(toDraft));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, task]);
 
   /** `markDone` = the "Simpan & Selesai" shortcut: save and flip status to done
    *  in one go, so submitting a result doesn't need a second status edit. */

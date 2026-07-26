@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.18.1",
+    date: "2026-07-26",
+    title: "Perbaikan internal: keamanan migrasi, kecepatan muat, & stabilitas",
+    changes: [
+      "Halaman terasa lebih ringan: kamus terjemahan Inggris (33KB) tidak lagi ikut diunduh oleh pengguna berbahasa Indonesia.",
+      "Perbaikan penting pada urutan migrasi database — pengetatan izin tugas sempat bisa terbatalkan; kini dipulihkan dan tidak mengunci akses Koordinator/Staff/Intern.",
+      "Menyimpan satu data tidak lagi menyegarkan seluruh halaman aplikasi, hanya halaman yang memakainya.",
+      "Formulir tidak lagi berkedip saat dibuka (pengisian ulang dilakukan tanpa efek samping).",
+      "Penambahan pengujian otomatis untuk seluruh alur izin Server Action; semua peringatan kualitas kode dibersihkan.",
+    ],
+  },
+  {
     version: "1.18.0",
     date: "2026-07-26",
     title: "Kebijakan Privasi & Ketentuan Layanan",

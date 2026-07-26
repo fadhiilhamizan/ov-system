@@ -25,6 +25,7 @@ import {
 import { createProspectAction, updateProspectAction } from "@/lib/actions/prospects";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import type { Member, Prospect } from "@/lib/types";
 
 const CONTACT = ["none", "MENGHUBUNGI", "DIHUBUNGI"];
@@ -57,7 +58,7 @@ export function ProspectFormDialog({
   const setOpen = onOpenChange ?? setInternalOpen;
   const [pending, start] = React.useTransition();
 
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${prospect?.id ?? "new"}`, () => ({
     batch: prospect?.batch ?? batches[0] ?? "Prospek Baru",
     org_name: prospect?.org_name ?? "",
     campus: prospect?.campus ?? "",
@@ -71,23 +72,6 @@ export function ProspectFormDialog({
     done: prospect?.done ?? false,
   }));
 
-  React.useEffect(() => {
-    if (isOpen && prospect) {
-      setF({
-        batch: prospect.batch,
-        org_name: prospect.org_name,
-        campus: prospect.campus,
-        contact: prospect.contact,
-        pic: prospect.pic,
-        location: prospect.location,
-        prospectMode: prospect.mode || PROSPECT_MODE,
-        contact_status: prospect.contact_status || "none",
-        their_response: prospect.their_response || "none",
-        our_response: prospect.our_response || "none",
-        done: prospect.done,
-      });
-    }
-  }, [isOpen, prospect]);
 
   function submit() {
     start(async () => {

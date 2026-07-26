@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createLink, deleteLink, updateLink, bulkDeleteLinks } from "@/lib/data/repo";
@@ -27,7 +27,7 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
   const v = parse(createLinkSchema, input);
   if (!v.ok) return v;
   await createLink(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("links");
   return { ok: true };
 }
 
@@ -39,7 +39,7 @@ export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Pr
   const v = parse(linkUpdateSchema, patch);
   if (!v.ok) return v;
   await updateLink(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("links");
   return { ok: true };
 }
 
@@ -49,7 +49,7 @@ export async function deleteLinkAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteLink(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("links");
   return { ok: true };
 }
 
@@ -59,6 +59,6 @@ export async function bulkDeleteLinksAction(ids: string[]): Promise<Result> {
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   await bulkDeleteLinks(clean);
-  revalidatePath("/", "layout");
+  revalidateEntities("links");
   return { ok: true };
 }

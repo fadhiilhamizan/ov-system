@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
@@ -20,7 +20,7 @@ export async function createRundownAction(input: Partial<RundownItem>): Promise<
   const v = parse(rundownSchema, input);
   if (!v.ok) return v;
   await createRundown(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("rundown");
   return { ok: true };
 }
 export async function updateRundownAction(id: string, patch: Partial<RundownItem>): Promise<Result> {
@@ -30,7 +30,7 @@ export async function updateRundownAction(id: string, patch: Partial<RundownItem
   const v = parse(rundownSchema, patch);
   if (!v.ok) return v;
   await updateRundown(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("rundown");
   return { ok: true };
 }
 export async function duplicateRundownAction(id: string): Promise<Result> {
@@ -45,7 +45,7 @@ export async function duplicateRundownAction(id: string): Promise<Result> {
     activity: row.activity, keterangan: row.keterangan,
     mc: row.mc, operator: row.operator, division_jobs: row.division_jobs,
   });
-  revalidatePath("/", "layout");
+  revalidateEntities("rundown");
   return { ok: true };
 }
 export async function deleteRundownAction(id: string): Promise<Result> {
@@ -55,7 +55,7 @@ export async function deleteRundownAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteRundown(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("rundown");
   return { ok: true };
 }
 
@@ -66,7 +66,7 @@ export async function createJobAction(input: Partial<JobHariH>): Promise<Result>
   if (!v.ok) return v;
   if (!v.data.job?.trim()) return { ok: false, error: "Deskripsi tugas wajib diisi." };
   await createJob(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("jobs");
   return { ok: true };
 }
 export async function updateJobAction(id: string, patch: Partial<JobHariH>): Promise<Result> {
@@ -76,7 +76,7 @@ export async function updateJobAction(id: string, patch: Partial<JobHariH>): Pro
   const v = parse(jobSchema, patch);
   if (!v.ok) return v;
   await updateJob(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("jobs");
   return { ok: true };
 }
 export async function duplicateJobAction(id: string): Promise<Result> {
@@ -88,7 +88,7 @@ export async function duplicateJobAction(id: string): Promise<Result> {
   await createJob({
     event_id: job.event_id, job: `${job.job} (salinan)`, pic: job.pic, notes: job.notes,
   });
-  revalidatePath("/", "layout");
+  revalidateEntities("jobs");
   return { ok: true };
 }
 export async function deleteJobAction(id: string): Promise<Result> {
@@ -97,7 +97,7 @@ export async function deleteJobAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteJob(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("jobs");
   return { ok: true };
 }
 export async function reorderJobsAction(orderedIds: string[]): Promise<Result> {
@@ -105,6 +105,6 @@ export async function reorderJobsAction(orderedIds: string[]): Promise<Result> {
   const clean: string[] = [];
   for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   await reorderJobs(clean);
-  revalidatePath("/", "layout");
+  revalidateEntities("jobs");
   return { ok: true };
 }

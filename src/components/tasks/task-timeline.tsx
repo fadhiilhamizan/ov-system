@@ -1,7 +1,6 @@
 "use client";
 import * as React from "react";
 import { CalendarRange } from "lucide-react";
-import { DivisionBadge } from "@/components/division-badge";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { StatusDot } from "@/components/status-badge";
 import { EmptyState } from "@/components/ui/empty";
