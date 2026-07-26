@@ -7,6 +7,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.18.0",
+    date: "2026-07-26",
+    title: "Kebijakan Privasi & Ketentuan Layanan",
+    changes: [
+      "Halaman Kebijakan Privasi baru: menjelaskan data apa yang dikumpulkan (akun, keanggotaan, pekerjaan, himpunan mitra), cookie yang dipakai, siapa yang bisa melihat apa, dan hak kamu atas datamu.",
+      "Halaman Ketentuan Layanan baru: aturan pemakaian akun, larangan penyalahgunaan data himpunan mitra, ketentuan Mode Demo, dan batasan tanggung jawab.",
+      "Kedua halaman bisa dibuka tanpa akun (dari halaman Masuk/Daftar) dan tersedia dalam Bahasa Indonesia serta English mengikuti tombol bahasa.",
+      "Tautan ke kedua dokumen ditambahkan di footer aplikasi, halaman Masuk, dan halaman Daftar.",
+      "Halaman Daftar kini mencantumkan pernyataan bahwa mendaftar berarti menyetujui Ketentuan Layanan dan Kebijakan Privasi.",
+    ],
+  },
+  {
+    version: "1.17.0",
+    date: "2026-07-26",
+    title: "Grafik sebaran beban tugas di Dashboard",
+    changes: [
+      "Dashboard punya kartu baru 'Sebaran Beban Tugas': grafik batang tegak yang membandingkan jumlah tugas tiap divisi terhadap divisi tersibuk, memakai warna divisi masing-masing.",
+      "Arahkan kursor ke sebuah batang untuk menyorotnya dan melihat nama divisi lengkap beserta jumlah tugasnya.",
+      "Persentase batang dihitung dengan paket 'grapify'.",
+    ],
+  },
+  {
     version: "1.16.0",
     date: "2026-07-26",
     title: "Perbaikan hak akses tugas, pengajuan peran yang bisa diubah & rundown",

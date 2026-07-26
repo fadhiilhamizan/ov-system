@@ -56,11 +56,14 @@ export async function proxy(request: NextRequest) {
   // API routes with their own auth) are exempt. The per-page redirect in the
   // layout stays as a second layer.
   // /signup and /auth/* (the OAuth code exchange) must stay reachable without
-  // a session — that's the whole point of signing up.
+  // a session — that's the whole point of signing up. The legal pages are
+  // public too: you have to be able to read them BEFORE agreeing to them.
   const path = request.nextUrl.pathname;
   const isPublic =
     path === "/login" ||
     path === "/signup" ||
+    path === "/privacy" ||
+    path === "/terms" ||
     path.startsWith("/auth/") ||
     path.startsWith("/api");
   const isGuest = request.cookies.get("ov_guest")?.value === "1";

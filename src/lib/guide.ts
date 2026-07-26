@@ -42,9 +42,11 @@ export const GUIDE: GuideSection[] = [
       { id: "Gunakan Akses Cepat di bagian atas untuk melompat ke menu yang sering dipakai; geser ke samping bila menu tidak muat.", en: "Use Quick Access at the top to jump to frequently used menus; scroll sideways if they don't all fit." },
       { id: "Arahkan kursor ke tiap bagian diagram donat untuk melihat jumlah dan persentase tugas per status.", en: "Hover each donut segment to see the task count and percentage per status." },
       { id: "Cek kartu 'Deadline Terdekat' untuk tugas yang paling mendesak; klik untuk membuka Work Breakdown.", en: "Check the 'Upcoming Deadlines' card for the most urgent tasks; click through to the Work Breakdown." },
+      { id: "Lihat kartu 'Sebaran Beban Tugas' untuk membandingkan jumlah tugas antardivisi; arahkan kursor ke sebuah batang untuk melihat nama divisi dan jumlah tugasnya.", en: "Use the 'Workload Spread' card to compare task counts across divisions; hover a column to see the division name and its task count." },
     ],
     tips: [
       { id: "Semua angka di Dashboard mengikuti Ormawa Visit yang sedang aktif — kalau angkanya terasa aneh, cek dulu edisi yang dipilih.", en: "Every number here follows the active Ormawa Visit — if the figures look odd, check which edition is selected." },
+      { id: "Tinggi batang di 'Sebaran Beban Tugas' relatif terhadap divisi tersibuk (yang tertinggi selalu penuh), bukan persen penyelesaian — untuk progres, lihat kartu 'Progres per Divisi'.", en: "Column heights in 'Workload Spread' are relative to the busiest division (the tallest is always full), not a completion percentage — for progress, see the 'Progress per Division' card." },
     ],
   },
   {

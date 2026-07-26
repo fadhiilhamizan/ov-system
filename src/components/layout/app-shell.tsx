@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -121,7 +122,17 @@ export function AppShell({
               <Logo size={18} />
               <span>Ormawa Visit Management System - External Affairs HMSI ITS</span>
             </div>
-            <span>Dibangun dari Main Sheet OV · v{APP_VERSION}</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <Link href="/privacy" className="hover:text-foreground hover:underline">
+                {t("Kebijakan Privasi")}
+              </Link>
+              <span aria-hidden className="text-border">·</span>
+              <Link href="/terms" className="hover:text-foreground hover:underline">
+                {t("Ketentuan Layanan")}
+              </Link>
+              <span aria-hidden className="text-border">·</span>
+              <span>v{APP_VERSION}</span>
+            </div>
           </div>
         </footer>
       </div>

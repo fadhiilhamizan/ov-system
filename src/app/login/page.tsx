@@ -142,6 +142,15 @@ function LoginForm() {
             {t("Daftar")}
           </Link>
         </p>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          <Link href="/privacy" className="hover:text-foreground hover:underline">
+            {t("Kebijakan Privasi")}
+          </Link>
+          <span aria-hidden className="mx-2 text-border">·</span>
+          <Link href="/terms" className="hover:text-foreground hover:underline">
+            {t("Ketentuan Layanan")}
+          </Link>
+        </p>
       </div>
     </div>
   );

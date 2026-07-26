@@ -569,6 +569,8 @@ export const EN: Record<string, string> = {
   "diterima": "accepted",
   "Progres per Divisi": "Progress per Division",
   "Belum ada data divisi.": "No division data yet.",
+  "Sebaran Beban Tugas": "Workload Spread",
+  "Relatif ke divisi tersibuk": "Relative to the busiest division",
   "Deadline Terdekat": "Upcoming Deadlines",
   "Tidak ada deadline aktif": "No active deadlines",
   "Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini.": "All tasks with deadlines are done for this Ormawa Visit.",
@@ -610,6 +612,12 @@ export const EN: Record<string, string> = {
   "Setiap Divisi yang ada di Ormawa Visit": "Every division in Ormawa Visit",
   "Belum ada tugas untuk Ormawa Visit ini.": "No tasks for this Ormawa Visit yet.",
   "Buka papan": "Open board",
+
+  // Legal pages
+  "Kebijakan Privasi": "Privacy Policy",
+  "Ketentuan Layanan": "Terms of Service",
+  "Dengan mendaftar, kamu menyetujui": "By signing up, you agree to the",
+  "dan": "and",
 
   // Layout a11y
   "Tutup menu": "Close menu",
