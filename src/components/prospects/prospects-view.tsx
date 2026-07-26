@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
-import { SortIndicator } from "@/components/ui/sort-indicator";
+import { SortHead } from "@/components/ui/sort-indicator";
 import { bulkDeleteProspectsAction } from "@/lib/actions/prospects";
 import {
   Select,
@@ -103,15 +103,6 @@ export function ProspectsView({
     };
     return sortRows(filtered, sort.rules, val);
   }, [filtered, sort.rules, stageOrder]);
-
-  const SortHead = ({ k, children }: { k: ProspectSortKey; children: React.ReactNode }) => (
-    <TableHead>
-      <button onClick={() => sort.toggle(k)} className="inline-flex items-center gap-1 hover:text-foreground">
-        {children}
-        <SortIndicator dir={sort.dirOf(k)} rank={sort.rankOf(k)} showRank={sort.rules.length > 1} />
-      </button>
-    </TableHead>
-  );
 
   const hasFilters = q || batch !== "all" || stage !== "all";
   const allSelected = rows.length > 0 && rows.every((p) => sel.selected.has(p.id));
@@ -227,12 +218,12 @@ export function ProspectsView({
                       />
                     </TableHead>
                   )}
-                  <SortHead k="org_name">{t("Himpunan")}</SortHead>
-                  <SortHead k="campus">{t("Kampus")}</SortHead>
-                  <SortHead k="contact">{t("Kontak")}</SortHead>
-                  <SortHead k="pic">{t("PIC")}</SortHead>
-                  <SortHead k="stage">{t("Tahap")}</SortHead>
-                  <SortHead k="batch">{t("Batch")}</SortHead>
+                  <SortHead sort={sort} k="org_name">{t("Himpunan")}</SortHead>
+                  <SortHead sort={sort} k="campus">{t("Kampus")}</SortHead>
+                  <SortHead sort={sort} k="contact">{t("Kontak")}</SortHead>
+                  <SortHead sort={sort} k="pic">{t("PIC")}</SortHead>
+                  <SortHead sort={sort} k="stage">{t("Tahap")}</SortHead>
+                  <SortHead sort={sort} k="batch">{t("Batch")}</SortHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>

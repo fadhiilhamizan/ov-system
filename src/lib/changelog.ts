@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.18.1",
+    date: "2026-07-26",
+    title: "Perbaikan internal: keamanan migrasi, kecepatan muat, & stabilitas",
+    changes: [
+      "Halaman terasa lebih ringan: kamus terjemahan Inggris (33KB) tidak lagi ikut diunduh oleh pengguna berbahasa Indonesia.",
+      "Perbaikan penting pada urutan migrasi database — pengetatan izin tugas sempat bisa terbatalkan; kini dipulihkan dan tidak mengunci akses Koordinator/Staff/Intern.",
+      "Menyimpan satu data tidak lagi menyegarkan seluruh halaman aplikasi, hanya halaman yang memakainya.",
+      "Formulir tidak lagi berkedip saat dibuka (pengisian ulang dilakukan tanpa efek samping).",
+      "Penambahan pengujian otomatis untuk seluruh alur izin Server Action; semua peringatan kualitas kode dibersihkan.",
+    ],
+  },
+  {
     version: "1.18.0",
     date: "2026-07-26",
     title: "Kebijakan Privasi & Ketentuan Layanan",
@@ -16,16 +28,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Kedua halaman bisa dibuka tanpa akun (dari halaman Masuk/Daftar) dan tersedia dalam Bahasa Indonesia serta English mengikuti tombol bahasa.",
       "Tautan ke kedua dokumen ditambahkan di footer aplikasi, halaman Masuk, dan halaman Daftar.",
       "Halaman Daftar kini mencantumkan pernyataan bahwa mendaftar berarti menyetujui Ketentuan Layanan dan Kebijakan Privasi.",
-    ],
-  },
-  {
-    version: "1.17.0",
-    date: "2026-07-26",
-    title: "Grafik sebaran beban tugas di Dashboard",
-    changes: [
-      "Dashboard punya kartu baru 'Sebaran Beban Tugas': grafik batang tegak yang membandingkan jumlah tugas tiap divisi terhadap divisi tersibuk, memakai warna divisi masing-masing.",
-      "Arahkan kursor ke sebuah batang untuk menyorotnya dan melihat nama divisi lengkap beserta jumlah tugasnya.",
-      "Persentase batang dihitung dengan paket 'grapify'.",
     ],
   },
   {

@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createEventAction, updateEventAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import type { OVEvent } from "@/lib/types";
 
 const NO_TEMPLATE = "__none__";
@@ -37,7 +38,7 @@ export function EventFormDialog({
   const [copy, setCopy] = React.useState({ divisions: true, members: false, tasks: true, rundown: true, jobs: true, budget: false });
 
   const UNSET = "__unset__";
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${event?.id ?? "new"}`, () => ({
     title: event?.title ?? "",
     partner: event?.partner ?? "",
     campus: event?.campus ?? "",
@@ -54,16 +55,6 @@ export function EventFormDialog({
     event_date: event?.event_date ?? "",
     location: event?.location ?? "",
   }));
-  React.useEffect(() => {
-    if (isOpen && event) {
-      setF({
-        title: event.title, partner: event.partner, campus: event.campus, cabinet: event.cabinet,
-        code: event.code, type: event.type, mode: event.mode, status: event.status,
-        plan_start: event.plan_start ?? "", plan_end: event.plan_end ?? "",
-        event_date: event.event_date ?? "", location: event.location,
-      });
-    }
-  }, [isOpen, event]);
 
   function submit() {
     start(async () => {

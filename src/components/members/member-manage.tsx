@@ -18,6 +18,7 @@ import {
   createTeamAction, updateTeamAction, deleteTeamAction,
 } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import { angkatanFromNrp } from "@/lib/format";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
@@ -49,7 +50,7 @@ export function MemberFormDialog({
     division: base?.division ?? divisions[0]?.key ?? "",
     event_id: base?.event_id ?? defaultEventId,
   });
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${member?.id ?? "new"}`, () => ({
     name: member?.name ?? "",
     nickname: member?.nickname ?? "",
     nrp: member?.nrp ?? "",
@@ -58,14 +59,6 @@ export function MemberFormDialog({
     division: member?.division ?? divisions[0]?.key ?? "",
     event_id: member?.event_id ?? defaultEventId,
   }));
-  React.useEffect(() => {
-    if (isOpen && member) {
-      setF({
-        name: member.name, nickname: member.nickname, nrp: member.nrp, type: member.type,
-        year: member.year, division: member.division ?? divisions[0]?.key ?? "", event_id: member.event_id ?? defaultEventId,
-      });
-    }
-  }, [isOpen, member, divisions, defaultEventId]);
 
   function submit() {
     start(async () => {
@@ -401,15 +394,12 @@ export function TeamFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${team?.id ?? "new"}`, () => ({
     division: team?.division ?? divisions[0]?.key ?? "EVENT",
     coordinator: team?.coordinator ?? "",
     fungsionaris: team?.fungsionaris ?? "",
     intern: team?.intern ?? "",
   }));
-  React.useEffect(() => {
-    if (isOpen && team) setF({ division: team.division, coordinator: team.coordinator, fungsionaris: team.fungsionaris, intern: team.intern });
-  }, [isOpen, team]);
 
   const fungsionarisPool = React.useMemo(() => members.filter((m) => m.type === "fungsionaris"), [members]);
   const internPool = React.useMemo(() => members.filter((m) => m.type === "intern"), [members]);

@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
@@ -23,7 +23,7 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
   const v = parse(prospectSchema, input);
   if (!v.ok) return v;
   await createProspect(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }
 
@@ -38,7 +38,7 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
   // Editing the primary prospect re-syncs the OV's partner/campus/location/mode.
   const updated = (await getProspects()).find((p) => p.id === idv.data);
   if (updated?.is_primary && updated.event_id) await syncEventFromProspect(updated.event_id, updated);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }
 
@@ -50,7 +50,7 @@ export async function setPrimaryProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await setPrimaryProspect(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }
 export async function unsetPrimaryProspectAction(id: string): Promise<Result> {
@@ -59,7 +59,7 @@ export async function unsetPrimaryProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await unsetPrimaryProspect(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }
 
@@ -69,7 +69,7 @@ export async function deleteProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteProspect(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }
 
@@ -79,6 +79,6 @@ export async function bulkDeleteProspectsAction(ids: string[]): Promise<Result> 
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   await bulkDeleteProspects(clean);
-  revalidatePath("/", "layout");
+  revalidateEntities("prospects");
   return { ok: true };
 }

@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { createDivisionAction, updateDivisionAction, deleteDivisionAction } from "@/lib/actions/manage";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import type { Division } from "@/lib/types";
 
 // Ordered by hue (warm -> cool -> violet/pink), neutral gray last.
@@ -55,20 +56,13 @@ function DivisionFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${division?.key ?? "new"}`, () => ({
     key: division?.key ?? "",
     name: division?.name ?? "",
     short: division?.short ?? "",
     color: division?.color ?? PRESET[0],
     exclude_from_rundown: division?.exclude_from_rundown ?? false,
   }));
-  React.useEffect(() => {
-    if (isOpen && division)
-      setF({
-        key: division.key, name: division.name, short: division.short, color: division.color,
-        exclude_from_rundown: division.exclude_from_rundown ?? false,
-      });
-  }, [isOpen, division]);
 
   function submit() {
     start(async () => {

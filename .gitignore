@@ -25,6 +25,9 @@
 *.tsbuildinfo
 next-env.d.ts
 
+# Graphify knowledge-graph output (regenerate: graphify extract . --code-only)
+/graphify-out/
+
 # Local demo data store
 .data/
 

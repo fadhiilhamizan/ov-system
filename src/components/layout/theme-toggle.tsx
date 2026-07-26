@@ -8,8 +8,9 @@ import { useT } from "@/lib/i18n/provider";
 export function ThemeToggle() {
   const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  // next-themes leaves resolvedTheme undefined until it has read the client
+  // preference, which doubles as the "mounted" signal — no effect needed.
+  const mounted = resolvedTheme !== undefined;
   const dark = resolvedTheme === "dark";
   return (
     <Button

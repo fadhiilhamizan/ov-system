@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { createFaq, updateFaq, deleteFaq } from "@/lib/data/repo";
@@ -13,7 +13,7 @@ export async function createFaqAction(input: { question: string; answer: string 
   const v = parse(faqSchema, input);
   if (!v.ok) return v;
   await createFaq(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("faq");
   return { ok: true };
 }
 
@@ -24,7 +24,7 @@ export async function updateFaqAction(id: string, patch: { question: string; ans
   const v = parse(faqSchema, patch);
   if (!v.ok) return v;
   await updateFaq(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("faq");
   return { ok: true };
 }
 
@@ -33,6 +33,6 @@ export async function deleteFaqAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteFaq(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("faq");
   return { ok: true };
 }

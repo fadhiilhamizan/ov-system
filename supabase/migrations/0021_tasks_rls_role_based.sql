@@ -1,31 +1,21 @@
 -- ============================================================
--- 0021 — Tasks write policy: role-based instead of division-scoped.
+-- 0021 — SUPERSEDED. Intentionally a no-op. Do not restore the old body.
 --
--- The old tasks_update/insert/delete policies required
--- `division = auth_division()` for coordinator/staff/intern. After divisions
--- became per-event (0018) and were reseeded (0019), a user's profile.division
--- no longer matches the task's division key, so RLS silently blocked every
--- non-admin task write — the "changing status does nothing" bug. It was also
--- STRICTER than the app's own rules (a staff/intern can update a task assigned
--- to them regardless of their profile division).
+-- This migration used to drop tasks_insert/tasks_update/tasks_delete and
+-- recreate them as plain role checks (`auth_role() in (...)`), because after
+-- divisions became per-event (0018) and were reseeded (0019), the old
+-- `division = auth_division()` test no longer matched and silently blocked
+-- every non-admin task write.
 --
--- The fine-grained rules (per-division manage, PIC-assignment progress) are
--- already enforced in the server actions via can.* against the real task row,
--- so RLS here becomes a role gate (matches prospects/links/rundown/etc.).
--- Run after 0001-0020.
+-- 0020_security_authz_hardening.sql fixes that properly: profiles gained
+-- `event_id`, and the task policies now match on (event_id, division) via
+-- owns_scope(). Running this file after 0020 would DROP that hardening and
+-- reopen H1 (a coordinator of one Ormawa Visit writing another's tasks) and
+-- H2 (staff/intern rewriting any task column).
+--
+-- If you already ran the old version of this file, 0026 re-asserts the correct
+-- policies — run it.
 -- ============================================================
-begin;
 
-drop policy if exists "tasks_insert" on tasks;
-drop policy if exists "tasks_update" on tasks;
-drop policy if exists "tasks_delete" on tasks;
-
-create policy "tasks_insert" on tasks for insert
-  with check (auth_role() in ('admin','coordinator','staff','intern'));
-create policy "tasks_update" on tasks for update
-  using (auth_role() in ('admin','coordinator','staff','intern'))
-  with check (auth_role() in ('admin','coordinator','staff','intern'));
-create policy "tasks_delete" on tasks for delete
-  using (auth_role() in ('admin','coordinator'));
-
-commit;
+-- no-op
+select 1;

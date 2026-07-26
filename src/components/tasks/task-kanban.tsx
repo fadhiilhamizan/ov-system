@@ -22,6 +22,7 @@ import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { useSynced } from "@/lib/use-synced";
 import type { AppUser, Division, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskKanban({
@@ -38,9 +39,8 @@ export function TaskKanban({
   user: AppUser;
 }) {
   const t = useT();
-  const [items, setItems] = React.useState(tasks);
+  const [items, setItems] = useSynced(tasks);
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  React.useEffect(() => setItems(tasks), [tasks]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const divMap = new Map(divisions.map((d) => [d.key, d]));

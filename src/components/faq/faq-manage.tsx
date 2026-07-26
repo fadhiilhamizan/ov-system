@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { createFaqAction, updateFaqAction, deleteFaqAction } from "@/lib/actions/faq";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import type { Faq } from "@/lib/types";
 
 function FaqFormDialog({
@@ -28,10 +29,7 @@ function FaqFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
-  const [f, setF] = React.useState(() => ({ question: faq?.question ?? "", answer: faq?.answer ?? "" }));
-  React.useEffect(() => {
-    if (isOpen && faq) setF({ question: faq.question, answer: faq.answer });
-  }, [isOpen, faq]);
+  const [f, setF] = useResetOn(`${isOpen}:${faq?.id ?? "new"}`, () => ({ question: faq?.question ?? "", answer: faq?.answer ?? "" }));
 
   function submit() {
     start(async () => {

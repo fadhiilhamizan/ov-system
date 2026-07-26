@@ -20,6 +20,7 @@ import {
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { useSynced } from "@/lib/use-synced";
 import type { BudgetPlan, OVEvent } from "@/lib/types";
 
 const CATEGORY_PRESETS = ["KONSUMSI", "TRANSPORTASI & AKOMODASI", "PERALATAN & CETAKAN", "PEMINJAMAN TEMPAT", "LAIN-LAIN"];
@@ -245,8 +246,7 @@ export function BudgetView({
 }) {
   const t = useT();
   const evMap = new Map(events.map((e) => [e.id, e]));
-  const [state, setState] = React.useState(plans);
-  React.useEffect(() => setState(plans), [plans]);
+  const [state, setState] = useSynced(plans);
   const sel = useMultiSelect();
   React.useEffect(() => sel.clear(), [plans]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkPending, startBulk] = React.useTransition();
@@ -473,8 +473,7 @@ function NumCell({
   onCommit: (v: number) => void;
   width: string;
 }) {
-  const [v, setV] = React.useState(value ?? 0);
-  React.useEffect(() => setV(value ?? 0), [value]);
+  const [v, setV] = useSynced(value ?? 0);
   return (
     <input
       type="number"

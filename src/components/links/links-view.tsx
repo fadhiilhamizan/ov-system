@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createLinkAction, updateLinkAction, deleteLinkAction, bulkDeleteLinksAction } from "@/lib/actions/links";
 import { isUrl } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
+import { useResetOn } from "@/lib/use-synced";
 import type { Division, LinkItem, OVEvent, Team } from "@/lib/types";
 
 const NO_DIVISION = "__none__";
@@ -58,24 +59,13 @@ function LinkFormDialog({
   const isOpen = open ?? io;
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
-  const [f, setF] = React.useState(() => ({
+  const [f, setF] = useResetOn(`${isOpen}:${link?.id ?? "new"}`, () => ({
     event_id: link?.event_id ?? defaultEventId,
     division: link ? resolveDivision(link.division, divisions)?.key ?? NO_DIVISION : NO_DIVISION,
     name: link?.name ?? "",
     url: link?.url ?? "",
     note: link?.note ?? "",
   }));
-  React.useEffect(() => {
-    if (isOpen && link) {
-      setF({
-        event_id: link.event_id ?? defaultEventId,
-        division: resolveDivision(link.division, divisions)?.key ?? NO_DIVISION,
-        name: link.name,
-        url: link.url,
-        note: link.note,
-      });
-    }
-  }, [isOpen, link, defaultEventId, divisions]);
 
   // Divisions actually used in the chosen Ormawa Visit (via team structure);
   // falls back to the full division list if that event has no team data yet.
@@ -84,12 +74,12 @@ function LinkFormDialog({
     return used.size ? divisions.filter((d) => used.has(d.key)) : divisions;
   }, [teams, divisions, f.event_id]);
 
-  React.useEffect(() => {
-    if (f.division !== NO_DIVISION && !availableDivisions.some((d) => d.key === f.division)) {
-      setF((prev) => ({ ...prev, division: NO_DIVISION }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.event_id]);
+  // Derived, not stored: if the picked division is not offered for the chosen
+  // Ormawa Visit, fall back to "no division" without an effect round-trip.
+  const division =
+    f.division !== NO_DIVISION && !availableDivisions.some((d) => d.key === f.division)
+      ? NO_DIVISION
+      : f.division;
 
   const urlValid = isUrl(f.url);
 
@@ -101,7 +91,7 @@ function LinkFormDialog({
     start(async () => {
       const payload = {
         event_id: f.event_id,
-        division: f.division === NO_DIVISION ? "" : f.division,
+        division: division === NO_DIVISION ? "" : division,
         name: f.name,
         url: f.url,
         note: f.note,
@@ -156,7 +146,7 @@ function LinkFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>{t("Divisi")}</Label>
-              <Select value={f.division} onValueChange={(v) => setF({ ...f, division: v })}>
+              <Select value={division} onValueChange={(v) => setF({ ...f, division: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_DIVISION}>{t("Umum (tanpa divisi)")}</SelectItem>

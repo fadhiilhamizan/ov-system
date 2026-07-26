@@ -14,6 +14,7 @@ import {
   createBackupAction, downloadBackupAction, deleteBackupAction, restoreBackupAction,
 } from "@/lib/actions/backup";
 import { useT } from "@/lib/i18n/provider";
+import { useSynced } from "@/lib/use-synced";
 import type { BackupMeta } from "@/lib/backup";
 
 const KIND_LABEL: Record<BackupMeta["kind"], { label: string; variant: "primary" | "info" | "warning" }> = {
@@ -29,8 +30,7 @@ function formatTimestamp(iso: string) {
 
 export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }) {
   const t = useT();
-  const [backups, setBackups] = React.useState(initialBackups);
-  React.useEffect(() => setBackups(initialBackups), [initialBackups]);
+  const [backups] = useSynced(initialBackups);
   const [creating, startCreate] = React.useTransition();
 
   function refreshAfterMutation() {

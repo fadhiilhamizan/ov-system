@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
@@ -21,7 +21,7 @@ export async function updateBudgetItemAction(
   const v = parse(updateBudgetItemSchema, patch);
   if (!v.ok) return v;
   await updateBudgetItem(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -35,7 +35,7 @@ export async function createBudgetItemAction(
   const v = parse(budgetItemSchema, input);
   if (!v.ok) return v;
   await createBudgetItem(idv.data, v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -44,7 +44,7 @@ export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   const idv = parse(idSchema, itemId);
   if (!idv.ok) return idv;
   await deleteBudgetItem(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -63,7 +63,7 @@ export async function duplicateBudgetItemAction(itemId: string): Promise<Result>
     unit: item.unit,
     unit_price: item.unit_price,
   });
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -72,7 +72,7 @@ export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   await bulkDeleteBudgetItems(clean);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -81,7 +81,7 @@ export async function createBudgetPlanAction(input: { name: string; event_id: st
   const v = parse(budgetPlanSchema, input);
   if (!v.ok) return v;
   await createBudgetPlan(v.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
 
@@ -90,6 +90,6 @@ export async function deleteBudgetPlanAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   await deleteBudgetPlan(idv.data);
-  revalidatePath("/", "layout");
+  revalidateEntities("budget");
   return { ok: true };
 }
