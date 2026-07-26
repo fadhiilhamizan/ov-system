@@ -569,8 +569,6 @@ export const EN: Record<string, string> = {
   "diterima": "accepted",
   "Progres per Divisi": "Progress per Division",
   "Belum ada data divisi.": "No division data yet.",
-  "Sebaran Beban Tugas": "Workload Spread",
-  "Relatif ke divisi tersibuk": "Relative to the busiest division",
   "Deadline Terdekat": "Upcoming Deadlines",
   "Tidak ada deadline aktif": "No active deadlines",
   "Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini.": "All tasks with deadlines are done for this Ormawa Visit.",

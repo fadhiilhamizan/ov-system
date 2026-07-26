@@ -28,8 +28,6 @@ import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/charts/donut";
 import { BarList } from "@/components/charts/bars";
-import { ColumnChart } from "@/components/charts/columns";
-import { percentOfMax } from "@/lib/charts/grapify";
 import { DivisionBadge } from "@/components/division-badge";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty";
@@ -69,15 +67,6 @@ export default async function DashboardPage() {
     count: pstats.prospects.filter((p) => prospectStage(p) === s.key).length,
   }));
   const accepted = stageCounts.find((s) => s.key === "diterima")?.count ?? 0;
-
-  // Workload spread per division — heights are percentage-of-max, computed by grapify.
-  const loadColumns = percentOfMax(
-    divStats.map((d) => ({ label: d.division.short, value: d.total })),
-  ).map((slice, i) => ({
-    ...slice,
-    title: divStats[i].division.name,
-    color: divStats[i].division.color,
-  }));
 
   const donutData = (["done", "ongoing", "overtime", "todo"] as TaskStatus[])
     .map((s) => ({ label: STATUS_META[s].label, value: stats.by[s], color: STATUS_HEX[s] }))
@@ -278,23 +267,6 @@ export default async function DashboardPage() {
                 title={t("Tidak ada deadline aktif")}
                 description={t("Semua tugas ber-deadline sudah selesai untuk Ormawa Visit ini.")}
               />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Workload spread per division */}
-      <div className="mt-4">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>{t("Sebaran Beban Tugas")}</CardTitle>
-            <Badge variant="outline">{t("Relatif ke divisi tersibuk")}</Badge>
-          </CardHeader>
-          <CardContent>
-            {loadColumns.length ? (
-              <ColumnChart data={loadColumns} valueSuffix={` ${t("tugas")}`} />
-            ) : (
-              <p className="text-sm text-muted-foreground">{t("Belum ada data divisi.")}</p>
             )}
           </CardContent>
         </Card>

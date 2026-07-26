@@ -19,16 +19,6 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-    version: "1.17.0",
-    date: "2026-07-26",
-    title: "Grafik sebaran beban tugas di Dashboard",
-    changes: [
-      "Dashboard punya kartu baru 'Sebaran Beban Tugas': grafik batang tegak yang membandingkan jumlah tugas tiap divisi terhadap divisi tersibuk, memakai warna divisi masing-masing.",
-      "Arahkan kursor ke sebuah batang untuk menyorotnya dan melihat nama divisi lengkap beserta jumlah tugasnya.",
-      "Persentase batang dihitung dengan paket 'grapify'.",
-    ],
-  },
-  {
     version: "1.16.0",
     date: "2026-07-26",
     title: "Perbaikan hak akses tugas, pengajuan peran yang bisa diubah & rundown",
