@@ -11,8 +11,4 @@
 // The version is a NUMBER only — no codename.
 // See AGENTS.md → "Versioning".
 // ============================================================
-<<<<<<< HEAD
 export const APP_VERSION = "1.20.0";
-=======
-export const APP_VERSION = "1.19.1";
->>>>>>> a9cf2761d788ea90179839e38cb7c5dbba1ec8ac
