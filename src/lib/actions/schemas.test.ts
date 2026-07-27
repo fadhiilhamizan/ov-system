@@ -108,6 +108,14 @@ describe("budget schemas", () => {
     const r = parse(budgetItemSchema, { category: "Konsumsi", name: "Nasi", qty: 10, unit_price: 15000 });
     expect(r.ok).toBe(true);
   });
+  it("validates the category colour as hex, and allows none", () => {
+    const ok = parse(budgetItemSchema, { category: "K", name: "N", category_color: "#f97316" });
+    expect(ok.ok).toBe(true);
+    expect(parse(budgetItemSchema, { category: "K", name: "N", category_color: null }).ok).toBe(true);
+    expect(parse(budgetItemSchema, { category: "K", name: "N" }).ok).toBe(true);
+    expect(parse(budgetItemSchema, { category: "K", name: "N", category_color: "orange" }).ok).toBe(false);
+  });
+
   it("requires plan name and event_id", () => {
     expect(parse(budgetPlanSchema, { name: "RAB", event_id: "e1" }).ok).toBe(true);
     expect(parse(budgetPlanSchema, { name: "", event_id: "e1" }).ok).toBe(false);
@@ -126,10 +134,17 @@ describe("eventSchema", () => {
 });
 
 describe("memberSchema", () => {
-  it("requires name and division", () => {
-    expect(parse(memberSchema, { name: "Budi", division: "EVENT" }).ok).toBe(true);
+  it("requires name and at least one division", () => {
+    expect(parse(memberSchema, { name: "Budi", divisions: ["EVENT"] }).ok).toBe(true);
     expect(parse(memberSchema, { name: "Budi" }).ok).toBe(false);
-    expect(parse(memberSchema, { division: "EVENT" }).ok).toBe(false);
+    expect(parse(memberSchema, { name: "Budi", divisions: [] }).ok).toBe(false);
+    expect(parse(memberSchema, { divisions: ["EVENT"] }).ok).toBe(false);
+  });
+
+  it("accepts several divisions — one person may sit in more than one", () => {
+    const r = parse(memberSchema, { name: "Dewi", divisions: ["CREATIVE", "MARKETING"] });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.divisions).toEqual(["CREATIVE", "MARKETING"]);
   });
 });
 
@@ -194,9 +209,9 @@ describe("taskLinksSchema (result links)", () => {
 
 describe("member name comma guard", () => {
   it("rejects commas in name / nickname (they'd corrupt PIC parsing)", () => {
-    expect(parse(memberSchema, { name: "Budi, S.T.", division: "EVENT" }).ok).toBe(false);
-    expect(parse(memberSchema, { name: "Budi", nickname: "Bu,di", division: "EVENT" }).ok).toBe(false);
-    expect(parse(memberSchema, { name: "Budi", nickname: "Budi", division: "EVENT" }).ok).toBe(true);
+    expect(parse(memberSchema, { name: "Budi, S.T.", divisions: ["EVENT"] }).ok).toBe(false);
+    expect(parse(memberSchema, { name: "Budi", nickname: "Bu,di", divisions: ["EVENT"] }).ok).toBe(false);
+    expect(parse(memberSchema, { name: "Budi", nickname: "Budi", divisions: ["EVENT"] }).ok).toBe(true);
   });
 });
 

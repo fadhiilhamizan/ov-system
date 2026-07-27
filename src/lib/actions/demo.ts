@@ -55,8 +55,9 @@ export async function resetDemoDataAction(): Promise<Result> {
     })),
   );
   await sb.from("members").insert(
-    demoSeed.members.map(([name, nickname, nrp, type, division]) => ({
-      event_id: EV, name, nickname, nrp, type, year: angkatanFromNrpNum(nrp), division,
+    demoSeed.members.map(([name, nickname, nrp, type, divisions]) => ({
+      event_id: EV, name, nickname, nrp, type, year: angkatanFromNrpNum(nrp),
+      divisions: [...divisions], division: divisions[0],
     })),
   );
 
@@ -92,8 +93,10 @@ export async function resetDemoDataAction(): Promise<Result> {
     demoSeed.jobs.map(([job, pic], i) => ({ event_id: EV, no: String(i + 1), job, pic })),
   );
   await sb.from("teams").insert(
-    demoSeed.teams.map(([division, fungsionaris, intern]) => ({
-      event_id: EV, division, coordinator: "", fungsionaris, intern,
+    // fungsionaris/intern are derived from members.divisions now — the legacy
+    // columns stay empty so nothing reads a stale second copy of the roster.
+    demoSeed.teams.map(([division, coordinator]) => ({
+      event_id: EV, division, coordinator, fungsionaris: "", intern: "",
     })),
   );
   await sb.from("prospects").insert(

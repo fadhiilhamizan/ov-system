@@ -1,4 +1,4 @@
-import { Lightbulb, ShieldCheck } from "lucide-react";
+import { ChevronDown, Lightbulb, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { GUIDE, pick } from "@/lib/guide";
 import type { Lang } from "@/lib/i18n/config";
@@ -27,7 +27,8 @@ export function GuideSections({ lang }: { lang: Lang }) {
                 <h3 className="truncate font-semibold">{pick(s.title, lang)}</h3>
                 <p className="truncate text-xs text-muted-foreground">{pick(s.purpose, lang)}</p>
               </div>
-              <span className="shrink-0 text-xs text-muted-foreground transition group-open:rotate-180">▾</span>
+              {/* Same chevron as the FAQ accordion, so both read as one system. */}
+              <ChevronDown className="size-5 shrink-0 text-muted-foreground transition group-open:rotate-180" />
             </summary>
 
             <div className="space-y-4 border-t border-border px-5 py-4">

@@ -26,14 +26,14 @@ insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown
 insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values ('demo-ov','OUTSOURCE','Outsource','OUT','#14b8a6',11,false) on conflict (event_id,key) do nothing;
 
 -- members
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Budi Santoso','Budi','5026221001','fungsionaris',2022,'EVENT');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Siti Rahma','Siti','5026221002','fungsionaris',2022,'SECRETARY');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Andi Wijaya','Andi','5026231003','fungsionaris',2023,'LO');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Dewi Lestari','Dewi','5026231004','fungsionaris',2023,'CREATIVE');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Rizky Pratama','Rizky','5026231005','fungsionaris',2023,'MARKETING');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Putri Anggraini','Putri','5026241006','intern',2024,'CONSUMPTION');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Fajar Nugroho','Fajar','5026241007','intern',2024,'OPERATIONAL');
-insert into members(event_id,name,nickname,nrp,type,year,division) values ('demo-ov','Maya Kusuma','Maya','5026241008','intern',2024,'EVENT');
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Budi Santoso','Budi','5026221001','fungsionaris',2022,'EVENT',array['EVENT']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Siti Rahma','Siti','5026221002','fungsionaris',2022,'SECRETARY',array['SECRETARY']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Andi Wijaya','Andi','5026231003','fungsionaris',2023,'LO',array['LO']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Dewi Lestari','Dewi','5026231004','fungsionaris',2023,'CREATIVE',array['CREATIVE','MARKETING']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Rizky Pratama','Rizky','5026231005','fungsionaris',2023,'MARKETING',array['MARKETING']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Putri Anggraini','Putri','5026241006','intern',2024,'CONSUMPTION',array['CONSUMPTION']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Fajar Nugroho','Fajar','5026241007','intern',2024,'OPERATIONAL',array['OPERATIONAL']::text[]);
+insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values ('demo-ov','Maya Kusuma','Maya','5026241008','intern',2024,'EVENT',array['EVENT']::text[]);
 
 -- tasks
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('demo-ov','EVENT','1','Budi','Susun konsep acara Ormawa Visit Demo','2026-08-01','','2026-08-10','','','','ongoing');
@@ -75,14 +75,14 @@ insert into job_harih(event_id,no,pic,job,notes) values ('demo-ov','3','Dewi','D
 insert into job_harih(event_id,no,pic,job,notes) values ('demo-ov','4','Andi','LO himpunan partner','');
 insert into job_harih(event_id,no,pic,job,notes) values ('demo-ov','5','Putri, Fajar','Konsumsi & perlengkapan','');
 
--- teams
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','EVENT','Budi, Maya',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','SECRETARY','Siti',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','LO','Andi',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','CREATIVE','Dewi',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','MARKETING','Rizky',null);
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','CONSUMPTION',null,'Putri');
-insert into teams(event_id,division,fungsionaris,intern) values ('demo-ov','OPERATIONAL',null,'Fajar');
+-- teams (coordinator only; fungsionaris/intern derive from members)
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','EVENT','Budi','','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','SECRETARY','Siti','','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','LO','Andi','','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','CREATIVE','Dewi','','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','MARKETING','Rizky','','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','CONSUMPTION',null,'','');
+insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','OPERATIONAL',null,'','');
 
 -- prospects
 insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','Demo','1','','','','Himpunan Demo A','Universitas Contoh','','Andi','DIHUBUNGI','DITERIMA','',false,'demo');

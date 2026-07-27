@@ -16,6 +16,11 @@ const q = (v) => (v === null || v === undefined || v === "" ? "null" : `'${Strin
 const n = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? "null" : Number(v));
 const b = (v) => (v ? "true" : "false");
 const d = (v) => (v ? `'${v}'` : "null");
+/** text[] literal, e.g. ["LO","EVENT"] -> array['LO','EVENT']::text[] */
+const arr = (v) =>
+  !v || !v.length
+    ? "'{}'::text[]"
+    : `array[${v.map((x) => `'${String(x).replace(/'/g, "''")}'`).join(",")}]::text[]`;
 
 const EV = "demo-ov";
 
@@ -38,15 +43,17 @@ function angkatan(nrp) {
   return 2000 + parseInt(String(nrp).slice(4, 6), 10);
 }
 
+// [name, nickname, nrp, type, divisions] — a member may sit in several
+// divisions; the first is the primary (mirrored into members.division).
 const members = [
-  ["Budi Santoso", "Budi", "5026221001", "fungsionaris", "EVENT"],
-  ["Siti Rahma", "Siti", "5026221002", "fungsionaris", "SECRETARY"],
-  ["Andi Wijaya", "Andi", "5026231003", "fungsionaris", "LO"],
-  ["Dewi Lestari", "Dewi", "5026231004", "fungsionaris", "CREATIVE"],
-  ["Rizky Pratama", "Rizky", "5026231005", "fungsionaris", "MARKETING"],
-  ["Putri Anggraini", "Putri", "5026241006", "intern", "CONSUMPTION"],
-  ["Fajar Nugroho", "Fajar", "5026241007", "intern", "OPERATIONAL"],
-  ["Maya Kusuma", "Maya", "5026241008", "intern", "EVENT"],
+  ["Budi Santoso", "Budi", "5026221001", "fungsionaris", ["EVENT"]],
+  ["Siti Rahma", "Siti", "5026221002", "fungsionaris", ["SECRETARY"]],
+  ["Andi Wijaya", "Andi", "5026231003", "fungsionaris", ["LO"]],
+  ["Dewi Lestari", "Dewi", "5026231004", "fungsionaris", ["CREATIVE", "MARKETING"]],
+  ["Rizky Pratama", "Rizky", "5026231005", "fungsionaris", ["MARKETING"]],
+  ["Putri Anggraini", "Putri", "5026241006", "intern", ["CONSUMPTION"]],
+  ["Fajar Nugroho", "Fajar", "5026241007", "intern", ["OPERATIONAL"]],
+  ["Maya Kusuma", "Maya", "5026241008", "intern", ["EVENT"]],
 ];
 
 const tasks = [
@@ -89,14 +96,17 @@ const jobs = [
   ["Konsumsi & perlengkapan", "Putri, Fajar"],
 ];
 
+// [division, coordinator] — the roster is derived from members.divisions, so a
+// team row only names the coordinator (a fungsionaris of that same division).
+// CONSUMPTION/OPERATIONAL deliberately have none.
 const teams = [
-  ["EVENT", "Budi, Maya", ""],
-  ["SECRETARY", "Siti", ""],
-  ["LO", "Andi", ""],
-  ["CREATIVE", "Dewi", ""],
-  ["MARKETING", "Rizky", ""],
-  ["CONSUMPTION", "", "Putri"],
-  ["OPERATIONAL", "", "Fajar"],
+  ["EVENT", "Budi"],
+  ["SECRETARY", "Siti"],
+  ["LO", "Andi"],
+  ["CREATIVE", "Dewi"],
+  ["MARKETING", "Rizky"],
+  ["CONSUMPTION", ""],
+  ["OPERATIONAL", ""],
 ];
 
 const prospects = [
@@ -133,8 +143,8 @@ for (const [key, name, short, color, order, excl] of divisions)
   out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(EV)},${q(key)},${q(name)},${q(short)},${q(color)},${order},${b(excl)}) on conflict (event_id,key) do nothing;\n`;
 
 out += `\n-- members\n`;
-for (const [name, nickname, nrp, type, division] of members)
-  out += `insert into members(event_id,name,nickname,nrp,type,year,division) values (${q(EV)},${q(name)},${q(nickname)},${q(nrp)},${q(type)},${angkatan(nrp)},${q(division)});\n`;
+for (const [name, nickname, nrp, type, divs] of members)
+  out += `insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values (${q(EV)},${q(name)},${q(nickname)},${q(nrp)},${q(type)},${angkatan(nrp)},${q(divs[0])},${arr(divs)});\n`;
 
 out += `\n-- tasks\n`;
 const noByDiv = {};
@@ -163,9 +173,9 @@ jobs.forEach(([job, pic], i) => {
   out += `insert into job_harih(event_id,no,pic,job,notes) values (${q(EV)},${q(String(i + 1))},${q(pic)},${q(job)},'');\n`;
 });
 
-out += `\n-- teams\n`;
-for (const [division, fung, intern] of teams)
-  out += `insert into teams(event_id,division,fungsionaris,intern) values (${q(EV)},${q(division)},${q(fung)},${q(intern)});\n`;
+out += `\n-- teams (coordinator only; fungsionaris/intern derive from members)\n`;
+for (const [division, coordinator] of teams)
+  out += `insert into teams(event_id,division,coordinator,fungsionaris,intern) values (${q(EV)},${q(division)},${q(coordinator)},'','');\n`;
 
 out += `\n-- prospects\n`;
 prospects.forEach(([org, campus, pic, cs, tr], i) => {

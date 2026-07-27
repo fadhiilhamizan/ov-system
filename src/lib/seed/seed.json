@@ -155,7 +155,9 @@
       "nickname": "Arjuna",
       "nrp": "5026221210",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-2",
@@ -163,7 +165,9 @@
       "nickname": "Agha",
       "nrp": "5026241003",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-3",
@@ -171,7 +175,9 @@
       "nickname": "Karina",
       "nrp": "5026221012",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-4",
@@ -179,7 +185,9 @@
       "nickname": "Naila",
       "nrp": "5026241004",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-5",
@@ -187,7 +195,9 @@
       "nickname": "Annisa",
       "nrp": "5026221069",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-6",
@@ -195,7 +205,9 @@
       "nickname": "Anin",
       "nrp": "5026241007",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-7",
@@ -203,7 +215,9 @@
       "nickname": "Nisrina",
       "nrp": "5026231111",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-8",
@@ -211,7 +225,9 @@
       "nickname": "Ali",
       "nrp": "5026241008",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-9",
@@ -219,7 +235,9 @@
       "nickname": "Natasha",
       "nrp": "5026221011",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-10",
@@ -227,7 +245,9 @@
       "nickname": "Audrey",
       "nrp": "5026241014",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-11",
@@ -235,7 +255,9 @@
       "nickname": "Muhammad",
       "nrp": "5026221080",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-12",
@@ -243,7 +265,9 @@
       "nickname": "Zahra",
       "nrp": "5026241017",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-13",
@@ -251,7 +275,9 @@
       "nickname": "Agung",
       "nrp": "5026221176",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-14",
@@ -259,7 +285,9 @@
       "nickname": "Christine",
       "nrp": "5026241028",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-15",
@@ -267,7 +295,9 @@
       "nickname": "Arayzi",
       "nrp": "5026221194",
       "type": "fungsionaris",
-      "year": 2022
+      "year": 2022,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-16",
@@ -275,7 +305,9 @@
       "nickname": "Athilah",
       "nrp": "5026241031",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-17",
@@ -283,7 +315,9 @@
       "nickname": "Devika",
       "nrp": "5026231061",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-18",
@@ -291,7 +325,9 @@
       "nickname": "Sandhik",
       "nrp": "5026241043",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-19",
@@ -299,7 +335,9 @@
       "nickname": "Muhammad",
       "nrp": "5026231150",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-20",
@@ -307,7 +345,9 @@
       "nickname": "Mahda",
       "nrp": "5026241050",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-21",
@@ -315,7 +355,9 @@
       "nickname": "Rahmadhona",
       "nrp": "5026231217",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-22",
@@ -323,7 +365,9 @@
       "nickname": "Aqzha",
       "nrp": "5026241053",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-23",
@@ -331,7 +375,9 @@
       "nickname": "Muhammad",
       "nrp": "5026231161",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-24",
@@ -339,7 +385,9 @@
       "nickname": "Crystal",
       "nrp": "5026241055",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-25",
@@ -347,7 +395,9 @@
       "nickname": "Irhab",
       "nrp": "5051231041",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-26",
@@ -355,7 +405,9 @@
       "nickname": "Avatar",
       "nrp": "5026241066",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-27",
@@ -363,7 +415,9 @@
       "nickname": "Auliya",
       "nrp": "5026231141",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-28",
@@ -371,7 +425,9 @@
       "nickname": "Kezia",
       "nrp": "5026241076",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-29",
@@ -379,7 +435,9 @@
       "nickname": "Mochammad",
       "nrp": "5026231172",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-30",
@@ -387,7 +445,9 @@
       "nickname": "Irene",
       "nrp": "5026241080",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-31",
@@ -395,7 +455,9 @@
       "nickname": "Fadhiil",
       "nrp": "5026231128",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-32",
@@ -403,7 +465,9 @@
       "nickname": "Alwida",
       "nrp": "5026241090",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-f-33",
@@ -411,7 +475,9 @@
       "nickname": "Burhan",
       "nrp": "5026231074",
       "type": "fungsionaris",
-      "year": 2023
+      "year": 2023,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-34",
@@ -419,7 +485,9 @@
       "nickname": "Claudio",
       "nrp": "5026241112",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-35",
@@ -427,7 +495,9 @@
       "nickname": "Adel",
       "nrp": "5026241120",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-36",
@@ -435,7 +505,9 @@
       "nickname": "Aqil",
       "nrp": "5026241128",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-37",
@@ -443,7 +515,9 @@
       "nickname": "Franz",
       "nrp": "5026241156",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-38",
@@ -451,7 +525,9 @@
       "nickname": "Nicho",
       "nrp": "5026241187",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-39",
@@ -459,7 +535,9 @@
       "nickname": "Izaaz",
       "nrp": "5026241194",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-40",
@@ -467,7 +545,9 @@
       "nickname": "Thalia",
       "nrp": "5026241201",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-41",
@@ -475,7 +555,9 @@
       "nickname": "Andro",
       "nrp": "5026241204",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-42",
@@ -483,7 +565,9 @@
       "nickname": "Fairuz/Babeh",
       "nrp": "5051241003",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-43",
@@ -491,7 +575,9 @@
       "nickname": "Suci",
       "nrp": "5051241013",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     },
     {
       "id": "m-i-44",
@@ -499,7 +585,9 @@
       "nickname": "Hayyu",
       "nrp": "5051241024",
       "type": "intern",
-      "year": 2024
+      "year": 2024,
+      "divisions": [],
+      "division": null
     }
   ],
   "tasks": [
@@ -7087,154 +7175,176 @@
       "event_id": "ov2-2025",
       "division": "LO",
       "fungsionaris": "Vika Daniel Mba Tahe",
-      "intern": "Audrey Irene Kezia Mahda Suci"
+      "intern": "Audrey Irene Kezia Mahda Suci",
+      "coordinator": ""
     },
     {
       "id": "tm-2",
       "event_id": "ov2-2025",
       "division": "EVENT",
       "fungsionaris": "Burhan Juno Mba dila Mas Agung",
-      "intern": "Adesya Avatar Crystal Franz Haqi"
+      "intern": "Adesya Avatar Crystal Franz Haqi",
+      "coordinator": ""
     },
     {
       "id": "tm-3",
       "event_id": "ov2-2025",
       "division": "CONSUMPTION",
       "fungsionaris": "Nisrina Mba Karina",
-      "intern": "Aqil Aqzha Christine"
+      "intern": "Aqil Aqzha Christine",
+      "coordinator": ""
     },
     {
       "id": "tm-4",
       "event_id": "ov2-2025",
       "division": "OPERATIONAL",
       "fungsionaris": "Faiz Mas Aray",
-      "intern": "Ali Andro Nicho Claudio Sandhika"
+      "intern": "Ali Andro Nicho Claudio Sandhika",
+      "coordinator": ""
     },
     {
       "id": "tm-5",
       "event_id": "ov2-2025",
       "division": "CREATIVE",
       "fungsionaris": "Dzaki Auliya Mas Fauzan Mas Juna",
-      "intern": "Adel Agha Alwida Anin Athilah Fairuz Izaaz Thalia"
+      "intern": "Adel Agha Alwida Anin Athilah Fairuz Izaaz Thalia",
+      "coordinator": ""
     },
     {
       "id": "tm-6",
       "event_id": "ov2-2025",
       "division": "SECRETARY",
       "fungsionaris": "Nisrina",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-7",
       "event_id": "ov2-2025",
       "division": "TREASURER",
       "fungsionaris": "Dzaki",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-8",
       "event_id": "ov1-2025",
       "division": "LO",
       "fungsionaris": "Mba Dilla Aul Faiz Devika",
-      "intern": "-"
+      "intern": "-",
+      "coordinator": ""
     },
     {
       "id": "tm-9",
       "event_id": "ov1-2025",
       "division": "EVENT",
       "fungsionaris": "Fadhiil Dona Juno Mba Karina Nisrin Mas Juna",
-      "intern": "-"
+      "intern": "-",
+      "coordinator": ""
     },
     {
       "id": "tm-10",
       "event_id": "ov1-2025",
       "division": "CONSUMPTION",
       "fungsionaris": "Dzaki Mba Tasha",
-      "intern": "-"
+      "intern": "-",
+      "coordinator": ""
     },
     {
       "id": "tm-11",
       "event_id": "ov1-2025",
       "division": "OPERATIONAL",
       "fungsionaris": "Burhan Daniel Mas Agung Mas Fauzan",
-      "intern": "-"
+      "intern": "-",
+      "coordinator": ""
     },
     {
       "id": "tm-12",
       "event_id": "ov1-2025",
       "division": "OUTSOURCE",
       "fungsionaris": "Mas Aray",
-      "intern": "-"
+      "intern": "-",
+      "coordinator": ""
     },
     {
       "id": "tm-13",
       "event_id": "ov1-2026",
       "division": "LO",
       "fungsionaris": "Mahda Mba Lila",
-      "intern": "Note : bold = Koordinator"
+      "intern": "Note : bold = Koordinator",
+      "coordinator": ""
     },
     {
       "id": "tm-14",
       "event_id": "ov1-2026",
       "division": "EVENT",
       "fungsionaris": "Ali Naina Izzan Mazay Mas padil",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-15",
       "event_id": "ov1-2026",
       "division": "CONSUMPTION",
       "fungsionaris": "Atilah Mas daniel",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-16",
       "event_id": "ov1-2026",
       "division": "OPERATIONAL",
       "fungsionaris": "Alwida Mas burhan Mas irhab",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-17",
       "event_id": "ov1-2026",
       "division": "OUTSOURCE",
       "fungsionaris": "Mba Aul",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-18",
       "event_id": "ov2-2026",
       "division": "LO",
       "fungsionaris": "",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-19",
       "event_id": "ov2-2026",
       "division": "EVENT",
       "fungsionaris": "",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-20",
       "event_id": "ov2-2026",
       "division": "CONSUMPTION",
       "fungsionaris": "",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-21",
       "event_id": "ov2-2026",
       "division": "OPERATIONAL",
       "fungsionaris": "",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     },
     {
       "id": "tm-22",
       "event_id": "ov2-2026",
       "division": "OUTSOURCE",
       "fungsionaris": "",
-      "intern": ""
+      "intern": "",
+      "coordinator": ""
     }
   ]
 }

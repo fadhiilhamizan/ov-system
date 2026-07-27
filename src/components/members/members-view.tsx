@@ -18,6 +18,7 @@ import { DivisionsGrid, type DivisionStat } from "@/components/divisions/divisio
 import { SortIndicator } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { cn } from "@/lib/utils";
+import { memberDivisions, primaryDivision } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
@@ -60,7 +61,8 @@ export function MembersView({
     const val = (m: Member, col: SortCol): string | number => {
       switch (col) {
         case "nrp": return m.nrp ?? "";
-        case "division": return divMap.get(m.division ?? "")?.name ?? "";
+        // Sort by the primary division so multi-division members still group.
+        case "division": return divMap.get(primaryDivision(m) ?? "")?.name ?? "";
         case "type": return m.type;
         case "year": return m.year ?? 0;
         default: return (m.name ?? "").toLowerCase();
@@ -177,7 +179,8 @@ export function MembersView({
               </TableHeader>
               <TableBody>
                 {filtered.map((m) => {
-                  const div = m.division ? divMap.get(m.division) : undefined;
+                  // A member can sit in several divisions — show them all.
+                  const divs = memberDivisions(m).map((k) => divMap.get(k)).filter(Boolean) as Division[];
                   return (
                     <TableRow key={m.id} data-state={selected.has(m.id) ? "selected" : undefined}>
                       {canManageMembers && (
@@ -199,7 +202,15 @@ export function MembersView({
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{m.nrp || "-"}</TableCell>
-                      <TableCell>{div ? <DivisionBadge division={div} /> : <span className="text-sm text-muted-foreground">-</span>}</TableCell>
+                      <TableCell>
+                        {divs.length ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {divs.map((d) => <DivisionBadge key={d.key} division={d} />)}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
                           {m.type === "fungsionaris" ? tr("Fungsio") : tr("Intern")}

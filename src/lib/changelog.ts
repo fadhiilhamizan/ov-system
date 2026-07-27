@@ -7,6 +7,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.19.0",
+    date: "2026-07-27",
+    title: "Divisi & Anggota menyatu, warna kategori anggaran, & perbaikan kolom Qty",
+    changes: [
+      "Divisi dan Anggota kini benar-benar terhubung: begitu seorang anggota diberi divisi di tab Anggota EA, namanya otomatis muncul pada 'Struktur Tim' di kartu divisi tersebut. Tidak ada lagi daftar anggota yang harus diketik dua kali.",
+      "Satu orang boleh berada di LEBIH DARI SATU divisi. Pilihan divisi pada formulir anggota kini berupa daftar centang, dan semua divisinya ditampilkan di tabel Anggota EA.",
+      "Koordinator hanya bisa dipilih dari fungsionaris divisi yang bersangkutan, dan sebuah divisi boleh tidak punya koordinator sama sekali.",
+      "Kartu divisi kini menampilkan jumlah anggotanya di samping jumlah tugas.",
+      "Anggaran: warna bulatan kecil pada kategori bisa diubah — lewat pop-up 'Tambah Item' maupun langsung dari bulatannya, memakai pilihan warna yang sama dengan pengaturan warna divisi.",
+      "Anggaran: kolom Qty & Harga kini tersimpan saat menekan Enter, dan tombol panah naik/turun ikut tersimpan sendiri sesaat setelah diklik (sebelumnya baru tersimpan kalau mengklik di luar kolom). Tekan Esc untuk membatalkan.",
+      "Panduan: ikon panah pada 'Panduan Lengkap per Fitur' diganti agar sama rapi dengan panah di FAQ.",
+      "Role Request: menu ini kini menjelaskan sendiri kenapa pengajuan peran tidak bisa berjalan di Mode Demo.",
+    ],
+  },
+  {
     version: "1.18.1",
     date: "2026-07-26",
     title: "Perbaikan internal: keamanan migrasi, kecepatan muat, & stabilitas",

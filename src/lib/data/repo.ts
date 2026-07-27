@@ -4,6 +4,7 @@ import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
+import { divisionFields } from "../members";
 import { uid } from "../utils";
 import type {
   BudgetItem,
@@ -109,7 +110,12 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
   if (!USE_SUPABASE) return local.getMembers(eventId);
   const { data } = await (await sb()).from("members").select("*");
-  const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]);
+  // `divisions` is a text[] and comes back null on legacy rows — normalise it so
+  // callers never have to null-check the array (see lib/members.ts).
+  const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]).map((m) => ({
+    ...m,
+    divisions: m.divisions ?? (m.division ? [m.division] : []),
+  }));
   return eventId ? list.filter((m) => !m.event_id || m.event_id === eventId) : list;
 });
 
@@ -391,6 +397,7 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
           unit: i.unit,
           unit_price: i.unit_price,
           total: i.total,
+          category_color: i.category_color ?? null,
         }),
       ),
   }));
@@ -398,7 +405,10 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
 });
 export async function updateBudgetItem(
   itemId: string,
-  patch: { qty?: number | null; unit_price?: number | null; name?: string; category?: string; unit?: string },
+  patch: {
+    qty?: number | null; unit_price?: number | null; name?: string; category?: string;
+    unit?: string; category_color?: string | null;
+  },
 ) {
   if (!USE_SUPABASE) return local.updateBudgetItem(itemId, patch);
   const client = await sb();
@@ -406,14 +416,29 @@ export async function updateBudgetItem(
   if (!item) return;
   const qty = patch.qty ?? item.qty;
   const up = patch.unit_price ?? item.unit_price;
-  await client
+  const { error } = await client
     .from("budget_items")
     .update({ ...patch, total: Math.round((qty ?? 0) * (up ?? 0)) })
     .eq("id", itemId);
+  if (error) throw new Error(error.message);
+}
+/** Recolour a whole category at once — the dot is a property of the category,
+ *  not of one row, so every item in that plan+category moves together. */
+export async function setCategoryColor(planId: string, category: string, color: string) {
+  if (!USE_SUPABASE) return local.setCategoryColor(planId, category, color);
+  const { error } = await (await sb())
+    .from("budget_items")
+    .update({ category_color: color })
+    .eq("plan_id", planId)
+    .eq("category", category);
+  if (error) throw new Error(error.message);
 }
 export async function createBudgetItem(
   planId: string,
-  input: { category: string; name: string; qty?: number | null; unit?: string; unit_price?: number | null },
+  input: {
+    category: string; name: string; qty?: number | null; unit?: string;
+    unit_price?: number | null; category_color?: string | null;
+  },
 ) {
   if (!USE_SUPABASE) return local.createBudgetItem(planId, input);
   const client = await sb();
@@ -425,7 +450,7 @@ export async function createBudgetItem(
     .limit(1)
     .maybeSingle();
   const total = Math.round((input.qty ?? 0) * (input.unit_price ?? 0));
-  await client.from("budget_items").insert({
+  const { error } = await client.from("budget_items").insert({
     plan_id: planId,
     category: input.category || "LAIN-LAIN",
     name: input.name,
@@ -433,8 +458,10 @@ export async function createBudgetItem(
     unit: input.unit ?? "",
     unit_price: input.unit_price ?? null,
     total,
+    category_color: input.category_color ?? null,
     order: (maxRow?.order ?? 0) + 1,
   });
+  if (error) throw new Error(error.message);
 }
 export async function deleteBudgetItem(itemId: string) {
   if (!USE_SUPABASE) return local.deleteBudgetItem(itemId);
@@ -727,7 +754,8 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
     const src = await getMembers(sourceId);
     const rows = src.map((m) => ({
       event_id: targetId, name: m.name, nickname: m.nickname, nrp: m.nrp,
-      type: m.type, year: m.year, division: m.division ?? null,
+      type: m.type, year: m.year,
+      ...divisionFields(m.divisions, m.division),
     }));
     if (rows.length) await client.from("members").insert(rows);
   }
@@ -774,7 +802,8 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
         await client.from("budget_items").insert(
           plan.items.map((i, idx) => ({
             plan_id: created.id, category: i.category, no: i.no, name: i.name,
-            qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total, order: idx,
+            qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total,
+            category_color: i.category_color ?? null, order: idx,
           })),
         );
     }
@@ -783,25 +812,33 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
 
 export async function createMember(input: Partial<Member>) {
   if (!USE_SUPABASE) return local.createMember(input);
-  await (await sb()).from("members").insert({
+  const div = divisionFields(input.divisions, input.division);
+  // Writes THROW on a Supabase error (RLS denial, missing column, …): swallowing
+  // it made a failed save look successful and wrote nothing — the actions turn
+  // this into a visible toast.
+  const { error } = await (await sb()).from("members").insert({
     event_id: input.event_id ?? null,
     name: input.name ?? "",
     nickname: input.nickname ?? "",
     nrp: input.nrp ?? "",
     type: input.type ?? "fungsionaris",
     year: input.year ?? new Date().getFullYear(),
-    division: input.division ?? null,
+    division: div.division,
+    divisions: div.divisions,
   });
+  if (error) throw new Error(error.message);
 }
 export async function updateMember(id: string, patch: Partial<Member>) {
   if (!USE_SUPABASE) return local.updateMember(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
-  await (await sb()).from("members").update(rest).eq("id", id);
+  const { error } = await (await sb()).from("members").update(rest).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 export async function deleteMember(id: string) {
   if (!USE_SUPABASE) return local.deleteMember(id);
-  await (await sb()).from("members").delete().eq("id", id);
+  const { error } = await (await sb()).from("members").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 export async function bulkDeleteMembers(ids: string[]) {
   if (!ids.length) return;
@@ -809,7 +846,8 @@ export async function bulkDeleteMembers(ids: string[]) {
     for (const id of ids) local.deleteMember(id);
     return;
   }
-  await (await sb()).from("members").delete().in("id", ids);
+  const { error } = await (await sb()).from("members").delete().in("id", ids);
+  if (error) throw new Error(error.message);
 }
 export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
   if (!ids.length) return;
@@ -819,7 +857,8 @@ export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
   }
   const { id: _drop, ...rest } = patch;
   void _drop;
-  await (await sb()).from("members").update(rest).in("id", ids);
+  const { error } = await (await sb()).from("members").update(rest).in("id", ids);
+  if (error) throw new Error(error.message);
 }
 
 export async function createDivision(input: Partial<Division>) {
@@ -864,19 +903,21 @@ export async function bulkUpdateDivisions(eventId: string, keys: string[], patch
 
 export async function createTeam(input: Partial<Team>) {
   if (!USE_SUPABASE) return local.createTeam(input);
-  await (await sb()).from("teams").insert({
+  const { error } = await (await sb()).from("teams").insert({
     event_id: input.event_id ?? null,
     division: input.division ?? "EVENT",
     coordinator: input.coordinator ?? "",
     fungsionaris: input.fungsionaris ?? "",
     intern: input.intern ?? "",
   });
+  if (error) throw new Error(error.message);
 }
 export async function updateTeam(id: string, patch: Partial<Team>) {
   if (!USE_SUPABASE) return local.updateTeam(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
-  await (await sb()).from("teams").update(rest).eq("id", id);
+  const { error } = await (await sb()).from("teams").update(rest).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 export async function deleteTeam(id: string) {
   if (!USE_SUPABASE) return local.deleteTeam(id);

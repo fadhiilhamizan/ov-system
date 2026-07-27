@@ -28,6 +28,7 @@ import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import { MemberPicker, type PickerRole } from "@/components/members/member-picker";
 import { useMembers, useTeams } from "@/components/members/members-context";
+import { memberInDivision } from "@/lib/members";
 import { useTaskLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
 import { useResetOn } from "@/lib/use-synced";
@@ -89,7 +90,8 @@ export function TaskFormDialog({
   // PIC picker: only this division's members, grouped by role (coordinator from
   // the division's team, else the member's fungsionaris/intern type).
   const divisionMembers = React.useMemo(
-    () => members.filter((m) => m.division === form.division),
+    // A member can belong to several divisions, so match against all of them.
+    () => members.filter((m) => memberInDivision(m, form.division)),
     [members, form.division],
   );
   const coordinatorNames = React.useMemo(() => {

@@ -10,37 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ColorPicker, COLOR_PRESET } from "@/components/ui/color-picker";
 import { createDivisionAction, updateDivisionAction, deleteDivisionAction } from "@/lib/actions/manage";
-import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import type { Division } from "@/lib/types";
-
-// Ordered by hue (warm -> cool -> violet/pink), neutral gray last.
-const PRESET = [
-  "#f97316", // orange
-  "#f59e0b", // amber
-  "#10b981", // emerald
-  "#14b8a6", // teal
-  "#0ea5e9", // sky
-  "#6366f1", // indigo
-  "#8b5cf6", // violet
-  "#d946ef", // fuchsia
-  "#ec4899", // pink
-  "#f43f5e", // rose
-  "#64748b", // slate (neutral)
-];
-
-/** Lighten a hex color by mixing it toward white. */
-function lighten(hex: string, amount = 0.55): string {
-  const n = hex.replace("#", "");
-  const r = parseInt(n.slice(0, 2), 16);
-  const g = parseInt(n.slice(2, 4), 16);
-  const b = parseInt(n.slice(4, 6), 16);
-  const mix = (v: number) => Math.round(v + (255 - v) * amount);
-  return "#" + [mix(r), mix(g), mix(b)].map((v) => v.toString(16).padStart(2, "0")).join("");
-}
-const PRESET_LIGHT = PRESET.map((c) => lighten(c));
 
 function DivisionFormDialog({
   mode, division, open, onOpenChange, trigger,
@@ -60,7 +34,7 @@ function DivisionFormDialog({
     key: division?.key ?? "",
     name: division?.name ?? "",
     short: division?.short ?? "",
-    color: division?.color ?? PRESET[0],
+    color: division?.color ?? COLOR_PRESET[0],
     exclude_from_rundown: division?.exclude_from_rundown ?? false,
   }));
 
@@ -111,29 +85,7 @@ function DivisionFormDialog({
           )}
           <div className="grid gap-1.5">
             <Label>{t("Warna")}</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              {PRESET.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setF({ ...f, color: c })}
-                  className={cn("size-7 rounded-full ring-2 ring-offset-2 ring-offset-background transition", f.color === c ? "ring-foreground" : "ring-transparent")}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {PRESET_LIGHT.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setF({ ...f, color: c })}
-                  className={cn("size-7 rounded-full ring-2 ring-offset-2 ring-offset-background transition", f.color === c ? "ring-foreground" : "ring-transparent")}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-            <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="mt-1 size-8 cursor-pointer rounded" />
+            <ColorPicker value={f.color} onChange={(color) => setF({ ...f, color })} />
           </div>
           <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border p-3 text-sm">
             <Checkbox

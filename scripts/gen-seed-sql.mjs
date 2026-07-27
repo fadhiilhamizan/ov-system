@@ -12,6 +12,11 @@ const n = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Numb
 const b = (v) => (v ? "true" : "false");
 const d = (v) => (v ? `'${v}'` : "null");
 const jb = (v) => `'${JSON.stringify(v ?? {}).replace(/'/g, "''")}'::jsonb`;
+/** text[] literal, e.g. ["LO","EVENT"] -> array['LO','EVENT']::text[] */
+const arr = (v) =>
+  !v || !v.length
+    ? "'{}'::text[]"
+    : `array[${v.map((x) => `'${String(x).replace(/'/g, "''")}'`).join(",")}]::text[]`;
 
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
@@ -26,9 +31,11 @@ for (const e of seed.events)
   for (const x of seed.divisions)
     out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(e.id)},${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (event_id,key) do nothing;\n`;
 
-out += `\n-- members\n`;
-for (const m of seed.members)
-  out += `insert into members(event_id,name,nickname,nrp,type,year,division) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(m.division)});\n`;
+out += `\n-- members (divisions[] is the real membership; division = the primary)\n`;
+for (const m of seed.members) {
+  const divs = m.divisions?.length ? m.divisions : m.division ? [m.division] : [];
+  out += `insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(divs[0] ?? null)},${arr(divs)});\n`;
+}
 
 out += `\n-- tasks\n`;
 for (const t of seed.tasks)

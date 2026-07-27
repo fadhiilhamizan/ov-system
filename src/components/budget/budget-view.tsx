@@ -12,16 +12,18 @@ import { useMultiSelect } from "@/lib/use-multi-select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ColorPicker } from "@/components/ui/color-picker";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
-  duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction,
+  duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction, setCategoryColorAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
-import type { BudgetPlan, OVEvent } from "@/lib/types";
+import type { BudgetItem, BudgetPlan, OVEvent } from "@/lib/types";
 
 const CATEGORY_PRESETS = ["KONSUMSI", "TRANSPORTASI & AKOMODASI", "PERALATAN & CETAKAN", "PEMINJAMAN TEMPAT", "LAIN-LAIN"];
 
@@ -32,9 +34,15 @@ const CAT_COLORS: Record<string, string> = {
   "PEMINJAMAN TEMPAT": "#10b981",
   "LAIN-LAIN": "#64748b",
 };
-function catColor(c: string) {
+/** Fallback palette for categories that were never given an explicit colour. */
+function presetCatColor(c: string) {
   const key = Object.keys(CAT_COLORS).find((k) => c.toUpperCase().startsWith(k.split(" ")[0]));
   return (key && CAT_COLORS[key]) || "#6366f1";
+}
+/** A category's dot colour: whatever its items were saved with, else preset. */
+function catColor(name: string, items?: Pick<BudgetItem, "category_color">[]) {
+  const chosen = items?.find((i) => i.category_color)?.category_color;
+  return chosen || presetCatColor(name);
 }
 
 export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEvent[]; defaultEventId: string }) {
@@ -88,12 +96,23 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
   );
 }
 
-function AddItemDialog({ planId, categories }: { planId: string; categories: string[] }) {
+function AddItemDialog({
+  planId, categories, colorOf,
+}: {
+  planId: string;
+  categories: string[];
+  /** Current dot colour of an existing category, so editing one starts from it. */
+  colorOf: (category: string) => string;
+}) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   const [f, setF] = React.useState({ category: categories[0] ?? "LAIN-LAIN", name: "", qty: "", unit: "", unit_price: "" });
+  // null = "keep whatever colour this category already has". Set only once the
+  // user actually picks one, so opening the dialog never recolours anything.
+  const [color, setColor] = React.useState<string | null>(null);
   const allCategories = [...new Set([...CATEGORY_PRESETS, ...categories])];
+  const shownColor = color ?? colorOf(f.category);
 
   function submit() {
     start(async () => {
@@ -103,10 +122,12 @@ function AddItemDialog({ planId, categories }: { planId: string; categories: str
         qty: f.qty ? Number(f.qty) : null,
         unit: f.unit,
         unit_price: f.unit_price ? Number(f.unit_price) : null,
+        category_color: color,
       });
       if (res.ok) {
         toast.success(t("Item ditambahkan"));
         setOpen(false);
+        setColor(null);
         setF({ category: f.category, name: "", qty: "", unit: "", unit_price: "" });
       } else toast.error(res.error);
     });
@@ -124,8 +145,34 @@ function AddItemDialog({ planId, categories }: { planId: string; categories: str
         <div className="grid gap-4">
           <div className="grid gap-1.5">
             <Label>{t("Kategori")}</Label>
-            <Input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value.toUpperCase() })} list="budget-categories" />
+            <div className="flex items-center gap-2">
+              {/* The dot next to the category name — click to recolour it. */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    title={t("Ubah warna kategori")}
+                    aria-label={t("Ubah warna kategori")}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-input bg-card transition hover:bg-muted"
+                  >
+                    <span className="size-3.5 rounded-full ring-2 ring-border" style={{ backgroundColor: shownColor }} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-64 p-3">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Warna kategori")}</p>
+                  <ColorPicker size="sm" value={shownColor} onChange={setColor} />
+                </PopoverContent>
+              </Popover>
+              <Input
+                value={f.category}
+                onChange={(e) => setF({ ...f, category: e.target.value.toUpperCase() })}
+                list="budget-categories"
+              />
+            </div>
             <datalist id="budget-categories">{allCategories.map((c) => <option key={c} value={c} />)}</datalist>
+            <p className="text-[11px] text-muted-foreground">
+              {t("Warna berlaku untuk seluruh item pada kategori ini.")}
+            </p>
           </div>
           <div className="grid gap-1.5">
             <Label>{t("Nama item")} <span className="text-danger">*</span></Label>
@@ -324,16 +371,18 @@ function PlanCard({
   const allSelected = plan.items.length > 0 && plan.items.every((i) => sel.selected.has(i.id));
 
   // group by category preserving order
-  const cats: { name: string; items: BudgetPlan["items"]; subtotal: number }[] = [];
+  const cats: { name: string; items: BudgetPlan["items"]; subtotal: number; color: string }[] = [];
   plan.items.forEach((it) => {
     let c = cats.find((x) => x.name === it.category);
     if (!c) {
-      c = { name: it.category, items: [], subtotal: 0 };
+      c = { name: it.category, items: [], subtotal: 0, color: presetCatColor(it.category) };
       cats.push(c);
     }
     c.items.push(it);
     c.subtotal += it.total ?? 0;
   });
+  for (const c of cats) c.color = catColor(c.name, c.items);
+  const colorOf = (name: string) => cats.find((c) => c.name === name)?.color ?? presetCatColor(name);
 
   const scenario = /MAKSIMAL|MAX/i.test(plan.name) ? "max" : /MINIMAL|MIN/i.test(plan.name) ? "min" : null;
 
@@ -368,14 +417,14 @@ function PlanCard({
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-muted/20 px-5 py-3">
             {cats.map((c) => (
               <div key={c.name} className="flex items-center gap-2 text-xs">
-                <span className="size-2.5 rounded-full" style={{ backgroundColor: catColor(c.name) }} />
+                <CategoryDot planId={plan.id} category={c.name} color={c.color} canManage={canManage} />
                 <span className="font-medium">{c.name}</span>
                 <span className="text-muted-foreground">{formatRupiah(c.subtotal)}</span>
               </div>
             ))}
             {canManage && (
               <div className="ml-auto">
-                <AddItemDialog planId={plan.id} categories={cats.map((c) => c.name)} />
+                <AddItemDialog planId={plan.id} categories={cats.map((c) => c.name)} colorOf={colorOf} />
               </div>
             )}
           </div>
@@ -405,7 +454,7 @@ function PlanCard({
                 {cats.map((c) => (
                   <React.Fragment key={c.name}>
                     <tr className="bg-muted/30">
-                      <td colSpan={canManage ? 7 : 5} className="px-5 py-1.5 text-xs font-semibold" style={{ color: catColor(c.name) }}>
+                      <td colSpan={canManage ? 7 : 5} className="px-5 py-1.5 text-xs font-semibold" style={{ color: c.color }}>
                         {c.name}
                       </td>
                     </tr>
@@ -464,6 +513,54 @@ function PlanCard({
   );
 }
 
+/** The little coloured circle in front of a category. Admins can click it to
+ *  recolour the whole category in place. */
+function CategoryDot({
+  planId, category, color, canManage,
+}: {
+  planId: string;
+  category: string;
+  color: string;
+  canManage: boolean;
+}) {
+  const t = useT();
+  const [open, setOpen] = React.useState(false);
+  const [pending, start] = React.useTransition();
+  // Optimistic: paint the new colour immediately, the server confirms after.
+  const [shown, setShown] = useSynced(color);
+
+  if (!canManage) return <span className="size-2.5 rounded-full" style={{ backgroundColor: color }} />;
+
+  function pick(next: string) {
+    setShown(next);
+    start(async () => {
+      const res = await setCategoryColorAction(planId, category, next);
+      if (res.ok) { toast.success(t("Warna kategori diperbarui")); setOpen(false); }
+      else { toast.error(res.error); setShown(color); }
+    });
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title={t("Ubah warna kategori")}
+          aria-label={`${t("Ubah warna kategori")}: ${category}`}
+          disabled={pending}
+          className="rounded-full p-0.5 transition hover:ring-2 hover:ring-border"
+        >
+          <span className="block size-2.5 rounded-full" style={{ backgroundColor: shown }} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Warna kategori")}</p>
+        <ColorPicker size="sm" value={shown} onChange={pick} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function NumCell({
   value,
   onCommit,
@@ -474,13 +571,48 @@ function NumCell({
   width: string;
 }) {
   const [v, setV] = useSynced(value ?? 0);
+  // The saved value, so a commit from any path (blur / Enter / spinner) knows
+  // whether there is anything left to write.
+  const savedRef = React.useRef(value ?? 0);
+  React.useEffect(() => { savedRef.current = value ?? 0; }, [value]);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const commit = React.useCallback(
+    (next: number) => {
+      if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+      if (next !== savedRef.current) onCommit(next);
+    },
+    [onCommit],
+  );
+
+  // Clicking the up/down spinner fires change without ever blurring the input,
+  // so a blur-only save looked like "the arrows do nothing". Save shortly after
+  // the last click instead (debounced so holding the arrow is one write).
+  React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
   return (
     <input
       type="number"
       min={0}
       value={v}
-      onChange={(e) => setV(Math.max(0, Number(e.target.value) || 0))}
-      onBlur={() => v !== (value ?? 0) && onCommit(v)}
+      onChange={(e) => {
+        const next = Math.max(0, Number(e.target.value) || 0);
+        setV(next);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => commit(next), 600);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit(v);
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+          setV(savedRef.current);
+          e.currentTarget.blur();
+        }
+      }}
+      onBlur={() => commit(v)}
       className={cn(
         "rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-right tabular-nums transition hover:border-border focus:border-ring focus:bg-card focus:outline-none",
         width,
