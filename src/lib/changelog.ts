@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.20.0",
+    date: "2026-07-28",
+    title: "Perbaikan besar izin menyimpan, arsip Ormawa Visit, & pesan error yang jujur",
+    changes: [
+      "PERBAIKAN PENTING: Koordinator, Staff, dan Intern sebelumnya bisa gagal menyimpan perubahan TANPA pesan apa pun — datanya tampil di layar lalu hilang saat halaman dimuat ulang. Penyebabnya aturan di database masih mengira setiap akun terikat pada satu divisi dan satu Ormawa Visit, padahal akun di sistem ini tidak pernah begitu. Aturan itu sudah dihapus.",
+      "Sekarang izin menyimpan hanya ditentukan oleh PERAN, persis seperti tabel Matriks Akses di Pengaturan. Staff & Intern bisa membuat dan mengubah tugas divisi mana pun, tapi tetap tidak bisa menghapus.",
+      "Setiap kegagalan menyimpan kini SELALU memunculkan pesan merah. Sebelumnya 37 jenis penyimpanan (rundown, Hari-H, Super Link, Reach & Offer, divisi, FAQ, anggaran, dan lainnya) diam saja ketika gagal.",
+      "BARU — Arsip Ormawa Visit: admin bisa mengunci sebuah Ormawa Visit yang sudah selesai lewat menu titik-tiga di halaman Daftar Ormawa Visit. Setelah dikunci, tidak ada peran lain yang bisa mengubah apa pun di dalamnya — tugas, rundown, Hari-H, maupun tautannya. Admin tetap bisa memperbaiki isinya dan membuka kuncinya kapan saja.",
+      "Ormawa Visit yang diarsipkan ditandai lencana 'Arsip', dan tombol-tombol ubah otomatis hilang bagi peran selain admin.",
+      "Akun yang baru mendaftar dan belum disetujui perannya kini benar-benar tidak bisa membaca Anggaran dan Super Link, sesuai Matriks Akses. Sebelumnya datanya masih bisa terbaca dari luar aplikasi.",
+    ],
+  },
+  {
     version: "1.19.0",
     date: "2026-07-27",
     title: "Divisi & Anggota menyatu, warna kategori anggaran, & perbaikan kolom Qty",

@@ -15,6 +15,7 @@ const repo = {
   setPrimaryProspect: vi.fn(async () => {}),
   unsetPrimaryProspect: vi.fn(async () => {}),
   syncEventFromProspect: vi.fn(async () => {}),
+  getEvent: vi.fn(async () => ({ id: "ov1", locked: false })),
 };
 vi.mock("@/lib/data/repo", () => repo);
 
@@ -24,7 +25,7 @@ const {
 } = await import("./prospects");
 
 const user = (over: Partial<AppUser> = {}): AppUser => ({
-  id: "u1", name: "Tester", email: "t@x.id", role: "admin", division: "EVENT", ...over,
+  id: "u1", name: "Tester", email: "t@x.id", role: "admin", ...over,
 });
 
 const prospect = (over: Partial<Prospect> = {}): Prospect => ({
@@ -53,7 +54,7 @@ describe("createProspectAction", () => {
     expect(repo.createProspect).not.toHaveBeenCalled();
   });
 
-  it("writes the PARSED payload — trimmed, unknown keys stripped", async () => {
+  it("writes the PARSED payload â€” trimmed, unknown keys stripped", async () => {
     // Regression: this action used to `parse()` and then pass the RAW input,
     // so the validation did nothing.
     await createProspectAction({ org_name: "  HIMA X  ", evil: "<script>" } as never);
@@ -112,7 +113,7 @@ describe("primary prospect", () => {
 });
 
 describe("deleteProspectAction", () => {
-  it("needs full access — staff cannot delete", async () => {
+  it("needs full access â€” staff cannot delete", async () => {
     currentUser.mockResolvedValue(user({ role: "staff" }));
     expect((await deleteProspectAction("p1")).ok).toBe(false);
     expect(repo.deleteProspect).not.toHaveBeenCalled();

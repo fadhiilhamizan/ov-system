@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
+import { attenuate } from "@/lib/permissions";
 import { getActiveEvent, getActiveDivision } from "@/lib/session";
 import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
@@ -40,7 +41,7 @@ export default async function TasksPage() {
           divisions={divisions}
           events={events}
           activeEventId={event.id}
-          user={user}
+          user={attenuate(user, event)}
           initialDivision={activeDivision}
         />
       </MembersProvider>

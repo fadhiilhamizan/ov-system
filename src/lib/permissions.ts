@@ -1,4 +1,4 @@
-import { REQUESTABLE_ROLES, type AppUser, type RequestableRole, type Task } from "./types";
+import { REQUESTABLE_ROLES, type AppUser, type OVEvent, type RequestableRole, type Task } from "./types";
 import { ACCESS_RANK, MODULE_ACCESS, MODULE_ACCESS_LEVEL, type AccessLevel } from "./constants";
 
 /**
@@ -21,12 +21,52 @@ export function canRequestRole(user: AppUser): boolean {
   return requestableRolesFor(user).length > 0;
 }
 
-/** Does the user match the PIC string of a task (by name or nickname)? */
+/**
+ * Does the user's name appear in a task's free-text PIC field?
+ *
+ * Presentational only — it highlights "your" tasks, and must never gate a
+ * write. `pic` is a comma-joined display string, so the match is fuzzy: a user
+ * named "Ali" matches a task assigned to "Alifia". There is also no division
+ * fallback any more, because an account has no division (see AppUser).
+ */
 export function isAssignedTo(user: AppUser, task: Task): boolean {
   const pic = (task.pic ?? "").toLowerCase();
   const name = user.name.toLowerCase().replace(/\(.*?\)/g, "").trim();
   const first = name.split(/\s+/)[0] ?? "";
-  return (first.length > 1 && pic.includes(first)) || (!!user.division && task.division === user.division);
+  return first.length > 1 && pic.includes(first);
+}
+
+/**
+ * May this user change anything belonging to `event`?
+ *
+ * An archived (locked) Ormawa Visit is read-only for every role except admin,
+ * who can still correct it and unlock it. Mirrors `writable_event()` in
+ * migration 0028 — that policy is the real control, this is the UX half.
+ * A missing event is treated as writable so unscoped legacy rows keep working.
+ */
+export function canWriteEvent(user: AppUser, event?: Pick<OVEvent, "locked"> | null): boolean {
+  if (user.role === "admin") return true;
+  return !event?.locked;
+}
+
+/** Only an admin may archive an Ormawa Visit or take it out of the archive. */
+export function canToggleLock(user: AppUser): boolean {
+  return user.role === "admin";
+}
+
+/**
+ * Narrow an identity to what it may actually do inside `event`.
+ *
+ * Inside an archived Ormawa Visit every role except admin is read-only. Task,
+ * calendar and division views derive all their rights from `can.*(user)` deep in
+ * the tree, so handing them an attenuated identity turns the whole surface
+ * read-only without threading a `locked` flag through every component.
+ *
+ * Gating only — never use the result to DISPLAY someone's role: the returned
+ * role is deliberately not their real one.
+ */
+export function attenuate(user: AppUser, event?: Pick<OVEvent, "locked"> | null): AppUser {
+  return canWriteEvent(user, event) ? user : { ...user, role: "guest" };
 }
 
 /** The user's access level for a module key (see MODULE_ACCESS_LEVEL). */

@@ -8,6 +8,7 @@ import {
 } from "@/lib/data/repo";
 import type { DivisionKey, Task, TaskLinkInput, TaskStatus } from "@/lib/types";
 import { createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema, idSchema, parse } from "./schemas";
+import { archivedGuard } from "./lock";
 
 export interface TaskInput {
   event_id: string;
@@ -36,6 +37,8 @@ export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]
   if (!v.ok) return v;
   const lv = parse(taskLinksSchema, links ?? []);
   if (!lv.ok) return lv;
+  const blocked = await archivedGuard(user, v.data.event_id);
+  if (blocked) return blocked;
 
   try {
     const id = await createTask(v.data);
@@ -72,6 +75,8 @@ export async function updateTaskAction(
   const onlyProgress = keys.every((k) => k === "status" || k === "result");
   const allowed = onlyProgress ? can.editTaskProgress(user) : can.editTask(user);
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
+  const blocked = await archivedGuard(user, task.event_id);
+  if (blocked) return blocked;
 
   try {
     await updateTask(idv.data, v.data);
@@ -135,34 +140,48 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
   if (!can.manageTasks(user)) {
     return { ok: false, error: "Kamu tidak punya akses membuat tugas." };
   }
+  const blocked = await archivedGuard(user, task.event_id);
+  if (blocked) return blocked;
   // Fresh copy: keeps the plan (division/PIC/dates/notes), resets progress.
-  await createTask({
-    event_id: task.event_id,
-    division: task.division,
-    title: `${task.title} (salinan)`,
-    pic: task.pic,
-    start_date: task.start_date,
-    end_date: task.end_date,
-    notes: task.notes,
-    status: "todo",
-  });
+  try {
+    await createTask({
+      event_id: task.event_id,
+      division: task.division,
+      title: `${task.title} (salinan)`,
+      pic: task.pic,
+      start_date: task.start_date,
+      end_date: task.end_date,
+      notes: task.notes,
+      status: "todo",
+    });
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
   revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }
 
 export async function deleteTaskAction(id: string): Promise<Result> {
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
   const user = await getCurrentUser();
-  const task = await getTask(id);
+  const task = await getTask(idv.data);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
   // Deleting needs FULL access — "limited" roles (staff/intern) may create,
   // edit and fill in results, but never delete.
   if (!can.deleteTask(user)) {
     return { ok: false, error: "Kamu tidak punya akses menghapus tugas ini." };
   }
+  const blocked = await archivedGuard(user, task.event_id);
+  if (blocked) return blocked;
   // Drop the task's published Super Link rows first (task_links themselves
   // cascade with the task).
-  await purgeTaskLinks(task.id);
-  await deleteTask(id);
+  try {
+    await purgeTaskLinks(task.id);
+    await deleteTask(idv.data);
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
   revalidateEntities("tasks", "taskLinks");
   return { ok: true };
 }

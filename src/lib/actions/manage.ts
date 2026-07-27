@@ -1,9 +1,9 @@
 "use server";
 import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
-import { can } from "@/lib/permissions";
+import { can, canToggleLock } from "@/lib/permissions";
 import {
-  createEvent, updateEvent, deleteEvent, cloneEventData, getEvent,
+  createEvent, updateEvent, deleteEvent, setEventLocked, cloneEventData, getEvent,
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
   createTeam, updateTeam, deleteTeam,
@@ -14,6 +14,7 @@ import { uid } from "@/lib/utils";
 import { getActiveEvent } from "@/lib/session";
 import { eventSchema, memberSchema, divisionSchema, teamSchema, idSchema, parse } from "./schemas";
 import { divisionFields } from "@/lib/members";
+import { archivedGuard } from "./lock";
 
 /** Keep the legacy primary `division` column in step with `divisions[]`. */
 function withPrimaryDivision<T extends { divisions?: string[] }>(data: T) {
@@ -26,7 +27,7 @@ export interface EventTemplate extends CloneOptions {
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
-/** Repo writes throw on a Supabase error (RLS denial, missing column, …) —
+/** Repo writes throw on a Supabase error (RLS denial, missing column, â€¦) â€”
  *  surface it instead of reporting a save that never happened. */
 const errMsg = (e: unknown): Result => ({
   ok: false,
@@ -43,20 +44,35 @@ export async function createEventAction(
   if (!v.ok) return v;
   // Generate the id up front so we can seed the new edition from a template.
   const id = uid("ov");
-  await createEvent({ ...v.data, id });
-  if (template?.sourceEventId) {
-    const sv = parse(idSchema, template.sourceEventId);
-    if (sv.ok) {
-      await cloneEventData(sv.data, id, {
-        divisions: !!template.divisions,
-        members: !!template.members,
-        tasks: !!template.tasks,
-        rundown: !!template.rundown,
-        jobs: !!template.jobs,
-        budget: !!template.budget,
-      });
+  try {
+    await createEvent({ ...v.data, id });
+    if (template?.sourceEventId) {
+      const sv = parse(idSchema, template.sourceEventId);
+      if (sv.ok) {
+        await cloneEventData(sv.data, id, {
+          divisions: !!template.divisions,
+          members: !!template.members,
+          tasks: !!template.tasks,
+          rundown: !!template.rundown,
+          jobs: !!template.jobs,
+          budget: !!template.budget,
+        });
+      }
     }
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("events");
+  return { ok: true };
+}
+
+/** Archive an Ormawa Visit, or take it back out of the archive. Admin-only:
+ *  once archived, no other role may change anything that belongs to it. */
+export async function setEventLockedAction(id: string, locked: boolean): Promise<Result> {
+  if (!canToggleLock(await getCurrentUser())) {
+    return { ok: false, error: "Hanya admin yang bisa mengunci atau membuka arsip." };
   }
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  try { await setEventLocked(idv.data, !!locked); } catch (e) { return errMsg(e); }
   revalidateEntities("events");
   return { ok: true };
 }
@@ -66,11 +82,11 @@ export async function updateEventAction(id: string, patch: Partial<OVEvent>): Pr
   if (!idv.ok) return idv;
   const v = parse(eventSchema.partial(), patch);
   if (!v.ok) return v;
-  await updateEvent(idv.data, v.data);
+  try { await updateEvent(idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("events");
   return { ok: true };
 }
-/** Copy an Ormawa Visit's metadata into a new draft (data is not cloned —
+/** Copy an Ormawa Visit's metadata into a new draft (data is not cloned â€”
  *  use the template picker on create for that). */
 export async function duplicateEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
@@ -80,7 +96,7 @@ export async function duplicateEventAction(id: string): Promise<Result> {
   if (!ev) return { ok: false, error: "Ormawa Visit tidak ditemukan." };
   const { id: _drop, order: _order, ...rest } = ev;
   void _drop; void _order;
-  await createEvent({ ...rest, id: uid("ov"), title: `${ev.title} (salinan)`, status: "planning" });
+  try { await createEvent({ ...rest, id: uid("ov"), title: `${ev.title} (salinan)`, status: "planning" }); } catch (e) { return errMsg(e); }
   revalidateEntities("events");
   return { ok: true };
 }
@@ -89,7 +105,7 @@ export async function deleteEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  await deleteEvent(idv.data);
+  try { await deleteEvent(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("events");
   return { ok: true };
 }
@@ -156,52 +172,67 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
 
 // ---------------- Divisions ----------------
 export async function createDivisionAction(input: Partial<Division>): Promise<Result> {
-  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const user = await getCurrentUser();
+  if (!can.manageDivisions(user)) return DENY;
   const v = parse(divisionSchema, input);
   if (!v.ok) return v;
   // Divisions belong to the currently-active Ormawa Visit.
   const event = await getActiveEvent();
-  await createDivision({ ...v.data, event_id: event.id });
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+  try { await createDivision({ ...v.data, event_id: event.id }); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }
 export async function updateDivisionAction(key: string, patch: Partial<Division>): Promise<Result> {
-  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const user = await getCurrentUser();
+  if (!can.manageDivisions(user)) return DENY;
   const idv = parse(idSchema, key);
   if (!idv.ok) return idv;
   const v = parse(divisionSchema.partial(), patch);
   if (!v.ok) return v;
   const event = await getActiveEvent();
-  await updateDivision(event.id, idv.data, v.data);
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+  try { await updateDivision(event.id, idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }
 export async function deleteDivisionAction(key: string): Promise<Result> {
-  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const user = await getCurrentUser();
+  if (!can.manageDivisions(user)) return DENY;
   const idv = parse(idSchema, key);
   if (!idv.ok) return idv;
   const event = await getActiveEvent();
-  await deleteDivision(event.id, idv.data);
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+  try { await deleteDivision(event.id, idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }
 export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result> {
-  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const user = await getCurrentUser();
+  if (!can.manageDivisions(user)) return DENY;
   const idv = parseIds(keys);
   if (!idv.ok) return idv;
   const event = await getActiveEvent();
-  await bulkDeleteDivisions(event.id, idv.data);
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+  try { await bulkDeleteDivisions(event.id, idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }
 export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<Division>): Promise<Result> {
-  if (!can.manageDivisions(await getCurrentUser())) return DENY;
+  const user = await getCurrentUser();
+  if (!can.manageDivisions(user)) return DENY;
   const idv = parseIds(keys);
   if (!idv.ok) return idv;
   const v = parse(divisionSchema.partial(), patch);
   if (!v.ok) return v;
   const event = await getActiveEvent();
-  await bulkUpdateDivisions(event.id, idv.data, v.data);
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+  try { await bulkUpdateDivisions(event.id, idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }

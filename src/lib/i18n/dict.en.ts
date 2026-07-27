@@ -740,4 +740,21 @@ export const EN: Record<string, string> = {
   "Kode": "Code",
   "Coba lagi": "Try again",
   "Ke Dashboard": "Back to Dashboard",
+  // Archive lock (v1.20.0)
+  "Arsip": "Archive",
+  "Kunci arsip": "Lock archive",
+  "Kunci sebagai arsip": "Lock as archive",
+  "Buka kunci arsip": "Unlock archive",
+  "Ormawa Visit diarsipkan": "Ormawa Visit archived",
+  "Kunci Ormawa Visit ini sebagai arsip?": "Lock this Ormawa Visit as an archive?",
+  "Diarsipkan — hanya admin yang bisa mengubah isinya.":
+    "Archived — only an admin can change its contents.",
+  "Arsip dibuka — semua peran bisa mengubah lagi.":
+    "Archive unlocked — every role can make changes again.",
+  "akan jadi hanya-baca. Koordinator, Staff, dan Intern tidak bisa lagi mengubah tugas, rundown, Hari-H, atau tautannya. Hanya admin yang bisa mengubah isinya dan membuka kuncinya kembali.":
+    "will become read-only. Coordinators, Staff, and Interns can no longer change its tasks, rundown, event-day jobs, or links. Only an admin can edit it and unlock it again.",
+  "Ormawa Visit ini sudah diarsipkan. Minta admin membuka kuncinya dulu.":
+    "This Ormawa Visit is archived. Ask an admin to unlock it first.",
+  "Hanya admin yang bisa mengunci atau membuka arsip.":
+    "Only an admin can lock or unlock the archive.",
 };

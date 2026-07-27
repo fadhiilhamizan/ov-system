@@ -1,8 +1,8 @@
-import { CalendarRange, MapPin, Target, ListChecks } from "lucide-react";
+import { CalendarRange, MapPin, Target, ListChecks, Lock } from "lucide-react";
 import { getEvents, taskStats, budgetTotal } from "@/lib/data/repo";
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
-import { can } from "@/lib/permissions";
+import { can, canToggleLock } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ export default async function EventsPage() {
   const [events, active, user] = await Promise.all([getEvents(), getActiveEvent(), getCurrentUser()]);
   const t = await getT();
   const manage = can.manageEvents(user);
+  const mayLock = canToggleLock(user);
   const cards = await Promise.all(
     events.map(async (e) => ({
       event: e,
@@ -56,13 +57,18 @@ export default async function EventsPage() {
                     <Badge variant={st.variant}>{t(st.label)}</Badge>
                     <Badge variant="outline">{e.code}</Badge>
                     {isActive && <Badge variant="primary">{t("Sedang dilihat")}</Badge>}
+                    {e.locked && (
+                      <Badge variant="outline" title={t("Diarsipkan — hanya admin yang bisa mengubah isinya.")}>
+                        <Lock className="size-3" /> {t("Arsip")}
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="mt-2 text-lg font-bold leading-tight">{e.title}</h3>
                   <p className="text-sm text-muted-foreground">{e.cabinet}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {stats.total > 0 && <ProgressRing value={stats.progress} size={54} />}
-                  {manage && <EventActions event={e} />}
+                  {manage && <EventActions event={e} canLock={mayLock} />}
                 </div>
               </div>
 

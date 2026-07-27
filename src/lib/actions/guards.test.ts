@@ -4,7 +4,7 @@ import type { AppUser } from "@/lib/types";
 // ------------------------------------------------------------------
 // One invariant, checked across every mutating action module: a read-only
 // account (guest) must never reach the data layer. This is the cheap, broad
-// half of action coverage — the per-module files assert the interesting
+// half of action coverage â€” the per-module files assert the interesting
 // validation and business rules.
 // ------------------------------------------------------------------
 const currentUser = vi.fn<() => Promise<AppUser>>();
@@ -26,9 +26,9 @@ const REPO_FNS = [
   "createLink", "createMember", "createRundown", "createTeam", "deleteBudgetItem",
   "deleteBudgetPlan", "deleteDivision", "deleteEvent", "deleteFaq", "deleteJob",
   "deleteLink", "deleteMember", "deleteRundown", "deleteTeam", "getBudgetPlans",
-  "getEvent", "getJobs", "getRundown", "reorderJobs", "updateBudgetItem",
-  "updateDivision", "updateEvent", "updateFaq", "updateJob", "updateLink",
-  "updateMember", "updateRundown", "updateTeam",
+  "getEvent", "getJobs", "getRundown", "reorderJobs", "setEventLocked",
+  "updateBudgetItem", "updateDivision", "updateEvent", "updateFaq", "updateJob",
+  "updateLink", "updateMember", "updateRundown", "updateTeam",
 ] as const;
 
 const repo = Object.fromEntries(
@@ -43,7 +43,7 @@ const schedule = await import("./schedule");
 const manage = await import("./manage");
 
 const guest: AppUser = {
-  id: "g", name: "Tamu", email: "", role: "guest", division: null,
+  id: "g", name: "Tamu", email: "", role: "guest",
 };
 
 /** Every case: [label, () => actionPromise] */
@@ -80,6 +80,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["events.update", () => manage.updateEventAction("ov1", { title: "X" })],
   ["events.duplicate", () => manage.duplicateEventAction("ov1")],
   ["events.delete", () => manage.deleteEventAction("ov1")],
+  ["events.setLocked", () => manage.setEventLockedAction("ov1", true)],
   ["members.create", () => manage.createMemberAction({ name: "A", division: "EVENT" })],
   ["members.update", () => manage.updateMemberAction("m1", { name: "B" })],
   ["members.delete", () => manage.deleteMemberAction("m1")],

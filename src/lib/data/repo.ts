@@ -44,6 +44,21 @@ function withOvertime(t: Task): Task {
   return eff === t.status ? t : { ...t, status: eff as TaskStatus };
 }
 
+/**
+ * Every WRITE must go through this.
+ *
+ * A Supabase error on a write means the row did NOT change â€” almost always an
+ * RLS denial or a missing column. Swallowing it is exactly how "the button does
+ * nothing" bugs are born: the optimistic UI keeps the new value, the toast says
+ * saved, and the data is gone on the next load. Throw, and let the Server Action
+ * turn it into a visible error.
+ */
+async function must<T>(op: PromiseLike<{ data: T; error: { message: string } | null }>): Promise<T> {
+  const { data, error } = await op;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 /** Supabase returns NULL for empty text columns; coerce to "" so the UI
  *  (which calls .trim()/.toLowerCase()/.split()) never crashes. */
 function coalesce<T>(rows: T[], keys: string[]): T[] {
@@ -60,7 +75,7 @@ function coalesce<T>(rows: T[], keys: string[]): T[] {
 
 // ---------------- Divisions ----------------
 // Divisions are per-Ormawa-Visit. In Supabase mode this is a STRICT match on
-// event_id (filtered in-query) so a row can never leak across OVs — after
+// event_id (filtered in-query) so a row can never leak across OVs â€” after
 // migration 0018 every division has an event_id. (The local/demo JSON store
 // keeps a lenient match so its global seed still renders without a migration.)
 export const getDivisions = cache(async (eventId?: string): Promise<Division[]> => {
@@ -110,7 +125,7 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
   if (!USE_SUPABASE) return local.getMembers(eventId);
   const { data } = await (await sb()).from("members").select("*");
-  // `divisions` is a text[] and comes back null on legacy rows — normalise it so
+  // `divisions` is a text[] and comes back null on legacy rows â€” normalise it so
   // callers never have to null-check the array (see lib/members.ts).
   const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]).map((m) => ({
     ...m,
@@ -150,7 +165,7 @@ export async function createTask(
   // Auto-number: `no` is assigned atomically by the assign_task_no() BEFORE-INSERT
   // trigger (advisory-locked per event+division) when left null, so concurrent
   // creates can't collide. An explicit `no` (manual/clone) is preserved.
-  const { data } = await client.from("tasks").insert({
+  const data = await must(client.from("tasks").insert({
     event_id: input.event_id,
     division: input.division,
     no: input.no ?? null,
@@ -163,20 +178,16 @@ export async function createTask(
     notes: input.notes ?? "",
     result: input.result ?? "",
     status: input.status ?? "todo",
-  }).select("id").single();
+  }).select("id").single());
   return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateTask(id: string, patch: Partial<Task>) {
   if (!USE_SUPABASE) return local.updateTask(id, patch);
-  // Surface DB/RLS errors instead of swallowing them — a silently-ignored
-  // error here is why "changing status did nothing" with no feedback.
-  const { error } = await (await sb()).from("tasks").update(patch).eq("id", id);
-  if (error) throw new Error(error.message);
+  await must((await sb()).from("tasks").update(patch).eq("id", id));
 }
 export async function deleteTask(id: string) {
   if (!USE_SUPABASE) return local.deleteTask(id);
-  const { error } = await (await sb()).from("tasks").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await must((await sb()).from("tasks").delete().eq("id", id));
 }
 export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
   if (!ids.length) return;
@@ -184,8 +195,7 @@ export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
     for (const id of ids) local.updateTask(id, patch);
     return;
   }
-  const { error } = await (await sb()).from("tasks").update(patch).in("id", ids);
-  if (error) throw new Error(error.message);
+  await must((await sb()).from("tasks").update(patch).in("id", ids));
 }
 export async function bulkDeleteTasks(ids: string[]) {
   if (!ids.length) return;
@@ -193,7 +203,7 @@ export async function bulkDeleteTasks(ids: string[]) {
     for (const id of ids) local.deleteTask(id);
     return;
   }
-  await (await sb()).from("tasks").delete().in("id", ids);
+  await must((await sb()).from("tasks").delete().in("id", ids));
 }
 
 // ---------------- Task result links ----------------
@@ -238,7 +248,7 @@ export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
   for (const ex of existing) {
     if (keep.has(ex.id)) continue;
     if (ex.link_id) await deleteLink(ex.link_id);
-    await client.from("task_links").delete().eq("id", ex.id);
+    await must(client.from("task_links").delete().eq("id", ex.id));
   }
 
   // 2) Upserts (order follows the form)
@@ -270,8 +280,8 @@ export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
       link_id: linkId,
       order: i,
     };
-    if (ex) await client.from("task_links").update(row).eq("id", ex.id);
-    else await client.from("task_links").insert({ task_id: task.id, ...row });
+    if (ex) await must(client.from("task_links").update(row).eq("id", ex.id));
+    else await must(client.from("task_links").insert({ task_id: task.id, ...row }));
   }
 }
 
@@ -280,7 +290,7 @@ export async function purgeTaskLinks(taskId: string) {
   const links = await getTaskLinks(taskId);
   for (const l of links) if (l.link_id) await deleteLink(l.link_id);
   if (!USE_SUPABASE) return local.deleteTaskLinksFor(taskId);
-  await (await sb()).from("task_links").delete().eq("task_id", taskId);
+  await must((await sb()).from("task_links").delete().eq("task_id", taskId));
 }
 
 // ---------------- Prospects ----------------
@@ -312,32 +322,32 @@ export async function setPrimaryProspect(prospectId: string) {
   const { data: p } = await client.from("prospects").select("*").eq("id", prospectId).maybeSingle();
   if (!p || !p.event_id) return;
   // Clear the current primary FIRST (unique index forbids two at once).
-  await client.from("prospects").update({ is_primary: false }).eq("event_id", p.event_id).eq("is_primary", true);
-  await client.from("prospects").update({ is_primary: true }).eq("id", prospectId);
+  await must(client.from("prospects").update({ is_primary: false }).eq("event_id", p.event_id).eq("is_primary", true));
+  await must(client.from("prospects").update({ is_primary: true }).eq("id", prospectId));
   await syncEventFromProspect(p.event_id, { ...(p as Prospect), is_primary: true });
 }
 
 /** Clear the primary flag on a prospect (leaves the OV data as-is). */
 export async function unsetPrimaryProspect(prospectId: string) {
   if (!USE_SUPABASE) return local.unsetPrimaryProspect(prospectId);
-  await (await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId);
+  await must((await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId));
 }
 export async function createProspect(input: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.createProspect(input);
-  await (await sb()).from("prospects").insert(stripId(input));
+  await must((await sb()).from("prospects").insert(stripId(input)));
 }
 export async function updateProspect(id: string, patch: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.updateProspect(id, patch);
-  await (await sb()).from("prospects").update(stripId(patch)).eq("id", id);
+  await must((await sb()).from("prospects").update(stripId(patch)).eq("id", id));
 }
 export async function deleteProspect(id: string) {
   if (!USE_SUPABASE) return local.deleteProspect(id);
-  await (await sb()).from("prospects").delete().eq("id", id);
+  await must((await sb()).from("prospects").delete().eq("id", id));
 }
 export async function bulkDeleteProspects(ids: string[]) {
   if (!ids.length) return;
   if (!USE_SUPABASE) { for (const id of ids) local.deleteProspect(id); return; }
-  await (await sb()).from("prospects").delete().in("id", ids);
+  await must((await sb()).from("prospects").delete().in("id", ids));
 }
 
 // ---------------- Links ----------------
@@ -351,21 +361,21 @@ export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
  *  it owns (see syncTaskLinks). */
 export async function createLink(input: Partial<LinkItem>): Promise<string | null> {
   if (!USE_SUPABASE) return local.createLink(input).id;
-  const { data } = await (await sb()).from("links").insert(stripId(input)).select("id").single();
+  const data = await must((await sb()).from("links").insert(stripId(input)).select("id").single());
   return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateLink(id: string, patch: Partial<LinkItem>) {
   if (!USE_SUPABASE) return local.updateLink(id, patch);
-  await (await sb()).from("links").update(stripId(patch)).eq("id", id);
+  await must((await sb()).from("links").update(stripId(patch)).eq("id", id));
 }
 export async function deleteLink(id: string) {
   if (!USE_SUPABASE) return local.deleteLink(id);
-  await (await sb()).from("links").delete().eq("id", id);
+  await must((await sb()).from("links").delete().eq("id", id));
 }
 export async function bulkDeleteLinks(ids: string[]) {
   if (!ids.length) return;
   if (!USE_SUPABASE) { for (const id of ids) local.deleteLink(id); return; }
-  await (await sb()).from("links").delete().in("id", ids);
+  await must((await sb()).from("links").delete().in("id", ids));
 }
 
 // ---------------- Budget ----------------
@@ -422,7 +432,7 @@ export async function updateBudgetItem(
     .eq("id", itemId);
   if (error) throw new Error(error.message);
 }
-/** Recolour a whole category at once — the dot is a property of the category,
+/** Recolour a whole category at once â€” the dot is a property of the category,
  *  not of one row, so every item in that plan+category moves together. */
 export async function setCategoryColor(planId: string, category: string, color: string) {
   if (!USE_SUPABASE) return local.setCategoryColor(planId, category, color);
@@ -465,20 +475,20 @@ export async function createBudgetItem(
 }
 export async function deleteBudgetItem(itemId: string) {
   if (!USE_SUPABASE) return local.deleteBudgetItem(itemId);
-  await (await sb()).from("budget_items").delete().eq("id", itemId);
+  await must((await sb()).from("budget_items").delete().eq("id", itemId));
 }
 export async function bulkDeleteBudgetItems(ids: string[]) {
   if (!ids.length) return;
   if (!USE_SUPABASE) { for (const id of ids) local.deleteBudgetItem(id); return; }
-  await (await sb()).from("budget_items").delete().in("id", ids);
+  await must((await sb()).from("budget_items").delete().in("id", ids));
 }
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
   if (!USE_SUPABASE) return local.createBudgetPlan(input);
-  await (await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id });
+  await must((await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id }));
 }
 export async function deleteBudgetPlan(id: string) {
   if (!USE_SUPABASE) return local.deleteBudgetPlan(id);
-  await (await sb()).from("budget_plans").delete().eq("id", id);
+  await must((await sb()).from("budget_plans").delete().eq("id", id));
 }
 
 // ---------------- Rundown ----------------
@@ -492,7 +502,7 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
     "variant", "time_start", "time_end", "duration", "activity", "keterangan", "mc", "operator",
     "host", "opr_link", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
   ]);
-  // division_jobs is jsonb — ensure it's always a plain object.
+  // division_jobs is jsonb â€” ensure it's always a plain object.
   return rows.map((r) => ({
     ...r,
     division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {},
@@ -523,19 +533,19 @@ export async function createFaq(input: { question: string; answer: string }) {
     .order("order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  await client.from("faqs").insert({
+  await must(client.from("faqs").insert({
     question: input.question,
     answer: input.answer,
     order: (maxRow?.order ?? 0) + 1,
-  });
+  }));
 }
 export async function updateFaq(id: string, patch: { question?: string; answer?: string }) {
   if (!USE_SUPABASE) return local.updateFaq(id, patch);
-  await (await sb()).from("faqs").update(patch).eq("id", id);
+  await must((await sb()).from("faqs").update(patch).eq("id", id));
 }
 export async function deleteFaq(id: string) {
   if (!USE_SUPABASE) return local.deleteFaq(id);
-  await (await sb()).from("faqs").delete().eq("id", id);
+  await must((await sb()).from("faqs").delete().eq("id", id));
 }
 
 // ---------------- Teams ----------------
@@ -590,7 +600,7 @@ export async function createRoleRequest(
 }
 
 /** Edit one's own still-pending request (fix a wrong role or a typo). The
- *  `status=pending` filter is belt-and-braces on top of RLS — a decided request
+ *  `status=pending` filter is belt-and-braces on top of RLS â€” a decided request
  *  must never be rewritten. */
 export async function updateRoleRequest(
   id: string,
@@ -609,7 +619,7 @@ export async function updateRoleRequest(
 }
 
 /** Approve (grant the role) or ignore a request. In Supabase this goes through
- *  the SECURITY DEFINER `decide_role_request` RPC — profiles.role is not
+ *  the SECURITY DEFINER `decide_role_request` RPC â€” profiles.role is not
  *  directly writable by design (see migration 0020/0023). */
 export async function decideRoleRequest(id: string, approve: boolean): Promise<void> {
   if (!USE_SUPABASE) {
@@ -692,7 +702,7 @@ export async function createEvent(input: Partial<OVEvent>) {
     .limit(1)
     .maybeSingle();
   const order = input.order ?? (maxRow?.order ?? 0) + 1;
-  await client.from("events").insert({
+  await must(client.from("events").insert({
     id,
     code: input.code ?? "",
     title: input.title ?? "Ormawa Visit Baru",
@@ -706,18 +716,26 @@ export async function createEvent(input: Partial<OVEvent>) {
     plan_end: input.plan_end ?? null,
     location: input.location ?? "",
     status: input.status ?? "planning",
+    locked: input.locked ?? false,
     order,
-  });
+  }));
 }
 export async function updateEvent(id: string, patch: Partial<OVEvent>) {
   if (!USE_SUPABASE) return local.updateEvent(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
-  await (await sb()).from("events").update(rest).eq("id", id);
+  await must((await sb()).from("events").update(rest).eq("id", id));
 }
 export async function deleteEvent(id: string) {
   if (!USE_SUPABASE) return local.deleteEvent(id);
-  await (await sb()).from("events").delete().eq("id", id);
+  await must((await sb()).from("events").delete().eq("id", id));
+}
+
+/** Archive an Ormawa Visit (or take it back out of the archive). Admin-only â€”
+ *  enforced by the `events_write` policy and `writable_event()` in 0028. */
+export async function setEventLocked(id: string, locked: boolean) {
+  if (!USE_SUPABASE) return local.setEventLocked(id, locked);
+  await must((await sb()).from("events").update({ locked }).eq("id", id));
 }
 
 export interface CloneOptions {
@@ -747,7 +765,7 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
       event_id: targetId, key: d.key, name: d.name, short: d.short, color: d.color,
       order: d.order, exclude_from_rundown: d.exclude_from_rundown ?? false,
     }));
-    if (rows.length) await client.from("divisions").insert(rows);
+    if (rows.length) await must(client.from("divisions").insert(rows));
   }
 
   if (opts.members) {
@@ -757,7 +775,7 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
       type: m.type, year: m.year,
       ...divisionFields(m.divisions, m.division),
     }));
-    if (rows.length) await client.from("members").insert(rows);
+    if (rows.length) await must(client.from("members").insert(rows));
   }
 
   if (opts.tasks) {
@@ -771,7 +789,7 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
         notes: t.notes, result: "", status: "todo" as TaskStatus,
       };
     });
-    if (rows.length) await client.from("tasks").insert(rows);
+    if (rows.length) await must(client.from("tasks").insert(rows));
   }
 
   if (opts.rundown) {
@@ -781,31 +799,31 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
       duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,
       mc: r.mc, job_lo: r.job_lo, job_event: r.job_event, job_consump: r.job_consump, job_creative: r.job_creative, job_opr: r.job_opr,
     }));
-    if (rows.length) await client.from("rundown").insert(rows);
+    if (rows.length) await must(client.from("rundown").insert(rows));
   }
 
   if (opts.jobs) {
     const src = await getJobs(sourceId);
     const rows = src.map((j) => ({ event_id: targetId, no: j.no, pic: "", job: j.job, notes: j.notes }));
-    if (rows.length) await client.from("job_harih").insert(rows);
+    if (rows.length) await must(client.from("job_harih").insert(rows));
   }
 
   if (opts.budget) {
     const plans = await getBudgetPlans(sourceId);
     for (const plan of plans) {
-      const { data: created } = await client
+      const created = await must(client
         .from("budget_plans")
         .insert({ name: plan.name, event_id: targetId })
         .select("id")
-        .single();
+        .single());
       if (created && plan.items.length)
-        await client.from("budget_items").insert(
+        await must(client.from("budget_items").insert(
           plan.items.map((i, idx) => ({
             plan_id: created.id, category: i.category, no: i.no, name: i.name,
             qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total,
             category_color: i.category_color ?? null, order: idx,
           })),
-        );
+        ));
     }
   }
 }
@@ -813,8 +831,8 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
 export async function createMember(input: Partial<Member>) {
   if (!USE_SUPABASE) return local.createMember(input);
   const div = divisionFields(input.divisions, input.division);
-  // Writes THROW on a Supabase error (RLS denial, missing column, …): swallowing
-  // it made a failed save look successful and wrote nothing — the actions turn
+  // Writes THROW on a Supabase error (RLS denial, missing column, â€¦): swallowing
+  // it made a failed save look successful and wrote nothing â€” the actions turn
   // this into a visible toast.
   const { error } = await (await sb()).from("members").insert({
     event_id: input.event_id ?? null,
@@ -868,7 +886,7 @@ export async function createDivision(input: Partial<Division>) {
   let mq = client.from("divisions").select("order").order("order", { ascending: false }).limit(1);
   if (input.event_id) mq = mq.eq("event_id", input.event_id);
   const { data: maxRow } = await mq.maybeSingle();
-  await client.from("divisions").insert({
+  await must(client.from("divisions").insert({
     event_id: input.event_id ?? null,
     key: input.key ?? uid("DIV").toUpperCase(),
     name: input.name ?? "",
@@ -876,29 +894,29 @@ export async function createDivision(input: Partial<Division>) {
     color: input.color ?? "#6366f1",
     order: input.order ?? (maxRow?.order ?? 0) + 1,
     exclude_from_rundown: input.exclude_from_rundown ?? false,
-  });
+  }));
 }
 export async function updateDivision(eventId: string, key: string, patch: Partial<Division>) {
   if (!USE_SUPABASE) return local.updateDivision(eventId, key, patch);
   const { id: _i, event_id: _e, ...rest } = patch;
   void _i; void _e;
-  await (await sb()).from("divisions").update(rest).eq("event_id", eventId).eq("key", key);
+  await must((await sb()).from("divisions").update(rest).eq("event_id", eventId).eq("key", key));
 }
 export async function deleteDivision(eventId: string, key: string) {
   if (!USE_SUPABASE) return local.deleteDivision(eventId, key);
-  await (await sb()).from("divisions").delete().eq("event_id", eventId).eq("key", key);
+  await must((await sb()).from("divisions").delete().eq("event_id", eventId).eq("key", key));
 }
 export async function bulkDeleteDivisions(eventId: string, keys: string[]) {
   if (!keys.length) return;
   if (!USE_SUPABASE) { for (const k of keys) local.deleteDivision(eventId, k); return; }
-  await (await sb()).from("divisions").delete().eq("event_id", eventId).in("key", keys);
+  await must((await sb()).from("divisions").delete().eq("event_id", eventId).in("key", keys));
 }
 export async function bulkUpdateDivisions(eventId: string, keys: string[], patch: Partial<Division>) {
   if (!keys.length) return;
   if (!USE_SUPABASE) { for (const k of keys) local.updateDivision(eventId, k, patch); return; }
   const { id: _i, event_id: _e, ...rest } = patch;
   void _i; void _e;
-  await (await sb()).from("divisions").update(rest).eq("event_id", eventId).in("key", keys);
+  await must((await sb()).from("divisions").update(rest).eq("event_id", eventId).in("key", keys));
 }
 
 export async function createTeam(input: Partial<Team>) {
@@ -921,7 +939,7 @@ export async function updateTeam(id: string, patch: Partial<Team>) {
 }
 export async function deleteTeam(id: string) {
   if (!USE_SUPABASE) return local.deleteTeam(id);
-  await (await sb()).from("teams").delete().eq("id", id);
+  await must((await sb()).from("teams").delete().eq("id", id));
 }
 
 // ================= CRUD: rundown / jobs =================
@@ -936,7 +954,7 @@ export async function createRundown(input: Partial<RundownItem>) {
     .order("no", { ascending: false })
     .limit(1)
     .maybeSingle();
-  await client.from("rundown").insert({
+  await must(client.from("rundown").insert({
     event_id: input.event_id ?? null,
     variant: input.variant ?? "A",
     no: input.no ?? (maxRow?.no ?? 0) + 1,
@@ -948,17 +966,17 @@ export async function createRundown(input: Partial<RundownItem>) {
     mc: input.mc ?? "",
     operator: input.operator ?? "",
     division_jobs: input.division_jobs ?? {},
-  });
+  }));
 }
 export async function updateRundown(id: string, patch: Partial<RundownItem>) {
   if (!USE_SUPABASE) return local.updateRundown(id, patch);
   const { id: _d, ...rest } = patch;
   void _d;
-  await (await sb()).from("rundown").update(rest).eq("id", id);
+  await must((await sb()).from("rundown").update(rest).eq("id", id));
 }
 export async function deleteRundown(id: string) {
   if (!USE_SUPABASE) return local.deleteRundown(id);
-  await (await sb()).from("rundown").delete().eq("id", id);
+  await must((await sb()).from("rundown").delete().eq("id", id));
 }
 
 export async function createJob(input: Partial<JobHariH>) {
@@ -966,23 +984,23 @@ export async function createJob(input: Partial<JobHariH>) {
   const client = await sb();
   // `no` assigned atomically by the assign_job_no() BEFORE-INSERT trigger
   // (advisory-locked per event) when null; an explicit `no` is preserved.
-  await client.from("job_harih").insert({
+  await must(client.from("job_harih").insert({
     event_id: input.event_id ?? null,
     no: input.no ?? null,
     pic: input.pic ?? "",
     job: input.job ?? "",
     notes: input.notes ?? "",
-  });
+  }));
 }
 export async function updateJob(id: string, patch: Partial<JobHariH>) {
   if (!USE_SUPABASE) return local.updateJob(id, patch);
   const { id: _d, ...rest } = patch;
   void _d;
-  await (await sb()).from("job_harih").update(rest).eq("id", id);
+  await must((await sb()).from("job_harih").update(rest).eq("id", id));
 }
 export async function deleteJob(id: string) {
   if (!USE_SUPABASE) return local.deleteJob(id);
-  await (await sb()).from("job_harih").delete().eq("id", id);
+  await must((await sb()).from("job_harih").delete().eq("id", id));
 }
 /** Persist a new order for Hari-H jobs: each id gets its 1-based `no`. */
 export async function reorderJobs(orderedIds: string[]) {
@@ -990,6 +1008,6 @@ export async function reorderJobs(orderedIds: string[]) {
   if (!USE_SUPABASE) return local.reorderJobs(orderedIds);
   const client = await sb();
   await Promise.all(
-    orderedIds.map((id, i) => client.from("job_harih").update({ no: String(i + 1) }).eq("id", id)),
+    orderedIds.map((id, i) => must(client.from("job_harih").update({ no: String(i + 1) }).eq("id", id))),
   );
 }

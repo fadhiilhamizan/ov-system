@@ -1,6 +1,6 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
-import { can } from "@/lib/permissions";
+import { can, canWriteEvent } from "@/lib/permissions";
 import { getJobs, getMembers } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
@@ -13,6 +13,8 @@ export const metadata = { title: "Hari-H" };
 export default async function JobsPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
   const [jobs, members] = await Promise.all([getJobs(event.id), getMembers(event.id)]);
+  // An archived Ormawa Visit is read-only for everyone but admin.
+  const writable = canWriteEvent(user, event);
 
   return (
     <div>
@@ -25,8 +27,8 @@ export default async function JobsPage() {
         <JobsTable
           jobs={jobs}
           eventId={event.id}
-          canManage={can.manageJobs(user)}
-          canDelete={can.deleteJob(user)}
+          canManage={can.manageJobs(user) && writable}
+          canDelete={can.deleteJob(user) && writable}
         />
       </MembersProvider>
     </div>

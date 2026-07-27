@@ -1,5 +1,6 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
+import { attenuate } from "@/lib/permissions";
 import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
@@ -42,7 +43,7 @@ export default async function CalendarPage() {
           events={events}
           event={event}
           activeEventId={event.id}
-          user={user}
+          user={attenuate(user, event)}
           initialMonth={initialMonth}
         />
       </MembersProvider>

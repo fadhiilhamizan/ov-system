@@ -10,7 +10,7 @@ import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, p
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses mengelola anggaran." };
-/** Repo writes throw on a Supabase error — surface it rather than
+/** Repo writes throw on a Supabase error â€” surface it rather than
  *  reporting a save that never happened. */
 const errMsg = (e: unknown): Result => ({
   ok: false,
@@ -80,7 +80,7 @@ export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, itemId);
   if (!idv.ok) return idv;
-  await deleteBudgetItem(idv.data);
+  try { await deleteBudgetItem(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }
@@ -111,7 +111,7 @@ export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
-  await bulkDeleteBudgetItems(clean);
+  try { await bulkDeleteBudgetItems(clean); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }
@@ -120,7 +120,7 @@ export async function createBudgetPlanAction(input: { name: string; event_id: st
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const v = parse(budgetPlanSchema, input);
   if (!v.ok) return v;
-  await createBudgetPlan(v.data);
+  try { await createBudgetPlan(v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }
@@ -129,7 +129,7 @@ export async function deleteBudgetPlanAction(id: string): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  await deleteBudgetPlan(idv.data);
+  try { await deleteBudgetPlan(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }

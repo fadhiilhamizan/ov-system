@@ -46,6 +46,9 @@ export interface OVEvent {
   location: string;
   status: EventStatus;
   order: number;
+  /** Archived: nobody but an admin may change anything belonging to this
+   *  Ormawa Visit. Enforced in the database (migration 0028) as well as here. */
+  locked?: boolean;
 }
 
 export interface Member {
@@ -252,11 +255,17 @@ export interface Database {
   roleRequests?: RoleRequest[];
 }
 
+/**
+ * An account. Deliberately carries NO division and NO Ormawa Visit scope: an
+ * account represents a level of access, not a person or a team. A role is
+ * global — a coordinator is a coordinator for every edition in the database —
+ * and one account may be shared by several people. Anything that needs to know
+ * *who* did something belongs on the data (e.g. a task's `pic`), not here.
+ */
 export interface AppUser {
   id: string;
   name: string;
   email: string;
   role: Role;
-  division?: DivisionKey | null;
   avatarColor?: string;
 }

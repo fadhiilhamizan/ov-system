@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Users2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { attenuate } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
 import { getDivision, getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
@@ -74,7 +75,7 @@ export default async function DivisionDetailPage({
           divisions={divisions}
           events={events}
           activeEventId={event.id}
-          user={user}
+          user={attenuate(user, event)}
           lockedDivision={division.key as DivisionKey}
         />
       </MembersProvider>

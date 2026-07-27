@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { accessLevel, atLeast, can, canRequestRole, isAssignedTo, requestableRolesFor } from "./permissions";
+import {
+  accessLevel, atLeast, can, canRequestRole, canToggleLock, canWriteEvent,
+  isAssignedTo, requestableRolesFor,
+} from "./permissions";
 import type { AppUser, Task } from "./types";
 
-function user(role: AppUser["role"], division: string | null = null): AppUser {
-  return { id: role, name: "Test User", email: "", role, division };
+function user(role: AppUser["role"]): AppUser {
+  return { id: role, name: "Test User", email: "", role };
 }
 
 function task(over: Partial<Task> = {}): Task {
@@ -73,13 +76,14 @@ describe("access levels", () => {
 });
 
 describe("manageTasks — limited roles write, only full deletes", () => {
-  it("is NOT scoped to the user's division (regression: staff could only edit some tasks)", () => {
-    // profiles.division must not narrow task rights — the access matrix is the
-    // only authority. A staff member scoped to EVENT can still edit MARKETING.
+  it("is NOT scoped to a division (regression: staff could only edit some tasks)", () => {
+    // An account carries no division at all, so task rights can never narrow by
+    // one — the access matrix is the only authority. Migration 0028 removed the
+    // same assumption from RLS, where it was silently blocking every write.
     for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
-      expect(can.manageTasks(user(r, "EVENT"))).toBe(true);
-      expect(can.editTask(user(r, "EVENT"))).toBe(true);
-      expect(can.editTaskProgress(user(r, "EVENT"))).toBe(true);
+      expect(can.manageTasks(user(r))).toBe(true);
+      expect(can.editTask(user(r))).toBe(true);
+      expect(can.editTaskProgress(user(r))).toBe(true);
     }
   });
   it("guest can never write a task", () => {
@@ -89,9 +93,9 @@ describe("manageTasks — limited roles write, only full deletes", () => {
   });
   it("staff/intern can never delete a task", () => {
     expect(can.deleteTask(user("admin"))).toBe(true);
-    expect(can.deleteTask(user("coordinator", "EVENT"))).toBe(true);
-    expect(can.deleteTask(user("staff", "EVENT"))).toBe(false);
-    expect(can.deleteTask(user("intern", "EVENT"))).toBe(false);
+    expect(can.deleteTask(user("coordinator"))).toBe(true);
+    expect(can.deleteTask(user("staff"))).toBe(false);
+    expect(can.deleteTask(user("intern"))).toBe(false);
     expect(can.deleteTask(user("guest"))).toBe(false);
   });
 });
@@ -174,7 +178,7 @@ describe("role requests", () => {
 describe("editTaskProgress", () => {
   it("every writing role can edit progress on any task", () => {
     for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
-      expect(can.editTaskProgress(user(r, "EVENT"))).toBe(true);
+      expect(can.editTaskProgress(user(r))).toBe(true);
     }
   });
   it("guest can never edit progress", () => {
@@ -189,10 +193,38 @@ describe("isAssignedTo", () => {
     expect(isAssignedTo(u, task({ pic: "budi" }))).toBe(true);
     expect(isAssignedTo(u, task({ pic: "andi" }))).toBe(false);
   });
-  it("matches by division when user has a division", () => {
-    const u = user("staff", "EVENT");
+  it("does NOT fall back to a division — an account has none", () => {
+    const u = user("staff");
     u.name = "X";
-    expect(isAssignedTo(u, task({ division: "EVENT", pic: "" }))).toBe(true);
+    expect(isAssignedTo(u, task({ division: "EVENT", pic: "" }))).toBe(false);
+  });
+});
+
+describe("archive lock", () => {
+  const open = { locked: false };
+  const archived = { locked: true };
+
+  it("every non-admin role is blocked inside an archived Ormawa Visit", () => {
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(canWriteEvent(user(r), open)).toBe(true);
+      expect(canWriteEvent(user(r), archived)).toBe(false);
+    }
+  });
+
+  it("admin can still write an archived edition, so it can be corrected and reopened", () => {
+    expect(canWriteEvent(user("admin"), archived)).toBe(true);
+  });
+
+  it("an unknown or unscoped edition is treated as writable", () => {
+    expect(canWriteEvent(user("staff"), null)).toBe(true);
+    expect(canWriteEvent(user("staff"), undefined)).toBe(true);
+  });
+
+  it("only an admin may archive or unarchive", () => {
+    expect(canToggleLock(user("admin"))).toBe(true);
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(canToggleLock(user(r))).toBe(false);
+    }
   });
 });
 

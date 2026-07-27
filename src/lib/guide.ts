@@ -229,11 +229,15 @@ export const GUIDE: GuideSection[] = [
       { id: "Klik 'Lihat Ormawa Visit ini' pada kartu untuk menjadikannya edisi aktif di seluruh sistem.", en: "Click 'View this Ormawa Visit' on a card to make it the active edition across the whole system." },
       { id: "Saat membuat edisi baru, gunakan bagian 'Salin data dari Ormawa Visit lain' untuk menyalin Divisi, Anggota, Tugas, Rundown, Job Hari-H, atau Anggaran sebagai kerangka awal.", en: "When creating a new edition, use 'Copy data from another Ormawa Visit' to bring over Divisions, Members, Tasks, Rundown, Event-Day Jobs, or Budget as a starting point." },
       { id: "Gunakan 'Duplikat' pada menu titik tiga untuk menyalin identitas edisi tanpa datanya.", en: "Use 'Duplicate' in the three-dot menu to copy an edition's details without its data." },
+      { id: "Kalau sebuah Ormawa Visit sudah selesai, admin bisa memilih 'Kunci sebagai arsip' di menu titik tiga. Edisi itu langsung ditandai lencana 'Arsip' dan jadi hanya-baca.", en: "Once an Ormawa Visit is finished, an admin can pick 'Lock as archive' from the three-dot menu. That edition is tagged 'Archive' and becomes read-only." },
+      { id: "Untuk membukanya lagi, admin memilih 'Buka kunci arsip' dari menu yang sama.", en: "To reopen it, an admin picks 'Unlock archive' from the same menu." },
     ],
     tips: [
       { id: "Hampir semua menu mengikuti edisi aktif — kalau data terasa hilang, cek dulu edisi yang sedang dipilih.", en: "Almost every menu follows the active edition — if data seems missing, check which edition is selected." },
+      { id: "Arsip adalah pengaman untuk edisi yang sudah lewat: setelah dikunci, Koordinator/Staff/Intern tidak bisa lagi mengubah tugas, rundown, Hari-H, atau tautan milik edisi itu — jadi data tahun lalu tidak bisa terinjak tanpa sengaja.", en: "The archive protects finished editions: once locked, Coordinators/Staff/Interns can no longer change that edition's tasks, rundown, event-day jobs, or links — so last year's data cannot be overwritten by accident." },
+      { id: "Admin tetap bisa mengubah isi edisi yang diarsipkan, supaya kesalahan lama masih bisa diperbaiki tanpa harus membuka kuncinya untuk semua orang.", en: "Admins can still edit an archived edition, so an old mistake can be corrected without reopening it for everyone." },
     ],
-    access: { id: "Hanya Admin yang bisa membuat/mengubah edisi.", en: "Only Admins can create/edit editions." },
+    access: { id: "Hanya Admin yang bisa membuat/mengubah edisi, serta mengunci dan membuka arsip.", en: "Only Admins can create/edit editions, and lock or unlock the archive." },
   },
   {
     key: "roles",

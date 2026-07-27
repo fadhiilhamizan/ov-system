@@ -475,6 +475,7 @@ export function createEvent(input: Partial<OVEvent>): OVEvent {
     plan_end: input.plan_end ?? null,
     location: input.location ?? "",
     status: input.status ?? "planning",
+    locked: input.locked ?? false,
     order: input.order ?? Math.max(0, ...events.map((e) => e.order)) + 1,
   };
   mutate((db) => db.events.push(ev));
@@ -491,6 +492,13 @@ export function updateEvent(id: string, patch: Partial<OVEvent>) {
 export function deleteEvent(id: string) {
   mutate((db) => {
     db.events = db.events.filter((e) => e.id !== id);
+  });
+}
+/** Archive an Ormawa Visit, or take it back out of the archive. */
+export function setEventLocked(id: string, locked: boolean) {
+  mutate((db) => {
+    const e = db.events.find((x) => x.id === id);
+    if (e) e.locked = locked;
   });
 }
 

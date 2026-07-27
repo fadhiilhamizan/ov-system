@@ -1,6 +1,6 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
-import { can } from "@/lib/permissions";
+import { can, canWriteEvent } from "@/lib/permissions";
 import { getRundown, getDivisions } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
@@ -12,6 +12,8 @@ export const metadata = { title: "Rundown Acara" };
 export default async function RundownPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
   const [items, divisions] = await Promise.all([getRundown(event.id), getDivisions(event.id)]);
+  // An archived Ormawa Visit is read-only for everyone but admin.
+  const writable = canWriteEvent(user, event);
 
   return (
     <div>
@@ -24,8 +26,8 @@ export default async function RundownPage() {
         items={items}
         divisions={divisions}
         eventId={event.id}
-        canManage={can.manageRundown(user)}
-        canDelete={can.deleteRundown(user)}
+        canManage={can.manageRundown(user) && writable}
+        canDelete={can.deleteRundown(user) && writable}
       />
     </div>
   );

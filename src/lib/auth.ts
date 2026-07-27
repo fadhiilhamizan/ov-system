@@ -18,7 +18,6 @@ const GUEST_USER: AppUser = {
   name: "Tamu",
   email: "",
   role: "guest",
-  division: null,
   avatarColor: "#94a3b8",
 };
 
@@ -65,12 +64,14 @@ export const getCurrentUser = cache(async (): Promise<AppUser> => {
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
+    // NOTE: profiles.division / profiles.event_id are deliberately NOT read.
+    // An account has no division and no edition scope — see AppUser in types.ts
+    // and migration 0028, which removed the same assumption from RLS.
     return {
       id: user.id,
       name: profile?.name || user.email!.split("@")[0],
       email: user.email ?? "",
       role: normalizeRole(profile?.role),
-      division: profile?.division ?? null,
       avatarColor: profile?.avatar_color ?? undefined,
     };
   }
