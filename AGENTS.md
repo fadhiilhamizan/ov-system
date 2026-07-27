@@ -29,7 +29,11 @@ Rights are **not** scoped by `profiles.division` — an earlier cut confined non
 
 **Testing.** Vitest. `npm test` runs `*.test.ts` under `src/`. Cover pure logic (permissions, schemas, formatters, scheduling/budget math). Run `npm test` + `npx tsc --noEmit` before finishing a change.
 
-**Seed.** `npm run db:seed` regenerates `supabase/seed.sql` from `src/lib/seed/seed.json`.
+**Seed.** `npm run db:seed` regenerates `supabase/seed.sql` from `src/lib/seed/seed.json`; `npm run db:demo` regenerates the demo project's seed + open-access scripts.
+
+**SQL you hand the user must be linted.** `npm run db:lint` runs `scripts/sql-lint.mjs` over every file in `supabase/` — both generators also call `assertSqlSane()` before writing, so a broken file never reaches disk. It exists because two classes of bug shipped straight to the SQL editor: an interpolated value closing a `'…'` literal early (quotes still *balance*, so nothing else catches it), and a `--` comment containing `$$` inside a `do $$ … $$` block, which ends the block early because **dollar-quoting is lexical and comments do not protect it**. Keep prose out of dollar-quoted bodies, and dollar-quote (`$sql$…$sql$`, distinct tag) any `execute` string that contains quotes.
+
+**The demo project's schema is a SUBSET of production's.** It is at 0001–0018 + 0027 and must never get `0019_real_roster.sql` (that wipes the roster and inserts real people). So a migration cannot assume a column added by 0019+ exists there — 0027 adds `teams.coordinator` itself for this reason. `supabase/demo/demo-seed.sql` is re-runnable (it deletes the `demo-ov` edition's rows first) and guards `task_links` with `to_regclass`, since 0025 may be absent.
 
 **Legal pages.** `src/lib/legal.ts` holds the Privacy Policy and Terms of Service as bilingual data (same `{ id, en }` pattern as `guide.ts`), rendered by `components/legal/legal-document.tsx` at `/privacy` and `/terms`. Both routes live OUTSIDE the `(app)` group and are in `proxy.ts`'s public paths — they must be readable before you have an account. **They describe what the app actually does, so when you add a data field, a cookie, or a third-party service, update the matching section in the same change**; `legal.test.ts` fails if a cookie or processor goes undisclosed, or if a string is missing its English translation.
 

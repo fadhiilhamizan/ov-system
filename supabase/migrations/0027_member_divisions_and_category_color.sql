@@ -20,6 +20,14 @@
 -- ============================================================
 begin;
 
+-- ---------------- Part 0: compatibility ----------------
+-- `teams.coordinator` was introduced by 0019_real_roster.sql, which ALSO wipes
+-- and replaces the roster with HMSI's real data — so it is deliberately never
+-- run on the DEMO project, and the column is missing there. The backfill below
+-- reads it, so add it here first. No-op on production (0019 already added it).
+alter table public.teams
+  add column if not exists coordinator text default '';
+
 -- ---------------- Part A ----------------
 alter table public.members
   add column if not exists divisions text[] not null default '{}';

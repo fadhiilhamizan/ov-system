@@ -7,6 +7,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { assertSqlSane } from "./sql-lint.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outDir = join(__dirname, "../supabase/demo");
@@ -125,11 +126,40 @@ const links = [
 
 let out = `-- ============================================================
 -- MOCKUP SEED for the SEPARATE demo Supabase project.
--- Run this ONLY on the demo project (never on production), after the
--- schema migrations (0001..0011) and demo-open-access.sql.
+-- Run this ONLY on the demo project (never on production), AFTER the schema
+-- migrations and demo-open-access.sql.
+--
+-- Which migrations the demo needs: 0001-0018 and 0027, but NOT 0019 (it wipes
+-- the roster and inserts HMSI's real people — production only). 0027 adds the
+-- teams.coordinator column that 0019 would otherwise have provided.
+--
+-- RE-RUNNABLE: this script first deletes the demo edition's rows, so running it
+-- again restores the sample data instead of duplicating it.
 -- All data here is fictional/example data — safe to modify freely.
 -- ============================================================
 begin;
+
+-- Clear this edition's data first (FK-safe order) so the seed is idempotent.
+-- task_links is guarded: it only exists once migration 0025 has been applied.
+-- NOTE: the body below is dollar-quoted, and dollar-quoting is LEXICAL — a
+-- doubled-dollar sequence ends it even inside what looks like a comment. So
+-- keep every explanation out here, and dollar-quote the inner statement with a
+-- distinct tag because it contains its own single quotes.
+do $do$ begin
+  if to_regclass('public.task_links') is not null then
+    execute $sql$delete from public.task_links where task_id in (select id from public.tasks where event_id = ${q(EV)})$sql$;
+  end if;
+end $do$;
+delete from teams where event_id = ${q(EV)};
+delete from job_harih where event_id = ${q(EV)};
+delete from rundown where event_id = ${q(EV)};
+delete from budget_items where plan_id in (select id from budget_plans where event_id = ${q(EV)});
+delete from budget_plans where event_id = ${q(EV)};
+delete from links where event_id = ${q(EV)};
+delete from prospects where event_id = ${q(EV)};
+delete from tasks where event_id = ${q(EV)};
+delete from members where event_id = ${q(EV)};
+delete from divisions where event_id = ${q(EV)};
 
 -- demo edition (active = the landing edition) — created first so divisions can
 -- reference it (divisions are per-event since migration 0018).
@@ -188,6 +218,8 @@ for (const [section, division, name, url] of links)
 
 out += `\ncommit;\n`;
 
+// Fail loudly here rather than in the user's SQL editor.
+assertSqlSane(out, "demo-seed.sql");
 writeFileSync(join(outDir, "demo-seed.sql"), out, "utf8");
 
 // --- open access: the demo uses the anon key with no login, so disable RLS ---
@@ -203,11 +235,16 @@ let openSql = `-- ============================================================
 -- "permission denied for table …"). NEVER run this on the production project.
 -- ============================================================
 `;
-for (const t of tablesForRls) openSql += `alter table ${t} disable row level security;\n`;
+// Guarded per table: a demo project that hasn't caught up on every migration
+// (task_links arrived in 0025, for example) would otherwise abort the whole
+// script on the first missing table.
+for (const t of tablesForRls)
+  openSql += `do $$ begin if to_regclass('public.${t}') is not null then execute 'alter table public.${t} disable row level security'; end if; end $$;\n`;
 // Grants: without these, disabling RLS still leaves the anon role read-only.
 openSql += `\ngrant usage on schema public to anon;\n`;
 openSql += `grant select, insert, update, delete on all tables in schema public to anon;\n`;
 openSql += `alter default privileges in schema public grant select, insert, update, delete on tables to anon;\n`;
+assertSqlSane(openSql, "demo-open-access.sql");
 writeFileSync(join(outDir, "demo-open-access.sql"), openSql, "utf8");
 
 console.log("Wrote supabase/demo/demo-seed.sql and supabase/demo/demo-open-access.sql");

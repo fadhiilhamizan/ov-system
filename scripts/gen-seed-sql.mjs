@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { assertSqlSane } from "./sql-lint.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const seed = JSON.parse(readFileSync(join(__dirname, "../src/lib/seed/seed.json"), "utf8"));
@@ -76,5 +77,7 @@ for (const t of seed.teams)
 
 out += `\ncommit;\n`;
 
+// Fail loudly here rather than in the user's SQL editor.
+assertSqlSane(out, "seed.sql");
 writeFileSync(join(__dirname, "../supabase/seed.sql"), out, "utf8");
 console.log("Wrote supabase/seed.sql", `(${out.length} chars)`);

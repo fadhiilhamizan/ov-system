@@ -1,10 +1,39 @@
 -- ============================================================
 -- MOCKUP SEED for the SEPARATE demo Supabase project.
--- Run this ONLY on the demo project (never on production), after the
--- schema migrations (0001..0011) and demo-open-access.sql.
+-- Run this ONLY on the demo project (never on production), AFTER the schema
+-- migrations and demo-open-access.sql.
+--
+-- Which migrations the demo needs: 0001-0018 and 0027, but NOT 0019 (it wipes
+-- the roster and inserts HMSI's real people — production only). 0027 adds the
+-- teams.coordinator column that 0019 would otherwise have provided.
+--
+-- RE-RUNNABLE: this script first deletes the demo edition's rows, so running it
+-- again restores the sample data instead of duplicating it.
 -- All data here is fictional/example data — safe to modify freely.
 -- ============================================================
 begin;
+
+-- Clear this edition's data first (FK-safe order) so the seed is idempotent.
+-- task_links is guarded: it only exists once migration 0025 has been applied.
+-- NOTE: the body below is dollar-quoted, and dollar-quoting is LEXICAL — a
+-- doubled-dollar sequence ends it even inside what looks like a comment. So
+-- keep every explanation out here, and dollar-quote the inner statement with a
+-- distinct tag because it contains its own single quotes.
+do $do$ begin
+  if to_regclass('public.task_links') is not null then
+    execute $sql$delete from public.task_links where task_id in (select id from public.tasks where event_id = 'demo-ov')$sql$;
+  end if;
+end $do$;
+delete from teams where event_id = 'demo-ov';
+delete from job_harih where event_id = 'demo-ov';
+delete from rundown where event_id = 'demo-ov';
+delete from budget_items where plan_id in (select id from budget_plans where event_id = 'demo-ov');
+delete from budget_plans where event_id = 'demo-ov';
+delete from links where event_id = 'demo-ov';
+delete from prospects where event_id = 'demo-ov';
+delete from tasks where event_id = 'demo-ov';
+delete from members where event_id = 'demo-ov';
+delete from divisions where event_id = 'demo-ov';
 
 -- demo edition (active = the landing edition) — created first so divisions can
 -- reference it (divisions are per-event since migration 0018).
