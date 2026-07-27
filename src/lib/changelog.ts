@@ -7,6 +7,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.19.1",
+    date: "2026-07-27",
+    title: "Perbaikan struktur kartu rencana anggaran",
+    changes: [
+      "Memperbaiki kesalahan teknis pada halaman Anggaran: tombol hapus rencana berada di dalam tombol buka/tutup kartu, sehingga peramban mencatat error di setiap kali halaman dimuat. Sekarang keduanya terpisah.",
+      "Tidak ada perubahan cara pakai: mengklik kepala kartu tetap membuka/menutup rincian, dan ikon tempat sampah tetap membuka konfirmasi hapus.",
+    ],
+  },
+  {
     version: "1.19.0",
     date: "2026-07-27",
     title: "Divisi & Anggota menyatu, warna kategori anggaran, & perbaikan kolom Qty",
