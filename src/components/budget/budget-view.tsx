@@ -210,15 +210,18 @@ function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
   const [pending, start] = React.useTransition();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* No stopPropagation needed: this trigger is a sibling of the card's
+          collapse toggle, not nested inside it. */}
       <DialogTrigger asChild>
         <button
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 hover:text-danger dark:hover:bg-red-500/10"
+          type="button"
+          aria-label={t("Hapus rencana anggaran?")}
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 hover:text-danger dark:hover:bg-red-500/10"
         >
           <Trash2 className="size-4" />
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("Hapus rencana anggaran?")}</DialogTitle>
           <DialogDescription>&ldquo;{plan.name}&rdquo; {t("beserta seluruh itemnya akan dihapus permanen.")}</DialogDescription>
@@ -388,28 +391,35 @@ function PlanCard({
 
   return (
     <Card className="overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-muted/30"
-      >
-        <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-          <Wallet className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold">{plan.name}</h3>
-            {event && <Badge variant="outline">{event.code}</Badge>}
-            {scenario && <Badge variant={scenario === "max" ? "warning" : "success"}>{scenario === "max" ? t("Maksimal") : t("Minimal")}</Badge>}
+      {/* The collapse toggle is a real <button>, and the delete trigger is its
+          SIBLING rather than a child: a <button> nested in a <button> is invalid
+          HTML, and React reported it as a hydration error on every render. */}
+      <div className="flex w-full items-center gap-3 px-5 py-4 transition hover:bg-muted/30">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <Wallet className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold">{plan.name}</h3>
+              {event && <Badge variant="outline">{event.code}</Badge>}
+              {scenario && <Badge variant={scenario === "max" ? "warning" : "success"}>{scenario === "max" ? t("Maksimal") : t("Minimal")}</Badge>}
+            </div>
+            <p className="text-xs text-muted-foreground">{plan.items.length} {t("item")} · {cats.length} {t("kategori")}</p>
           </div>
-          <p className="text-xs text-muted-foreground">{plan.items.length} {t("item")} · {cats.length} {t("kategori")}</p>
-        </div>
-        <div className="text-right">
-          <div className="text-lg font-bold tabular-nums">{formatRupiah(grand)}</div>
-          <div className="text-[11px] text-muted-foreground">{t("Total")}</div>
-        </div>
+          <div className="text-right">
+            <div className="text-lg font-bold tabular-nums">{formatRupiah(grand)}</div>
+            <div className="text-[11px] text-muted-foreground">{t("Total")}</div>
+          </div>
+          <ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition", open && "rotate-180")} />
+        </button>
         {canManage && <DeletePlanButton plan={plan} />}
-        <ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition", open && "rotate-180")} />
-      </button>
+      </div>
 
       {open && (
         <div className="border-t border-border">
