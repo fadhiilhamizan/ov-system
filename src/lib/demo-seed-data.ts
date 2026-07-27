@@ -35,16 +35,17 @@ export const demoSeed = {
     ["MARKETING", "Marketing", "MRT", "#f43f5e", 10, false],
     ["OUTSOURCE", "Outsource", "OUT", "#14b8a6", 11, false],
   ] as const,
-  // [name, nickname, nrp, type, division]
+  // [name, nickname, nrp, type, divisions] — a member may sit in several
+  // divisions; the first one is the primary. Dewi shows that off.
   members: [
-    ["Budi Santoso", "Budi", "5026221001", "fungsionaris", "EVENT"],
-    ["Siti Rahma", "Siti", "5026221002", "fungsionaris", "SECRETARY"],
-    ["Andi Wijaya", "Andi", "5026231003", "fungsionaris", "LO"],
-    ["Dewi Lestari", "Dewi", "5026231004", "fungsionaris", "CREATIVE"],
-    ["Rizky Pratama", "Rizky", "5026231005", "fungsionaris", "MARKETING"],
-    ["Putri Anggraini", "Putri", "5026241006", "intern", "CONSUMPTION"],
-    ["Fajar Nugroho", "Fajar", "5026241007", "intern", "OPERATIONAL"],
-    ["Maya Kusuma", "Maya", "5026241008", "intern", "EVENT"],
+    ["Budi Santoso", "Budi", "5026221001", "fungsionaris", ["EVENT"]],
+    ["Siti Rahma", "Siti", "5026221002", "fungsionaris", ["SECRETARY"]],
+    ["Andi Wijaya", "Andi", "5026231003", "fungsionaris", ["LO"]],
+    ["Dewi Lestari", "Dewi", "5026231004", "fungsionaris", ["CREATIVE", "MARKETING"]],
+    ["Rizky Pratama", "Rizky", "5026231005", "fungsionaris", ["MARKETING"]],
+    ["Putri Anggraini", "Putri", "5026241006", "intern", ["CONSUMPTION"]],
+    ["Fajar Nugroho", "Fajar", "5026241007", "intern", ["OPERATIONAL"]],
+    ["Maya Kusuma", "Maya", "5026241008", "intern", ["EVENT"]],
   ] as const,
   // [division, title, pic, status, start_date, end_date]
   tasks: [
@@ -86,15 +87,17 @@ export const demoSeed = {
     ["LO himpunan partner", "Andi"],
     ["Konsumsi & perlengkapan", "Putri, Fajar"],
   ] as const,
-  // [division, fungsionaris, intern]
+  // [division, coordinator] — the roster itself is derived from members, so a
+  // team row only names the coordinator (always a fungsionaris of that
+  // division). CONSUMPTION/OPERATIONAL deliberately have none.
   teams: [
-    ["EVENT", "Budi, Maya", ""],
-    ["SECRETARY", "Siti", ""],
-    ["LO", "Andi", ""],
-    ["CREATIVE", "Dewi", ""],
-    ["MARKETING", "Rizky", ""],
-    ["CONSUMPTION", "", "Putri"],
-    ["OPERATIONAL", "", "Fajar"],
+    ["EVENT", "Budi"],
+    ["SECRETARY", "Siti"],
+    ["LO", "Andi"],
+    ["CREATIVE", "Dewi"],
+    ["MARKETING", "Rizky"],
+    ["CONSUMPTION", ""],
+    ["OPERATIONAL", ""],
   ] as const,
   // [org_name, campus, pic, contact_status, their_response]
   prospects: [

@@ -118,12 +118,19 @@ const money = z
   .nullable()
   .optional();
 
+/** Hex colour (#rgb or #rrggbb) — shared by divisions and budget categories. */
+const hexColor = z
+  .string()
+  .trim()
+  .regex(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i, "Warna harus kode hex (mis. #3b82f6).");
+
 export const budgetItemSchema = z.object({
   category: nonEmpty("Kategori", 120),
   name: nonEmpty("Nama item", 200),
   qty: money,
   unit: z.string().trim().max(60).optional(),
   unit_price: money,
+  category_color: hexColor.nullable().optional(),
 });
 
 export const updateBudgetItemSchema = z
@@ -133,6 +140,7 @@ export const updateBudgetItemSchema = z
     name: z.string().trim().min(1, "Nama item wajib diisi.").max(200),
     category: z.string().trim().min(1).max(120),
     unit: z.string().trim().max(60),
+    category_color: hexColor.nullable(),
   })
   .partial();
 
@@ -165,7 +173,13 @@ export const eventSchema = z.object({
 const NO_COMMA = "Tidak boleh mengandung tanda koma (,).";
 export const memberSchema = z.object({
   name: nonEmpty("Nama anggota", 200).refine((v) => !v.includes(","), NO_COMMA),
-  division: nonEmpty("Divisi", 128),
+  // A member may sit in more than one division; `division` is the derived
+  // primary (divisions[0]) and is filled in by the action, not the client.
+  divisions: z
+    .array(z.string().trim().min(1).max(128))
+    .min(1, "Pilih minimal satu divisi.")
+    .max(20, "Terlalu banyak divisi."),
+  division: z.string().trim().max(128).optional().nullable(),
   event_id: z.string().trim().max(128).optional().nullable(),
   nickname: z.string().trim().max(120).refine((v) => !v.includes(","), NO_COMMA).optional(),
   nrp: z.string().trim().max(40).optional(),

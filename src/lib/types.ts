@@ -56,7 +56,12 @@ export interface Member {
   nrp: string;
   type: "fungsionaris" | "intern";
   year: number;
+  /** Primary division — kept in sync with `divisions[0]` for older readers
+   *  (badges, task PIC scoping, seeds). Read it via `primaryDivision()`. */
   division?: DivisionKey | null;
+  /** Every division this member is part of. Most people have exactly one, but
+   *  the model deliberately allows more. Read it via `memberDivisions()`. */
+  divisions?: DivisionKey[];
 }
 
 export interface Task {
@@ -139,6 +144,10 @@ export interface BudgetItem {
   unit: string;
   unit_price: number | null;
   total: number | null;
+  /** Dot colour of the item's category. Stored per item but applied to the
+   *  whole category (every item in it is updated together), so a plan can
+   *  colour-code its own categories. Null = fall back to the preset palette. */
+  category_color?: string | null;
 }
 
 export interface BudgetPlan {

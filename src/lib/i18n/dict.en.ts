@@ -687,6 +687,52 @@ export const EN: Record<string, string> = {
   "Permintaan peran": "Role request",
   "sedang menunggu persetujuan admin.": "is awaiting an admin's approval.",
 
+  // Divisions & members (multi-division roster, derived team structure)
+  "anggota": "members",
+  "boleh lebih dari satu": "more than one is allowed",
+  "divisi dipilih": "divisions selected",
+  "Pilih divisi…": "Pick divisions…",
+  "Belum ada divisi untuk Ormawa Visit ini.": "This Ormawa Visit has no divisions yet.",
+  "Divisi pertama dipakai sebagai divisi utama pada tabel & tugas.":
+    "The first division is used as the primary one in tables & tasks.",
+  "Tunjuk koordinator": "Assign coordinator",
+  "Ubah koordinator": "Change coordinator",
+  "Hapus koordinator": "Remove coordinator",
+  "Koordinator disimpan": "Coordinator saved",
+  "Koordinator dihapus": "Coordinator removed",
+  "Koordinator Divisi": "Division Coordinator",
+  "Anggota divisi terisi otomatis dari data Anggota EA. Di sini kamu hanya menunjuk koordinatornya.":
+    "A division's members come automatically from the EA Members list. All you set here is who coordinates it.",
+  "hanya fungsionaris, boleh dikosongkan": "staff only; may be left empty",
+  "Belum ada fungsionaris di divisi ini — tambahkan lewat tab Anggota EA dulu.":
+    "This division has no staff yet — add them in the EA Members tab first.",
+  "Anggota divisi ini": "Members of this division",
+  "Belum ada. Tetapkan divisi anggota di tab Anggota EA.":
+    "None yet. Assign members to this division in the EA Members tab.",
+  "Belum ada anggota. Tetapkan divisi anggota di tab Anggota EA.":
+    "No members yet. Assign members to this division in the EA Members tab.",
+
+  // Budget category colour
+  "Warna kategori": "Category colour",
+  "Ubah warna kategori": "Change category colour",
+  "Warna kategori diperbarui": "Category colour updated",
+  "Warna berlaku untuk seluruh item pada kategori ini.":
+    "The colour applies to every item in this category.",
+
+  // Role Request in demo mode
+  "Kenapa Role Request tidak berfungsi di Mode Demo?":
+    "Why doesn't Role Request work in Demo Mode?",
+  "Mode Demo memakai database terpisah berisi data contoh, bukan data asli — jadi tidak ada akun sungguhan di dalamnya.":
+    "Demo Mode runs on a separate database of sample data, not the real one — so there are no real accounts in it.",
+  "Di Mode Demo kamu tidak login: identitas diambil dari tombol peran di kanan atas, bukan dari akun. Karena itu tidak ada akun yang bisa mengajukan peran, dan tidak ada peran yang bisa disimpan.":
+    "In Demo Mode you are not logged in: your identity comes from the role button at the top right, not from an account. So there is no account to file a request, and no role to save.",
+  "Menyetujui pengajuan berarti mengubah peran sebuah akun. Tanpa akun, tidak ada yang bisa diubah.":
+    "Approving a request means changing an account's role. With no accounts, there is nothing to change.",
+  "Untuk mencoba fiturnya secara utuh, keluar dari Mode Demo lalu daftar akun di sistem yang sebenarnya. Di sini kamu tetap bisa melihat tampilan halamannya.":
+    "To try the feature for real, leave Demo Mode and sign up on the actual system. You can still see how the page looks from here.",
+  "Mode Demo tidak punya akun, jadi daftar ini selalu kosong.":
+    "Demo Mode has no accounts, so this list is always empty.",
+
   // Error boundary
   "Terjadi kesalahan": "Something went wrong",
   "Halaman ini gagal dimuat. Coba muat ulang, atau kembali ke dashboard.":

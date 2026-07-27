@@ -20,7 +20,78 @@ import {
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import { angkatanFromNrp } from "@/lib/format";
+import { memberDivisions, memberInDivision, memberLabel } from "@/lib/members";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+
+// ---------------- Division multi-select ----------------
+/** A member usually sits in one division, but the model deliberately allows
+ *  several — so this is a checkbox list, not a single Select. */
+function DivisionMultiSelect({
+  divisions, value, onChange,
+}: {
+  divisions: Division[];
+  value: string[];
+  onChange: (keys: string[]) => void;
+}) {
+  const t = useT();
+  const chosen = divisions.filter((d) => value.includes(d.key));
+
+  function toggle(key: string) {
+    onChange(value.includes(key) ? value.filter((k) => k !== key) : [...value, key]);
+  }
+
+  return (
+    <div className="space-y-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex h-9 w-full items-center justify-between rounded-lg border border-input bg-card px-3 text-sm shadow-sm transition hover:bg-muted"
+          >
+            <span className={chosen.length ? "" : "text-muted-foreground"}>
+              {chosen.length ? `${chosen.length} ${t("divisi dipilih")}` : t("Pilih divisi…")}
+            </span>
+            <ChevronsUpDown className="size-3.5 opacity-60" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="max-h-72 w-72 overflow-y-auto p-1.5">
+          {divisions.length === 0 ? (
+            <p className="p-2 text-xs text-muted-foreground">{t("Belum ada divisi untuk Ormawa Visit ini.")}</p>
+          ) : (
+            divisions.map((d) => (
+              <label key={d.key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted">
+                <Checkbox checked={value.includes(d.key)} onCheckedChange={() => toggle(d.key)} />
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
+                <span className="flex-1 truncate">{d.name}</span>
+                {value.includes(d.key) && <Check className="size-3.5 text-primary" />}
+              </label>
+            ))
+          )}
+        </PopoverContent>
+      </Popover>
+
+      {chosen.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {chosen.map((d) => (
+            <span
+              key={d.key}
+              className="inline-flex items-center gap-1 rounded-full py-1 pl-2.5 pr-1 text-xs font-medium text-white"
+              style={{ backgroundColor: d.color }}
+            >
+              {d.short || d.name}
+              <button type="button" onClick={() => toggle(d.key)} className="rounded-full p-0.5 hover:bg-black/20">
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        {t("Divisi pertama dipakai sebagai divisi utama pada tabel & tugas.")}
+      </p>
+    </div>
+  );
+}
 
 // ---------------- Member ----------------
 export function MemberFormDialog({
@@ -47,7 +118,7 @@ export function MemberFormDialog({
     nrp: "",
     type: (base?.type ?? "fungsionaris") as Member["type"],
     year: base?.year ?? new Date().getFullYear(),
-    division: base?.division ?? divisions[0]?.key ?? "",
+    divisions: base?.divisions ?? (divisions[0] ? [divisions[0].key] : []),
     event_id: base?.event_id ?? defaultEventId,
   });
   const [f, setF] = useResetOn(`${isOpen}:${member?.id ?? "new"}`, () => ({
@@ -56,7 +127,7 @@ export function MemberFormDialog({
     nrp: member?.nrp ?? "",
     type: member?.type ?? "fungsionaris",
     year: member?.year ?? new Date().getFullYear(),
-    division: member?.division ?? divisions[0]?.key ?? "",
+    divisions: member ? memberDivisions(member) : divisions[0] ? [divisions[0].key] : [],
     event_id: member?.event_id ?? defaultEventId,
   }));
 
@@ -127,28 +198,26 @@ export function MemberFormDialog({
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label>{t("Tipe")} <span className="text-danger">*</span></Label>
-              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as Member["type"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fungsionaris">{t("Fungsionaris")}</SelectItem>
-                  <SelectItem value="intern">{t("Intern")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-1.5">
-              <Label>{t("Divisi")} <span className="text-danger">*</span></Label>
-              <Select value={f.division} onValueChange={(v) => setF({ ...f, division: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {divisions.map((d) => (
-                    <SelectItem key={d.key} value={d.key}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-1.5">
+            <Label>{t("Tipe")} <span className="text-danger">*</span></Label>
+            <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as Member["type"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fungsionaris">{t("Fungsionaris")}</SelectItem>
+                <SelectItem value="intern">{t("Intern")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>
+              {t("Divisi")} <span className="text-danger">*</span>{" "}
+              <span className="text-[10px] font-normal text-muted-foreground">({t("boleh lebih dari satu")})</span>
+            </Label>
+            <DivisionMultiSelect
+              divisions={divisions}
+              value={f.divisions}
+              onChange={(keys) => setF({ ...f, divisions: keys })}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>{t("Ormawa Visit")} <span className="text-danger">*</span></Label>
@@ -164,7 +233,7 @@ export function MemberFormDialog({
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{mode === "create" ? t("Selesai") : t("Batal")}</Button></DialogClose>
-          <Button onClick={submit} disabled={pending || !f.name.trim() || !f.division}>
+          <Button onClick={submit} disabled={pending || !f.name.trim() || f.divisions.length === 0}>
             {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? t("Tambah") : t("Simpan")}
           </Button>
         </DialogFooter>
@@ -232,7 +301,9 @@ export function MemberBulkBar({
             {divisions.map((d) => (
               <DropdownMenuItem
                 key={d.key}
-                onSelect={() => run(() => bulkUpdateMembersAction(ids, { division: d.key }), t("Divisi anggota diperbarui"))}
+                // Bulk assignment REPLACES the selection's divisions — a member
+                // who needs several is edited one by one.
+                onSelect={() => run(() => bulkUpdateMembersAction(ids, { divisions: [d.key] }), t("Divisi anggota diperbarui"))}
               >
                 <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} /> {d.name}
               </DropdownMenuItem>
@@ -295,24 +366,23 @@ function MemberMultiSelect({
   placeholder?: string;
 }) {
   const t = useT();
-  const label = (m: Member) => m.nickname || m.name;
   const tokens = React.useMemo(() => value.split(",").map((s) => s.trim()).filter(Boolean), [value]);
   const matchedIds = React.useMemo(() => {
     const set = new Set<string>();
     for (const t of tokens) {
-      const m = members.find((mm) => label(mm).toLowerCase() === t.toLowerCase());
+      const m = members.find((mm) => memberLabel(mm).toLowerCase() === t.toLowerCase());
       if (m) set.add(m.id);
     }
     return set;
   }, [tokens, members]);
   // Free-text tokens that didn't match any known member (preserved so data isn't lost).
-  const extras = tokens.filter((t) => !members.some((mm) => label(mm).toLowerCase() === t.toLowerCase()));
+  const extras = tokens.filter((t) => !members.some((mm) => memberLabel(mm).toLowerCase() === t.toLowerCase()));
 
   function toggle(m: Member) {
     const isOn = matchedIds.has(m.id);
     const names = isOn
-      ? tokens.filter((t) => t.toLowerCase() !== label(m).toLowerCase())
-      : [...tokens, label(m)];
+      ? tokens.filter((t) => t.toLowerCase() !== memberLabel(m).toLowerCase())
+      : [...tokens, memberLabel(m)];
     onChange(names.join(", "));
   }
   function removeExtra(t: string) {
@@ -341,7 +411,7 @@ function MemberMultiSelect({
                 className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
               >
                 <Checkbox checked={matchedIds.has(m.id)} onCheckedChange={() => toggle(m)} />
-                <span className="flex-1 truncate">{label(m)}</span>
+                <span className="flex-1 truncate">{memberLabel(m)}</span>
                 {matchedIds.has(m.id) && <Check className="size-3.5 text-primary" />}
               </label>
             ))
@@ -355,7 +425,7 @@ function MemberMultiSelect({
             const m = members.find((mm) => mm.id === id)!;
             return (
               <span key={id} className="inline-flex items-center gap-1 rounded-full bg-accent py-1 pl-2.5 pr-1 text-xs text-accent-foreground">
-                {label(m)}
+                {memberLabel(m)}
                 <button type="button" onClick={() => toggle(m)} className="rounded-full p-0.5 hover:bg-black/10">
                   <X className="size-3" />
                 </button>
@@ -376,15 +446,23 @@ function MemberMultiSelect({
   );
 }
 
-// ---------------- Team ----------------
+// ---------------- Team (= the division's coordinator) ----------------
+//
+// The roster itself is NOT edited here any more: fungsionaris and intern are
+// derived from each member's own division assignment (Anggota EA → Divisi), so
+// a person is entered exactly once. What's left on the team row is the
+// coordinator, which is a ROLE and can't be inferred — and a division is
+// allowed to have none.
 export function TeamFormDialog({
-  mode, team, divisions, members, eventId, open, onOpenChange, trigger,
+  mode, team, divisions, members, eventId, defaultDivision, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   team?: Team;
   divisions: Division[];
   members: Member[];
   eventId: string;
+  /** Pre-selected division when creating from a division card. */
+  defaultDivision?: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -395,20 +473,28 @@ export function TeamFormDialog({
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
   const [f, setF] = useResetOn(`${isOpen}:${team?.id ?? "new"}`, () => ({
-    division: team?.division ?? divisions[0]?.key ?? "EVENT",
+    division: team?.division ?? defaultDivision ?? divisions[0]?.key ?? "EVENT",
     coordinator: team?.coordinator ?? "",
-    fungsionaris: team?.fungsionaris ?? "",
-    intern: team?.intern ?? "",
   }));
 
-  const fungsionarisPool = React.useMemo(() => members.filter((m) => m.type === "fungsionaris"), [members]);
-  const internPool = React.useMemo(() => members.filter((m) => m.type === "intern"), [members]);
+  // A coordinator is always a FUNGSIONARIS of that same division.
+  const coordinatorPool = React.useMemo(
+    () => members.filter((m) => m.type === "fungsionaris" && memberInDivision(m, f.division)),
+    [members, f.division],
+  );
+  const roster = React.useMemo(
+    () => members.filter((m) => memberInDivision(m, f.division)),
+    [members, f.division],
+  );
 
   function submit() {
     start(async () => {
+      // fungsionaris/intern are derived from members now, so they are simply
+      // NOT sent — leaving any legacy roster text on the row untouched (the
+      // card still falls back to it while a division has no members yet).
       const payload = { ...f, event_id: eventId };
       const res = mode === "create" ? await createTeamAction(payload) : await updateTeamAction(team!.id, payload);
-      if (res.ok) { toast.success(mode === "create" ? t("Tim ditambahkan") : t("Tim diperbarui")); setOpen(false); }
+      if (res.ok) { toast.success(t("Koordinator disimpan")); setOpen(false); }
       else toast.error(res.error);
     });
   }
@@ -418,13 +504,15 @@ export function TeamFormDialog({
       {trigger}
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? t("Tambah Tim Divisi") : t("Edit Tim Divisi")}</DialogTitle>
-          <DialogDescription>{t("Susunan anggota per divisi untuk Ormawa Visit ini.")}</DialogDescription>
+          <DialogTitle>{t("Koordinator Divisi")}</DialogTitle>
+          <DialogDescription>
+            {t("Anggota divisi terisi otomatis dari data Anggota EA. Di sini kamu hanya menunjuk koordinatornya.")}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5">
             <Label>{t("Divisi")}</Label>
-            <Select value={f.division} onValueChange={(v) => setF({ ...f, division: v })}>
+            <Select value={f.division} onValueChange={(v) => setF({ division: v, coordinator: "" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {divisions.map((d) => (
@@ -434,37 +522,45 @@ export function TeamFormDialog({
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label>{t("Koordinator")} <span className="text-[10px] text-muted-foreground">({t("atasan divisi")})</span></Label>
+            <Label>
+              {t("Koordinator")}{" "}
+              <span className="text-[10px] font-normal text-muted-foreground">({t("hanya fungsionaris, boleh dikosongkan")})</span>
+            </Label>
             <MemberMultiSelect
-              members={fungsionarisPool}
+              members={coordinatorPool}
               value={f.coordinator}
               onChange={(v) => setF({ ...f, coordinator: v })}
               placeholder={t("Pilih koordinator…")}
             />
+            {coordinatorPool.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {t("Belum ada fungsionaris di divisi ini — tambahkan lewat tab Anggota EA dulu.")}
+              </p>
+            )}
           </div>
-          <div className="grid gap-1.5">
-            <Label>{t("Fungsionaris")}</Label>
-            <MemberMultiSelect
-              members={fungsionarisPool}
-              value={f.fungsionaris}
-              onChange={(v) => setF({ ...f, fungsionaris: v })}
-              placeholder={t("Pilih fungsionaris…")}
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label>{t("Intern")}</Label>
-            <MemberMultiSelect
-              members={internPool}
-              value={f.intern}
-              onChange={(v) => setF({ ...f, intern: v })}
-              placeholder={t("Pilih intern…")}
-            />
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("Anggota divisi ini")} ({roster.length})
+            </p>
+            {roster.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {t("Belum ada. Tetapkan divisi anggota di tab Anggota EA.")}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {roster.map((m) => (
+                  <span key={m.id} className="rounded-full bg-card px-2 py-0.5 text-[11px] ring-1 ring-border">
+                    {memberLabel(m)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
           <Button onClick={submit} disabled={pending}>
-            {pending && <Loader2 className="size-4 animate-spin" />}{mode === "create" ? t("Tambah") : t("Simpan")}
+            {pending && <Loader2 className="size-4 animate-spin" />}{t("Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -485,11 +581,11 @@ export function TeamActions({
           <MoreHorizontal className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Ubah koordinator")}</DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={() => start(async () => {
             const res = await deleteTeamAction(team.id);
-            if (res.ok) toast.success(t("Tim dihapus")); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+            if (res.ok) toast.success(t("Koordinator dihapus")); else toast.error(res.error);
+          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus koordinator")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <TeamFormDialog

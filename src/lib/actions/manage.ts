@@ -13,6 +13,12 @@ import type { Division, Member, OVEvent, Team } from "@/lib/types";
 import { uid } from "@/lib/utils";
 import { getActiveEvent } from "@/lib/session";
 import { eventSchema, memberSchema, divisionSchema, teamSchema, idSchema, parse } from "./schemas";
+import { divisionFields } from "@/lib/members";
+
+/** Keep the legacy primary `division` column in step with `divisions[]`. */
+function withPrimaryDivision<T extends { divisions?: string[] }>(data: T) {
+  return data.divisions ? { ...data, ...divisionFields(data.divisions) } : data;
+}
 
 export interface EventTemplate extends CloneOptions {
   sourceEventId: string;
@@ -20,6 +26,12 @@ export interface EventTemplate extends CloneOptions {
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
+/** Repo writes throw on a Supabase error (RLS denial, missing column, …) —
+ *  surface it instead of reporting a save that never happened. */
+const errMsg = (e: unknown): Result => ({
+  ok: false,
+  error: e instanceof Error ? `Gagal menyimpan: ${e.message}` : "Gagal menyimpan data.",
+});
 
 // ---------------- Events (Ormawa Visit) ----------------
 export async function createEventAction(
@@ -87,7 +99,7 @@ export async function createMemberAction(input: Partial<Member>): Promise<Result
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const v = parse(memberSchema, input);
   if (!v.ok) return v;
-  await createMember(v.data);
+  try { await createMember(withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -97,7 +109,7 @@ export async function updateMemberAction(id: string, patch: Partial<Member>): Pr
   if (!idv.ok) return idv;
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
-  await updateMember(idv.data, v.data);
+  try { await updateMember(idv.data, withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -105,7 +117,7 @@ export async function deleteMemberAction(id: string): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  await deleteMember(idv.data);
+  try { await deleteMember(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -126,7 +138,7 @@ export async function bulkDeleteMembersAction(ids: string[]): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const idv = parseIds(ids);
   if (!idv.ok) return idv;
-  await bulkDeleteMembers(idv.data);
+  try { await bulkDeleteMembers(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -137,7 +149,7 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
   if (!idv.ok) return idv;
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
-  await bulkUpdateMembers(idv.data, v.data);
+  try { await bulkUpdateMembers(idv.data, withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -199,7 +211,7 @@ export async function createTeamAction(input: Partial<Team>): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
   const v = parse(teamSchema, input);
   if (!v.ok) return v;
-  await createTeam(v.data);
+  try { await createTeam(v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("teams");
   return { ok: true };
 }
@@ -209,7 +221,7 @@ export async function updateTeamAction(id: string, patch: Partial<Team>): Promis
   if (!idv.ok) return idv;
   const v = parse(teamSchema, patch);
   if (!v.ok) return v;
-  await updateTeam(idv.data, v.data);
+  try { await updateTeam(idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("teams");
   return { ok: true };
 }
@@ -217,7 +229,7 @@ export async function deleteTeamAction(id: string): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  await deleteTeam(idv.data);
+  try { await deleteTeam(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("teams");
   return { ok: true };
 }

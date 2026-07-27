@@ -5,19 +5,19 @@
 -- grants anon SELECT by default, so without this UPDATE/INSERT would fail with
 -- "permission denied for table …"). NEVER run this on the production project.
 -- ============================================================
-alter table divisions disable row level security;
-alter table events disable row level security;
-alter table members disable row level security;
-alter table tasks disable row level security;
-alter table task_links disable row level security;
-alter table prospects disable row level security;
-alter table links disable row level security;
-alter table budget_plans disable row level security;
-alter table budget_items disable row level security;
-alter table rundown disable row level security;
-alter table job_harih disable row level security;
-alter table faqs disable row level security;
-alter table teams disable row level security;
+do $$ begin if to_regclass('public.divisions') is not null then execute 'alter table public.divisions disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.events') is not null then execute 'alter table public.events disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.members') is not null then execute 'alter table public.members disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.tasks') is not null then execute 'alter table public.tasks disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.task_links') is not null then execute 'alter table public.task_links disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.prospects') is not null then execute 'alter table public.prospects disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.links') is not null then execute 'alter table public.links disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.budget_plans') is not null then execute 'alter table public.budget_plans disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.budget_items') is not null then execute 'alter table public.budget_items disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.rundown') is not null then execute 'alter table public.rundown disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.job_harih') is not null then execute 'alter table public.job_harih disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.faqs') is not null then execute 'alter table public.faqs disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.teams') is not null then execute 'alter table public.teams disable row level security'; end if; end $$;
 
 grant usage on schema public to anon;
 grant select, insert, update, delete on all tables in schema public to anon;

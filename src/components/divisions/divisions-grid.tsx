@@ -14,6 +14,7 @@ import { AddDivisionButton, DivisionActions } from "@/components/divisions/divis
 import { STATUS_META } from "@/lib/constants";
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/actions/manage";
+import { memberInDivision, memberLabel } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, Team } from "@/lib/types";
 
@@ -30,6 +31,12 @@ export interface DivisionStat {
 /** Split a comma/·/double-space joined roster string into display chips. */
 const roster = (s: string) => (s ?? "").split(/\s{2,}|,|·/).map((x) => x.trim()).filter(Boolean);
 
+/**
+ * A division's team structure, DERIVED from the member roster: whoever has this
+ * division in "Anggota EA" shows up here automatically, so nobody is typed
+ * twice. Only the coordinator is stored separately (it's a role, not a
+ * division membership) and a division may have none.
+ */
 function TeamBlock({
   division, team, divisions, members, eventId, canManageTeams,
 }: {
@@ -41,10 +48,22 @@ function TeamBlock({
   canManageTeams: boolean;
 }) {
   const t = useT();
-  const fung = roster(team?.fungsionaris ?? "");
-  const intern = roster(team?.intern ?? "");
   const coord = roster(team?.coordinator ?? "");
-  const empty = !coord.length && !fung.length && !intern.length;
+  const coordSet = new Set(coord.map((n) => n.toLowerCase()));
+  const inDivision = members.filter((m) => memberInDivision(m, division.key));
+  // The coordinator is listed on their own line, not repeated under Fungsionaris.
+  const isCoord = (m: Member) =>
+    coordSet.has(memberLabel(m).toLowerCase()) || coordSet.has((m.name ?? "").toLowerCase());
+  const fung = inDivision.filter((m) => m.type === "fungsionaris" && !isCoord(m));
+  const intern = inDivision.filter((m) => m.type === "intern" && !isCoord(m));
+  // Fallback for rosters typed on the team row before member assignment
+  // existed: show them until this division has real members, so no name that
+  // was already entered ever disappears from the card.
+  const legacy = inDivision.length
+    ? { fung: [], intern: [] }
+    : { fung: roster(team?.fungsionaris ?? ""), intern: roster(team?.intern ?? "") };
+  const empty =
+    !coord.length && !fung.length && !intern.length && !legacy.fung.length && !legacy.intern.length;
 
   return (
     <div className="mt-4 border-t border-border pt-3">
@@ -63,10 +82,11 @@ function TeamBlock({
                 divisions={divisions}
                 members={members}
                 eventId={eventId}
+                defaultDivision={division.key}
                 trigger={
                   <DialogTrigger asChild>
                     <button className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-primary transition hover:bg-muted">
-                      <Plus className="size-3" /> {t("Isi tim")}
+                      <Plus className="size-3" /> {t("Tunjuk koordinator")}
                     </button>
                   </DialogTrigger>
                 }
@@ -77,7 +97,9 @@ function TeamBlock({
       </div>
 
       {empty ? (
-        <p className="text-xs text-muted-foreground/70">{t("Belum diisi.")}</p>
+        <p className="text-xs text-muted-foreground/70">
+          {t("Belum ada anggota. Tetapkan divisi anggota di tab Anggota EA.")}
+        </p>
       ) : (
         <div className="space-y-1.5">
           {coord.length > 0 && (
@@ -88,25 +110,30 @@ function TeamBlock({
               ))}
             </div>
           )}
-          {fung.length > 0 && (
+          {(fung.length > 0 || legacy.fung.length > 0) && (
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-[10px] uppercase text-muted-foreground">{t("Fungsionaris")}</span>
-              {fung.map((n, i) => (
-                <span key={i} className="rounded-full bg-muted px-2 py-0.5 text-[11px]">{n}</span>
+              {fung.map((m) => (
+                <span key={m.id} className="rounded-full bg-muted px-2 py-0.5 text-[11px]">{memberLabel(m)}</span>
+              ))}
+              {legacy.fung.map((n, i) => (
+                <span key={`l${i}`} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{n}</span>
               ))}
             </div>
           )}
-          {intern.length > 0 && (
+          {(intern.length > 0 || legacy.intern.length > 0) && (
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-[10px] uppercase text-muted-foreground">Intern</span>
-              {intern.map((n, i) => (
-                <span key={i} className="rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground">{n}</span>
+              {intern.map((m) => (
+                <span key={m.id} className="rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground">{memberLabel(m)}</span>
+              ))}
+              {legacy.intern.map((n, i) => (
+                <span key={`l${i}`} className="rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground/80">{n}</span>
               ))}
             </div>
           )}
         </div>
       )}
-      <span className="sr-only">{division.name}</span>
     </div>
   );
 }
@@ -201,7 +228,8 @@ export function DivisionsGrid({
                       <div>
                         <h3 className="font-semibold leading-tight">{s.division.name}</h3>
                         <p className="text-xs text-muted-foreground">
-                          {s.total} {t("tugas")}
+                          {s.total} {t("tugas")} ·{" "}
+                          {members.filter((m) => memberInDivision(m, s.division.key)).length} {t("anggota")}
                           {s.division.exclude_from_rundown && (
                             <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px]">{t("tanpa rundown")}</span>
                           )}

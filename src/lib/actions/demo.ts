@@ -48,20 +48,30 @@ export async function resetDemoDataAction(): Promise<Result> {
     if (upErr) return { ok: false, error: `Gagal menyiapkan edisi demo: ${upErr.message}` };
   }
 
-  // 2) Re-seed.
-  await sb.from("divisions").insert(
+  // 2) Re-seed. Every insert is checked: an ignored error (a column the demo
+  //    project's schema hasn't caught up on, for instance) used to report a
+  //    successful reset while quietly leaving the table empty.
+  let failure: string | null = null;
+  const seed = async (table: string, rows: Record<string, unknown>[]) => {
+    if (failure) return;
+    const { error } = await sb.from(table).insert(rows);
+    if (error) failure = `Gagal mengisi ${table}: ${error.message}`;
+  };
+
+  await seed("divisions",
     demoSeed.divisions.map(([key, name, short, color, order, excl]) => ({
       event_id: EV, key, name, short, color, order, exclude_from_rundown: excl,
     })),
   );
-  await sb.from("members").insert(
-    demoSeed.members.map(([name, nickname, nrp, type, division]) => ({
-      event_id: EV, name, nickname, nrp, type, year: angkatanFromNrpNum(nrp), division,
+  await seed("members",
+    demoSeed.members.map(([name, nickname, nrp, type, divisions]) => ({
+      event_id: EV, name, nickname, nrp, type, year: angkatanFromNrpNum(nrp),
+      divisions: [...divisions], division: divisions[0],
     })),
   );
 
   const noByDiv: Record<string, number> = {};
-  await sb.from("tasks").insert(
+  await seed("tasks",
     demoSeed.tasks.map(([division, title, pic, status, start, end]) => {
       noByDiv[division] = (noByDiv[division] ?? 0) + 1;
       return {
@@ -74,7 +84,7 @@ export async function resetDemoDataAction(): Promise<Result> {
   const { data: plan } = await sb.from("budget_plans")
     .insert({ name: "RAB Ormawa Visit Demo", event_id: EV }).select("id").single();
   if (plan) {
-    await sb.from("budget_items").insert(
+    await seed("budget_items",
       demoSeed.budgetItems.map(([category, name, qty, unit, unit_price], i) => ({
         plan_id: plan.id, category, name, qty, unit, unit_price,
         total: qty * unit_price, order: i,
@@ -82,31 +92,35 @@ export async function resetDemoDataAction(): Promise<Result> {
     );
   }
 
-  await sb.from("rundown").insert(
+  await seed("rundown",
     demoSeed.rundown.map(([time_start, time_end, activity, keterangan], i) => ({
       event_id: EV, variant: "A", no: i + 1, time_start, time_end,
       activity, keterangan, division_jobs: {},
     })),
   );
-  await sb.from("job_harih").insert(
+  await seed("job_harih",
     demoSeed.jobs.map(([job, pic], i) => ({ event_id: EV, no: String(i + 1), job, pic })),
   );
-  await sb.from("teams").insert(
-    demoSeed.teams.map(([division, fungsionaris, intern]) => ({
-      event_id: EV, division, coordinator: "", fungsionaris, intern,
+  await seed("teams",
+    // fungsionaris/intern are derived from members.divisions now — the legacy
+    // columns stay empty so nothing reads a stale second copy of the roster.
+    demoSeed.teams.map(([division, coordinator]) => ({
+      event_id: EV, division, coordinator, fungsionaris: "", intern: "",
     })),
   );
-  await sb.from("prospects").insert(
+  await seed("prospects",
     demoSeed.prospects.map(([org_name, campus, pic, contact_status, their_response], i) => ({
       event_id: EV, batch: "Demo", no: String(i + 1), org_name, campus, pic,
       contact_status, their_response, source: "demo",
     })),
   );
-  await sb.from("links").insert(
+  await seed("links",
     demoSeed.links.map(([section, division, name, url]) => ({
       event_id: EV, section, division, name, url, source: "demo",
     })),
   );
+
+  if (failure) return { ok: false, error: failure };
 
   revalidatePath("/", "layout");
   return { ok: true };

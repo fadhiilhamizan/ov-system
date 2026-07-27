@@ -3,6 +3,7 @@ import { getDb, mutate } from "./store";
 import { uid } from "../utils";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
+import { divisionFields } from "../members";
 import type {
   BudgetPlan,
   Division,
@@ -51,7 +52,12 @@ export function getDefaultEvent(): OVEvent {
 
 // ---------------- Members ----------------
 export function getMembers(eventId?: string): Member[] {
-  const list = getDb().members;
+  // Legacy rows only carry the single `division`; normalise to the array so
+  // callers never null-check it (see lib/members.ts).
+  const list = getDb().members.map((m) => ({
+    ...m,
+    divisions: m.divisions ?? (m.division ? [m.division] : []),
+  }));
   return eventId ? list.filter((m) => !m.event_id || m.event_id === eventId) : list;
 }
 
@@ -288,7 +294,10 @@ export function updateBudgetPlan(id: string, patch: Partial<BudgetPlan>) {
 }
 export function updateBudgetItem(
   itemId: string,
-  patch: { qty?: number | null; unit_price?: number | null; name?: string; category?: string; unit?: string },
+  patch: {
+    qty?: number | null; unit_price?: number | null; name?: string; category?: string;
+    unit?: string; category_color?: string | null;
+  },
 ) {
   return mutate((db) => {
     for (const p of db.budgetPlans) {
@@ -305,7 +314,10 @@ export function updateBudgetItem(
 }
 export function createBudgetItem(
   planId: string,
-  input: { category: string; name: string; qty?: number | null; unit?: string; unit_price?: number | null },
+  input: {
+    category: string; name: string; qty?: number | null; unit?: string;
+    unit_price?: number | null; category_color?: string | null;
+  },
 ) {
   return mutate((db) => {
     const p = db.budgetPlans.find((x) => x.id === planId);
@@ -319,9 +331,18 @@ export function createBudgetItem(
       unit: input.unit ?? "",
       unit_price: input.unit_price ?? null,
       total: Math.round((input.qty ?? 0) * (input.unit_price ?? 0)),
+      category_color: input.category_color ?? null,
     };
     p.items.push(item);
     return item;
+  });
+}
+/** Recolour every item of one category in a plan (see repo.setCategoryColor). */
+export function setCategoryColor(planId: string, category: string, color: string) {
+  mutate((db) => {
+    const p = db.budgetPlans.find((x) => x.id === planId);
+    if (!p) return;
+    for (const i of p.items) if (i.category === category) i.category_color = color;
   });
 }
 export function deleteBudgetItem(itemId: string) {
@@ -531,7 +552,7 @@ export function createMember(input: Partial<Member>): Member {
     nrp: input.nrp ?? "",
     type: input.type ?? "fungsionaris",
     year: input.year ?? new Date().getFullYear(),
-    division: input.division ?? null,
+    ...divisionFields(input.divisions, input.division),
   };
   mutate((db) => db.members.push(m));
   return m;

@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { assertSqlSane } from "./sql-lint.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const seed = JSON.parse(readFileSync(join(__dirname, "../src/lib/seed/seed.json"), "utf8"));
@@ -12,6 +13,11 @@ const n = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Numb
 const b = (v) => (v ? "true" : "false");
 const d = (v) => (v ? `'${v}'` : "null");
 const jb = (v) => `'${JSON.stringify(v ?? {}).replace(/'/g, "''")}'::jsonb`;
+/** text[] literal, e.g. ["LO","EVENT"] -> array['LO','EVENT']::text[] */
+const arr = (v) =>
+  !v || !v.length
+    ? "'{}'::text[]"
+    : `array[${v.map((x) => `'${String(x).replace(/'/g, "''")}'`).join(",")}]::text[]`;
 
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
@@ -26,9 +32,11 @@ for (const e of seed.events)
   for (const x of seed.divisions)
     out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(e.id)},${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (event_id,key) do nothing;\n`;
 
-out += `\n-- members\n`;
-for (const m of seed.members)
-  out += `insert into members(event_id,name,nickname,nrp,type,year,division) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(m.division)});\n`;
+out += `\n-- members (divisions[] is the real membership; division = the primary)\n`;
+for (const m of seed.members) {
+  const divs = m.divisions?.length ? m.divisions : m.division ? [m.division] : [];
+  out += `insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(divs[0] ?? null)},${arr(divs)});\n`;
+}
 
 out += `\n-- tasks\n`;
 for (const t of seed.tasks)
@@ -69,5 +77,7 @@ for (const t of seed.teams)
 
 out += `\ncommit;\n`;
 
+// Fail loudly here rather than in the user's SQL editor.
+assertSqlSane(out, "seed.sql");
 writeFileSync(join(__dirname, "../supabase/seed.sql"), out, "utf8");
 console.log("Wrote supabase/seed.sql", `(${out.length} chars)`);
