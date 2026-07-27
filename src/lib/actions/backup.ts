@@ -47,7 +47,11 @@ export async function deleteBackupAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
   if (!USE_SUPABASE) return NO_SUPABASE;
-  await deleteBackup(id);
+  try {
+    await deleteBackup(id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gagal menghapus backup." };
+  }
   revalidatePath("/settings");
   return { ok: true };
 }

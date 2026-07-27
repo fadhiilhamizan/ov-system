@@ -31,11 +31,15 @@ This has bitten the project twice. First in the app (`can.*` filtered by `profil
 
 **Error handling.** `src/app/(app)/error.tsx` is the segment boundary (client, uses `useT()`); `src/app/global-error.tsx` is the self-contained root fallback (no providers/tokens available there). Add EN copy for any new user-facing string in `src/lib/i18n/dict.ts`.
 
-**The cron backup route** (`src/app/api/cron/backup/route.ts`) is gated by `CRON_SECRET` (Bearer header or `?secret`) — keep it that way.
+**The cron backup route** (`src/app/api/cron/backup/route.ts`) is gated by `CRON_SECRET`, **Authorization header only** (a `?secret=` query parameter lands in access logs and leaks via `Referer`), compared with `timingSafeEqual`. It is also the **only** permitted caller of `src/lib/supabase/admin.ts` — a cron request carries no cookies, so the normal per-user client reads zero rows under RLS, which is why scheduled backups silently captured nothing for weeks. The service-role client bypasses RLS entirely: never import it from a Server Action, Server Component, or anything under `src/components`. `createBackup` refuses to store an empty snapshot for the same reason.
 
 **Testing.** Vitest. `npm test` runs `*.test.ts` under `src/`. Cover pure logic (permissions, schemas, formatters, scheduling/budget math). Run `npm test` + `npx tsc --noEmit` before finishing a change.
 
 **Seed.** `npm run db:seed` regenerates `supabase/seed.sql` from `src/lib/seed/seed.json`; `npm run db:demo` regenerates the demo project's seed + open-access scripts.
+
+**`supabase/setup.sql` is what you hand the user** — one idempotent, non-destructive file that builds the whole schema (tables, functions, triggers, RLS, column grants) in a single paste, replacing the 28-file `migrations/` run. `migrations/` is kept as history only; several load-bearing decisions and two expensive bugs are recorded nowhere else. A schema change means: write the numbered migration **and** fold it into `setup.sql` in the same commit, then `npm run db:test`. See `supabase/README.md`.
+
+**`npm run db:test`** runs `setup.sql` on a real Postgres (PGlite — WASM, no Docker) and asserts 47 behaviours from the attacker's seat: who may write what, the archive lock, and the self-promotion hole. It exists because **RLS is the only real authorization boundary** (the anon key is public, the session token is in the user's browser, so PostgREST can be called directly) and a policy mistake is invisible to `tsc`, `eslint` and Vitest — that is exactly how a total write outage for three roles shipped and survived for weeks. Run it with `db:lint` whenever you touch SQL.
 
 **SQL you hand the user must be linted.** `npm run db:lint` runs `scripts/sql-lint.mjs` over every file in `supabase/` — both generators also call `assertSqlSane()` before writing, so a broken file never reaches disk. It exists because two classes of bug shipped straight to the SQL editor: an interpolated value closing a `'…'` literal early (quotes still *balance*, so nothing else catches it), and a `--` comment containing `$$` inside a `do $$ … $$` block, which ends the block early because **dollar-quoting is lexical and comments do not protect it**. Keep prose out of dollar-quoted bodies, and dollar-quote (`$sql$…$sql$`, distinct tag) any `execute` string that contains quotes.
 

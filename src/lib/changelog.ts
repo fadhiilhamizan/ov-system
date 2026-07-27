@@ -7,6 +7,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.20.0",
+    date: "2026-07-28",
+    title: "Perbaikan besar izin menyimpan, arsip Ormawa Visit, backup, & keamanan",
+    changes: [
+      "PERBAIKAN PENTING: Koordinator, Staff, dan Intern sebelumnya bisa gagal menyimpan TANPA pesan apa pun — datanya tampil di layar lalu hilang saat halaman dimuat ulang. Penyebabnya aturan database masih mengira setiap akun terikat pada satu divisi dan satu Ormawa Visit, padahal akun di sistem ini tidak pernah begitu. Aturan itu sudah dihapus.",
+      "Izin menyimpan kini hanya ditentukan oleh PERAN, persis seperti tabel Matriks Akses di Pengaturan. Staff & Intern bisa membuat dan mengubah tugas divisi mana pun, tapi tetap tidak bisa menghapus.",
+      "Setiap kegagalan menyimpan kini SELALU memunculkan pesan merah. Sebelumnya 37 jenis penyimpanan (rundown, Hari-H, Super Link, Reach & Offer, divisi, FAQ, anggaran, dan lainnya) diam saja ketika gagal.",
+      "BARU — Arsip Ormawa Visit: admin bisa mengunci Ormawa Visit yang sudah selesai lewat menu titik-tiga di halaman Daftar Ormawa Visit. Setelah dikunci, tidak ada peran lain yang bisa mengubah apa pun di dalamnya. Admin tetap bisa memperbaiki isinya dan membuka kuncinya kapan saja.",
+      "Backup otomatis terjadwal ternyata TIDAK PERNAH berhasil sejak pengetatan keamanan — setiap kali jalan, isinya kosong. Sekarang sudah berfungsi, dan backup yang kosong ditolak agar tidak menimpa riwayat backup yang baik.",
+      "Pemulihan (restore) sebelumnya menghapus permanen semua tautan hasil tugas. Sekarang tautan tersebut ikut tercadangkan dan dipulihkan.",
+      "Akun yang baru mendaftar dan belum disetujui perannya kini benar-benar tidak bisa membaca Anggaran dan Super Link, sesuai Matriks Akses.",
+      "Penguatan keamanan: penambahan header proteksi standar (anti-clickjacking, anti-penyadapan konten), cookie aplikasi tidak lagi bisa dibaca skrip halaman, dan kunci rahasia backup tidak lagi boleh dikirim lewat alamat URL.",
+      "Halaman Anggaran tidak lagi memunculkan galat tersembunyi di setiap pembukaan halaman.",
+    ],
+  },
+  {
     version: "1.19.0",
     date: "2026-07-27",
     title: "Divisi & Anggota menyatu, warna kategori anggaran, & perbaikan kolom Qty",

@@ -1,5 +1,10 @@
 # Production readiness review — ov-system v1.19.0
 
+> **Status per 2026-07-28 (v1.20.0).** P0-1, P0-2, P1-1, P1-2, P1-5, P2-1, P2-2,
+> P2-3, P2-4 dan P2-7 sudah diperbaiki dan diverifikasi; ringkasannya di bagian
+> [Status perbaikan](#status-perbaikan) di akhir dokumen. Isi laporan di bawah
+> sengaja dibiarkan apa adanya sebagai catatan temuan awal.
+
 Tanggal: 2026-07-27 · Cakupan: seluruh `ov-system/` (frontend + backend + migrasi SQL)
 Metode: build/typecheck/test/lint, pembacaan kode, pengujian fitur langsung di browser
 (mode demo, database Supabase demo), dan probe read-only skema produksi.
@@ -164,6 +169,29 @@ Perbaikan: naikkan ke `next@16.2.12` (patch bump dalam 16.2.x).
   berjalan in-memory: data hilang setiap cold start, tanpa peringatan.
 
 ---
+
+## Status perbaikan
+
+Dikerjakan pada v1.20.0 (2026-07-28).
+
+| # | Temuan | Status | Bukti |
+|---|---|---|---|
+| P0-1 | Matriks akses ≠ RLS | **Selesai** | `setup.sql` + migrasi 0028; `npm run db:test` 47/47 |
+| P0-2 | 37 penulisan menelan error | **Selesai** | helper `must()` di `repo.ts`; diverifikasi di browser (toast merah muncul saat kolom hilang) |
+| P1-1 | Backup cron tidak pernah berhasil | **Selesai** | `lib/supabase/admin.ts` (service role) + penolakan snapshot kosong |
+| P1-2 | Restore menghapus tautan hasil tugas | **Selesai** | `task_links` masuk `DELETE_ORDER` paling depan |
+| P1-3 | Signup terbuka + roster ber-PII | **Sebagian** | Anggaran & Super Link kini tertutup untuk akun belum-berperan. Roster (nama, NRP) masih terbaca Tamu — **keputusan produk, menunggu Anda** |
+| P1-4 | 3 CVE dependensi | **Tidak bisa ditutup** | Advisory mencakup SELURUH Next 16 (`9.3.4-canary.0`–`16.3.0-preview.7`); `audit fix --force` menurunkan ke next@9. Sudah di 16.2.12. Paparan nyata rendah: `sharp` hanya dipakai `next/image` (nol pemakaian, kini `images.unoptimized`), `postcss` hanya saat build |
+| P1-5 | Tanpa security header | **Selesai** | CSP, HSTS, X-Frame-Options, dll. di `next.config.ts`; diverifikasi lewat respons HTTP |
+| P2-1 | Secret cron lewat query string | **Selesai** | header saja + `timingSafeEqual` |
+| P2-2 | `setRole` tak dijaga | **Selesai** | guard `demoActive()` |
+| P2-3 | Cookie tanpa httpOnly/secure | **Selesai** | `COOKIE_OPTS`; `ov_demo` sengaja tetap terbaca skrip |
+| P2-4 | `<button>` bersarang di /budget | **Selesai** | konsol bersih, 0 nested button |
+| P2-7 | `deleteTaskAction` tanpa validasi id | **Selesai** | `parse(idSchema, …)` + try/catch |
+| P2-5 | Action tanpa try/catch | **Selesai** | seluruh action kini membungkus repo |
+| P2-6 | Autosave tanpa indikator | **Belum** | error kini tampil; indikator "tersimpan" belum ada |
+| P2-8/9/10/11 | PIC fuzzy, dead code, scope task_links, rate limit | **Belum** | — |
+| P3-* | Tap target, refactor DataSource, payload RSC, dll. | **Belum** | — |
 
 ## Urutan pengerjaan yang disarankan
 

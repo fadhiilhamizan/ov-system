@@ -1,0 +1,238 @@
+// ============================================================
+// Runs supabase/setup.sql on a REAL Postgres (PGlite, Postgres compiled to
+// WASM — no Docker, no server) and asserts the security model it produces.
+//
+//   npm run db:test
+//
+// Why this exists: the anon key is public and the session token lives in the
+// user's browser, so RLS is the only real boundary — `can.*` in permissions.ts
+// is advisory. A mistake in a policy is therefore a product-wide hole, and it
+// is invisible to tsc, eslint and Vitest. It has bitten this project twice:
+//   * 0002's profiles_update_own let ANY session (including the credential-less
+//     anonymous "Tamu") set its own role to admin.
+//   * 0020/0026 gated writes on owns_scope(event_id, division), columns that are
+//     always null here — so every coordinator/staff/intern write silently failed
+//     in production for weeks.
+// Both are asserted below. `npm run db:lint` catches SQL that will not parse;
+// this catches SQL that parses and does the wrong thing.
+// ============================================================
+import { PGlite } from "@electric-sql/pglite";
+import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SETUP = join(__dirname, "../supabase/setup.sql");
+
+const U = {
+  admin: "11111111-1111-1111-1111-111111111111",
+  coord: "22222222-2222-2222-2222-222222222222",
+  staff: "33333333-3333-3333-3333-333333333333",
+  intern: "44444444-4444-4444-4444-444444444444",
+  viewer: "55555555-5555-5555-5555-555555555555",
+  anon: "66666666-6666-6666-6666-666666666666",
+};
+
+const db = await PGlite.create({ extensions: { pgcrypto } });
+
+// Only what Supabase itself provides: the auth schema, auth.users, and the two
+// JWT helpers (driven here by session GUCs so the test can play any identity).
+// Everything else has to come from setup.sql alone.
+await db.exec(`
+create role anon;
+create role authenticated;
+create schema auth;
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+create or replace function auth.uid() returns uuid
+language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
+create or replace function auth.jwt() returns jsonb
+language sql stable as $fn$
+  select jsonb_build_object('is_anonymous',
+    coalesce(nullif(current_setting('test.anon', true), ''), 'false')::boolean) $fn$;
+`);
+
+let pass = 0;
+let fail = 0;
+const ok = (label, good) => {
+  console.log(`  ${good ? "PASS" : "FAIL"}  ${label}`);
+  good ? pass++ : fail++;
+};
+
+const sql = readFileSync(SETUP, "utf8");
+try {
+  await db.exec(sql);
+  ok("setup.sql berjalan di database kosong", true);
+} catch (e) {
+  console.error(`  FAIL  setup.sql tidak bisa dijalankan:\n${e.message}`);
+  process.exit(1);
+}
+try {
+  await db.exec(sql);
+  ok("setup.sql aman dijalankan ulang (idempotent)", true);
+} catch (e) {
+  console.error(`  FAIL  setup.sql tidak idempotent:\n${e.message}`);
+  process.exit(1);
+}
+
+// Supabase grants these to anon/authenticated by default; setup.sql narrows
+// profiles and widens tasks on top, so re-apply its two column rules after.
+await db.exec(`
+grant usage on schema public, auth to anon, authenticated;
+grant select, insert, delete on all tables in schema public to anon, authenticated;
+grant update on all tables in schema public to anon, authenticated;
+revoke update on public.profiles from authenticated, anon;
+grant update (name, avatar_color) on public.profiles to authenticated;
+grant execute on all functions in schema public to anon, authenticated;
+grant execute on all functions in schema auth to anon, authenticated;
+`);
+
+await db.exec(`
+insert into auth.users (id) values
+  ('${U.admin}'), ('${U.coord}'), ('${U.staff}'), ('${U.intern}'), ('${U.viewer}'), ('${U.anon}');
+insert into events (id, code, title) values ('ov-open','OV1','Terbuka'), ('ov-lock','OV2','Terkunci');
+update profiles set role='admin'       where id='${U.admin}';
+update profiles set role='coordinator' where id='${U.coord}';
+update profiles set role='staff'       where id='${U.staff}';
+update profiles set role='intern'      where id='${U.intern}';
+insert into divisions (event_id, key, name, short, color) values
+  ('ov-open','EVENT','Event','EVE','#111'), ('ov-open','CONSUMPTION','Konsumsi','CON','#222');
+insert into tasks (id, event_id, division, title) values
+  ('aaaaaaaa-0000-0000-0000-000000000001','ov-open','EVENT','Tugas Event'),
+  ('aaaaaaaa-0000-0000-0000-000000000002','ov-open','CONSUMPTION','Tugas Konsumsi'),
+  ('aaaaaaaa-0000-0000-0000-000000000003','ov-lock','EVENT','Tugas Arsip');
+insert into budget_plans (id, name, event_id) values ('bbbbbbbb-0000-0000-0000-000000000001','RAB','ov-open');
+insert into links (id, name, url, event_id) values ('cccccccc-0000-0000-0000-000000000001','Doc','https://x.test','ov-open');
+insert into rundown (id, event_id, no, activity) values
+  ('dddddddd-0000-0000-0000-000000000001','ov-open',1,'Registrasi'),
+  ('dddddddd-0000-0000-0000-000000000002','ov-lock',1,'Arsip');
+insert into task_links (id, task_id, url) values
+  ('eeeeeeee-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','https://y.test');
+update events set locked = true where id = 'ov-lock';
+`);
+
+const profiles = await db.query(`select count(*)::int as n from profiles`);
+ok("trigger handle_new_user membuat profil tiap akun baru", profiles.rows[0].n === 6);
+
+async function as(uid, anon, statement) {
+  await db.exec(`set role authenticated;`);
+  await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}';`);
+  try {
+    const r = await db.query(statement);
+    return { rows: r.rows.length, affected: r.affectedRows ?? 0 };
+  } catch (e) {
+    return { error: e.message.split("\n")[0] };
+  } finally {
+    await db.exec(`reset role;`);
+  }
+}
+
+/**
+ * expect:
+ *   allow  — the write succeeded AND touched a row
+ *   deny   — rejected, or silently filtered to zero rows by a USING clause
+ *   rows   — the read returned data
+ *   norows — the read returned nothing
+ */
+async function check(label, uid, anon, statement, expect) {
+  const r = await as(uid, anon, statement);
+  let good;
+  let got;
+  if (r.error) { got = `error: ${r.error}`; good = expect === "deny"; }
+  else if (expect === "allow") { got = `${r.affected} baris`; good = r.affected > 0; }
+  else if (expect === "deny") { got = `${r.affected} baris tersentuh`; good = r.affected === 0; }
+  else if (expect === "rows") { got = `${r.rows} baris`; good = r.rows > 0; }
+  else { got = `${r.rows} baris`; good = r.rows === 0; }
+  console.log(`  ${good ? "PASS" : "FAIL"}  ${label}${good ? "" : `   -> ${got}`}`);
+  good ? pass++ : fail++;
+}
+
+const T_EVENT = "'aaaaaaaa-0000-0000-0000-000000000001'";
+const T_CONS = "'aaaaaaaa-0000-0000-0000-000000000002'";
+const T_LOCK = "'aaaaaaaa-0000-0000-0000-000000000003'";
+const PLAN = "'bbbbbbbb-0000-0000-0000-000000000001'";
+const LINK = "'cccccccc-0000-0000-0000-000000000001'";
+const RUN = "'dddddddd-0000-0000-0000-000000000001'";
+const TL = "'eeeeeeee-0000-0000-0000-000000000001'";
+
+console.log("\nTugas — hak tulis mengikuti PERAN saja, bukan divisi");
+await check("staff mengubah tugas divisi lain", U.staff, false, `update tasks set status='ongoing' where id=${T_CONS}`, "allow");
+await check("intern mengubah tugas divisi lain", U.intern, false, `update tasks set result='x' where id=${T_CONS}`, "allow");
+await check("staff membuat tugas", U.staff, false, `insert into tasks (event_id,division,title) values ('ov-open','CONSUMPTION','Baru')`, "allow");
+await check("staff mengubah kolom non-progres", U.staff, false, `update tasks set title='Judul' where id=${T_CONS}`, "allow");
+await check("staff DITOLAK menghapus tugas", U.staff, false, `delete from tasks where id=${T_CONS}`, "deny");
+await check("koordinator boleh menghapus tugas", U.coord, false, `delete from tasks where title='Baru'`, "allow");
+
+const numbered = await as(U.admin, false, `insert into tasks (event_id,division,title) values ('ov-open','EVENT','Auto') returning no`);
+ok("trigger assign_task_no memberi nomor otomatis", !numbered.error);
+
+console.log("\nKunci arsip");
+await check("staff DITOLAK mengubah tugas di arsip", U.staff, false, `update tasks set status='done' where id=${T_LOCK}`, "deny");
+await check("koordinator DITOLAK di arsip", U.coord, false, `update tasks set status='done' where id=${T_LOCK}`, "deny");
+await check("staff DITOLAK menambah tugas ke arsip", U.staff, false, `insert into tasks (event_id,division,title) values ('ov-lock','EVENT','Nyelip')`, "deny");
+await check("staff DITOLAK memindah tugas KE arsip", U.staff, false, `update tasks set event_id='ov-lock' where id=${T_CONS}`, "deny");
+await check("staff DITOLAK mengubah rundown arsip", U.staff, false, `update rundown set activity='X' where id='dddddddd-0000-0000-0000-000000000002'`, "deny");
+await check("admin TETAP boleh mengubah arsip", U.admin, false, `update tasks set status='done' where id=${T_LOCK}`, "allow");
+
+console.log("\nModul yang hanya boleh disentuh admin");
+await check("koordinator DITOLAK menulis anggaran", U.coord, false, `insert into budget_items (plan_id,name) values (${PLAN},'X')`, "deny");
+await check("staff DITOLAK menulis anggota", U.staff, false, `insert into members (event_id,name,type) values ('ov-open','X','intern')`, "deny");
+await check("staff DITOLAK menulis divisi", U.staff, false, `insert into divisions (event_id,key,name,short,color) values ('ov-open','ZZ','Z','ZZ','#333')`, "deny");
+await check("koordinator DITOLAK menulis Reach & Offer", U.coord, false, `insert into prospects (event_id,org_name) values ('ov-open','X')`, "deny");
+await check("admin boleh menulis anggaran", U.admin, false, `insert into budget_items (plan_id,name) values (${PLAN},'X')`, "allow");
+await check("admin boleh menulis anggota", U.admin, false, `insert into members (event_id,name,type) values ('ov-open','X','intern')`, "allow");
+
+console.log("\nRundown / Hari-H / Super Link");
+await check("staff mengubah rundown", U.staff, false, `update rundown set activity='Ubah' where id=${RUN}`, "allow");
+await check("intern menambah job Hari-H", U.intern, false, `insert into job_harih (event_id,no,job) values ('ov-open','1','J')`, "allow");
+await check("staff mengubah Super Link", U.staff, false, `update links set name='Ubah' where id=${LINK}`, "allow");
+await check("staff DITOLAK menghapus Super Link", U.staff, false, `delete from links where id=${LINK}`, "deny");
+await check("intern DITOLAK menghapus rundown", U.intern, false, `delete from rundown where id=${RUN}`, "deny");
+await check("koordinator boleh menghapus rundown", U.coord, false, `delete from rundown where id=${RUN}`, "allow");
+await check("staff mengubah tautan hasil tugas", U.staff, false, `update task_links set label='L' where id=${TL}`, "allow");
+await check("Super Link menolak URL yang bukan http(s)", U.admin, false, `insert into links (event_id,name,url) values ('ov-open','X','bukan-url')`, "deny");
+
+console.log("\nAkun terdaftar yang belum punya peran");
+await check("belum-berperan TIDAK bisa baca anggaran", U.viewer, false, `select * from budget_plans`, "norows");
+await check("belum-berperan TIDAK bisa baca Super Link", U.viewer, false, `select * from links`, "norows");
+await check("belum-berperan masih bisa baca tugas", U.viewer, false, `select * from tasks`, "rows");
+await check("belum-berperan DITOLAK membuat tugas", U.viewer, false, `insert into tasks (event_id,division,title) values ('ov-open','EVENT','X')`, "deny");
+await check("staff BISA baca Super Link", U.staff, false, `select * from links`, "rows");
+await check("staff BISA baca anggaran", U.staff, false, `select * from budget_plans`, "rows");
+
+console.log("\nTamu anonim (tanpa kredensial)");
+await check("tamu anonim TIDAK bisa baca anggaran", U.anon, true, `select * from budget_plans`, "norows");
+await check("tamu anonim masih bisa baca tugas", U.anon, true, `select * from tasks`, "rows");
+await check("tamu anonim DITOLAK membuat tugas", U.anon, true, `insert into tasks (event_id,division,title) values ('ov-open','EVENT','X')`, "deny");
+await check("tamu anonim DITOLAK menulis tautan hasil", U.anon, true, `insert into task_links (task_id,url) values (${T_EVENT},'https://z.test')`, "deny");
+
+console.log("\nCelah angkat-diri-jadi-admin");
+await check("staff DITOLAK mengangkat dirinya jadi admin", U.staff, false, `update profiles set role='admin' where id='${U.staff}'`, "deny");
+await check("tamu anonim DITOLAK mengangkat dirinya", U.anon, true, `update profiles set role='admin' where id='${U.anon}'`, "deny");
+await check("staff tetap boleh mengubah namanya sendiri", U.staff, false, `update profiles set name='Baru' where id='${U.staff}'`, "allow");
+
+console.log("\nKebersihan skema");
+const stale = await db.query(`select policyname from pg_policies where schemaname='public'
+  and (coalesce(qual,'')||coalesce(with_check,'')) ~ '(owns_scope|auth_event\\()'`);
+ok("tidak ada policy yang memakai scoping divisi/edisi lama", stale.rows.length === 0);
+
+const cols = await db.query(`select table_name, column_name from information_schema.columns where table_schema='public'`);
+const have = new Set(cols.rows.map((r) => `${r.table_name}.${r.column_name}`));
+const REQUIRED = [
+  "events.locked", "events.plan_start", "events.plan_end",
+  "divisions.event_id", "divisions.exclude_from_rundown",
+  "members.divisions", "members.event_id",
+  "tasks.event_id", "tasks.status", "prospects.is_primary", "prospects.mode",
+  "links.event_id", "task_links.link_id", "budget_items.category_color",
+  "rundown.division_jobs", "rundown.operator", "teams.coordinator",
+  "role_requests.requested_role", "backups.data", "profiles.role",
+];
+const missing = REQUIRED.filter((c) => !have.has(c));
+ok(`semua kolom yang dipakai aplikasi ada${missing.length ? ` — hilang: ${missing.join(", ")}` : ""}`, missing.length === 0);
+ok("kolom warisan tasks.source_id sudah dibuang", !have.has("tasks.source_id"));
+
+const noRls = await db.query(`select tablename from pg_tables where schemaname='public' and not rowsecurity`);
+ok(`RLS aktif di semua tabel${noRls.rows.length ? ` — kecuali: ${noRls.rows.map((r) => r.tablename).join(", ")}` : ""}`, noRls.rows.length === 0);
+
+console.log(`\n${pass} lulus, ${fail} gagal`);
+process.exit(fail ? 1 : 0);
