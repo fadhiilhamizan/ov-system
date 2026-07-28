@@ -20,6 +20,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Akun yang baru mendaftar dan belum disetujui perannya kini benar-benar tidak bisa membaca Anggaran dan Super Link, sesuai Matriks Akses.",
       "Penguatan keamanan: penambahan header proteksi standar (anti-clickjacking, anti-penyadapan konten), cookie aplikasi tidak lagi bisa dibaca skrip halaman, dan kunci rahasia backup tidak lagi boleh dikirim lewat alamat URL.",
       "Halaman Anggaran tidak lagi memunculkan galat tersembunyi di setiap pembukaan halaman.",
+      "BARU — Pencarian global: tekan Ctrl+K (atau ⌘K), atau ketik “/”, untuk mencari tugas, anggota, divisi, Reach & Offer, Super Link, anggaran, rundown, Hari-H, dan FAQ sekaligus. Gunakan panah atas/bawah lalu Enter untuk langsung membuka hasilnya. Hasil hanya menampilkan menu yang boleh kamu buka.",
+      "Backup otomatis dihapus sepenuhnya — backup kini murni manual lewat tombol di Pengaturan. Tidak ada lagi kunci rahasia yang perlu dikonfigurasi.",
+      "PERBAIKAN: mengubah Fokus Divisi ke satu divisi lalu kembali ke “Semua Divisi” membuat seluruh daftar tugas hilang sampai halaman dimuat ulang. Sekarang langsung kembali normal.",
+      "Timeline diperbaiki menyeluruh: garis tugas kini benar-benar sejajar dengan tanggal di atasnya, sumbu menampilkan tanggal harian (bukan hanya nama bulan), garis liar di sisi kiri hilang, timeline bisa digeser ke samping dengan kolom nama tugas yang tetap menempel, ada penanda “Hari ini”, garis bantu tanggal yang mengikuti kursor, dan info lengkap tugas saat kursor diarahkan ke batangnya.",
+      "Bulatan kecil penanda status tidak lagi gepeng saat judul tugasnya panjang.",
     ],
   },
   {

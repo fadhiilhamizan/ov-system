@@ -1,5 +1,4 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "./supabase/server";
 
 /**
@@ -40,6 +39,11 @@ const INSERT_ORDER = [...DELETE_ORDER].reverse();
 
 export type BackupData = Record<(typeof DELETE_ORDER)[number], Record<string, unknown>[]>;
 
+/**
+ * `auto` is retired: scheduled backups were removed in v1.20.0 and nothing
+ * creates one any more. The value stays in the union (and in the DB CHECK
+ * constraint) so snapshots taken before then still load and render.
+ */
 export interface BackupMeta {
   id: string;
   kind: "manual" | "auto" | "pre_restore";
@@ -54,11 +58,11 @@ function isMissingTable(error: { code?: string; message?: string }): boolean {
 /**
  * Snapshot every mutable app table as raw rows (1:1 with the DB schema).
  *
- * Pass the client explicitly: the scheduled backup has no user session and must
- * use the service-role client, while the admin-triggered backup in Settings
- * keeps using the RLS-scoped one.
+ * Always runs as the signed-in admin (RLS-scoped). Backups are manual only —
+ * there is no unattended path that would need a service-role client.
  */
-export async function captureSnapshot(client: SupabaseClient): Promise<BackupData> {
+export async function captureSnapshot(): Promise<BackupData> {
+  const client = await createClient();
   const snapshot = {} as BackupData;
   for (const table of DELETE_ORDER) {
     const { data, error } = await client.from(table).select("*");
@@ -75,17 +79,15 @@ export async function captureSnapshot(client: SupabaseClient): Promise<BackupDat
 }
 
 export async function createBackup(
-  kind: BackupMeta["kind"],
+  kind: Exclude<BackupMeta["kind"], "auto">,
   userId?: string,
-  client?: SupabaseClient,
 ): Promise<string> {
-  const db = client ?? ((await createClient()) as unknown as SupabaseClient);
-  const data = await captureSnapshot(db);
+  const db = await createClient();
+  const data = await captureSnapshot();
 
-  // A snapshot with nothing in it is the signature of an unauthenticated read
-  // (RLS returns zero rows rather than an error). Storing it would quietly
-  // replace a good backup chain with empty ones — and, worse, offer them for
-  // restore. That is exactly how the scheduled backup failed unnoticed.
+  // A snapshot with nothing in it is the signature of a read that RLS filtered
+  // away (it returns zero rows rather than an error). Storing it would put a
+  // useless entry in the list and, worse, offer it for restore.
   const totalRows = Object.values(data).reduce((n, rows) => n + rows.length, 0);
   if (totalRows === 0) {
     throw new Error(
@@ -99,18 +101,6 @@ export async function createBackup(
     .select("id")
     .single();
   if (error) throw new Error(`Gagal menyimpan backup: ${error.message}`);
-
-  // Retention: keep only the 10 most recent automatic backups.
-  if (kind === "auto") {
-    const { data: autos } = await db
-      .from("backups")
-      .select("id")
-      .eq("kind", "auto")
-      .order("created_at", { ascending: false });
-    const stale = (autos ?? []).slice(10).map((b: { id: string }) => b.id);
-    if (stale.length) await db.from("backups").delete().in("id", stale);
-  }
-
   return row.id as string;
 }
 

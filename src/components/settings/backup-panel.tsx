@@ -17,9 +17,11 @@ import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
 import type { BackupMeta } from "@/lib/backup";
 
+// "Otomatis" is legacy — scheduled backups were removed in v1.20.0. Kept so
+// snapshots taken before then still render with the right label.
 const KIND_LABEL: Record<BackupMeta["kind"], { label: string; variant: "primary" | "info" | "warning" }> = {
   manual: { label: "Manual", variant: "primary" },
-  auto: { label: "Otomatis", variant: "info" },
+  auto: { label: "Otomatis (lama)", variant: "info" },
   pre_restore: { label: "Pra-Pemulihan", variant: "warning" },
 };
 
@@ -51,7 +53,7 @@ export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {t("Backup otomatis berjalan tiap 3 hari (perlu")} <code className="rounded bg-muted px-1 py-0.5">CRON_SECRET</code> {t("dikonfigurasi di Vercel).")}
+          {t("Backup dibuat manual — klik tombol di kanan sebelum melakukan perubahan besar. Setiap backup bisa diunduh sebagai JSON atau dipulihkan kembali.")}
         </p>
         <Button size="sm" onClick={backupNow} disabled={creating}>
           {creating ? <Loader2 className="size-4 animate-spin" /> : <DatabaseBackup className="size-4" />}

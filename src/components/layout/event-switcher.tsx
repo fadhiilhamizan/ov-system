@@ -29,20 +29,22 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          // min-w-0 lets the label truncate instead of forcing the whole topbar
+          // wider than the viewport on tablet widths.
+          "flex min-w-0 items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
           pending && "opacity-60",
         )}
       >
-        <span className="flex size-7 items-center justify-center rounded-md bg-accent text-accent-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
           <CalendarRange className="size-4" />
         </span>
-        <div className="hidden min-w-0 leading-tight md:block">
-          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="hidden min-w-0 max-w-[180px] leading-tight md:block">
+          <div className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("Ormawa Visit")}
           </div>
           <div className="truncate text-xs font-semibold">{active?.title}</div>
         </div>
-        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80">
         <DropdownMenuLabel>{t("Pilih Ormawa Visit")}</DropdownMenuLabel>

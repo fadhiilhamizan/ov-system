@@ -42,9 +42,12 @@ export const GUIDE: GuideSection[] = [
       { id: "Gunakan Akses Cepat di bagian atas untuk melompat ke menu yang sering dipakai; geser ke samping bila menu tidak muat.", en: "Use Quick Access at the top to jump to frequently used menus; scroll sideways if they don't all fit." },
       { id: "Arahkan kursor ke tiap bagian diagram donat untuk melihat jumlah dan persentase tugas per status.", en: "Hover each donut segment to see the task count and percentage per status." },
       { id: "Cek kartu 'Deadline Terdekat' untuk tugas yang paling mendesak; klik untuk membuka Work Breakdown.", en: "Check the 'Upcoming Deadlines' card for the most urgent tasks; click through to the Work Breakdown." },
+      { id: "Butuh sesuatu dengan cepat? Tekan Ctrl+K (⌘K di Mac) atau ketik “/” di mana pun untuk membuka pencarian global.", en: "Need something fast? Press Ctrl+K (⌘K on Mac) or type “/” anywhere to open global search." },
     ],
     tips: [
       { id: "Semua angka di Dashboard mengikuti Ormawa Visit yang sedang aktif — kalau angkanya terasa aneh, cek dulu edisi yang dipilih.", en: "Every number here follows the active Ormawa Visit — if the figures look odd, check which edition is selected." },
+      { id: "Pencarian global menjangkau tugas, anggota, divisi, Reach & Offer, Super Link, anggaran, rundown, Hari-H, dan FAQ sekaligus. Pakai panah atas/bawah lalu Enter untuk langsung membukanya.", en: "Global search covers tasks, members, divisions, Reach & Offer, Super Link, budget, rundown, event-day jobs, and FAQ at once. Use the up/down arrows then Enter to jump straight there." },
+      { id: "Hasil pencarian hanya menampilkan menu yang memang boleh kamu buka, dan hanya dari Ormawa Visit yang sedang aktif.", en: "Search only returns modules you are allowed to open, and only from the active Ormawa Visit." },
     ],
   },
   {
@@ -67,6 +70,7 @@ export const GUIDE: GuideSection[] = [
     tips: [
       { id: "Tautan hasil tidak akan terduplikat di Super Link walau tugas disimpan berkali-kali; mengubah atau menghapus tautan di tugas juga otomatis memperbarui Super Link.", en: "Result links never duplicate in Super Link no matter how many times you save; editing or removing a link on the task updates Super Link automatically." },
       { id: "Tugas yang lewat tenggat dan belum selesai otomatis berstatus 'Overtime' — tanpa perlu diubah manual.", en: "A task past its deadline and not yet done automatically shows as 'Overtime' — no manual change needed." },
+      { id: "Tampilan Timeline: geser ke samping untuk melihat tanggal lain (kolom nama tugas tetap menempel di kiri), arahkan kursor ke batang tugas untuk melihat rentang tanggal, durasi, divisi, dan PIC-nya. Garis bantu vertikal mengikuti kursor untuk menunjuk tanggal, dan garis berwarna menandai hari ini.", en: "In Timeline view: scroll sideways to reach other dates (the task-name column stays pinned), and hover a bar to see its date range, duration, division, and PIC. A vertical guide follows your cursor to point at the date, and a coloured line marks today." },
       { id: "Nomor tugas terisi otomatis per divisi — tidak perlu diketik manual.", en: "Task numbers are assigned automatically per division — no need to type them." },
       { id: "Tampilan bisa diganti antara Tabel, Kanban, dan Timeline.", en: "You can switch between Table, Kanban, and Timeline views." },
     ],

@@ -757,4 +757,21 @@ export const EN: Record<string, string> = {
     "This Ormawa Visit is archived. Ask an admin to unlock it first.",
   "Hanya admin yang bisa mengunci atau membuka arsip.":
     "Only an admin can lock or unlock the archive.",
+  // Global search (v1.20.0)
+  "Cari": "Search",
+  "Cari apa saja…": "Search anything…",
+  "Pencarian global": "Global search",
+  "Cari tugas, anggota, divisi, anggaran, tautan…":
+    "Search tasks, members, divisions, budget, links…",
+  "Ketik minimal 2 huruf untuk mencari.": "Type at least 2 characters to search.",
+  "Tidak ada hasil untuk": "No results for",
+  "pilih": "select",
+  "buka": "open",
+  "Hasil mengikuti Ormawa Visit yang aktif": "Results follow the active Ormawa Visit",
+  // Timeline (v1.20.0) — "Hari ini" is already defined above.
+  "hari": "days",
+  // Backup (v1.20.0)
+  "Backup dibuat manual — klik tombol di kanan sebelum melakukan perubahan besar. Setiap backup bisa diunduh sebagai JSON atau dipulihkan kembali.":
+    "Backups are manual — use the button on the right before any big change. Each backup can be downloaded as JSON or restored.",
+  "Otomatis (lama)": "Automatic (legacy)",
 };

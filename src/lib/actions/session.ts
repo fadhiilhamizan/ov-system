@@ -50,10 +50,15 @@ export async function setActiveEvent(eventId: string) {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Write "all" rather than deleting the cookie. A deleted cookie is still
+ * present in the request store for the rest of that render, with `value: ""` —
+ * which used to reach the Work Breakdown as a division key matching no task.
+ * See getActiveDivision in lib/session.ts.
+ */
 export async function setActiveDivision(division: string) {
   const store = await cookies();
-  if (division === "all") store.delete(DIVISION_COOKIE);
-  else store.set(DIVISION_COOKIE, division, COOKIE_OPTS);
+  store.set(DIVISION_COOKIE, division || "all", COOKIE_OPTS);
   revalidatePath("/", "layout");
 }
 

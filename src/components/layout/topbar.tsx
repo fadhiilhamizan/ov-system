@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { navItemForPath } from "./nav-config";
+import { GlobalSearch } from "./global-search";
 import { EventSwitcher } from "./event-switcher";
 import { RoleSwitcher } from "./role-switcher";
 import { UserMenu } from "./user-menu";
@@ -49,7 +50,11 @@ export function Topbar({
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* min-w-0 so this cluster can shrink; without it the buttons' combined
+          min-content width pushes the whole page into horizontal overflow on
+          tablet-sized screens. */}
+      <div className="flex min-w-0 items-center gap-2">
+        <GlobalSearch />
         <EventSwitcher events={events} activeId={activeEventId} />
         <LangToggle />
         <ThemeToggle />

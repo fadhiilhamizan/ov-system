@@ -13,12 +13,21 @@ export function StatusBadge({ status, className }: { status: TaskStatus; classNa
         className,
       )}
     >
-      <span className={cn("size-1.5 rounded-full", m.dot)} />
+      <span className={cn("size-1.5 shrink-0 rounded-full", m.dot)} />
       {m.label}
     </span>
   );
 }
 
+/**
+ * `shrink-0` + `aspect-square` are load-bearing: as a flex child next to a long
+ * task title the dot was being squashed horizontally, so it rendered as a tiny
+ * oval instead of a circle (visible in the timeline's name column).
+ */
 export function StatusDot({ status, className }: { status: TaskStatus; className?: string }) {
-  return <span className={cn("size-2 rounded-full", STATUS_META[status].dot, className)} />;
+  return (
+    <span
+      className={cn("block size-2 aspect-square shrink-0 rounded-full", STATUS_META[status].dot, className)}
+    />
+  );
 }
