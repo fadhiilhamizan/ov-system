@@ -47,6 +47,8 @@ export const GUIDE: GuideSection[] = [
     tips: [
       { id: "Semua angka di Dashboard mengikuti Ormawa Visit yang sedang aktif — kalau angkanya terasa aneh, cek dulu edisi yang dipilih.", en: "Every number here follows the active Ormawa Visit — if the figures look odd, check which edition is selected." },
       { id: "Pencarian global menjangkau tugas, anggota, divisi, Reach & Offer, Super Link, anggaran, rundown, Hari-H, dan FAQ sekaligus. Pakai panah atas/bawah lalu Enter untuk langsung membukanya.", en: "Global search covers tasks, members, divisions, Reach & Offer, Super Link, budget, rundown, event-day jobs, and FAQ at once. Use the up/down arrows then Enter to jump straight there." },
+      { id: "Begitu dibuka, pencarian menampilkan 'Pencarian terakhir' — data yang barusan kamu buka, supaya cepat kembali ke sana. Riwayat ini hanya sementara: hilang saat halaman dimuat ulang dan tidak pernah dikirim ke server.", en: "On opening, search shows 'Recent searches' — what you just opened, so you can get back to it fast. The history is temporary: it clears on reload and is never sent to the server." },
+      { id: "Tutup pencarian dengan tombol X di pojok kanan kotak pencarian, tombol Esc, atau klik area gelap di luar kotaknya.", en: "Close search with the X button in the corner of the box, the Esc key, or by clicking the dimmed area outside it." },
       { id: "Hasil pencarian hanya menampilkan menu yang memang boleh kamu buka, dan hanya dari Ormawa Visit yang sedang aktif.", en: "Search only returns modules you are allowed to open, and only from the active Ormawa Visit." },
     ],
   },
@@ -239,6 +241,7 @@ export const GUIDE: GuideSection[] = [
     tips: [
       { id: "Hampir semua menu mengikuti edisi aktif — kalau data terasa hilang, cek dulu edisi yang sedang dipilih.", en: "Almost every menu follows the active edition — if data seems missing, check which edition is selected." },
       { id: "Arsip adalah pengaman untuk edisi yang sudah lewat: setelah dikunci, Koordinator/Staff/Intern tidak bisa lagi mengubah tugas, rundown, Hari-H, atau tautan milik edisi itu — jadi data tahun lalu tidak bisa terinjak tanpa sengaja.", en: "The archive protects finished editions: once locked, Coordinators/Staff/Interns can no longer change that edition's tasks, rundown, event-day jobs, or links — so last year's data cannot be overwritten by accident." },
+      { id: "Saat sebuah Ormawa Visit yang diarsipkan sedang dibuka, muncul spanduk abu-abu di atas layar sebagai pengingat bahwa isinya hanya bisa dilihat. Warnanya sengaja dibedakan dari spanduk kuning Mode Demo.", en: "While an archived Ormawa Visit is the active one, a grey strip appears at the top as a reminder that it is read-only. The colour is deliberately different from the amber Demo Mode strip." },
       { id: "Admin tetap bisa mengubah isi edisi yang diarsipkan, supaya kesalahan lama masih bisa diperbaiki tanpa harus membuka kuncinya untuk semua orang.", en: "Admins can still edit an archived edition, so an old mistake can be corrected without reopening it for everyone." },
     ],
     access: { id: "Hanya Admin yang bisa membuat/mengubah edisi, serta mengunci dan membuka arsip.", en: "Only Admins can create/edit editions, and lock or unlock the archive." },

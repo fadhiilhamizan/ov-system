@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, CornerDownLeft, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Loader2, CornerDownLeft, ArrowUp, ArrowDown, X, Clock, Trash2 } from "lucide-react";
 import { searchAction, type SearchHit } from "@/lib/actions/search";
 import { ALL_NAV_ITEMS } from "./nav-config";
 import { useT } from "@/lib/i18n/provider";
@@ -15,6 +16,23 @@ const GROUP_ORDER = [
   "tasks", "members", "divisions", "prospects", "links",
   "budget", "rundown", "jobs", "events", "faq",
 ];
+
+const MAX_RECENT = 6;
+
+/**
+ * Recently opened results, held in module scope.
+ *
+ * Deliberately NOT persisted: it survives closing and reopening the palette and
+ * navigating between pages (the module stays loaded), and disappears on reload.
+ * Search history is a trail of what someone was looking at, so keeping it out of
+ * localStorage and off the server is the privacy-preserving default — and it
+ * means nothing new has to be disclosed in the Privacy Policy.
+ */
+let recentHits: SearchHit[] = [];
+
+function rememberRecent(hit: SearchHit) {
+  recentHits = [hit, ...recentHits.filter((h) => h.id !== hit.id)].slice(0, MAX_RECENT);
+}
 
 function groupLabel(key: string): string {
   return NAV_BY_KEY.get(key)?.label ?? key;
@@ -37,6 +55,9 @@ export function GlobalSearch() {
   const [hits, setHits] = useResetOn(open, () => [] as SearchHit[]);
   const [active, setActive] = useResetOn(open, () => 0);
   const [pending, setPending] = useResetOn(open, () => false);
+  // Snapshot the module-level list on open so the visible order stays stable
+  // while the palette is on screen.
+  const [recent, setRecent] = useResetOn(open, () => recentHits);
   // Guards against an older, slower request overwriting a newer one's results.
   const seq = React.useRef(0);
 
@@ -84,6 +105,8 @@ export function GlobalSearch() {
     // listing them satisfies exhaustive-deps without re-running the effect.
   }, [q, open, setHits, setPending, setActive]);
 
+  const searching = q.trim().length >= 2;
+
   const grouped = React.useMemo(() => {
     const by = new Map<string, SearchHit[]>();
     for (const h of hits) {
@@ -94,13 +117,25 @@ export function GlobalSearch() {
     return GROUP_ORDER.filter((g) => by.has(g)).map((g) => ({ group: g, items: by.get(g)! }));
   }, [hits]);
 
-  /** Flat order, so arrow keys move across group boundaries naturally. */
-  const flat = React.useMemo(() => grouped.flatMap((g) => g.items), [grouped]);
+  /**
+   * Flat order for the arrow keys. When there is no query yet the list IS the
+   * recent history, so Enter opens the last thing you looked at.
+   */
+  const flat = React.useMemo(
+    () => (searching ? grouped.flatMap((g) => g.items) : recent),
+    [searching, grouped, recent],
+  );
 
   function go(hit: SearchHit | undefined) {
     if (!hit) return;
+    rememberRecent(hit);
     setOpen(false);
     router.push(hit.href);
+  }
+
+  function clearRecent() {
+    recentHits = [];
+    setRecent([]);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -119,6 +154,40 @@ export function GlobalSearch() {
     }
   }
 
+  /** One result row — shared by the search results and the recent list. */
+  function Row({ hit, index }: { hit: SearchHit; index: number }) {
+    const Icon = NAV_BY_KEY.get(hit.group)?.icon ?? Search;
+    return (
+      <button
+        onMouseEnter={() => setActive(index)}
+        onClick={() => go(hit)}
+        className={cn(
+          "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition",
+          index === active ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
+        )}
+      >
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{hit.title}</span>
+          {hit.subtitle && (
+            <span className="block truncate text-[11px] text-muted-foreground">{hit.subtitle}</span>
+          )}
+        </span>
+        {index === active && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
+      </button>
+    );
+  }
+
+  // The palette is portalled to <body>. It has to be: the topbar carries
+  // `backdrop-blur`, and a backdrop-filter makes that element the containing
+  // block for `position: fixed` descendants — so `fixed inset-0` rendered in
+  // place covered only the header strip, not the screen.
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
   return (
     <>
       {/* Trigger — a search-box lookalike on wide screens, an icon on mobile. */}
@@ -134,9 +203,10 @@ export function GlobalSearch() {
         </kbd>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
+        // Centred both ways, with the page behind blurred out.
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-[10vh] backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-md"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}
@@ -163,58 +233,59 @@ export function GlobalSearch() {
                 placeholder={t("Cari tugas, anggota, divisi, anggaran, tautan…")}
                 className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
-              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
                 Esc
               </kbd>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={t("Tutup pencarian")}
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <X className="size-4" />
+              </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-              {q.trim().length < 2 ? (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                  {t("Ketik minimal 2 huruf untuk mencari.")}
-                </p>
+              {!searching ? (
+                recent.length ? (
+                  <div className="mb-1">
+                    <div className="flex items-center justify-between px-2.5 py-1">
+                      <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        <Clock className="size-3" /> {t("Pencarian terakhir")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={clearRecent}
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                      >
+                        <Trash2 className="size-3" /> {t("Bersihkan")}
+                      </button>
+                    </div>
+                    {recent.map((hit, i) => (
+                      <Row key={hit.id} hit={hit} index={i} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                    {t("Ketik minimal 2 huruf untuk mencari.")}
+                  </p>
+                )
               ) : !flat.length && !pending ? (
                 <p className="px-3 py-6 text-center text-xs text-muted-foreground">
                   {t("Tidak ada hasil untuk")} “{q}”.
                 </p>
               ) : (
-                grouped.map(({ group, items }) => {
-                  const Icon = NAV_BY_KEY.get(group)?.icon ?? Search;
-                  return (
-                    <div key={group} className="mb-1">
-                      <p className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t(groupLabel(group))}
-                      </p>
-                      {items.map((hit) => {
-                        const idx = flat.indexOf(hit);
-                        return (
-                          <button
-                            key={hit.id}
-                            onMouseEnter={() => setActive(idx)}
-                            onClick={() => go(hit)}
-                            className={cn(
-                              "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition",
-                              idx === active ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
-                            )}
-                          >
-                            <Icon className="size-4 shrink-0 text-muted-foreground" />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-medium">{hit.title}</span>
-                              {hit.subtitle && (
-                                <span className="block truncate text-[11px] text-muted-foreground">
-                                  {hit.subtitle}
-                                </span>
-                              )}
-                            </span>
-                            {idx === active && (
-                              <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })
+                grouped.map(({ group, items }) => (
+                  <div key={group} className="mb-1">
+                    <p className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t(groupLabel(group))}
+                    </p>
+                    {items.map((hit) => (
+                      <Row key={hit.id} hit={hit} index={flat.indexOf(hit)} />
+                    ))}
+                  </div>
+                ))
               )}
             </div>
 
@@ -226,10 +297,11 @@ export function GlobalSearch() {
               <span className="inline-flex items-center gap-1">
                 <CornerDownLeft className="size-3" /> {t("buka")}
               </span>
-              <span className="ml-auto">{t("Hasil mengikuti Ormawa Visit yang aktif")}</span>
+              <span className="ml-auto hidden sm:inline">{t("Hasil mengikuti Ormawa Visit yang aktif")}</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

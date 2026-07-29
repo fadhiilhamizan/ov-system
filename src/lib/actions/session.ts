@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE } from "@/lib/auth";
+import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE, USE_SUPABASE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
 import { LANG_COOKIE } from "@/lib/i18n/config";
 import { DEMO_COOKIE, demoActive, demoConfigured } from "@/lib/demo";
@@ -29,16 +29,24 @@ const COOKIE_OPTS = {
 const DEMO_OPTS = { ...COOKIE_OPTS, httpOnly: false };
 
 /**
- * Demo-only identity switch (the RoleSwitcher in the demo sandbox).
+ * Identity switch for the RoleSwitcher. Demo identities only — never a path to
+ * a real role.
  *
- * The `demoActive` guard is load-bearing. `getCurrentUser()` happens to ignore
- * AUTH_COOKIE outside demo mode, so this was inert in production — but by
- * accident of control flow, not by a check. One reordering in auth.ts and it
+ * The guard is load-bearing: `getCurrentUser()` happens to ignore AUTH_COOKIE
+ * when a production Supabase session is in play, so this was inert there — but
+ * by accident of control flow, not by a check. One reordering in auth.ts and it
  * would have become privilege escalation.
+ *
+ * It must mirror exactly the two cases where `getCurrentUser()` returns a
+ * DEMO_USERS identity: the demo sandbox (`ov_demo` cookie + demo project
+ * configured), and local development with no Supabase configured at all.
+ * An earlier cut checked only the first, which silently broke the switcher in
+ * local mode — the menu rendered, the click did nothing.
  */
 export async function setRole(userId: string) {
   const store = await cookies();
-  if (!demoActive(store.get(DEMO_COOKIE)?.value)) return;
+  const demoIdentities = demoActive(store.get(DEMO_COOKIE)?.value) || !USE_SUPABASE;
+  if (!demoIdentities) return;
   if (!DEMO_USERS.some((u) => u.id === userId)) return;
   store.set(AUTH_COOKIE, userId, COOKIE_OPTS);
   revalidatePath("/", "layout");

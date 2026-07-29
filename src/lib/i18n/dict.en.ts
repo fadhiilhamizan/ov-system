@@ -774,4 +774,12 @@ export const EN: Record<string, string> = {
   "Backup dibuat manual — klik tombol di kanan sebelum melakukan perubahan besar. Setiap backup bisa diunduh sebagai JSON atau dipulihkan kembali.":
     "Backups are manual — use the button on the right before any big change. Each backup can be downloaded as JSON or restored.",
   "Otomatis (lama)": "Automatic (legacy)",
+  // Search palette + archive banner (v1.21.0)
+  "Tutup pencarian": "Close search",
+  "Pencarian terakhir": "Recent searches",
+  "Bersihkan": "Clear",
+  "Ormawa Visit ini diarsipkan — hanya kamu (admin) yang masih bisa mengubah isinya. Buka kunci dari menu Daftar Ormawa Visit.":
+    "This Ormawa Visit is archived — only you (admin) can still change its contents. Unlock it from the Ormawa Visit list.",
+  "Ormawa Visit ini diarsipkan — isinya hanya bisa dilihat. Minta admin membuka kuncinya untuk mengubah data.":
+    "This Ormawa Visit is archived — its contents are read-only. Ask an admin to unlock it to make changes.",
 };

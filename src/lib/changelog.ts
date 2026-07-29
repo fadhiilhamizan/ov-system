@@ -7,6 +7,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.21.0",
+    date: "2026-07-28",
+    title: "Pencarian di tengah layar, riwayat pencarian, penanda arsip & perbaikan timeline",
+    changes: [
+      "Pop-up pencarian kini muncul tepat di tengah layar dengan latar belakang yang diburamkan, dan bisa ditutup lewat tombol X selain tombol Esc.",
+      "Pencarian menyimpan riwayat: begitu dibuka, daftar 'Pencarian terakhir' langsung tampil sehingga kamu bisa kembali ke data yang barusan dibuka. Riwayat ini hanya tersimpan sementara di browser — hilang saat halaman dimuat ulang, dan tidak pernah dikirim ke server. Ada tombol 'Bersihkan' untuk menghapusnya kapan saja.",
+      "Ormawa Visit yang sudah diarsipkan kini ditandai spanduk abu-abu di atas layar (warnanya sengaja dibedakan dari spanduk kuning Mode Demo), lengkap dengan penjelasan berbeda untuk admin dan peran lain.",
+      "Timeline: garis bantu vertikal kini melintas di BELAKANG kolom nama tugas, bukan menimpanya.",
+      "Timeline: kotak tanggal yang mengikuti kursor kini tetap terlihat di bagian atas layar walau kamu menggulir jauh ke bawah — berguna saat tugasnya banyak.",
+      "PERBAIKAN: pemilih peran di Mode Demo lokal sempat tidak berfungsi (menunya muncul, tapi diklik tidak mengubah apa pun).",
+    ],
+  },
+  {
     version: "1.20.0",
     date: "2026-07-28",
     title: "Perbaikan besar izin menyimpan, arsip Ormawa Visit, backup, & keamanan",

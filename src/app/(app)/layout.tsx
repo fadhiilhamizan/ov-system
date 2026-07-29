@@ -42,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       activeEventId={activeEvent.id}
       demoMode={!USE_SUPABASE}
       sandboxMode={sandboxMode}
+      activeEventLocked={!!activeEvent.locked}
       defaultCollapsed={sidebarCollapsed}
       roleOptions={roleOptions}
       pendingRoleRequest={pendingRoleRequest}

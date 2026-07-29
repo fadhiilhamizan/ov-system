@@ -19,6 +19,8 @@ const LABEL_W = 240;
 const PX_PER_DAY = 26;
 /** Breathing room either side of the first/last task. */
 const PAD_DAYS = 2;
+/** Height of the app topbar (`h-16`), so the floating date banner clears it. */
+const TOPBAR_H = 64;
 
 /** Midnight local time — timeline maths must be day-aligned, not time-of-day. */
 function startOfDay(ms: number): number {
@@ -80,8 +82,17 @@ export function TaskTimeline({
   );
 
   // --- hover state: a vertical guide line that follows the cursor ---
+  // Two coordinates are kept for one cursor:
+  //   x       — relative to the track's content box, positions the LINE and
+  //             stays correct while the timeline is scrolled sideways.
+  //   clientX — viewport coordinate, positions the floating date banner.
+  // The banner has to be `position: fixed`, because `sticky` cannot escape the
+  // `overflow-x-auto` wrapper (an element with overflow-x:auto is a scrollport
+  // on BOTH axes, so a sticky child sticks to *it*, not to the page — and it
+  // never scrolls vertically, so the banner would simply scroll away).
   const trackRef = React.useRef<HTMLDivElement>(null);
   const [hoverX, setHoverX] = React.useState<number | null>(null);
+  const [hoverClientX, setHoverClientX] = React.useState<number | null>(null);
 
   const bounds = React.useMemo(() => {
     if (!dated.length) return null;
@@ -163,6 +174,12 @@ export function TaskTimeline({
     if (!el) return;
     // getBoundingClientRect already accounts for horizontal scrolling.
     setHoverX(e.clientX - el.getBoundingClientRect().left);
+    setHoverClientX(e.clientX);
+  }
+
+  function onLeave() {
+    setHoverX(null);
+    setHoverClientX(null);
   }
 
   if (!dated.length || !bounds) {
@@ -177,6 +194,21 @@ export function TaskTimeline({
 
   return (
     <div className="space-y-4">
+      {/* Floating date readout for the cursor guide.
+          `fixed`, and rendered outside the scroll container, for two reasons:
+          it stays visible however far down the task list you have scrolled, and
+          it escapes the `overflow-x-auto` wrapper that would otherwise clip and
+          un-stick it. Parked just under the app topbar (h-16) at a lower
+          z-index, so it passes behind the topbar rather than over it. */}
+      {hoverClientX != null && hoverDate != null && (
+        <div
+          className="pointer-events-none fixed z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-semibold text-background shadow-lg"
+          style={{ left: hoverClientX, top: TOPBAR_H + 8 }}
+        >
+          {formatDate(localISODate(hoverDate), { long: true })}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         {/* One scroll container holds BOTH the axis and the rows, so a month
             label can never drift out of line with the bars underneath it —
@@ -237,19 +269,17 @@ export function TaskTimeline({
               ref={trackRef}
               className="relative"
               onMouseMove={onMove}
-              onMouseLeave={() => setHoverX(null)}
+              onMouseLeave={onLeave}
             >
-              {/* Cursor date guide. Pinned to the track, offset past the label
-                  column so it only crosses the chart area. */}
+              {/* Cursor date guide.
+                  z-0 keeps it BEHIND the sticky task-name column (z-20), so the
+                  line slides under the names instead of striking through them.
+                  The date label is NOT here — see the fixed banner below. */}
               {hoverX != null && hoverDate != null && (
                 <div
-                  className="pointer-events-none absolute inset-y-0 z-30 w-px bg-foreground/40"
+                  className="pointer-events-none absolute inset-y-0 z-0 w-px bg-foreground/40"
                   style={{ left: hoverX }}
-                >
-                  <span className="absolute -top-0 left-1 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background shadow">
-                    {hoverDate ? formatDate(localISODate(hoverDate), { long: true }) : ""}
-                  </span>
-                </div>
+                />
               )}
 
               {dated.map(({ task, start, end }) => {

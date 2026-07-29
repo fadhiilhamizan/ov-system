@@ -6,6 +6,7 @@ import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
+import { ArchiveBanner } from "./archive-banner";
 import { RoleRequestBanner } from "@/components/roles/role-request-banner";
 import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ export function AppShell({
   activeEventId,
   demoMode,
   sandboxMode,
+  activeEventLocked = false,
   defaultCollapsed = false,
   roleOptions = [],
   pendingRoleRequest = null,
@@ -30,6 +32,8 @@ export function AppShell({
   activeEventId: string;
   demoMode: boolean;
   sandboxMode: boolean;
+  /** The active Ormawa Visit is archived — read-only for everyone but admin. */
+  activeEventLocked?: boolean;
   defaultCollapsed?: boolean;
   /** Roles this account may request (empty = the flow doesn't apply to them). */
   roleOptions?: RequestableRole[];
@@ -102,6 +106,7 @@ export function AppShell({
           overlays the content instead of shoving it sideways. */}
       <div className={cn("transition-[padding] duration-200 ease-out", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
         {sandboxMode && <DemoBanner />}
+        {activeEventLocked && <ArchiveBanner isAdmin={user.role === "admin"} />}
         {showRoleBanner && roleOptions.length > 0 && (
           <RoleRequestBanner options={roleOptions} pending={pendingRoleRequest} />
         )}
