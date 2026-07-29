@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical } from "lucide-react";
+import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink } from "lucide-react";
+import { ARCHIVE_SHEETS } from "@/lib/archives";
 import { USE_SUPABASE } from "@/lib/auth";
 import { requireModule } from "@/lib/guard";
 import { can } from "@/lib/permissions";
@@ -101,6 +102,35 @@ export default async function SettingsPage() {
             <Badge variant={USE_SUPABASE ? "success" : "warning"}>
               {USE_SUPABASE ? "Supabase" : t("Demo Lokal")}
             </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Archive of the original spreadsheets this system replaced. Read-only
+          reference, visible to everyone who can open Pengaturan. */}
+      <Card>
+        <CardHeader className="flex-row items-center gap-2">
+          <FileSpreadsheet className="size-4 text-primary" />
+          <CardTitle>{t("Arsip Spreadsheet")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t("Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.")}
+          </p>
+          <div className="divide-y divide-border rounded-lg border border-border">
+            {ARCHIVE_SHEETS.map((sheet) => (
+              <a
+                key={sheet.url}
+                href={sheet.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2.5 transition hover:bg-muted/50"
+              >
+                <Badge variant="outline" className="shrink-0 tabular-nums">{sheet.year}</Badge>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{sheet.title}</span>
+                <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+              </a>
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -51,6 +51,30 @@ export const urlSchema = z
   .min(1, "URL wajib diisi.")
   .regex(/^https?:\/\/\S+$/i, "URL harus berupa tautan http(s) yang valid.");
 
+/** Optional http(s) URL — empty string and null both mean "belum diisi". */
+const optionalUrl = z
+  .string()
+  .trim()
+  .nullish()
+  .transform((v) => v ?? "")
+  .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Tautan harus berupa URL http(s) yang valid.")
+  .transform((v) => (v === "" ? null : v));
+
+/** A non-negative whole number, or null when the field is left blank. */
+const countField = z
+  .union([z.number(), z.string()])
+  .nullish()
+  .transform((v) => (v === null || v === undefined || v === "" ? null : Number(v)))
+  .refine((v) => v === null || (Number.isFinite(v) && Number.isInteger(v) && v >= 0), "Harus berupa angka bulat 0 atau lebih.");
+
+/** A 0–5 star rating with up to two decimals, or null when left blank. */
+const ratingField = z
+  .union([z.number(), z.string()])
+  .nullish()
+  .transform((v) => (v === null || v === undefined || v === "" ? null : Number(v)))
+  .refine((v) => v === null || (Number.isFinite(v) && v >= 0 && v <= 5), "Nilai harus antara 0 dan 5.")
+  .transform((v) => (v === null ? null : Math.round(v * 100) / 100));
+
 const taskStatus = z.enum(["todo", "ongoing", "done", "overtime"]);
 
 // ---------------- Tasks ----------------
@@ -164,6 +188,16 @@ export const eventSchema = z.object({
   plan_end: optionalDate,
   location: z.string().trim().max(200).optional(),
   status: z.enum(["planning", "active", "done"]).optional(),
+
+  // --- Performance Measurement ---
+  // Mirrors the CHECK constraints in migration 0029, so a bad value is rejected
+  // with a readable message here instead of a raw Postgres constraint error.
+  attendance_hmsi: countField,
+  feedback_hmsi_count: countField,
+  feedback_hmsi_rating: ratingField,
+  feedback_partner_count: countField,
+  feedback_partner_rating: ratingField,
+  report_url: optionalUrl,
 });
 
 // ---------------- Members ----------------
@@ -263,6 +297,9 @@ export const rundownSchema = z.object({
   mc: z.string().trim().max(300).optional(),
   operator: z.string().trim().max(500).optional(),
   division_jobs: z.record(z.string().max(128), z.string().max(1000)).optional(),
+  // Rowspan per column, capped so a hostile payload can't ask the browser to
+  // span a thousand rows. columnRoles() clamps to the real list length anyway.
+  merges: z.record(z.string().max(128), z.number().int().min(1).max(200)).optional(),
 });
 
 // ---------------- Jobs (Hari-H) ----------------

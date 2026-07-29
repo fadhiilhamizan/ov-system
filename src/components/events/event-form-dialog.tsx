@@ -54,6 +54,14 @@ export function EventFormDialog({
     plan_end: event?.plan_end ?? "",
     event_date: event?.event_date ?? "",
     location: event?.location ?? "",
+    // Performance Measurement — filled in after the event. Kept as strings so an
+    // empty box stays empty (and saves as NULL) instead of collapsing to 0.
+    attendance_hmsi: event?.attendance_hmsi?.toString() ?? "",
+    feedback_hmsi_count: event?.feedback_hmsi_count?.toString() ?? "",
+    feedback_hmsi_rating: event?.feedback_hmsi_rating?.toString() ?? "",
+    feedback_partner_count: event?.feedback_partner_count?.toString() ?? "",
+    feedback_partner_rating: event?.feedback_partner_rating?.toString() ?? "",
+    report_url: event?.report_url ?? "",
   }));
 
   function submit() {
@@ -66,6 +74,14 @@ export function EventFormDialog({
         plan_start: f.plan_start || null,
         plan_end: f.plan_end || null,
         event_date: f.event_date || null,
+        // Empty box -> null ("belum diisi"), never 0 — the dashboard shows a
+        // dash for null and a real zero for zero, and those mean different things.
+        attendance_hmsi: f.attendance_hmsi === "" ? null : Number(f.attendance_hmsi),
+        feedback_hmsi_count: f.feedback_hmsi_count === "" ? null : Number(f.feedback_hmsi_count),
+        feedback_hmsi_rating: f.feedback_hmsi_rating === "" ? null : Number(f.feedback_hmsi_rating),
+        feedback_partner_count: f.feedback_partner_count === "" ? null : Number(f.feedback_partner_count),
+        feedback_partner_rating: f.feedback_partner_rating === "" ? null : Number(f.feedback_partner_rating),
+        report_url: f.report_url.trim() || null,
       };
       const template =
         mode === "create" && templateSource !== NO_TEMPLATE
@@ -79,6 +95,9 @@ export function EventFormDialog({
       else toast.error(res.error);
     });
   }
+
+  /** "oleh HMD TC" etc — falls back to a generic word before a partner is set. */
+  const partnerLabel = f.partner.trim() || t("himpunan partner");
 
   const templateOptions = events.filter((e) => e.id !== event?.id);
   const copyItems: { key: keyof typeof copy; label: string }[] = [
@@ -191,6 +210,66 @@ export function EventFormDialog({
           <div className="grid gap-1.5">
             <Label>{t("Rencana tanggal pelaksanaan")}</Label>
             <Input type="date" value={f.event_date} onChange={(e) => setF({ ...f, event_date: e.target.value })} />
+          </div>
+
+          {/* Performance Measurement — the after-the-event numbers. Entered
+              here, read on the Dashboard. Blank stays blank (NULL), which the
+              dashboard renders as "belum diisi" rather than as a zero. */}
+          <div className="rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-xs font-medium text-muted-foreground">{t("Performance Measurement")}</p>
+            <p className="mb-3 text-[11px] text-muted-foreground">
+              {t("Diisi setelah acara selesai. Angkanya tampil di Dashboard. Boleh dikosongkan dulu.")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label>{t("Jumlah fungsionaris HMSI yang hadir")}</Label>
+                <Input
+                  type="number" min={0} step={1} inputMode="numeric" placeholder="0"
+                  value={f.attendance_hmsi}
+                  onChange={(e) => setF({ ...f, attendance_hmsi: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>{t("Total feedback HMSI")}</Label>
+                <Input
+                  type="number" min={0} step={1} inputMode="numeric" placeholder="0"
+                  value={f.feedback_hmsi_count}
+                  onChange={(e) => setF({ ...f, feedback_hmsi_count: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>{t("Rata-rata rating HMSI")} <span className="text-muted-foreground">(0–5)</span></Label>
+                <Input
+                  type="number" min={0} max={5} step="0.01" inputMode="decimal" placeholder="4.78"
+                  value={f.feedback_hmsi_rating}
+                  onChange={(e) => setF({ ...f, feedback_hmsi_rating: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>{t("Total feedback")} {partnerLabel}</Label>
+                <Input
+                  type="number" min={0} step={1} inputMode="numeric" placeholder="0"
+                  value={f.feedback_partner_count}
+                  onChange={(e) => setF({ ...f, feedback_partner_count: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>{t("Rata-rata rating")} {partnerLabel} <span className="text-muted-foreground">(0–5)</span></Label>
+                <Input
+                  type="number" min={0} max={5} step="0.01" inputMode="decimal" placeholder="4.92"
+                  value={f.feedback_partner_rating}
+                  onChange={(e) => setF({ ...f, feedback_partner_rating: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label>{t("Link Pertanggung Jawaban (LPJ)")}</Label>
+                <Input
+                  type="url" placeholder="https://…"
+                  value={f.report_url}
+                  onChange={(e) => setF({ ...f, report_url: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           {mode === "create" && templateOptions.length > 0 && (

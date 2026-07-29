@@ -19,8 +19,23 @@ const LABEL_W = 240;
 const PX_PER_DAY = 26;
 /** Breathing room either side of the first/last task. */
 const PAD_DAYS = 2;
-/** Height of the app topbar (`h-16`), so the floating date banner clears it. */
-const TOPBAR_H = 64;
+
+/**
+ * Where the floating date banner should sit: just under whatever chrome is
+ * pinned to the top of the screen.
+ *
+ * Measured, never hardcoded. A fixed 64px (the topbar's own height) put the
+ * banner *behind* the topbar as soon as anything pushed the header down — the
+ * Demo strip, the archive strip, or the role-request strip. Reading the header's
+ * real bottom edge handles every combination, including none of them.
+ */
+function chromeBottom(): number {
+  if (typeof document === "undefined") return 72;
+  const header = document.querySelector("header");
+  const bottom = header?.getBoundingClientRect().bottom ?? 64;
+  // Never negative: once scrolled, a sticky header's bottom is its height.
+  return Math.max(0, bottom) + 8;
+}
 
 /** Midnight local time — timeline maths must be day-aligned, not time-of-day. */
 function startOfDay(ms: number): number {
@@ -93,6 +108,7 @@ export function TaskTimeline({
   const trackRef = React.useRef<HTMLDivElement>(null);
   const [hoverX, setHoverX] = React.useState<number | null>(null);
   const [hoverClientX, setHoverClientX] = React.useState<number | null>(null);
+  const [bannerTop, setBannerTop] = React.useState(72);
 
   const bounds = React.useMemo(() => {
     if (!dated.length) return null;
@@ -175,6 +191,9 @@ export function TaskTimeline({
     // getBoundingClientRect already accounts for horizontal scrolling.
     setHoverX(e.clientX - el.getBoundingClientRect().left);
     setHoverClientX(e.clientX);
+    // Re-measured on every move so the banner keeps clearing the header while
+    // the page scrolls and the top strips slide away.
+    setBannerTop(chromeBottom());
   }
 
   function onLeave() {
@@ -203,7 +222,7 @@ export function TaskTimeline({
       {hoverClientX != null && hoverDate != null && (
         <div
           className="pointer-events-none fixed z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-semibold text-background shadow-lg"
-          style={{ left: hoverClientX, top: TOPBAR_H + 8 }}
+          style={{ left: hoverClientX, top: bannerTop }}
         >
           {formatDate(localISODate(hoverDate), { long: true })}
         </div>

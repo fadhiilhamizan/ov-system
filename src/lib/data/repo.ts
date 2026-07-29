@@ -506,6 +506,8 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
   return rows.map((r) => ({
     ...r,
     division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {},
+    // `merges` is jsonb too, and every reader indexes into it without checking.
+    merges: r.merges && typeof r.merges === "object" ? r.merges : {},
   }));
 });
 
@@ -717,6 +719,12 @@ export async function createEvent(input: Partial<OVEvent>) {
     location: input.location ?? "",
     status: input.status ?? "planning",
     locked: input.locked ?? false,
+    attendance_hmsi: input.attendance_hmsi ?? null,
+    feedback_hmsi_count: input.feedback_hmsi_count ?? null,
+    feedback_hmsi_rating: input.feedback_hmsi_rating ?? null,
+    feedback_partner_count: input.feedback_partner_count ?? null,
+    feedback_partner_rating: input.feedback_partner_rating ?? null,
+    report_url: input.report_url ?? null,
     order,
   }));
 }
@@ -966,6 +974,7 @@ export async function createRundown(input: Partial<RundownItem>) {
     mc: input.mc ?? "",
     operator: input.operator ?? "",
     division_jobs: input.division_jobs ?? {},
+    merges: input.merges ?? {},
   }));
 }
 export async function updateRundown(id: string, patch: Partial<RundownItem>) {

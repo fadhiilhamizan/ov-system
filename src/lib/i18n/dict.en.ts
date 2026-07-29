@@ -782,4 +782,31 @@ export const EN: Record<string, string> = {
     "This Ormawa Visit is archived — only you (admin) can still change its contents. Unlock it from the Ormawa Visit list.",
   "Ormawa Visit ini diarsipkan — isinya hanya bisa dilihat. Minta admin membuka kuncinya untuk mengubah data.":
     "This Ormawa Visit is archived — its contents are read-only. Ask an admin to unlock it to make changes.",
+  // Performance Measurement (v1.22.0)
+  "Performance Measurement": "Performance Measurement",
+  "Diisi setelah acara selesai. Angkanya tampil di Dashboard. Boleh dikosongkan dulu.":
+    "Filled in after the event. The figures appear on the Dashboard. You may leave them blank for now.",
+  "Jumlah fungsionaris HMSI yang hadir": "HMSI functionaries who attended",
+  "Total feedback HMSI": "Total feedback from HMSI",
+  "Rata-rata rating HMSI": "Average rating from HMSI",
+  "Total feedback": "Total feedback from",
+  "Rata-rata rating": "Average rating from",
+  "Link Pertanggung Jawaban (LPJ)": "Accountability report link (LPJ)",
+  "Fungsionaris HMSI hadir": "HMSI functionaries present",
+  "Feedback dari HMSI": "Feedback from HMSI",
+  "Feedback dari": "Feedback from",
+  "Pertanggung Jawaban": "Accountability report",
+  "Buka LPJ": "Open the report",
+  "himpunan partner": "the partner association",
+  // "orang" is already defined above.
+  "tanggapan": "responses",
+  "Belum diisi. Buka menu Ormawa Visit → Edit untuk mengisi hasil pengukuran setelah acara.":
+    "Not filled in yet. Open Ormawa Visit → Edit to record the post-event measurements.",
+  // Rundown merge (v1.22.0)
+  "Gabung dengan baris di bawah": "Merge with the row below",
+  "Pisahkan sel": "Split cell",
+  // Settings archive (v1.22.0)
+  "Arsip Spreadsheet": "Spreadsheet Archive",
+  "Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.":
+    "The original Main Sheets from before this system existed. Kept for reference — every Ormawa Visit that predates this app is recorded there.",
 };

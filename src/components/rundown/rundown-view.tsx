@@ -1,13 +1,16 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Clock, Plus, Trash2, Loader2, StickyNote, Copy, ExternalLink } from "lucide-react";
+import { Clock, Plus, Trash2, Loader2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction } from "@/lib/actions/schedule";
 import { cn } from "@/lib/utils";
 import { isUrl } from "@/lib/format";
+import {
+  MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDown, mergedDown, splitCell,
+} from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, RundownItem } from "@/lib/types";
 
@@ -206,6 +209,73 @@ export function RundownView({
   const th = "border-b border-border bg-muted/40 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
   const td = "border-b border-border/60 align-top";
 
+  // Merged cells: one value spanning several time slots, so "one activity that
+  // runs for three slots" reads differently from "three identical activities".
+  // Catatan is excluded on purpose — it is per-row commentary.
+  const mergeCols = [MERGE_MC, MERGE_OPERATOR, ...cols.map((d) => d.key)];
+  const roles = Object.fromEntries(mergeCols.map((c) => [c, columnRoles(list, c)]));
+
+  /** Grow this column's run by one row, or split it back into single rows. */
+  function setMerge(index: number, col: string, mode: "merge" | "split") {
+    const item = list[index];
+    if (!item) return;
+    save(item.id, { merges: mode === "merge" ? mergedDown(item, col) : splitCell(item, col) });
+  }
+
+  /**
+   * Renders one mergeable cell, or nothing when another row's run covers it.
+   * Returns `null` so the caller omits the <td> entirely — that is what makes
+   * the rowSpan above actually occupy the space.
+   */
+  function MergeableCell({
+    index,
+    col,
+    children,
+    className,
+  }: {
+    index: number;
+    col: string;
+    children: React.ReactNode;
+    className?: string;
+  }) {
+    const role = roles[col][index];
+    if (role.kind === "covered") return null;
+    const span = role.kind === "origin" ? role.span : 1;
+    const canGrow = canMergeDown(list, col, index);
+    return (
+      <td
+        className={cn(td, "group/cell relative", span > 1 && "bg-muted/25", className)}
+        rowSpan={span > 1 ? span : undefined}
+      >
+        {children}
+        {canManage && (span > 1 || canGrow) && (
+          <div className="absolute bottom-0.5 right-0.5 flex gap-0.5 opacity-0 transition group-hover/cell:opacity-100 focus-within:opacity-100">
+            {span > 1 && (
+              <button
+                type="button"
+                onClick={() => setMerge(index, col, "split")}
+                title={t("Pisahkan sel")}
+                className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+              >
+                <Unlink className="size-3" />
+              </button>
+            )}
+            {canGrow && (
+              <button
+                type="button"
+                onClick={() => setMerge(index, col, "merge")}
+                title={t("Gabung dengan baris di bawah")}
+                className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+              >
+                <ChevronsDownUp className="size-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </td>
+    );
+  }
+
   // Frozen (sticky) leftmost columns: No, Waktu, Durasi, Kegiatan.
   //
   // The sticky `left` offsets MUST equal the real rendered column widths, so
@@ -278,7 +348,7 @@ export function RundownView({
             </tr>
           </thead>
           <tbody>
-            {list.map((item) => {
+            {list.map((item, rowIndex) => {
               // Derive at RENDER time, not only on blur: rows that already had
               // a start+end (seeded, imported, or edited before auto-duration
               // existed) never got a stored value and showed an empty cell.
@@ -296,8 +366,10 @@ export function RundownView({
                   {duration || <span className="text-muted-foreground/50">–</span>}
                 </td>
                 <td className={cn(td, FZ, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
-                <td className={td}><EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline /></td>
-                <td className={td}>
+                <MergeableCell index={rowIndex} col={MERGE_MC}>
+                  <EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline />
+                </MergeableCell>
+                <MergeableCell index={rowIndex} col={MERGE_OPERATOR}>
                   <div className="flex items-start gap-1">
                     <EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline className="flex-1" />
                     {isUrl(item.operator ?? "") && (
@@ -312,16 +384,16 @@ export function RundownView({
                       </a>
                     )}
                   </div>
-                </td>
+                </MergeableCell>
                 {cols.map((d) => (
-                  <td key={d.key} className={td}>
+                  <MergeableCell key={d.key} index={rowIndex} col={d.key}>
                     <EditCell
                       value={item.division_jobs?.[d.key] ?? ""}
                       onSave={(v) => save(item.id, { division_jobs: { ...(item.division_jobs ?? {}), [d.key]: v } })}
                       readOnly={!canManage}
                       multiline
                     />
-                  </td>
+                  </MergeableCell>
                 ))}
                 <td className={td}><NoteCell value={item.keterangan} onSave={(v) => save(item.id, { keterangan: v })} readOnly={!canManage} /></td>
                 {canManage && (

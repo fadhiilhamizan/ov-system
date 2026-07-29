@@ -372,7 +372,11 @@ export function getRundown(eventId?: string, variant?: string): RundownItem[] {
   if (variant) list = list.filter((r) => r.variant === variant);
   return [...list]
     .sort((a, b) => a.no - b.no)
-    .map((r) => ({ ...r, division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {} }));
+    .map((r) => ({
+      ...r,
+      division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {},
+      merges: r.merges && typeof r.merges === "object" ? r.merges : {},
+    }));
 }
 
 // ---------------- Jobs (Hari-H) ----------------
@@ -476,6 +480,12 @@ export function createEvent(input: Partial<OVEvent>): OVEvent {
     location: input.location ?? "",
     status: input.status ?? "planning",
     locked: input.locked ?? false,
+    attendance_hmsi: input.attendance_hmsi ?? null,
+    feedback_hmsi_count: input.feedback_hmsi_count ?? null,
+    feedback_hmsi_rating: input.feedback_hmsi_rating ?? null,
+    feedback_partner_count: input.feedback_partner_count ?? null,
+    feedback_partner_rating: input.feedback_partner_rating ?? null,
+    report_url: input.report_url ?? null,
     order: input.order ?? Math.max(0, ...events.map((e) => e.order)) + 1,
   };
   mutate((db) => db.events.push(ev));
@@ -653,6 +663,7 @@ export function createRundown(input: Partial<RundownItem>): RundownItem {
     mc: input.mc ?? "",
     operator: input.operator ?? "",
     division_jobs: input.division_jobs ?? {},
+    merges: input.merges ?? {},
   };
   mutate((db) => db.rundown.push(r));
   return r;

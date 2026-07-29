@@ -65,13 +65,48 @@ create table if not exists events (
   location text,
   status text check (status in ('planning', 'active', 'done')) default 'planning',
   locked boolean not null default false,
+  -- Performance Measurement: angka hasil evaluasi setelah acara, diisi dari
+  -- form Ormawa Visit dan ditampilkan di Dashboard. NULL = belum diisi.
+  attendance_hmsi int,
+  feedback_hmsi_count int,
+  feedback_hmsi_rating numeric(3, 2),
+  feedback_partner_count int,
+  feedback_partner_rating numeric(3, 2),
+  report_url text,
   "order" int not null default 0
 );
 alter table events add column if not exists plan_start date;
 alter table events add column if not exists plan_end date;
 alter table events add column if not exists locked boolean not null default false;
+alter table events add column if not exists attendance_hmsi int;
+alter table events add column if not exists feedback_hmsi_count int;
+alter table events add column if not exists feedback_hmsi_rating numeric(3, 2);
+alter table events add column if not exists feedback_partner_count int;
+alter table events add column if not exists feedback_partner_rating numeric(3, 2);
+alter table events add column if not exists report_url text;
 comment on column events.locked is
   'Arsip terkunci: selain admin, tidak ada peran yang boleh menulis data milik Ormawa Visit ini.';
+
+-- Nilai mustahil ditolak di database, bukan cuma di form: aplikasi bukan
+-- satu-satunya yang bisa menulis ke sini.
+alter table events drop constraint if exists events_attendance_hmsi_nonneg;
+alter table events add constraint events_attendance_hmsi_nonneg
+  check (attendance_hmsi is null or attendance_hmsi >= 0);
+alter table events drop constraint if exists events_feedback_hmsi_count_nonneg;
+alter table events add constraint events_feedback_hmsi_count_nonneg
+  check (feedback_hmsi_count is null or feedback_hmsi_count >= 0);
+alter table events drop constraint if exists events_feedback_partner_count_nonneg;
+alter table events add constraint events_feedback_partner_count_nonneg
+  check (feedback_partner_count is null or feedback_partner_count >= 0);
+alter table events drop constraint if exists events_feedback_hmsi_rating_range;
+alter table events add constraint events_feedback_hmsi_rating_range
+  check (feedback_hmsi_rating is null or (feedback_hmsi_rating >= 0 and feedback_hmsi_rating <= 5));
+alter table events drop constraint if exists events_feedback_partner_rating_range;
+alter table events add constraint events_feedback_partner_rating_range
+  check (feedback_partner_rating is null or (feedback_partner_rating >= 0 and feedback_partner_rating <= 5));
+alter table events drop constraint if exists events_report_url_http;
+alter table events add constraint events_report_url_http
+  check (report_url is null or report_url = '' or report_url ~* '^https?://');
 
 -- 2.2 profiles (terhubung ke auth.users) ---------------------------
 create table if not exists profiles (

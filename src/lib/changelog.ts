@@ -7,6 +7,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.22.0",
+    date: "2026-07-29",
+    title: "Performance Measurement, gabung sel rundown, arsip spreadsheet & impor Super Link",
+    changes: [
+      "BARU — Performance Measurement di Dashboard: jumlah fungsionaris HMSI yang hadir, total feedback dari HMSI dan dari himpunan partner, rata-rata ratingnya dalam bentuk bintang (misal 4.78/5.0), serta tautan Laporan Pertanggung Jawaban. Diisi lewat menu Ormawa Visit → Edit, dan setiap Ormawa Visit punya datanya sendiri.",
+      "Kolom yang belum diisi ditampilkan sebagai '—', bukan angka nol — supaya 'belum ada data' tidak tertukar dengan 'nilainya memang nol'.",
+      "BARU — Gabung sel di Rundown: kolom MC, Kebutuhan Operator, dan semua kolom divisi bisa digabung ke baris di bawahnya, untuk menunjukkan satu kegiatan yang berjalan melintasi beberapa slot waktu. Arahkan kursor ke selnya, lalu klik ikon gabung; ikon di sebelahnya memisahkan kembali. Kolom Catatan sengaja tidak bisa digabung karena isinya khas per baris.",
+      "BARU — Arsip Spreadsheet di Pengaturan: tautan ke Main Sheet asli 2024, 2025, dan 2026 sebagai rujukan riwayat sebelum sistem ini ada.",
+      "Super Link diperbarui dari Main Sheet terbaru: 87 tautan disegarkan atau ditambahkan di keempat Ormawa Visit. Tautan yang kamu buat sendiri lewat aplikasi tidak ikut tertimpa.",
+      "PERBAIKAN: baris duplikat yang muncul karena skrip SQL sempat dijalankan lebih dari sekali kini bisa dibersihkan. Yang dibuang hanya salinan yang benar-benar identik — data yang mirip tapi berbeda (misal judul tugas sama dengan PIC berbeda) tetap aman.",
+      "PERBAIKAN: kotak tanggal pada timeline tidak lagi tertutup bilah atas ketika ada spanduk Mode Demo atau Arsip. Posisinya kini mengikuti tinggi bilah yang sebenarnya.",
+    ],
+  },
+  {
     version: "1.21.0",
     date: "2026-07-28",
     title: "Pencarian di tengah layar, riwayat pencarian, penanda arsip & perbaikan timeline",

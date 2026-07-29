@@ -49,6 +49,23 @@ export interface OVEvent {
   /** Archived: nobody but an admin may change anything belonging to this
    *  Ormawa Visit. Enforced in the database (migration 0028) as well as here. */
   locked?: boolean;
+
+  // --- Performance Measurement (migration 0029) -----------------------------
+  // Entered on the Ormawa Visit form after the event, shown on the Dashboard.
+  // Every field is optional: null means "belum diisi", and the dashboard says so
+  // rather than rendering a misleading zero.
+  /** Jumlah fungsionaris HMSI yang hadir. */
+  attendance_hmsi?: number | null;
+  /** Total feedback yang diberikan oleh HMSI. */
+  feedback_hmsi_count?: number | null;
+  /** Rata-rata penilaian feedback oleh HMSI, skala 0-5. */
+  feedback_hmsi_rating?: number | null;
+  /** Total feedback yang diberikan oleh himpunan partner. */
+  feedback_partner_count?: number | null;
+  /** Rata-rata penilaian feedback oleh himpunan partner, skala 0-5. */
+  feedback_partner_rating?: number | null;
+  /** Tautan Laporan Pertanggung Jawaban (LPJ). */
+  report_url?: string | null;
 }
 
 export interface Member {
@@ -175,6 +192,10 @@ export interface RundownItem {
   /** Per-division activity during the event, keyed by division key. Dynamic
    *  columns in the rundown table. */
   division_jobs: Record<string, string>;
+  /** Rowspan per column, stored on the TOP row of a merged run:
+   *  `{ mc: 3 }` = this row's MC cell spans itself plus the two rows below.
+   *  Keys are "mc", "operator", or a division key. See lib/rundown-merge.ts. */
+  merges?: Record<string, number>;
   // --- legacy columns (kept for backward-compat with older rows) ---
   host?: string;
   opr_link?: string;

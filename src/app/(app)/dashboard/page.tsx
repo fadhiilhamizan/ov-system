@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty";
 import { getT } from "@/lib/i18n/server";
 import { QuickAccessCarousel } from "@/components/dashboard/quick-access";
+import { PerformanceMeasurement } from "@/components/dashboard/performance-measurement";
 import type { TaskStatus } from "@/lib/types";
 
 const STATUS_HEX: Record<TaskStatus, string> = {
@@ -292,7 +293,11 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      {/* Performance Measurement — entered on the Ormawa Visit form, read here. */}
+      <div className="mt-4">
+        <PerformanceMeasurement event={event} t={t} />
       </div>
     </div>
   );
