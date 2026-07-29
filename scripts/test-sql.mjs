@@ -234,5 +234,84 @@ ok("kolom warisan tasks.source_id sudah dibuang", !have.has("tasks.source_id"));
 const noRls = await db.query(`select tablename from pg_tables where schemaname='public' and not rowsecurity`);
 ok(`RLS aktif di semua tabel${noRls.rows.length ? ` — kecuali: ${noRls.rows.map((r) => r.tablename).join(", ")}` : ""}`, noRls.rows.length === 0);
 
+// ------------------------------------------------------------------
+// Migrasi yang belum tentu sudah dijalankan user, diuji SATU STATEMENT PER
+// EKSEKUSI — persis seperti SQL editor menjalankannya.
+//
+// Ada karena migrasi 0030 pernah gagal di tangan user dengan
+//   ERROR: 42P01: relation "dedupe_report" does not exist
+// Penyebabnya tabel sementara: ia hanya hidup di satu sesi, sementara SQL
+// editor Supabase lewat connection pooler. `db:lint` sekarang menolak
+// `create temporary table` secara statis; bagian ini menangkap sisanya —
+// statement yang hanya jalan kalau dieksekusi sekaligus dalam satu batch.
+// ------------------------------------------------------------------
+console.log("\nMigrasi lanjutan — dijalankan per statement");
+
+const PENDING = [
+  "0029_performance_measurement.sql",
+  "0030_dedupe_rows.sql",
+  "0031_rundown_merge_cells.sql",
+  "0032_import_superlink_from_sheet.sql",
+  "0033_performance_measurement_data.sql",
+];
+
+// The editions the imports target must exist first.
+await db.exec(`insert into events (id, code, title) values
+  ('ov1-2025','OV1 2025','Edisi 1 2025'), ('ov2-2025','OV2 2025','Edisi 2 2025'),
+  ('ov1-2026','OV1 2026','Edisi 1 2026'), ('ov2-2026','OV2 2026','Edisi 2 2026')
+  on conflict (id) do nothing;`);
+
+/** Split on top-level semicolons, respecting strings, comments and $tag$ bodies. */
+function splitStatements(sql) {
+  const out = [];
+  let buf = "";
+  let i = 0;
+  const at = (n) => sql.slice(i, i + n);
+  while (i < sql.length) {
+    if (at(2) === "--") { const e = sql.indexOf("\n", i); buf += sql.slice(i, e === -1 ? sql.length : e); i = e === -1 ? sql.length : e; continue; }
+    if (at(2) === "/*") { const e = sql.indexOf("*/", i + 2); buf += sql.slice(i, e === -1 ? sql.length : e + 2); i = e === -1 ? sql.length : e + 2; continue; }
+    if (sql[i] === "'") {
+      buf += sql[i++];
+      while (i < sql.length) { if (sql[i] === "'" && sql[i + 1] === "'") { buf += "''"; i += 2; continue; } if (sql[i] === "'") { buf += sql[i++]; break; } buf += sql[i++]; }
+      continue;
+    }
+    const dollar = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+    if (dollar) {
+      const tag = dollar[0];
+      const close = sql.indexOf(tag, i + tag.length);
+      const end = close === -1 ? sql.length : close + tag.length;
+      buf += sql.slice(i, end);
+      i = end;
+      continue;
+    }
+    if (sql[i] === ";") { out.push(buf.trim()); buf = ""; i++; continue; }
+    buf += sql[i++];
+  }
+  if (buf.trim()) out.push(buf.trim());
+  // Strip the comment block that precedes a statement rather than discarding the
+  // statement: nearly every statement here is introduced by a `--` header, and
+  // dropping them silently made the harness "pass" migrations it never ran.
+  return out
+    .map((s) => s.replace(/^(?:\s*(?:--[^\n]*\n|\/\*[\s\S]*?\*\/\s*))+/, "").trim())
+    .filter((s) => /[A-Za-z]/.test(s));
+}
+
+for (const round of ["pertama", "kedua (idempotency)"]) {
+  for (const file of PENDING) {
+    const statements = splitStatements(readFileSync(join(__dirname, "../supabase/migrations/", file), "utf8"));
+    let failedAt = null;
+    for (const [n, stmt] of statements.entries()) {
+      try {
+        await db.exec(stmt);
+      } catch (e) {
+        failedAt = `statement #${n + 1}: ${e.message.split("\n")[0]} — ${stmt.slice(0, 70).replace(/\s+/g, " ")}`;
+        break;
+      }
+    }
+    ok(`${file} (jalan ${round}, ${statements.length} statement terpisah)`, failedAt === null);
+    if (failedAt) console.log(`        ${failedAt}`);
+  }
+}
+
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

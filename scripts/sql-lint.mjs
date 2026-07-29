@@ -158,5 +158,41 @@ export function assertSqlSane(sql, label = "sql") {
       );
     }
   }
+  assertNoSessionState(sql, label);
   return statements.length;
+}
+
+/**
+ * Reject SQL whose statements depend on session state surviving between them.
+ *
+ * A temporary table lives in ONE session. The Supabase SQL editor talks to the
+ * database through a connection pooler, so the next statement can land on a
+ * different backend — and `create temporary table … on commit drop` is gone by
+ * the time a later SELECT reads it. It fails with a bare
+ *   ERROR: 42P01: relation "…" does not exist
+ * which points at the SELECT and says nothing about the real cause. This shipped
+ * once (migration 0030) and cost the user a failed run.
+ *
+ * Anything that needs intermediate rows must fit in ONE statement: a `WITH …
+ * AS (VALUES …)` CTE, or a `DO $$ … $$` block that does all its work internally.
+ */
+export function assertNoSessionState(sql, label = "sql") {
+  // Strip comments and dollar-quoted bodies before matching, so prose that
+  // merely mentions the pattern (like this file's own docs) is not flagged.
+  const stripped = sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\$([A-Za-z_][A-Za-z0-9_]*)?\$[\s\S]*?\$\1?\$/g, "''");
+
+  const temp = /\bcreate\s+(?:global\s+|local\s+)?(?:temp|temporary)\s+table\b/i.exec(stripped);
+  if (temp) {
+    const line = stripped.slice(0, temp.index).split("\n").length;
+    throw new Error(
+      `${label}: "create temporary table" on line ~${line}. A temp table only exists in one ` +
+        `session, and the Supabase SQL editor runs through a connection pooler — a later ` +
+        `statement can hit a different connection and fail with 'relation does not exist'. ` +
+        `Use a "with … as (values …)" CTE inside the single statement that needs it, or do ` +
+        `all the work inside one DO block.`,
+    );
+  }
 }
