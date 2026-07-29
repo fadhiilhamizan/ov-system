@@ -6,9 +6,41 @@
 |---|---|
 | Menyiapkan project Supabase (baru maupun yang sudah ada) | **`setup.sql`** — satu file, satu kali |
 | Mengisi data awal untuk project yang benar-benar kosong | `seed.sql`, setelah `setup.sql` |
+| **Membangun ulang data dari nol** (menyembuhkan duplikat) | lihat [Rebuild data](#rebuild-data) |
 | Menyiapkan project **demo** | `setup.sql` → `demo/demo-open-access.sql` → `demo/demo-seed.sql` |
 
 Cukup itu. **`migrations/` tidak perlu dijalankan lagi** — lihat di bawah.
+
+## Rebuild data
+
+`seed.sql` berisi **529 `INSERT` tanpa klausa `on conflict`**. Artinya
+menjalankannya dua kali **menggandakan** tasks, members, links, prospects,
+rundown, job_harih, faqs, dan teams. (`events` dan `divisions` punya
+`on conflict` sehingga aman.) Itu sumber baris kembar yang muncul berulang —
+bukan bug aplikasi.
+
+Kalau data sudah kotor, jangan tambal sedikit-sedikit; kosongkan lalu isi sekali:
+
+1. **Backup manual** dari Pengaturan → Backup & Rollback → "Backup Sekarang",
+   lalu unduh JSON-nya. Jangan lewati langkah ini.
+2. `reset-data.sql` — mengosongkan seluruh data Ormawa Visit.
+   **`profiles`, akun, dan `backups` TIDAK disentuh**, jadi tidak ada yang perlu
+   mendaftar ulang atau minta peran lagi.
+3. `setup.sql` — memastikan skemanya lengkap (aman diulang).
+4. `seed.sql` — data awal. **Jalankan tepat sekali.**
+5. `migrations/0032_import_superlink_from_sheet.sql` — Super Link dari Excel.
+6. `migrations/0033_performance_measurement_data.sql` — Performance Measurement.
+
+Kedua skrip di langkah 2 dan 4 menampilkan verifikasi di akhir. Kalau angka di
+langkah 2 tidak semuanya 0, berhenti dan periksa dulu sebelum lanjut.
+
+Untuk project **demo**: `demo/demo-seed.sql` sudah re-runnable (ia menghapus
+baris edisi `demo-ov` lebih dulu), jadi cukup jalankan ulang file itu — tidak
+perlu `reset-data.sql`.
+
+Seluruh alur ini diuji otomatis di Postgres asli oleh `npm run db:test`,
+termasuk pembuktian bahwa seed dua kali memang menggandakan dan reset
+menyembuhkannya.
 
 ## `setup.sql`
 

@@ -13,10 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { BackupPanel } from "@/components/settings/backup-panel";
+import { ChangelogList } from "@/components/settings/changelog-list";
 import { DemoReset } from "@/components/settings/demo-reset";
 import { ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
-import { formatDate } from "@/lib/format";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Pengaturan" };
@@ -252,24 +252,7 @@ export default async function SettingsPage() {
           <CardTitle>Changelog</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {CHANGELOG.map((entry, i) => (
-              <details key={entry.version} className="group rounded-lg border border-border" open={i === 0}>
-                <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                  <Badge variant={i === 0 ? "primary" : "outline"}>v{entry.version}</Badge>
-                  <span className="text-sm font-medium">{entry.title}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">{formatDate(entry.date, { long: true })}</span>
-                </summary>
-                <ul className="space-y-1 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-                  {entry.changes.map((c, j) => (
-                    <li key={j} className="flex gap-2">
-                      <span className="text-primary">•</span> {c}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ))}
-          </div>
+          <ChangelogList entries={CHANGELOG} />
         </CardContent>
       </Card>
 

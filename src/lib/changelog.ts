@@ -7,6 +7,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.23.0",
+    date: "2026-07-29",
+    title: "Rebuild data bersih, 60 terjemahan Inggris, changelog dilipat & Tamu bisa buka Pengaturan",
+    changes: [
+      "AKAR MASALAH DUPLIKAT DITEMUKAN: skrip data awal (seed.sql) berisi 529 perintah tambah-data tanpa pengaman anti-kembar, jadi menjalankannya dua kali menggandakan hampir semua tabel. Ini bukan bug aplikasi — dan tidak akan hilang hanya dengan membersihkan sebagian.",
+      "Tersedia skrip 'reset-data.sql' untuk mengosongkan seluruh data Ormawa Visit lalu mengisinya ulang sekali saja. Akun, peran, dan riwayat backup TIDAK terhapus, jadi tidak ada yang perlu mendaftar ulang. Panduan langkahnya ada di supabase/README.md.",
+      "PERBAIKAN: fitur gabung sel Rundown gagal dengan pesan \"Could not find the 'merges' column\" karena kolomnya belum ada di skrip skema utama. Sekarang sudah termasuk, jadi ikut terpasang saat menyiapkan database.",
+      "60 teks yang masih berbahasa Indonesia saat bahasa diatur ke English kini diterjemahkan — terutama seluruh diagram alur di menu Panduan, dialog Edit, pesan 'belum ada data', dan tombol Reset Mode Demo.",
+      "Ditambahkan pemeriksaan otomatis yang menolak teks baru tanpa terjemahan, supaya kekurangan seperti ini tidak menumpuk lagi.",
+      "Changelog di Pengaturan kini menampilkan 5 versi terbaru saja, dengan tombol 'Lihat semua versi' untuk membuka sisanya.",
+      "Peran Tamu sekarang bisa membuka menu Pengaturan (matriks hak akses, arsip spreadsheet, changelog, versi) — tetap hanya lihat. Kartu Backup & Rollback dan Reset Data Demo tidak muncul untuk Tamu.",
+    ],
+  },
+  {
     version: "1.22.0",
     date: "2026-07-29",
     title: "Performance Measurement, gabung sel rundown, arsip spreadsheet & impor Super Link",

@@ -313,5 +313,77 @@ for (const round of ["pertama", "kedua (idempotency)"]) {
   }
 }
 
+// ------------------------------------------------------------------
+// Alur rebuild data (supabase/README.md → "Rebuild data").
+//
+// Ada karena `seed.sql` memuat 529 INSERT tanpa `on conflict`: menjalankannya
+// dua kali menggandakan hampir semua tabel, dan itulah sumber baris kembar yang
+// terus muncul. Bagian ini membuktikan tiga hal sekaligus — seed dua kali
+// MEMANG menggandakan, reset-data.sql menyembuhkannya, dan akun tidak ikut
+// terhapus.
+// ------------------------------------------------------------------
+console.log("\nAlur rebuild data");
+
+const fresh = await PGlite.create({ extensions: { pgcrypto } });
+await fresh.exec(`
+create role anon; create role authenticated;
+create schema auth;
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+create or replace function auth.uid() returns uuid language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
+create or replace function auth.jwt() returns jsonb language sql stable as $fn$
+  select jsonb_build_object('is_anonymous', coalesce(nullif(current_setting('test.anon', true), ''), 'false')::boolean) $fn$;
+`);
+
+const sb = (p) => readFileSync(join(__dirname, "../supabase/", p), "utf8");
+const rows = async (t) => Number((await fresh.query(`select count(*) c from ${t}`)).rows[0].c);
+const shape = async () => ({
+  events: await rows("events"), members: await rows("members"), tasks: await rows("tasks"),
+  links: await rows("links"), prospects: await rows("prospects"), rundown: await rows("rundown"),
+  teams: await rows("teams"), faqs: await rows("faqs"), job_harih: await rows("job_harih"),
+});
+
+try {
+  await fresh.exec(sb("setup.sql"));
+  const hasMerges = (await fresh.query(
+    `select 1 from information_schema.columns
+      where table_schema='public' and table_name='rundown' and column_name='merges'`,
+  )).rows.length === 1;
+  ok("setup.sql menyediakan rundown.merges (kolom yang bikin merge gagal)", hasMerges);
+
+  await fresh.exec(sb("seed.sql"));
+  const once = await shape();
+  ok("seed.sql mengisi data", once.events > 0 && once.tasks > 0);
+
+  await fresh.exec(sb("seed.sql"));
+  const twice = await shape();
+  ok(`seed dua kali MENGGANDAKAN (tasks ${once.tasks} -> ${twice.tasks}) — inilah sumber duplikat`,
+    twice.tasks === once.tasks * 2);
+
+  // An account must outlive the reset; that is why profiles is excluded.
+  await fresh.exec(`insert into auth.users (id, email) values ('99999999-9999-9999-9999-999999999999','x@y.z')`);
+  await fresh.query(`update profiles set role='admin' where id='99999999-9999-9999-9999-999999999999'`);
+
+  await fresh.exec(sb("reset-data.sql"));
+  const emptied = await shape();
+  ok("reset-data.sql mengosongkan seluruh data aplikasi",
+    Object.values(emptied).every((v) => v === 0), JSON.stringify(emptied));
+  const keptAdmin = (await fresh.query(
+    `select role from profiles where id='99999999-9999-9999-9999-999999999999'`,
+  )).rows[0];
+  ok("akun & peran selamat dari reset", keptAdmin?.role === "admin");
+
+  await fresh.exec(sb("seed.sql"));
+  const rebuilt = await shape();
+  ok("seed ulang menghasilkan jumlah baris yang sama seperti seed pertama",
+    JSON.stringify(rebuilt) === JSON.stringify(once), `${JSON.stringify(rebuilt)} vs ${JSON.stringify(once)}`);
+
+  const before = await shape();
+  await fresh.exec(sb("migrations/0030_dedupe_rows.sql"));
+  ok("0030 tidak menemukan kembar apa pun pada data hasil rebuild",
+    JSON.stringify(await shape()) === JSON.stringify(before));
+} catch (e) {
+  ok("alur rebuild berjalan tanpa error", false, e.message.split("\n")[0]);
+}
+
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

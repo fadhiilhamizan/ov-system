@@ -286,6 +286,9 @@ create table if not exists rundown (
   mc text,
   operator text default '',
   division_jobs jsonb not null default '{}'::jsonb,
+  -- Rowspan per kolom, disimpan di baris teratas: {"mc":3} = sel MC membentang
+  -- 3 baris. Kunci: 'mc', 'operator', atau key divisi. Lihat lib/rundown-merge.ts.
+  merges jsonb not null default '{}'::jsonb,
   host text,
   opr_link text,
   job_lo text,
@@ -296,6 +299,10 @@ create table if not exists rundown (
 );
 alter table rundown add column if not exists operator text default '';
 alter table rundown add column if not exists division_jobs jsonb not null default '{}'::jsonb;
+alter table rundown add column if not exists merges jsonb not null default '{}'::jsonb;
+alter table rundown drop constraint if exists rundown_merges_object;
+alter table rundown add constraint rundown_merges_object
+  check (jsonb_typeof(merges) = 'object');
 
 -- 2.11 job_harih (Hari-H) ------------------------------------------
 create table if not exists job_harih (

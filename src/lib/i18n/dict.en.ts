@@ -809,4 +809,96 @@ export const EN: Record<string, string> = {
   "Arsip Spreadsheet": "Spreadsheet Archive",
   "Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.":
     "The original Main Sheets from before this system existed. Kept for reference — every Ormawa Visit that predates this app is recorded there.",
+
+  // ==========================================================
+  // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the
+  // build when a t() string has no entry here. Everything below was showing in
+  // Indonesian even with the language set to English.
+  // ==========================================================
+
+  // --- Panduan flowchart ---
+  "Mulai — buka aplikasi": "Start — open the app",
+  "Login, Mode Demo, atau Mode Tamu.": "Sign in, Demo Mode, or Guest Mode.",
+  "Masuk ke sistem": "Sign in",
+  "Login dengan email & kata sandi.": "Sign in with your email and password.",
+  "Hubungi PIC Ormawa Visit untuk dibuatkan akun.": "Ask the Ormawa Visit PIC to create an account for you.",
+  "Klik 'Coba Mode Demo' (database terpisah) atau 'Masuk sebagai Tamu' (hanya lihat).":
+    "Click 'Try Demo Mode' (a separate database) or 'Sign in as Guest' (view only).",
+  "Apa peranmu?": "What is your role?",
+  "Hanya melihat data, tanpa mengubah.": "View the data only, without changing anything.",
+  "Kelola divisi, tugas, rundown, job hari-H, dan anggaran.":
+    "Manage divisions, tasks, the rundown, event-day jobs, and the budget.",
+  "Perbarui status & isi hasil pada tugas yang menjadi tanggung jawabmu.":
+    "Update the status and fill in results for the tasks you are responsible for.",
+  "Membuat Ormawa Visit baru?": "Creating a new Ormawa Visit?",
+  "Buka menu Ormawa Visit → Tambah. Bisa salin data (template) dari edisi sebelumnya.":
+    "Open Ormawa Visit → Add. You can copy data (a template) from an earlier edition.",
+  "Lanjut memakai edisi yang sudah dipilih.": "Carry on with the edition already selected.",
+  "Gunakan pemilih edisi di kanan atas. Semua modul mengikuti edisi ini.":
+    "Use the edition picker at the top right. Every module follows this edition.",
+  "Lihat Dashboard": "Check the Dashboard",
+  "Ringkasan progres, KPI, dan deadline terdekat.": "Progress summary, KPIs, and the nearest deadlines.",
+  "Kerjakan tugas (Work Breakdown / Papan Divisi)": "Work the tasks (Work Breakdown / Division board)",
+  "Tambah/kelola tugas, tentukan PIC dari daftar anggota, dan deadline.":
+    "Add and manage tasks, pick a PIC from the member list, and set deadlines.",
+  "Perbarui status tugas": "Update task status",
+  "To Do → On Going → Done. Isi kolom Hasil dengan tautan bukti.":
+    "To Do → On Going → Done. Put a link to the evidence in the Result column.",
+  "Kelola aset & relasi": "Manage assets & relations",
+  "Reach & Offer (prospek), Super Link (dokumen), dan Anggaran (RAB).":
+    "Reach & Offer (prospects), Super Link (documents), and Budget (RAB).",
+  "Siapkan hari pelaksanaan": "Prepare the event day",
+  "Susun Rundown per divisi dan pembagian Job Hari-H.":
+    "Build the Rundown per division and split up the event-day jobs.",
+  "Acara sudah selesai?": "Has the event finished?",
+  "Kembali memantau progres di Dashboard sampai semua tugas Done.":
+    "Go back to watching progress on the Dashboard until every task is Done.",
+  "Selesai — evaluasi & arsip": "Done — evaluate & archive",
+  "Isi catatan/evaluasi (mis. 'terlalu cepat/lama') pada rundown, lalu buat laporan akhir.":
+    "Add notes/evaluations (e.g. 'ran too fast/slow') on the rundown, then write the final report.",
+  "Langkah": "Step",
+  "Keputusan (jika…)": "Decision (if…)",
+  "Template": "Template",
+  "Demo": "Demo",
+
+  // --- Dialog & tombol ---
+  "Edit Ormawa Visit": "Edit Ormawa Visit",
+  "Edit Divisi": "Edit Division",
+  "Edit Anggota": "Edit Member",
+  "Ini masih rencana — cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.":
+    "This is still a plan — just fill in the name and dates. Details like partner, campus, location, type, and mode can be left empty for now; they fill in automatically from the primary prospect in Reach & Offer.",
+  "Pilih dari anggota divisi ini": "Choose from this division's members",
+  "Pilih koordinator…": "Choose a coordinator…",
+
+  // --- Empty states & toast ---
+  "Belum ada backup": "No backups yet",
+  "Belum ada tugas yang cocok dengan filter saat ini.": "No tasks match the current filters.",
+  "Sesuaikan pencarian atau tambah tautan baru.": "Adjust your search, or add a new link.",
+  "item dipilih": "items selected",
+  "item dihapus": "items deleted",
+  "tautan dihapus": "links deleted",
+  "prospek dihapus": "prospects deleted",
+  "Prospek dihapus": "Prospect deleted",
+  "tugas dilewati (tanpa akses)": "tasks skipped (no access)",
+
+  // --- Carousel & kolom ---
+  "Sebelumnya": "Previous",
+  "Berikutnya": "Next",
+  "Jenis Ormawa Visit": "Ormawa Visit type",
+  "Ikut rundown": "In the rundown",
+  "Tanpa rundown": "Not in the rundown",
+
+  // --- Changelog ---
+  "Lihat semua versi": "Show every version",
+  "Tampilkan lebih sedikit": "Show fewer",
+  "versi lama": "older versions",
+
+  // --- Reset Mode Demo ---
+  "Reset data demo?": "Reset the demo data?",
+  "Reset sekarang": "Reset now",
+  "Data demo dikembalikan ke awal.": "The demo data has been restored to its initial state.",
+  "Kembalikan seluruh data sandbox (tugas, anggaran, anggota, dll.) ke contoh awal. Perubahanmu di Mode Demo akan hilang.":
+    "Restore all sandbox data (tasks, budget, members, and so on) to the original sample. Your Demo Mode changes will be lost.",
+  "Semua data Mode Demo akan dihapus dan diganti dengan contoh awal. Data asli (produksi) tidak terpengaruh.":
+    "Every Demo Mode record will be deleted and replaced with the original sample. Real (production) data is not affected.",
 };

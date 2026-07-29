@@ -3,6 +3,7 @@ import {
   accessLevel, atLeast, can, canRequestRole, canToggleLock, canWriteEvent,
   isAssignedTo, requestableRolesFor,
 } from "./permissions";
+import { ROLE_ORDER } from "./constants";
 import type { AppUser, Task } from "./types";
 
 function user(role: AppUser["role"]): AppUser {
@@ -241,12 +242,19 @@ describe("accessModule / isReadOnly", () => {
     expect(can.accessModule(user("intern"), "links")).toBe(true);
     expect(can.accessModule(user("guest"), "links")).toBe(false);
   });
-  it("settings is readable by every role but guest; backups stay admin-only", () => {
-    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+  it("settings is readable by EVERY role, including guest", () => {
+    for (const r of ROLE_ORDER) {
       expect(can.accessModule(user(r), "settings")).toBe(true);
+    }
+  });
+
+  it("but only admin may run anything destructive in there", () => {
+    // Opening a module read-only is not permission for its dangerous actions.
+    // Backup / rollback / demo-reset all hang off can.manageBackups, which needs
+    // "full" — so widening settings to guest cannot leak them.
+    for (const r of ROLE_ORDER) {
       expect(can.manageBackups(user(r))).toBe(r === "admin");
     }
-    expect(can.accessModule(user("guest"), "settings")).toBe(false);
   });
   it("guest is read-only", () => {
     expect(can.isReadOnly(user("guest"))).toBe(true);
