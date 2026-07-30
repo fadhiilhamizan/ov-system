@@ -103,8 +103,9 @@ export const GUIDE: GuideSection[] = [
       { id: "Anggota dengan lebih dari satu divisi muncul di semua kartu divisinya, dan ikut terdaftar sebagai pilihan PIC di tiap divisi tersebut. Divisi pertama dipakai sebagai divisi utama di tabel.", en: "A member in several divisions appears on all of their division cards and can be picked as PIC in each of them. The first division is used as the primary one in tables." },
       { id: "Divisi dan anggota berbeda untuk tiap Ormawa Visit, jadi mengubahnya di satu edisi tidak memengaruhi edisi lain.", en: "Divisions and members are per Ormawa Visit, so changes in one edition don't affect the others." },
       { id: "Nama anggota tidak boleh mengandung koma karena koma dipakai sebagai pemisah daftar.", en: "Member names can't contain commas — commas are used as the list separator." },
+      { id: "Nama dan NRP adalah data pribadi, jadi daftar anggota hanya tampil untuk akun yang sudah punya peran. Tamu — termasuk akun baru yang perannya belum disetujui — akan melihat halaman ini tanpa daftar nama.", en: "Names and student IDs are personal data, so the roster only appears for accounts that already have a role. A Guest — including a new account whose role isn't approved yet — sees this page without the name list." },
     ],
-    access: { id: "Hanya Admin yang bisa mengubah divisi & anggota; peran lain hanya melihat.", en: "Only Admins can edit divisions & members; other roles have view access." },
+    access: { id: "Hanya Admin yang bisa mengubah divisi & anggota; peran lain hanya melihat. Daftar nama & NRP tidak tampil untuk Tamu.", en: "Only Admins can edit divisions & members; other roles have view access. Names & student IDs are hidden from Guests." },
   },
   {
     key: "calendar",

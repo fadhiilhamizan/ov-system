@@ -5,13 +5,31 @@
 --
 -- Which migrations the demo needs: 0001-0018 and 0027, but NOT 0019 (it wipes
 -- the roster and inserts HMSI's real people — production only). 0027 adds the
--- teams.coordinator column that 0019 would otherwise have provided.
+-- teams.coordinator column that 0019 would otherwise have provided. Columns
+-- from 0029/0031 are added by the "Part 0" catch-up below, so the demo never
+-- needs to run those migrations by hand.
 --
 -- RE-RUNNABLE: this script first deletes the demo edition's rows, so running it
 -- again restores the sample data instead of duplicating it.
 -- All data here is fictional/example data — safe to modify freely.
 -- ============================================================
 begin;
+
+-- ------------------------------------------------------------------
+-- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
+-- and never runs 0028+, but the APP has kept adding columns since (perf
+-- measurement in 0029, rundown.merges in 0031). Without them the demo's own
+-- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
+-- These add-column statements are idempotent no-ops on a caught-up schema, so
+-- re-running demo-seed silently heals an out-of-date demo project.
+-- ------------------------------------------------------------------
+alter table events add column if not exists attendance_hmsi int;
+alter table events add column if not exists feedback_hmsi_count int;
+alter table events add column if not exists feedback_hmsi_rating numeric(3, 2);
+alter table events add column if not exists feedback_partner_count int;
+alter table events add column if not exists feedback_partner_rating numeric(3, 2);
+alter table events add column if not exists report_url text;
+alter table rundown add column if not exists merges jsonb not null default '{}'::jsonb;
 
 -- Clear this edition's data first (FK-safe order) so the seed is idempotent.
 -- task_links is guarded: it only exists once migration 0025 has been applied.

@@ -574,17 +574,37 @@ end $do$;
 
 -- 5.1 Baca ---------------------------------------------------------
 -- Tabel operasional: setiap sesi masuk, termasuk Tamu anonim.
+-- members & teams SENGAJA TIDAK di sini — roster memuat nama + NRP (PII), lihat
+-- blok berikutnya.
 do $do$
 declare t text;
 begin
-  foreach t in array array['divisions', 'events', 'members', 'tasks', 'task_links',
-                           'prospects', 'rundown', 'job_harih', 'faqs', 'teams']
+  foreach t in array array['divisions', 'events', 'tasks', 'task_links',
+                           'prospects', 'rundown', 'job_harih', 'faqs']
   loop
     execute format('drop policy if exists "read_all" on %I;', t);
     execute format('drop policy if exists "read_public" on %I;', t);
     execute format('drop policy if exists "read_auth" on %I;', t);
     execute format('drop policy if exists "%s_read" on %I;', t, t);
     execute format('create policy "read_auth" on %I for select using (auth.uid() is not null);', t);
+  end loop;
+end $do$;
+
+-- Roster (members, teams): hanya akun BERPERAN yang boleh membacanya. Nama dan
+-- NRP mahasiswa adalah data pribadi, jadi Tamu — baik sesi anonim maupun akun
+-- terdaftar yang perannya masih 'viewer' — tidak boleh menariknya (has_role()
+-- menolak keduanya). Kolom teams.coordinator/fungsionaris/intern juga nama, jadi
+-- teams ikut ditutup, bukan cuma members.
+do $do$
+declare t text;
+begin
+  foreach t in array array['members', 'teams']
+  loop
+    execute format('drop policy if exists "read_all" on %I;', t);
+    execute format('drop policy if exists "read_public" on %I;', t);
+    execute format('drop policy if exists "read_auth" on %I;', t);
+    execute format('drop policy if exists "%s_read" on %I;', t, t);
+    execute format('create policy "read_auth" on %I for select to authenticated using (has_role());', t);
   end loop;
 end $do$;
 

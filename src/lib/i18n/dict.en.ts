@@ -809,6 +809,8 @@ export const EN: Record<string, string> = {
   "Arsip Spreadsheet": "Spreadsheet Archive",
   "Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.":
     "The original Main Sheets from before this system existed. Kept for reference — every Ormawa Visit that predates this app is recorded there.",
+  "Daftar nama & NRP anggota hanya tampil untuk akun yang sudah punya peran. Ajukan peran lewat menu akun untuk melihatnya.":
+    "Member names & student IDs are only shown to accounts that already have a role. Request a role from the account menu to see them.",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the

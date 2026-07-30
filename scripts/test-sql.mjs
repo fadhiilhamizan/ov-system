@@ -107,7 +107,11 @@ insert into rundown (id, event_id, no, activity) values
   ('dddddddd-0000-0000-0000-000000000001','ov-open',1,'Registrasi'),
   ('dddddddd-0000-0000-0000-000000000002','ov-lock',1,'Arsip');
 insert into task_links (id, task_id, url) values
-  ('eeeeeeee-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','https://y.test');
+  ('eeeeeeee-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','https://y.test'),
+  ('eeeeeeee-0000-0000-0000-000000000002','aaaaaaaa-0000-0000-0000-000000000003','https://arsip.test');
+insert into members (event_id, name, nrp, type, year) values
+  ('ov-open','Budi Santoso','5026221001','fungsionaris',2022);
+insert into teams (event_id, division, coordinator) values ('ov-open','EVENT','Budi');
 update events set locked = true where id = 'ov-lock';
 `);
 
@@ -192,6 +196,20 @@ await check("koordinator boleh menghapus rundown", U.coord, false, `delete from 
 await check("staff mengubah tautan hasil tugas", U.staff, false, `update task_links set label='L' where id=${TL}`, "allow");
 await check("Super Link menolak URL yang bukan http(s)", U.admin, false, `insert into links (event_id,name,url) values ('ov-open','X','bukan-url')`, "deny");
 
+console.log("\nRoster = PII, hanya untuk akun berperan");
+await check("staff BISA baca anggota (nama+NRP)", U.staff, false, `select * from members`, "rows");
+await check("koordinator BISA baca tim", U.coord, false, `select * from teams`, "rows");
+await check("Tamu terdaftar TIDAK bisa baca anggota", U.viewer, false, `select * from members`, "norows");
+await check("Tamu terdaftar TIDAK bisa baca tim", U.viewer, false, `select * from teams`, "norows");
+await check("Tamu anonim TIDAK bisa baca anggota (NRP)", U.anon, true, `select * from members`, "norows");
+await check("Tamu anonim TIDAK bisa baca tim", U.anon, true, `select * from teams`, "norows");
+
+console.log("\ntask_links ikut kunci arsip (celah 0025 yang ditambal)");
+await check("staff mengubah tautan tugas di edisi terbuka", U.staff, false, `update task_links set label='ok' where id=${TL}`, "allow");
+await check("staff DITOLAK mengubah tautan tugas di edisi ARSIP", U.staff, false, `update task_links set label='X' where id='eeeeeeee-0000-0000-0000-000000000002'`, "deny");
+await check("koordinator DITOLAK menghapus tautan tugas di ARSIP", U.coord, false, `delete from task_links where id='eeeeeeee-0000-0000-0000-000000000002'`, "deny");
+await check("admin TETAP bisa mengubah tautan tugas di ARSIP", U.admin, false, `update task_links set label='fix' where id='eeeeeeee-0000-0000-0000-000000000002'`, "allow");
+
 console.log("\nAkun terdaftar yang belum punya peran");
 await check("belum-berperan TIDAK bisa baca anggaran", U.viewer, false, `select * from budget_plans`, "norows");
 await check("belum-berperan TIDAK bisa baca Super Link", U.viewer, false, `select * from links`, "norows");
@@ -253,6 +271,7 @@ const PENDING = [
   "0031_rundown_merge_cells.sql",
   "0032_import_superlink_from_sheet.sql",
   "0033_performance_measurement_data.sql",
+  "0034_task_links_scope_and_roster_pii.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -403,6 +422,127 @@ try {
   ok("masih tidak ada anggota tanpa edisi setelah 0019", (await nulls("members")) === 0);
 } catch (e) {
   ok("alur rebuild berjalan tanpa error", false, e.message.split("\n")[0]);
+}
+
+// ------------------------------------------------------------------
+// 0034 memperbaiki celah JALUR MIGRASI (bukan setup.sql).
+//
+// Database produksi menjalankan migrasi satu per satu. Migrasi 0025 membuat
+// policy `task_links_write` (FOR ALL, tanpa scope edisi); 0028 menambah versi
+// ter-scope tapi LUPA men-drop yang lama. Policy permissive di-OR, jadi yang
+// longgar tetap mengizinkan tulis di Ormawa Visit yang diarsipkan. Bagian ini
+// membangun keadaan cacat itu persis, membuktikan celahnya ADA, lalu bahwa 0034
+// menutupnya.
+// ------------------------------------------------------------------
+console.log("\n0034 — menutup celah task_links jalur migrasi");
+
+const leak = await PGlite.create({ extensions: { pgcrypto } });
+await leak.exec(`
+create role anon; create role authenticated;
+create schema auth;
+create table auth.users (id uuid primary key);
+create or replace function auth.uid() returns uuid language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
+create or replace function auth.jwt() returns jsonb language sql stable as $fn$
+  select jsonb_build_object('is_anonymous', coalesce(nullif(current_setting('test.anon', true), ''), 'false')::boolean) $fn$;
+create type app_role as enum ('admin','coordinator','staff','intern','viewer');
+`);
+try {
+  // Minimal slice of the schema + the helper functions 0028 introduced.
+  await leak.exec(`
+create table profiles (id uuid primary key, role app_role not null default 'viewer');
+create table events (id text primary key, locked boolean not null default false);
+create table tasks (id uuid primary key default gen_random_uuid(), event_id text references events(id));
+create table task_links (id uuid primary key default gen_random_uuid(), task_id uuid references tasks(id), label text);
+-- 0034 bagian B menyentuh members & teams juga (read PII), jadi harus ada.
+create table members (id uuid primary key default gen_random_uuid(), name text);
+create table teams (id uuid primary key default gen_random_uuid(), coordinator text);
+alter table members enable row level security;
+alter table teams enable row level security;
+create or replace function auth_role() returns app_role language sql stable security definer set search_path=public as $fn$ select role from profiles where id=auth.uid() $fn$;
+create or replace function is_anon() returns boolean language sql stable as $fn$ select coalesce((auth.jwt()->>'is_anonymous')::boolean,false) $fn$;
+create or replace function has_role() returns boolean language sql stable security definer set search_path=public as $fn$
+  select coalesce(auth_role()::text in ('admin','coordinator','staff','intern'),false) and not is_anon() $fn$;
+create or replace function writable_event(row_event text) returns boolean language sql stable security definer set search_path=public as $fn$
+  select auth_role()='admin' or not coalesce((select e.locked from events e where e.id=row_event),false) $fn$;
+alter table task_links enable row level security;
+
+-- Keadaan hasil 0025 + 0028: policy lama TIDAK di-drop.
+create policy "task_links_write" on task_links for all to authenticated
+  using (auth_role()::text in ('admin','coordinator','staff','intern'))
+  with check (auth_role()::text in ('admin','coordinator','staff','intern'));
+create policy "task_links_update" on task_links for update to authenticated
+  using (has_role() and writable_event((select t.event_id from tasks t where t.id=task_links.task_id)))
+  with check (has_role() and writable_event((select t.event_id from tasks t where t.id=task_links.task_id)));
+
+grant usage on schema public, auth to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+grant execute on all functions in schema public, auth to anon, authenticated;
+
+insert into events (id, locked) values ('open', false), ('arsip', true);
+insert into profiles (id, role) values ('22222222-2222-2222-2222-222222222222','coordinator');
+insert into tasks (id, event_id) values ('aaaaaaaa-0000-0000-0000-0000000000aa','arsip');
+insert into task_links (id, task_id, label) values ('bbbbbbbb-0000-0000-0000-0000000000bb','aaaaaaaa-0000-0000-0000-0000000000aa','awal');
+`);
+
+  const coordWrites = async () => {
+    await leak.exec(`set role authenticated; set test.uid='22222222-2222-2222-2222-222222222222'; set test.anon='false';`);
+    let affected = 0;
+    try {
+      const r = await leak.query(`update task_links set label='ubah' where id='bbbbbbbb-0000-0000-0000-0000000000bb'`);
+      affected = r.affectedRows ?? 0;
+    } catch { /* denied */ }
+    await leak.exec(`reset role;`);
+    return affected;
+  };
+
+  ok("SEBELUM 0034: celah nyata — koordinator bisa tulis tautan di ARSIP", (await coordWrites()) === 1);
+  await leak.exec(readFileSync(join(__dirname, "../supabase/migrations/0034_task_links_scope_and_roster_pii.sql"), "utf8"));
+  ok("SESUDAH 0034: koordinator DITOLAK menulis tautan di ARSIP", (await coordWrites()) === 0);
+  const stale = (await leak.query(
+    `select 1 from pg_policies where tablename='task_links' and policyname='task_links_write'`,
+  )).rows.length;
+  ok("policy task_links_write yang basi sudah dibuang", stale === 0);
+} catch (e) {
+  ok("uji celah 0034 berjalan", false, e.message.split("\n")[0]);
+}
+
+// ------------------------------------------------------------------
+// demo-seed.sql menyembuhkan project demo yang skema-nya basi.
+//
+// Project demo berhenti di migrasi 0018 + 0027 dan tidak pernah dapat kolom
+// rundown.merges (0031) — itulah kenapa fitur gabung sel gagal di Mode Demo.
+// demo-seed.sql punya "Part 0" yang menambah kolom itu (idempotent), jadi
+// menjalankan ulang demo-seed memperbaikinya. Ini membangun rundown TANPA
+// merges (seperti demo basi), menjalankan catch-up, lalu membuktikan tulis
+// merges berhasil.
+// ------------------------------------------------------------------
+console.log("\nMode Demo — catch-up kolom merges");
+const demo = await PGlite.create({ extensions: { pgcrypto } });
+try {
+  await demo.exec(`
+create table events (id text primary key);
+create table rundown (id uuid primary key default gen_random_uuid(), event_id text, activity text);
+insert into events (id) values ('demo-ov');
+insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
+`);
+  const beforeErr = await (async () => {
+    try { await demo.query(`update rundown set merges='{"mc":2}'::jsonb where event_id='demo-ov'`); return null; }
+    catch (e) { return e.message.split("\n")[0]; }
+  })();
+  ok("SEBELUM catch-up: tulis merges GAGAL (kolom tidak ada)", beforeErr !== null && /merges/.test(beforeErr));
+
+  // Jalankan hanya statement Part 0 dari demo-seed (add column if not exists).
+  const demoSeed = readFileSync(join(__dirname, "../supabase/demo/demo-seed.sql"), "utf8");
+  for (const m of demoSeed.matchAll(/alter table \w+ add column if not exists [^\n;]+;/g)) {
+    await demo.exec(m[0]);
+  }
+  const afterErr = await (async () => {
+    try { await demo.query(`update rundown set merges='{"mc":2}'::jsonb where event_id='demo-ov'`); return null; }
+    catch (e) { return e.message.split("\n")[0]; }
+  })();
+  ok("SESUDAH catch-up: tulis merges BERHASIL (fitur gabung sel jalan)", afterErr === null);
+} catch (e) {
+  ok("uji catch-up demo berjalan", false, e.message.split("\n")[0]);
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

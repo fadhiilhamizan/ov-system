@@ -7,6 +7,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.25.0",
+    date: "2026-07-30",
+    title: "Privasi roster untuk Tamu, perbaikan kunci arsip tautan tugas, & fitur gabung sel di Mode Demo",
+    changes: [
+      "KEAMANAN: nama dan NRP anggota kini hanya bisa dilihat akun yang sudah punya peran. Tamu — baik yang masuk tanpa akun maupun akun baru yang perannya belum disetujui — tidak lagi bisa menarik daftar anggota. Halaman Divisi & Anggota memberi tahu Tamu bahwa daftar disembunyikan, bukan sekadar tampil kosong.",
+      "PERBAIKAN KEAMANAN: tautan hasil tugas (task links) di Ormawa Visit yang sudah diarsipkan ternyata masih bisa diubah oleh Koordinator/Staff/Intern karena aturan lama tak sengaja tertinggal. Kini benar-benar terkunci — hanya Admin yang bisa mengubahnya di edisi arsip.",
+      "PERBAIKAN: fitur gabung sel rundown gagal di Mode Demo (\"Could not find the 'merges' column\") karena database demo belum punya kolomnya. Skrip data demo kini menambah kolom itu otomatis; jalankan ulang skrip demo untuk memperbaikinya.",
+      "Pemeriksaan otomatis ditambahkan yang membuktikan tiap perbaikan di atas dari sudut pandang penyerang, sehingga celah yang sama tidak bisa kembali diam-diam.",
+    ],
+  },
+  {
     version: "1.24.0",
     date: "2026-07-29",
     title: "Reach & Offer dan Anggota EA kini benar-benar terpisah per Ormawa Visit",
