@@ -24,8 +24,14 @@
 --   2. reset-data.sql   <-- file ini
 --   3. setup.sql        (skema; aman diulang)
 --   4. seed.sql         (data awal, jalankan SEKALI)
---   5. migrations/0032_import_superlink_from_sheet.sql
---   6. migrations/0033_performance_measurement_data.sql
+--   5. migrations/0019_real_roster.sql   (divisi + anggota + tim ASLI per edisi)
+--   6. migrations/0032_import_superlink_from_sheet.sql
+--   7. migrations/0033_performance_measurement_data.sql
+--
+-- Langkah 5 penting: `seed.json` masih memuat roster lama (44 orang tanpa edisi),
+-- dan anggota tanpa edisi akan muncul di SEMUA Ormawa Visit. Karena itu seed.sql
+-- sengaja TIDAK menulis anggota sama sekali — roster asli per edisi (119 orang,
+-- 17 divisi, 17 tim) datang dari 0019.
 --
 -- Semua penghapusan ada di SATU blok DO: tidak memakai tabel sementara, dan
 -- tidak bergantung pada state antar-statement (SQL editor Supabase lewat

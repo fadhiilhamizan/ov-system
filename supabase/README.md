@@ -28,8 +28,27 @@ Kalau data sudah kotor, jangan tambal sedikit-sedikit; kosongkan lalu isi sekali
    mendaftar ulang atau minta peran lagi.
 3. `setup.sql` — memastikan skemanya lengkap (aman diulang).
 4. `seed.sql` — data awal. **Jalankan tepat sekali.**
-5. `migrations/0032_import_superlink_from_sheet.sql` — Super Link dari Excel.
-6. `migrations/0033_performance_measurement_data.sql` — Performance Measurement.
+5. `migrations/0019_real_roster.sql` — divisi, anggota, dan tim **asli per edisi**.
+6. `migrations/0032_import_superlink_from_sheet.sql` — Super Link dari Excel.
+7. `migrations/0033_performance_measurement_data.sql` — Performance Measurement.
+
+### Kenapa langkah 5 wajib
+
+`getProspects(eventId)` dan `getMembers(eventId)` menyaring secara **longgar**:
+baris yang `event_id`-nya null dianggap milik SEMUA edisi. Itu memang disengaja
+(baris legacy tanpa edisi tetap tampil), tapi akibatnya baris tanpa edisi
+**merembes** ke mana-mana.
+
+Dua hal yang pernah salah karena ini:
+
+- **Reach & Offer** — seluruh 61 prospek ditulis dengan `event_id` null, jadi
+  tiap Ormawa Visit menampilkan 61 padahal miliknya sendiri hanya 12–19.
+  Sudah diperbaiki: generator sekarang menurunkan edisi dari teks `batch` dan
+  **menolak jalan** kalau ada batch yang tidak dikenal.
+- **Anggota EA** — 44 anggota di `seed.json` adalah roster lama tanpa edisi dan
+  tanpa divisi. `seed.sql` sekarang sengaja tidak menulis anggota sama sekali;
+  roster asli per edisi (119 orang, 17 divisi, 17 tim) datang dari
+  `0019_real_roster.sql`. Melewatkan langkah 5 berarti daftar anggota kosong.
 
 Kedua skrip di langkah 2 dan 4 menampilkan verifikasi di akhir. Kalau angka di
 langkah 2 tidak semuanya 0, berhenti dan periksa dulu sebelum lanjut.

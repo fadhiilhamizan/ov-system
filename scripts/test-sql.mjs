@@ -381,6 +381,26 @@ try {
   await fresh.exec(sb("migrations/0030_dedupe_rows.sql"));
   ok("0030 tidak menemukan kembar apa pun pada data hasil rebuild",
     JSON.stringify(await shape()) === JSON.stringify(before));
+
+  // ---- isolasi antar-edisi ----
+  // `getProspects`/`getMembers` menganggap event_id null milik SEMUA edisi, jadi
+  // satu baris tanpa edisi merembes ke mana-mana. Ini yang bikin tiap Ormawa
+  // Visit menampilkan 61 prospek padahal miliknya 12-19.
+  const nulls = async (t) => Number((await fresh.query(`select count(*) c from ${t} where event_id is null`)).rows[0].c);
+  ok("tidak ada prospek tanpa edisi (merembes ke semua Ormawa Visit)", (await nulls("prospects")) === 0);
+  ok("tidak ada anggota tanpa edisi", (await nulls("members")) === 0);
+
+  const perEvent = async (t) =>
+    (await fresh.query(`select event_id, count(*)::int c from ${t} group by 1 order by 1`)).rows;
+  const pros = await perEvent("prospects");
+  console.log(`        prospek/edisi: ${pros.map((r) => `${r.event_id}=${r.c}`).join(", ")}`);
+  ok("prospek terbagi ke 4 edisi, tidak seragam", pros.length === 4 && new Set(pros.map((r) => r.c)).size > 1);
+
+  await fresh.exec(sb("migrations/0019_real_roster.sql"));
+  const mem = await perEvent("members");
+  console.log(`        anggota/edisi: ${mem.map((r) => `${r.event_id}=${r.c}`).join(", ")}`);
+  ok("0019 mengisi roster asli per edisi", mem.length === 4 && mem.every((r) => r.c > 0));
+  ok("masih tidak ada anggota tanpa edisi setelah 0019", (await nulls("members")) === 0);
 } catch (e) {
   ok("alur rebuild berjalan tanpa error", false, e.message.split("\n")[0]);
 }

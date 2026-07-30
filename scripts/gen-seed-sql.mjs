@@ -19,6 +19,38 @@ const arr = (v) =>
     ? "'{}'::text[]"
     : `array[${v.map((x) => `'${String(x).replace(/'/g, "''")}'`).join(",")}]::text[]`;
 
+// ============================================================
+// Edition scoping.
+//
+// `getProspects(eventId)` / `getMembers(eventId)` filter LENIENTLY: a row whose
+// event_id is null is treated as belonging to every edition. That is deliberate
+// (legacy unscoped rows still render), but it means an unscoped row LEAKS —
+// every Ormawa Visit showed all 61 prospects instead of its own 12-19.
+//
+// So the generator refuses to emit an unscoped prospect or member. Prospects
+// carry their edition in the `batch` text, which is mapped here; a batch name
+// that isn't recognised is a hard error rather than a silent null.
+// ============================================================
+const BATCH_TO_EVENT = {
+  "Ormawa Visit Pertama 2025": "ov1-2025",
+  "Ormawa Visit Kedua 2025": "ov2-2025",
+  "Ormawa Visit Pertama 2026": "ov1-2026",
+  "Ormawa Visit Kedua 2026": "ov2-2026",
+};
+
+function prospectEvent(p) {
+  if (p.event_id) return p.event_id;
+  const mapped = BATCH_TO_EVENT[(p.batch ?? "").trim()];
+  if (!mapped) {
+    throw new Error(
+      `seed.json: prospek "${p.org_name || p.id}" tidak punya event_id dan batch-nya ` +
+        `("${p.batch}") tidak dikenal. Tambahkan pemetaannya di BATCH_TO_EVENT — ` +
+        `sebuah prospek tanpa edisi akan muncul di SEMUA Ormawa Visit.`,
+    );
+  }
+  return mapped;
+}
+
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
 // Events first — divisions are per-event (migration 0018) and reference them.
@@ -32,8 +64,19 @@ for (const e of seed.events)
   for (const x of seed.divisions)
     out += `insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown) values (${q(e.id)},${q(x.key)},${q(x.name)},${q(x.short)},${q(x.color)},${x.order},${b(x.exclude_from_rundown)}) on conflict (event_id,key) do nothing;\n`;
 
+// The roster in seed.json is the PRE-0019 set: 44 people with no edition and no
+// division. Emitting it would put all 44 into every Ormawa Visit. The real
+// per-edition roster (119 people across 4 editions) lives in
+// migrations/0019_real_roster.sql, which is part of the rebuild recipe.
+const scopedMembers = seed.members.filter((m) => m.event_id);
+const unscopedMembers = seed.members.length - scopedMembers.length;
 out += `\n-- members (divisions[] is the real membership; division = the primary)\n`;
-for (const m of seed.members) {
+if (unscopedMembers) {
+  out += `-- ${unscopedMembers} anggota di seed.json TIDAK ditulis: mereka belum punya event_id,\n`;
+  out += `-- dan anggota tanpa edisi akan muncul di SEMUA Ormawa Visit. Roster asli\n`;
+  out += `-- per-edisi ada di migrations/0019_real_roster.sql — jalankan itu setelah file ini.\n`;
+}
+for (const m of scopedMembers) {
   const divs = m.divisions?.length ? m.divisions : m.division ? [m.division] : [];
   out += `insert into members(event_id,name,nickname,nrp,type,year,division,divisions) values (${q(m.event_id)},${q(m.name)},${q(m.nickname)},${q(m.nrp)},${q(m.type)},${n(m.year)},${q(divs[0] ?? null)},${arr(divs)});\n`;
 }
@@ -44,7 +87,7 @@ for (const t of seed.tasks)
 
 out += `\n-- prospects\n`;
 for (const p of seed.prospects)
-  out += `insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(p.event_id)},${q(p.batch)},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
+  out += `insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(prospectEvent(p))},${q(p.batch)},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
 
 out += `\n-- links\n`;
 for (const l of seed.links)

@@ -7,6 +7,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.24.0",
+    date: "2026-07-29",
+    title: "Reach & Offer dan Anggota EA kini benar-benar terpisah per Ormawa Visit",
+    changes: [
+      "PERBAIKAN: seluruh 61 data Reach & Offer tersimpan tanpa penanda Ormawa Visit, sehingga setiap edisi menampilkan semuanya — padahal miliknya sendiri hanya 12–19. Sekarang tiap prospek terikat ke edisinya: OV1 2025 punya 19, OV2 2025 punya 16, OV1 2026 punya 12, OV2 2026 punya 14.",
+      "PERBAIKAN: 44 anggota EA juga tersimpan tanpa penanda Ormawa Visit dan ikut muncul di semua edisi. Daftar anggota kini memakai roster asli per edisi — OV1 2025: 17 orang, OV2 2025: 44, OV1 2026: 15, OV2 2026: 43.",
+      "Skrip pembuat data awal sekarang MENOLAK berjalan kalau ada prospek tanpa Ormawa Visit, dan tidak lagi menulis anggota tanpa edisi. Jadi kebocoran seperti ini tidak bisa masuk lagi lewat pintu yang sama.",
+      "Panduan rebuild data diperbarui: setelah data awal, wajib menjalankan skrip roster asli supaya daftar divisi, anggota, dan tim terisi per edisi.",
+    ],
+  },
+  {
     version: "1.23.0",
     date: "2026-07-29",
     title: "Rebuild data bersih, 60 terjemahan Inggris, changelog dilipat & Tamu bisa buka Pengaturan",
