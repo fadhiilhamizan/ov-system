@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Clock, Plus, Trash2, Loader2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
+import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,6 +12,8 @@ import {
   MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDown, mergedDown, splitCell,
 } from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
+import { useAutosave } from "@/lib/use-autosave";
+import { SaveIndicator } from "@/components/ui/save-indicator";
 import type { Division, RundownItem } from "@/lib/types";
 
 /** Keep local input state in sync when the server value changes (no effect). */
@@ -166,10 +168,13 @@ export function RundownView({
   const activeVariant = "A";
   const list = React.useMemo(() => [...items].sort((a, b) => a.no - b.no), [items]);
 
+  // Inline cell edits autosave on blur; the SaveIndicator shows "Tersimpan".
+  const autosave = useAutosave();
   function save(id: string, patch: Partial<RundownItem>) {
-    start(async () => {
+    autosave.run(async () => {
       const res = await updateRundownAction(id, patch);
       if (!res.ok) toast.error(res.error);
+      return res;
     });
   }
   /** Save a time field and auto-recompute the duration when both ends parse. */
@@ -299,11 +304,16 @@ export function RundownView({
 
   return (
     <div className="space-y-3">
-      {pending && (
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" /> {t("Menyimpan…")}
-        </span>
-      )}
+      {/* Autosave (inline cell edits) and structural ops (add/remove/duplicate)
+          each get their own cue: the badge for the former, toasts for the latter. */}
+      <div className="flex h-4 items-center">
+        <SaveIndicator status={autosave.status} />
+        {pending && autosave.status === "idle" && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            {t("Menyimpan…")}
+          </span>
+        )}
+      </div>
 
       {/* border-separate (not collapse): sticky/frozen columns don't paint their
           background reliably under border-collapse, which made them look hollow. */}

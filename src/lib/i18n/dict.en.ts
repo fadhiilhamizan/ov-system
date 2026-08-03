@@ -811,6 +811,13 @@ export const EN: Record<string, string> = {
     "The original Main Sheets from before this system existed. Kept for reference — every Ormawa Visit that predates this app is recorded there.",
   "Daftar nama & NRP anggota hanya tampil untuk akun yang sudah punya peran. Ajukan peran lewat menu akun untuk melihatnya.":
     "Member names & student IDs are only shown to accounts that already have a role. Request a role from the account menu to see them.",
+  // Autosave indicator (v1.25.0)
+  "Tersimpan": "Saved",
+  "Gagal menyimpan": "Save failed",
+  // Signup throttle (v1.25.0)
+  "Terlalu banyak percobaan. Tunggu sebentar sebelum mencoba lagi.":
+    "Too many attempts. Please wait a moment before trying again.",
+  "Tunggu": "Wait",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the

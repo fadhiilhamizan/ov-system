@@ -15,6 +15,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       "PERBAIKAN KEAMANAN: tautan hasil tugas (task links) di Ormawa Visit yang sudah diarsipkan ternyata masih bisa diubah oleh Koordinator/Staff/Intern karena aturan lama tak sengaja tertinggal. Kini benar-benar terkunci — hanya Admin yang bisa mengubahnya di edisi arsip.",
       "PERBAIKAN: fitur gabung sel rundown gagal di Mode Demo (\"Could not find the 'merges' column\") karena database demo belum punya kolomnya. Skrip data demo kini menambah kolom itu otomatis; jalankan ulang skrip demo untuk memperbaikinya.",
       "Pemeriksaan otomatis ditambahkan yang membuktikan tiap perbaikan di atas dari sudut pandang penyerang, sehingga celah yang sama tidak bisa kembali diam-diam.",
+      "Indikator 'Tersimpan' kini muncul saat mengedit sel Rundown, menyusun ulang urutan Hari-H, dan mengubah Qty/Harga di Anggaran — jadi jelas perubahan sudah tersimpan, bukan hanya muncul pesan kalau gagal.",
+      "Penyorotan 'tugasku' di Work Breakdown kini mencocokkan nama secara utuh: 'Ali' tidak lagi keliru cocok dengan tugas milik 'Alifia'.",
+      "Halaman Daftar akun kini membatasi jumlah percobaan dalam waktu singkat untuk mencegah penyalahgunaan, lengkap dengan hitung mundur.",
+      "Kotak centang dan label status di tampilan tabel diperbesar area sentuhnya agar lebih mudah ditekan di layar ponsel.",
     ],
   },
   {

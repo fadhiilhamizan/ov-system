@@ -24,14 +24,30 @@ export default function SignUpPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [checkEmail, setCheckEmail] = React.useState(false);
   const [pending, setPending] = React.useState(false);
+  // Client-side throttle. Supabase GoTrue rate-limits sign-ups server-side too,
+  // but this stops the form itself being hammered: at most MAX attempts per
+  // WINDOW, then a visible cooldown. Defence in depth, not the only line.
+  const attempts = React.useRef<number[]>([]);
+  const [cooldown, setCooldown] = React.useState(0);
+  const MAX_ATTEMPTS = 5;
+  const WINDOW_MS = 60_000;
+  const COOLDOWN_S = 30;
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) router.replace("/dashboard");
   }, [router]);
 
+  // Tick the cooldown down once a second while it is active.
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((c) => (c <= 1 ? 0 : c - 1)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (cooldown > 0) return;
     if (password.length < MIN_PASSWORD) {
       setError(t("Kata sandi minimal 8 karakter."));
       return;
@@ -40,6 +56,15 @@ export default function SignUpPage() {
       setError(t("Konfirmasi kata sandi tidak cocok."));
       return;
     }
+    // Prune old attempts, then enforce the per-window cap.
+    const now = Date.now();
+    attempts.current = attempts.current.filter((ts) => now - ts < WINDOW_MS);
+    if (attempts.current.length >= MAX_ATTEMPTS) {
+      setCooldown(COOLDOWN_S);
+      setError(t("Terlalu banyak percobaan. Tunggu sebentar sebelum mencoba lagi."));
+      return;
+    }
+    attempts.current.push(now);
     setPending(true);
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -146,9 +171,9 @@ export default function SignUpPage() {
                     {error}
                   </p>
                 )}
-                <Button type="submit" className="w-full" disabled={pending}>
+                <Button type="submit" className="w-full" disabled={pending || cooldown > 0}>
                   {pending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
-                  {t("Daftar")}
+                  {cooldown > 0 ? `${t("Tunggu")} ${cooldown}s` : t("Daftar")}
                 </Button>
               </form>
 

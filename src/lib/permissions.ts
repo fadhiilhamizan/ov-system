@@ -24,16 +24,19 @@ export function canRequestRole(user: AppUser): boolean {
 /**
  * Does the user's name appear in a task's free-text PIC field?
  *
- * Presentational only — it highlights "your" tasks, and must never gate a
- * write. `pic` is a comma-joined display string, so the match is fuzzy: a user
- * named "Ali" matches a task assigned to "Alifia". There is also no division
- * fallback any more, because an account has no division (see AppUser).
+ * Presentational only — it highlights "your" tasks and must never gate a write.
+ * `pic` is a comma-joined display string ("Fadhiil, Dona"), so we match the
+ * user's first name as a WHOLE WORD inside it, splitting on both commas and
+ * spaces. A substring check used to make "Ali" light up every task assigned to
+ * "Alifia"; whole-word matching fixes that. There is no division fallback — an
+ * account has no division (see AppUser).
  */
 export function isAssignedTo(user: AppUser, task: Task): boolean {
-  const pic = (task.pic ?? "").toLowerCase();
   const name = user.name.toLowerCase().replace(/\(.*?\)/g, "").trim();
   const first = name.split(/\s+/)[0] ?? "";
-  return first.length > 1 && pic.includes(first);
+  if (first.length < 2) return false;
+  const picWords = (task.pic ?? "").toLowerCase().split(/[\s,]+/).filter(Boolean);
+  return picWords.includes(first);
 }
 
 /**

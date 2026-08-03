@@ -47,7 +47,7 @@ export function StatusMenu({ task, user }: { task: Task; user: AppUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-ring",
+          "inline-flex min-h-6 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-ring",
           m.bg,
           m.color,
           pending && "opacity-60",

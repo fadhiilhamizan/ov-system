@@ -22,6 +22,8 @@ import {
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { useAutosave } from "@/lib/use-autosave";
+import { SaveIndicator } from "@/components/ui/save-indicator";
 import { useSynced } from "@/lib/use-synced";
 import type { BudgetItem, BudgetPlan, OVEvent } from "@/lib/types";
 
@@ -300,6 +302,7 @@ export function BudgetView({
   const sel = useMultiSelect();
   React.useEffect(() => sel.clear(), [plans]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkPending, startBulk] = React.useTransition();
+  const autosave = useAutosave();
   function bulkDelete() {
     startBulk(async () => {
       const res = await bulkDeleteBudgetItemsAction(sel.ids);
@@ -320,16 +323,22 @@ export function BudgetView({
         }),
       })),
     );
-    updateBudgetItemAction(itemId, patch).then((r) => {
+    autosave.run(async () => {
+      const r = await updateBudgetItemAction(itemId, patch);
       if (!r.ok) {
         toast.error(r.error);
         setState(plans);
       }
+      return r;
     });
   }
 
   return (
     <div className="space-y-5">
+      {/* Qty/price edit inline and debounce-save; this confirms it stuck. */}
+      <div className="flex h-4 items-center justify-end">
+        <SaveIndicator status={autosave.status} />
+      </div>
       {canManage && sel.count > 0 && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 backdrop-blur">
           <span className="text-sm font-medium">{sel.count} {t("item dipilih")}</span>

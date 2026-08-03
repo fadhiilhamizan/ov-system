@@ -26,6 +26,8 @@ import { EmptyState } from "@/components/ui/empty";
 import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction, duplicateJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
+import { useAutosave } from "@/lib/use-autosave";
+import { SaveIndicator } from "@/components/ui/save-indicator";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
 import { cn } from "@/lib/utils";
@@ -199,6 +201,7 @@ export function JobsTable({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const autosave = useAutosave();
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -207,8 +210,10 @@ export function JobsTable({
     if (from < 0 || to < 0) return;
     const next = arrayMove(items, from, to);
     setItems(next); // optimistic
-    reorderJobsAction(next.map((j) => j.id)).then((res) => {
+    autosave.run(async () => {
+      const res = await reorderJobsAction(next.map((j) => j.id));
       if (!res.ok) { toast.error(res.error); setItems(sorted); }
+      return res;
     });
   }
 
@@ -216,7 +221,10 @@ export function JobsTable({
     <div className="space-y-4">
       {canManage && (
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">{t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}</p>
+          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            {t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}
+            <SaveIndicator status={autosave.status} />
+          </p>
           <JobFormDialog mode="create" eventId={eventId} trigger={
             <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
           } />

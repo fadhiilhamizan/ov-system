@@ -194,6 +194,23 @@ describe("isAssignedTo", () => {
     expect(isAssignedTo(u, task({ pic: "budi" }))).toBe(true);
     expect(isAssignedTo(u, task({ pic: "andi" }))).toBe(false);
   });
+  it("matches a first name as a WHOLE WORD in a comma-joined PIC", () => {
+    const u = user("staff");
+    u.name = "Ali Andro";
+    expect(isAssignedTo(u, task({ pic: "Fadhiil, Ali, Dona" }))).toBe(true);
+    expect(isAssignedTo(u, task({ pic: "Ali Naina Izzan" }))).toBe(true);
+  });
+  it("no longer matches on a substring — 'Ali' is not part of 'Alifia'", () => {
+    const u = user("staff");
+    u.name = "Ali Andro";
+    expect(isAssignedTo(u, task({ pic: "Alifia Rahma" }))).toBe(false);
+    expect(isAssignedTo(u, task({ pic: "Alimudin" }))).toBe(false);
+  });
+  it("ignores parenthetical suffixes and one-letter names", () => {
+    const u = user("staff");
+    u.name = "A (Ketua)";
+    expect(isAssignedTo(u, task({ pic: "A" }))).toBe(false); // first name too short
+  });
   it("does NOT fall back to a division — an account has none", () => {
     const u = user("staff");
     u.name = "X";
