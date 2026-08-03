@@ -26,8 +26,8 @@ import { useT } from "@/lib/i18n/provider";
 import type { Member, Prospect } from "@/lib/types";
 
 export function ProspectActions({
-  prospect, batches, members, eventId,
-}: { prospect: Prospect; batches: string[]; members: Member[]; eventId: string }) {
+  prospect, members, eventId,
+}: { prospect: Prospect; members: Member[]; eventId: string }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
@@ -63,7 +63,7 @@ export function ProspectActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProspectFormDialog mode="edit" prospect={prospect} batches={batches} members={members} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
+      <ProspectFormDialog mode="edit" prospect={prospect} members={members} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">

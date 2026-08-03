@@ -192,7 +192,7 @@ export const GUIDE: GuideSection[] = [
       en: "A directory of every important document and link, grouped by Ormawa Visit and division.",
     },
     steps: [
-      { id: "Klik 'Tambah' untuk menambah tautan: nama, URL, Ormawa Visit, dan divisi.", en: "Click 'Add' to add a link: name, URL, Ormawa Visit, and division." },
+      { id: "Klik 'Tambah' untuk menambah tautan: nama, URL, Ormawa Visit, dan divisi. Dropdown divisi hanya menampilkan divisi milik Ormawa Visit yang dipilih.", en: "Click 'Add' to add a link: name, URL, Ormawa Visit, and division. The division dropdown only lists divisions that belong to the selected Ormawa Visit." },
       { id: "Gunakan pencarian dan pemilih 'Jenis Ormawa Visit' untuk menyaring.", en: "Use the search box and the Ormawa Visit picker to filter." },
       { id: "Centang beberapa tautan untuk menghapus sekaligus.", en: "Tick several links to delete them at once." },
     ],
@@ -272,6 +272,7 @@ export const GUIDE: GuideSection[] = [
       { id: "Peran yang sedang dipakai tidak muncul sebagai pilihan, dan Admin tidak pernah bisa diminta lewat cara ini. Akun Admin juga tidak bisa diturunkan lewat pengajuan.", en: "The role you already hold isn't offered as an option, and Admin can never be requested this way. An admin account also can't be demoted through a request." },
       { id: "Satu akun hanya boleh punya satu pengajuan yang menunggu keputusan. Riwayat pengajuan yang sudah diputuskan tetap tersimpan di bawah daftar.", en: "An account may only have one request awaiting a decision. Decided requests stay in the history list below." },
       { id: "Masuk sebagai Tamu (tanpa akun) berbeda dengan mendaftar — Tamu tanpa akun tidak bisa mengajukan peran.", en: "Entering as a Guest (no account) is different from signing up — a guest without an account cannot request a role." },
+      { id: "Untuk memulai cepat, tersedia akun default siap pakai untuk Koordinator, Staff, dan Intern (dibuat lewat skrip supabase/default-accounts.sql). Orang bisa langsung memakainya tanpa mendaftar & menunggu persetujuan. Ganti kata sandi awalnya setelah login pertama.", en: "For a quick start, ready-to-use default accounts exist for Coordinator, Staff, and Intern (created via the supabase/default-accounts.sql script). People can use them straight away without signing up and waiting for approval. Change the initial password after first login." },
       { id: "Di Mode Demo menu ini tetap bisa dibuka, tapi isinya selalu kosong: demo memakai database contoh yang terpisah dan tidak memakai login sama sekali (peran diganti lewat tombol peran di kanan atas), jadi tidak ada akun yang bisa mengajukan maupun diberi peran. Penjelasan ini juga ditampilkan di halamannya.", en: "In Demo Mode this menu still opens but is always empty: the demo runs on a separate sample database with no login at all (you switch role with the role button at the top right), so there is no account to file or receive a request. The page itself explains this too." },
     ],
     access: { id: "Hanya Admin yang bisa membuka dan memutuskan.", en: "Only Admins can open it and decide." },

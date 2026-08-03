@@ -132,10 +132,10 @@ insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('de
 insert into teams(event_id,division,coordinator,fungsionaris,intern) values ('demo-ov','OPERATIONAL',null,'','');
 
 -- prospects
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','Demo','1','','','','Himpunan Demo A','Universitas Contoh','','Andi','DIHUBUNGI','DITERIMA','',false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','Demo','2','','','','Himpunan Demo B','Institut Sample','','Andi','MENGHUBUNGI','DITUNGGU','',false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','Demo','3','','','','Himpunan Demo C','Politeknik Uji','','Budi','DIHUBUNGI','DITOLAK','',false,'demo');
-insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','Demo','4','','','','Himpunan Demo D','Universitas Placeholder','',null,null,null,'',false,'demo');
+insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','1','','','','Himpunan Demo A','Universitas Contoh','','Andi','DIHUBUNGI','DITERIMA','',false,'demo');
+insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','2','','','','Himpunan Demo B','Institut Sample','','Andi','MENGHUBUNGI','DITUNGGU','',false,'demo');
+insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','3','','','','Himpunan Demo C','Politeknik Uji','','Budi','DIHUBUNGI','DITOLAK','',false,'demo');
+insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values ('demo-ov','4','','','','Himpunan Demo D','Universitas Placeholder','',null,null,null,'',false,'demo');
 
 -- links
 insert into links(event_id,section,division,name,url,note,source) values ('demo-ov','Proposal','SECRETARY','Proposal Ormawa Visit Demo','https://example.com/proposal-demo','','demo');

@@ -140,7 +140,6 @@ export function getProspects(eventId?: string): Prospect[] {
 export function createProspect(input: Partial<Prospect>): Prospect {
   const p: Prospect = {
     id: uid("p"),
-    batch: input.batch ?? "Uncategorized",
     no: input.no ?? "",
     date_text: input.date_text ?? "",
     month: input.month ?? "",

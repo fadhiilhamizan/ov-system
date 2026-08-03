@@ -227,7 +227,7 @@ for (const [division, coordinator] of teams)
 
 out += `\n-- prospects\n`;
 prospects.forEach(([org, campus, pic, cs, tr], i) => {
-  out += `insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(EV)},'Demo',${q(String(i + 1))},'','','',${q(org)},${q(campus)},'',${q(pic)},${q(cs)},${q(tr)},'',${b(false)},'demo');\n`;
+  out += `insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(EV)},${q(String(i + 1))},'','','',${q(org)},${q(campus)},'',${q(pic)},${q(cs)},${q(tr)},'',${b(false)},'demo');\n`;
 });
 
 out += `\n-- links\n`;

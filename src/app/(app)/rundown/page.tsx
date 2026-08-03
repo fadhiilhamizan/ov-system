@@ -11,7 +11,7 @@ export const metadata = { title: "Rundown Acara" };
 
 export default async function RundownPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
-  const [items, divisions] = await Promise.all([getRundown(event.id), getDivisions(event.id)]);
+  const [items, divisions] = await Promise.all([getRundown(event.id, "A"), getDivisions(event.id)]);
   // An archived Ormawa Visit is read-only for everyone but admin.
   const writable = canWriteEvent(user, event);
 

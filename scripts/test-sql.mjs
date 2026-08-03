@@ -272,6 +272,7 @@ const PENDING = [
   "0032_import_superlink_from_sheet.sql",
   "0033_performance_measurement_data.sql",
   "0034_task_links_scope_and_roster_pii.sql",
+  "0035_rundown_single_version.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -543,6 +544,100 @@ insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
   ok("SESUDAH catch-up: tulis merges BERHASIL (fitur gabung sel jalan)", afterErr === null);
 } catch (e) {
   ok("uji catch-up demo berjalan", false, e.message.split("\n")[0]);
+}
+
+// ------------------------------------------------------------------
+// 0035 mengkonsolidasi rundown ke satu versi (buang 'variant B').
+//
+// Data lama punya baris A DAN B untuk edisi yang sama; halaman rundown yang
+// tidak menyaring variant menampilkannya dua kali. Bagian ini membangun tiga
+// kasus — edisi dengan A+B, edisi hanya-B, edisi hanya-A — dan membuktikan
+// hasilnya: semua jadi variant A, jumlah A dipertahankan, B hilang, dan edisi
+// yang tadinya hanya-B tidak jadi kosong.
+// ------------------------------------------------------------------
+console.log("\n0035 — rundown satu versi");
+const rd = await PGlite.create({ extensions: { pgcrypto } });
+try {
+  await rd.exec(`
+create table rundown (id uuid primary key default gen_random_uuid(), event_id text, variant text, no int, activity text);
+insert into rundown (event_id, variant, no, activity) values
+  ('ov-ab','A',1,'A1'), ('ov-ab','A',2,'A2'), ('ov-ab','B',1,'B1'), ('ov-ab','B',2,'B2'),
+  ('ov-bonly','B',1,'Bonly1'), ('ov-bonly','B',2,'Bonly2'),
+  ('ov-aonly','A',1,'Aonly1');
+`);
+  await rd.exec(readFileSync(join(__dirname, "../supabase/migrations/0035_rundown_single_version.sql"), "utf8"));
+  const grp = (await rd.query(`select event_id, variant, count(*)::int c from rundown group by 1,2 order by 1,2`)).rows;
+  const at = (e, v) => grp.find((r) => r.event_id === e && r.variant === v)?.c ?? 0;
+  ok("edisi A+B: B dibuang, A dipertahankan (2)", at("ov-ab", "A") === 2 && at("ov-ab", "B") === 0);
+  ok("edisi hanya-B: dipromosikan jadi A, tidak kosong (2)", at("ov-bonly", "A") === 2 && at("ov-bonly", "B") === 0);
+  ok("edisi hanya-A: tak berubah (1)", at("ov-aonly", "A") === 1);
+  ok("tidak ada lagi baris variant B di mana pun", grp.every((r) => r.variant === "A"));
+  // idempotent
+  await rd.exec(readFileSync(join(__dirname, "../supabase/migrations/0035_rundown_single_version.sql"), "utf8"));
+  const total = Number((await rd.query(`select count(*) c from rundown`)).rows[0].c);
+  ok("dijalankan dua kali tidak mengubah jumlah (5)", total === 5);
+} catch (e) {
+  ok("uji 0035 berjalan", false, e.message.split("\n")[0]);
+}
+
+// ------------------------------------------------------------------
+// default-accounts.sql membuat tiga akun login siap pakai (koordinator/staff/
+// intern). Ia menyisipkan baris auth.users + auth.identities lalu memastikan
+// profiles.role benar (trigger handle_new_user membuatnya 'viewer' dulu).
+//
+// Kita tidak bisa menguji GoTrue di sini, tapi kita BISA membuktikan logikanya:
+// akun terbentuk, perannya benar, password ter-hash (bisa diverifikasi crypt),
+// dan menjalankan ulang tidak menggandakan apa pun.
+// ------------------------------------------------------------------
+console.log("\ndefault-accounts — akun default koordinator/staff/intern");
+const da = await PGlite.create({ extensions: { pgcrypto } });
+try {
+  // Skema auth yang lebih lengkap dari yang disediakan Supabase: kolom yang
+  // dipakai skrip, plus auth.identities. Helper uid/jwt tidak dibutuhkan di sini.
+  await da.exec(`
+create role anon;
+create role authenticated;
+create schema auth;
+create table auth.users (
+  instance_id uuid, id uuid primary key, aud text, role text, email text unique,
+  encrypted_password text, email_confirmed_at timestamptz,
+  created_at timestamptz, updated_at timestamptz,
+  raw_app_meta_data jsonb default '{}', raw_user_meta_data jsonb default '{}');
+create table auth.identities (
+  id uuid primary key, user_id uuid references auth.users(id), provider_id text,
+  identity_data jsonb, provider text, last_sign_in_at timestamptz,
+  created_at timestamptz, updated_at timestamptz,
+  unique (provider, provider_id));
+create or replace function auth.uid() returns uuid
+language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
+create or replace function auth.jwt() returns jsonb
+language sql stable as $fn$ select '{}'::jsonb $fn$;
+`);
+  await da.exec(readFileSync(SETUP, "utf8"));
+  await da.exec(readFileSync(join(__dirname, "../supabase/default-accounts.sql"), "utf8"));
+
+  const roleOf = async (email) =>
+    (await da.query(`select role from public.profiles where email = $1`, [email])).rows[0]?.role;
+  ok("koordinator dibuat dengan peran coordinator", (await roleOf("coordinator@ormawavisit.id")) === "coordinator");
+  ok("staff dibuat dengan peran staff", (await roleOf("staff@ormawavisit.id")) === "staff");
+  ok("intern dibuat dengan peran intern", (await roleOf("intern@ormawavisit.id")) === "intern");
+
+  const nUsers = Number((await da.query(`select count(*) c from auth.users`)).rows[0].c);
+  const nIdent = Number((await da.query(`select count(*) c from auth.identities`)).rows[0].c);
+  ok("tepat 3 auth.users + 3 identity email", nUsers === 3 && nIdent === 3);
+
+  const pwOk = (await da.query(
+    `select encrypted_password = crypt('OrmawaVisit123', encrypted_password) m
+       from auth.users where email = 'staff@ormawavisit.id'`)).rows[0].m;
+  ok("password ter-hash bcrypt & cocok dengan default", pwOk === true);
+
+  // Idempotensi: jalankan lagi — jumlah tidak berubah, peran tetap benar.
+  await da.exec(readFileSync(join(__dirname, "../supabase/default-accounts.sql"), "utf8"));
+  const nUsers2 = Number((await da.query(`select count(*) c from auth.users`)).rows[0].c);
+  ok("dijalankan dua kali tidak menggandakan akun (tetap 3)", nUsers2 === 3);
+  ok("peran tetap benar setelah dijalankan ulang", (await roleOf("intern@ormawavisit.id")) === "intern");
+} catch (e) {
+  ok("uji default-accounts berjalan", false, e.message.split("\n")[0]);
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

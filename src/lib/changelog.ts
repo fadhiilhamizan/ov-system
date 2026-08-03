@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.26.0",
+    date: "2026-08-03",
+    title: "Menu sidebar dikelompokkan ulang, akun default per peran, 'Batch' dihapus, & rundown ganda dibereskan",
+    changes: [
+      "Menu samping dibagi jadi kelompok yang lebih rapi: 'Organisasi' yang tadinya terlalu penuh kini terpisah menjadi Organisasi (Anggota, Kegiatan), Bantuan (FAQ, Panduan), dan Sistem (Peran, Pengaturan).",
+      "Akun default siap pakai untuk peran Koordinator, Staff, dan Intern — dibuat lewat skrip supabase/default-accounts.sql, jadi orang bisa langsung masuk tanpa harus mendaftar sendiri lalu menunggu peran disetujui. Kata sandi awal harus diganti setelah login pertama.",
+      "REACH & OFFER: kolom & filter 'Batch' dihapus sepenuhnya. Data sudah terkategori otomatis berdasarkan Ormawa Visit yang sedang dibuka, jadi penanda batch tidak lagi diperlukan dan hanya menambah kerumitan.",
+      "SUPER LINK: saat membuat tautan baru, dropdown Divisi kini hanya menampilkan divisi milik Ormawa Visit yang dipilih di dropdown sebelahnya — bukan semua divisi. Tampilan awal Super Link tetap menampilkan seluruh Ormawa Visit seperti biasa.",
+      "PERBAIKAN: data Rundown yang tampil ganda dibereskan. Dulu ada dua versi (A dan B) untuk edisi yang sama sehingga tiap kegiatan muncul dua kali; kini rundown dikonsolidasikan ke satu versi. Jalankan migrasi 0035 untuk membereskan data yang sudah ada.",
+    ],
+  },
+  {
     version: "1.25.0",
     date: "2026-07-30",
     title: "Privasi roster untuk Tamu, perbaikan kunci arsip tautan tugas, & fitur gabung sel di Mode Demo",

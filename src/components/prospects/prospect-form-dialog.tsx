@@ -36,7 +36,6 @@ const PROSPECT_MODE = "__unset__";
 export function ProspectFormDialog({
   mode,
   prospect,
-  batches,
   members,
   eventId,
   open,
@@ -45,7 +44,6 @@ export function ProspectFormDialog({
 }: {
   mode: "create" | "edit";
   prospect?: Prospect;
-  batches: string[];
   members: Member[];
   eventId: string;
   open?: boolean;
@@ -59,7 +57,6 @@ export function ProspectFormDialog({
   const [pending, start] = React.useTransition();
 
   const [f, setF] = useResetOn(`${isOpen}:${prospect?.id ?? "new"}`, () => ({
-    batch: prospect?.batch ?? batches[0] ?? "Prospek Baru",
     org_name: prospect?.org_name ?? "",
     campus: prospect?.campus ?? "",
     contact: prospect?.contact ?? "",
@@ -132,16 +129,7 @@ export function ProspectFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5">
-              <Label>{t("Batch / Kampanye")}</Label>
-              <Input value={f.batch} onChange={(e) => setF({ ...f, batch: e.target.value })} list="batches" />
-              <datalist id="batches">
-                {batches.map((b) => (
-                  <option key={b} value={b} />
-                ))}
-              </datalist>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>{t("Lokasi")}</Label>
               <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="Gedung / kota…" />

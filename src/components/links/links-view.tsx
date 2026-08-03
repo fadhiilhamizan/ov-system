@@ -25,7 +25,7 @@ import { createLinkAction, updateLinkAction, deleteLinkAction, bulkDeleteLinksAc
 import { isUrl } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
-import type { Division, LinkItem, OVEvent, Team } from "@/lib/types";
+import type { Division, LinkItem, OVEvent } from "@/lib/types";
 
 const NO_DIVISION = "__none__";
 
@@ -42,13 +42,12 @@ function resolveDivision(raw: string, divisions: Division[]): Division | null {
 
 // ---------------- Form ----------------
 function LinkFormDialog({
-  mode, link, events, divisions, teams, defaultEventId, open, onOpenChange, trigger,
+  mode, link, events, divisions, defaultEventId, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   link?: LinkItem;
   events: OVEvent[];
   divisions: Division[];
-  teams: Team[];
   defaultEventId: string;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
@@ -67,12 +66,16 @@ function LinkFormDialog({
     note: link?.note ?? "",
   }));
 
-  // Divisions actually used in the chosen Ormawa Visit (via team structure);
-  // falls back to the full division list if that event has no team data yet.
-  const availableDivisions = React.useMemo(() => {
-    const used = new Set(teams.filter((t) => t.event_id === f.event_id).map((t) => t.division));
-    return used.size ? divisions.filter((d) => used.has(d.key)) : divisions;
-  }, [teams, divisions, f.event_id]);
+  // Exactly the divisions that BELONG to the chosen Ormawa Visit. Since
+  // migration 0018 each division row carries its own event_id, so this is a
+  // direct match — no need to infer membership from team data, and no "show
+  // everything" fallback that used to leak other editions' divisions into the
+  // dropdown. `divisions` here is the cross-event list (the page loads all, so
+  // the directory stays cross-event), filtered per the selected edition.
+  const availableDivisions = React.useMemo(
+    () => divisions.filter((d) => d.event_id === f.event_id),
+    [divisions, f.event_id],
+  );
 
   // Derived, not stored: if the picked division is not offered for the chosen
   // Ormawa Visit, fall back to "no division" without an effect round-trip.
@@ -175,12 +178,11 @@ function LinkFormDialog({
 }
 
 function LinkActions({
-  link, events, divisions, teams, defaultEventId, canDelete,
+  link, events, divisions, defaultEventId, canDelete,
 }: {
   link: LinkItem;
   events: OVEvent[];
   divisions: Division[];
-  teams: Team[];
   defaultEventId: string;
   canDelete: boolean;
 }) {
@@ -202,7 +204,7 @@ function LinkActions({
         </DropdownMenuContent>
       </DropdownMenu>
       <LinkFormDialog
-        mode="edit" link={link} events={events} divisions={divisions} teams={teams}
+        mode="edit" link={link} events={events} divisions={divisions}
         defaultEventId={defaultEventId} open={editOpen} onOpenChange={setEditOpen}
       />
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
@@ -229,7 +231,6 @@ export function LinksView({
   links,
   events,
   divisions,
-  teams,
   defaultEventId,
   canCreate,
   canManage,
@@ -238,7 +239,6 @@ export function LinksView({
   links: LinkItem[];
   events: OVEvent[];
   divisions: Division[];
-  teams: Team[];
   defaultEventId: string;
   canCreate: boolean;
   /** "limited" access and up: edit existing entries. */
@@ -322,7 +322,7 @@ export function LinksView({
         </div>
         {canCreate && (
           <LinkFormDialog
-            mode="create" events={events} divisions={divisions} teams={teams}
+            mode="create" events={events} divisions={divisions}
             defaultEventId={eventFilter !== "all" ? eventFilter : defaultEventId}
             trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
           />
@@ -384,7 +384,7 @@ export function LinksView({
                             {t("Buka")} <ExternalLink className="size-3" />
                           </a>
                           {canManage && (
-                            <LinkActions link={l} events={events} divisions={divisions} teams={teams} defaultEventId={defaultEventId} canDelete={canDelete} />
+                            <LinkActions link={l} events={events} divisions={divisions} defaultEventId={defaultEventId} canDelete={canDelete} />
                           )}
                         </div>
                       ))}

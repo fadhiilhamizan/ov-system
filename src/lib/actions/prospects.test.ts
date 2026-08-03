@@ -29,7 +29,7 @@ const user = (over: Partial<AppUser> = {}): AppUser => ({
 });
 
 const prospect = (over: Partial<Prospect> = {}): Prospect => ({
-  id: "p1", event_id: "ov1", batch: "B1", no: "1", date_text: "", month: "",
+  id: "p1", event_id: "ov1", no: "1", date_text: "", month: "",
   contact: "", org_name: "HIMA X", campus: "ITS", location: "", mode: "",
   pic: "", contact_status: "", their_response: "", our_response: "",
   done: false, is_primary: false, source: "manual", ...over,

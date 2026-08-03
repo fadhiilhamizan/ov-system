@@ -245,7 +245,6 @@ export const divisionSchema = z.object({
 // repo instead of the raw client payload (mass-assignment protection).
 const prospectBase = z.object({
   event_id: z.string().trim().max(128).optional().nullable(),
-  batch: z.string().trim().max(120).optional(),
   no: z.string().trim().max(32).optional(),
   date_text: z.string().trim().max(60).optional(),
   month: z.string().trim().max(40).optional(),

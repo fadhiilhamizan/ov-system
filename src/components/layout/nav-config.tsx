@@ -118,6 +118,11 @@ export const NAV: NavGroup[] = [
         icon: CalendarRange,
         description: "Kelola daftar Ormawa Visit",
       },
+    ],
+  },
+  {
+    group: "Bantuan",
+    items: [
       {
         key: "faq",
         label: "FAQ",
@@ -132,6 +137,11 @@ export const NAV: NavGroup[] = [
         icon: BookOpen,
         description: "Alur penggunaan website dari awal sampai akhir",
       },
+    ],
+  },
+  {
+    group: "Sistem",
+    items: [
       {
         key: "roles",
         label: "Role Request",

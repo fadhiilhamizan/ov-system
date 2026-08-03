@@ -124,7 +124,10 @@ export interface TaskLinkInput {
 export interface Prospect {
   id: string;
   event_id?: string | null;
-  batch: string;
+  // NOTE: the `prospects.batch` DB column still exists (seed generation uses it
+  // to derive event_id), but it is no longer part of the app model — the
+  // Ormawa Visit an item belongs to is already `event_id`, which made batch
+  // redundant clutter. Nothing in the UI reads or writes it any more.
   no: string;
   date_text: string;
   month: string;

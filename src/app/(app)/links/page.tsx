@@ -1,6 +1,6 @@
 import { requireModule } from "@/lib/guard";
 import { getActiveEvent } from "@/lib/session";
-import { getLinks, getEvents, getDivisions, getTeams } from "@/lib/data/repo";
+import { getLinks, getEvents, getDivisions } from "@/lib/data/repo";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { LinksView } from "@/components/links/links-view";
@@ -11,12 +11,11 @@ export const metadata = { title: "Super Link" };
 export default async function LinksPage() {
   // Guard first: guests have no access to Super Link.
   const user = await requireModule("links");
-  const [activeEvent, links, events, divisions, teams] = await Promise.all([
+  const [activeEvent, links, events, divisions] = await Promise.all([
     getActiveEvent(),
     getLinks(),
     getEvents(),
     getDivisions(),
-    getTeams(),
   ]);
   const t = await getT();
 
@@ -30,7 +29,6 @@ export default async function LinksPage() {
         links={links}
         events={events}
         divisions={divisions}
-        teams={teams}
         defaultEventId={activeEvent.id}
         canCreate={can.createLink(user)}
         canManage={can.manageLinks(user)}

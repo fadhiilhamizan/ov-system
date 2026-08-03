@@ -36,7 +36,7 @@ import type { AppUser, Member, Prospect } from "@/lib/types";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
 
-type ProspectSortKey = "org_name" | "campus" | "contact" | "pic" | "stage" | "batch";
+type ProspectSortKey = "org_name" | "campus" | "contact" | "pic" | "stage";
 
 function StageBadge({ p }: { p: Prospect }) {
   const t = useT();
@@ -65,10 +65,8 @@ export function ProspectsView({
 }) {
   const t = useT();
   const manage = can.manageProspects(user);
-  const batches = React.useMemo(() => [...new Set(prospects.map((p) => p.batch))], [prospects]);
   const [view, setView] = React.useState<"table" | "board">("table");
   const [q, setQ] = React.useState("");
-  const [batch, setBatch] = React.useState("all");
   const [stage, setStage] = React.useState("all");
   const sort = useMultiSort<ProspectSortKey>();
   const sel = useMultiSelect();
@@ -78,13 +76,12 @@ export function ProspectsView({
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
     return prospects.filter((p) => {
-      if (batch !== "all" && p.batch !== batch) return false;
       if (stage !== "all" && prospectStage(p) !== stage) return false;
       if (query && !`${p.org_name} ${p.campus} ${p.contact} ${p.pic}`.toLowerCase().includes(query))
         return false;
       return true;
     });
-  }, [prospects, q, batch, stage]);
+  }, [prospects, q, stage]);
 
   const stageOrder = React.useMemo(
     () => Object.fromEntries(PIPELINE_STAGES.map((s, i) => [s.key, i])),
@@ -98,13 +95,12 @@ export function ProspectsView({
         case "contact": return p.contact.toLowerCase();
         case "pic": return p.pic.toLowerCase();
         case "stage": return stageOrder[prospectStage(p)] ?? 99;
-        case "batch": return p.batch.toLowerCase();
       }
     };
     return sortRows(filtered, sort.rules, val);
   }, [filtered, sort.rules, stageOrder]);
 
-  const hasFilters = q || batch !== "all" || stage !== "all";
+  const hasFilters = q || stage !== "all";
   const allSelected = rows.length > 0 && rows.every((p) => sel.selected.has(p.id));
   function bulkDelete() {
     startBulk(async () => {
@@ -122,19 +118,6 @@ export function ProspectsView({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari himpunan, kampus, PIC…")} className="pl-9" />
           </div>
-          <Select value={batch} onValueChange={setBatch}>
-            <SelectTrigger className="w-auto min-w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("Semua Batch")}</SelectItem>
-              {batches.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select value={stage} onValueChange={setStage}>
             <SelectTrigger className="w-auto min-w-[150px]">
               <SelectValue />
@@ -149,7 +132,7 @@ export function ProspectsView({
             </SelectContent>
           </Select>
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setBatch("all"); setStage("all"); }}>
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStage("all"); }}>
               <X className="size-4" /> {t("Reset")}
             </Button>
           )}
@@ -174,7 +157,6 @@ export function ProspectsView({
           {manage && (
             <ProspectFormDialog
               mode="create"
-              batches={batches}
               members={members}
               eventId={activeEventId}
               trigger={
@@ -223,7 +205,6 @@ export function ProspectsView({
                   <SortHead sort={sort} k="contact">{t("Kontak")}</SortHead>
                   <SortHead sort={sort} k="pic">{t("PIC")}</SortHead>
                   <SortHead sort={sort} k="stage">{t("Tahap")}</SortHead>
-                  <SortHead sort={sort} k="batch">{t("Batch")}</SortHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -256,10 +237,9 @@ export function ProspectsView({
                     <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
                     <TableCell className="text-sm">{p.pic || "-"}</TableCell>
                     <TableCell><StageBadge p={p} /></TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{p.batch}</TableCell>
                     {manage && (
                       <TableCell>
-                        <ProspectActions prospect={p} batches={batches} members={members} eventId={activeEventId} />
+                        <ProspectActions prospect={p} members={members} eventId={activeEventId} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -286,7 +266,7 @@ export function ProspectsView({
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium">{p.org_name || "-"}</p>
-                        {manage && <ProspectActions prospect={p} batches={batches} members={members} eventId={activeEventId} />}
+                        {manage && <ProspectActions prospect={p} members={members} eventId={activeEventId} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}
                       <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">

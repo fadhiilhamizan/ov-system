@@ -110,7 +110,7 @@ export async function resetDemoDataAction(): Promise<Result> {
   );
   await seed("prospects",
     demoSeed.prospects.map(([org_name, campus, pic, contact_status, their_response], i) => ({
-      event_id: EV, batch: "Demo", no: String(i + 1), org_name, campus, pic,
+      event_id: EV, no: String(i + 1), org_name, campus, pic,
       contact_status, their_response, source: "demo",
     })),
   );

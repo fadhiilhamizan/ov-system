@@ -298,7 +298,7 @@ export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> 
   if (!USE_SUPABASE) return local.getProspects(eventId);
   const { data } = await (await sb()).from("prospects").select("*");
   const list = coalesce((data ?? []) as Prospect[], [
-    "batch", "no", "date_text", "month", "contact", "org_name", "campus",
+    "no", "date_text", "month", "contact", "org_name", "campus",
     "location", "mode", "pic", "contact_status", "their_response", "our_response", "source",
   ]);
   return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
@@ -801,7 +801,7 @@ export async function cloneEventData(sourceId: string, targetId: string, opts: C
   }
 
   if (opts.rundown) {
-    const src = await getRundown(sourceId);
+    const src = await getRundown(sourceId, "A");
     const rows = src.map((r) => ({
       event_id: targetId, variant: r.variant, no: r.no, time_start: r.time_start, time_end: r.time_end,
       duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,

@@ -8,6 +8,8 @@ export const EN: Record<string, string> = {
   "Operasional": "Operational",
   "Relasi & Aset": "Relations & Assets",
   "Organisasi": "Organization",
+  "Bantuan": "Help",
+  "Sistem": "System",
   // Nav labels
   "Work Breakdown": "Work Breakdown",
   "Divisi": "Divisions",

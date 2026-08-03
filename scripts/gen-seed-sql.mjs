@@ -85,9 +85,12 @@ out += `\n-- tasks\n`;
 for (const t of seed.tasks)
   out += `insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values (${q(t.event_id)},${q(t.division)},${q(t.no)},${q(t.pic)},${q(t.title)},${d(t.start_date)},${q(t.start_raw)},${d(t.end_date)},${q(t.end_raw)},${q(t.notes)},${q(t.result)},${q(t.status)});\n`;
 
+// prospects — `batch` is no longer written (the app dropped the concept; the
+// edition is `event_id`). We still READ seed.json's batch above via
+// prospectEvent() to derive that event_id. The DB column stays (default '').
 out += `\n-- prospects\n`;
 for (const p of seed.prospects)
-  out += `insert into prospects(event_id,batch,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(prospectEvent(p))},${q(p.batch)},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
+  out += `insert into prospects(event_id,no,date_text,month,contact,org_name,campus,location,pic,contact_status,their_response,our_response,done,source) values (${q(prospectEvent(p))},${q(p.no)},${q(p.date_text)},${q(p.month)},${q(p.contact)},${q(p.org_name)},${q(p.campus)},${q(p.location)},${q(p.pic)},${q(p.contact_status)},${q(p.their_response)},${q(p.our_response)},${b(p.done)},${q(p.source)});\n`;
 
 out += `\n-- links\n`;
 for (const l of seed.links)
@@ -101,9 +104,15 @@ for (const plan of seed.budgetPlans) {
   out += `with p as (insert into budget_plans(name,event_id) values (${q(plan.name)},${q(plan.event_id)}) returning id)\n  insert into budget_items(plan_id,category,no,name,qty,unit,unit_price,total,"order")\n  select p.id, v.* from p, (values\n    ${values}\n  ) as v(category,no,name,qty,unit,unit_price,total,ord);\n\n`;
 }
 
-out += `-- rundown\n`;
-for (const r of seed.rundown)
-  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values (${q(r.event_id)},${q(r.variant)},${n(r.no)},${q(r.time_start)},${q(r.time_end)},${q(r.duration)},${q(r.activity)},${q(r.keterangan)},${q(r.mc)},${q(r.operator)},${jb(r.division_jobs)});\n`;
+// Rundown is single-version now: only variant 'A' is emitted. seed.json still
+// carries legacy 'B' rows for some editions (the old second version); writing
+// them would make every activity appear twice on the single-version page.
+out += `-- rundown (variant A only; legacy 'B' rows are dropped)\n`;
+const rundownA = seed.rundown.filter((r) => (r.variant ?? "A") === "A");
+const rundownDropped = seed.rundown.length - rundownA.length;
+if (rundownDropped) out += `-- (${rundownDropped} baris versi B lama dilewati)\n`;
+for (const r of rundownA)
+  out += `insert into rundown(event_id,variant,no,time_start,time_end,duration,activity,keterangan,mc,operator,division_jobs) values (${q(r.event_id)},'A',${n(r.no)},${q(r.time_start)},${q(r.time_end)},${q(r.duration)},${q(r.activity)},${q(r.keterangan)},${q(r.mc)},${q(r.operator)},${jb(r.division_jobs)});\n`;
 
 out += `\n-- job hari-h\n`;
 for (const j of seed.jobHariH)

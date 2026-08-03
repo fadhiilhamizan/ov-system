@@ -7,6 +7,8 @@
 | Menyiapkan project Supabase (baru maupun yang sudah ada) | **`setup.sql`** — satu file, satu kali |
 | Mengisi data awal untuk project yang benar-benar kosong | `seed.sql`, setelah `setup.sql` |
 | **Membangun ulang data dari nol** (menyembuhkan duplikat) | lihat [Rebuild data](#rebuild-data) |
+| Membuat akun default Koordinator/Staff/Intern | `default-accounts.sql`, setelah `setup.sql` |
+| Menyembuhkan rundown yang tampil ganda (versi A & B lama) | `migrations/0035_rundown_single_version.sql` |
 | Menyiapkan project **demo** | `setup.sql` → `demo/demo-open-access.sql` → `demo/demo-seed.sql` |
 
 Cukup itu. **`migrations/` tidak perlu dijalankan lagi** — lihat di bawah.
@@ -31,6 +33,13 @@ Kalau data sudah kotor, jangan tambal sedikit-sedikit; kosongkan lalu isi sekali
 5. `migrations/0019_real_roster.sql` — divisi, anggota, dan tim **asli per edisi**.
 6. `migrations/0032_import_superlink_from_sheet.sql` — Super Link dari Excel.
 7. `migrations/0033_performance_measurement_data.sql` — Performance Measurement.
+8. (opsional) `default-accounts.sql` — akun login siap pakai untuk Koordinator,
+   Staff, dan Intern.
+
+`seed.sql` kini hanya menulis rundown **satu versi (A)**, jadi rebuild dari nol
+tidak lagi menghasilkan rundown ganda. Untuk database **yang sudah ada** dan
+masih menyimpan baris versi B lama, jalankan
+`migrations/0035_rundown_single_version.sql` sekali untuk menyatukannya ke versi A.
 
 ### Kenapa langkah 5 wajib
 
