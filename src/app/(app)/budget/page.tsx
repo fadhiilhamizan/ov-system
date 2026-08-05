@@ -34,7 +34,7 @@ export default async function BudgetPage() {
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline">{event.title}</Badge>
-            {can.manageBudget(user) && <AddBudgetPlanButton events={events} defaultEventId={event.id} />}
+            {can.manageBudget(user) && <AddBudgetPlanButton />}
           </div>
         }
       />

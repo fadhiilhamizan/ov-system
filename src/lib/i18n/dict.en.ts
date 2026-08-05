@@ -820,6 +820,12 @@ export const EN: Record<string, string> = {
   "Terlalu banyak percobaan. Tunggu sebentar sebelum mencoba lagi.":
     "Too many attempts. Please wait a moment before trying again.",
   "Tunggu": "Wait",
+  // Settings: open source (v1.27.0)
+  "Kode Sumber Terbuka": "Open Source",
+  "Seluruh kode yang membangun website ini bersifat open source — siapa pun boleh melihat, mempelajari, atau ikut mengembangkannya lewat repositori GitHub di bawah.":
+    "All the code behind this website is open source — anyone may read it, learn from it, or help develop it through the GitHub repository below.",
+  "Lihat di GitHub": "View on GitHub",
+  "Kode sumber:": "Source code:",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the

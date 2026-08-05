@@ -58,7 +58,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["budget.deleteItem", () => budget.deleteBudgetItemAction("i1")],
   ["budget.duplicateItem", () => budget.duplicateBudgetItemAction("i1")],
   ["budget.bulkDeleteItems", () => budget.bulkDeleteBudgetItemsAction(["i1"])],
-  ["budget.createPlan", () => budget.createBudgetPlanAction({ name: "RAB", event_id: "ov1" })],
+  ["budget.createPlan", () => budget.createBudgetPlanAction({ name: "RAB" })],
   ["budget.deletePlan", () => budget.deleteBudgetPlanAction("p1")],
   ["budget.setCategoryColor", () => budget.setCategoryColorAction("p1", "KONSUMSI", "#f97316")],
 

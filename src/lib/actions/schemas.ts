@@ -168,9 +168,12 @@ export const updateBudgetItemSchema = z
   })
   .partial();
 
+// No `event_id`: a budget plan always belongs to the Ormawa Visit currently
+// being viewed, which the action reads from the session. Leaving it out of the
+// schema also means a client cannot file a plan against a different edition —
+// Zod strips the key before it ever reaches the repo.
 export const budgetPlanSchema = z.object({
   name: nonEmpty("Nama rencana anggaran", 200),
-  event_id: nonEmpty("Ormawa Visit", 128),
 });
 
 // ---------------- Events ----------------

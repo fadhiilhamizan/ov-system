@@ -7,6 +7,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.27.0",
+    date: "2026-08-05",
+    title: "Rencana anggaran ikut Ormawa Visit yang dibuka, & info kode sumber terbuka di Pengaturan",
+    changes: [
+      "ANGGARAN: dropdown 'Ormawa Visit' pada pop-up tambah rencana anggaran dihapus. Rencana kini otomatis masuk ke Ormawa Visit yang sedang dibuka, jadi cukup isi namanya saja. Sebelumnya bisa saja salah pilih edisi lain dan rencananya jadi tidak terlihat di halaman yang membuatnya.",
+      "PENGATURAN: ditambahkan bagian 'Kode Sumber Terbuka' berisi keterangan bahwa seluruh kode website ini open source, lengkap dengan tautan ke repositori GitHub-nya (github.com/fadhiilhamizan/ov-system). Tautannya juga muncul di bagian Tentang.",
+    ],
+  },
+  {
     version: "1.26.0",
     date: "2026-08-03",
     title: "Menu sidebar dikelompokkan ulang, akun default per peran, 'Batch' dihapus, & rundown ganda dibereskan",

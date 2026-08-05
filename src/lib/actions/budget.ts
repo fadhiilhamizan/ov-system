@@ -1,6 +1,7 @@
 "use server";
 import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
@@ -116,11 +117,15 @@ export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result
   return { ok: true };
 }
 
-export async function createBudgetPlanAction(input: { name: string; event_id: string }): Promise<Result> {
+/** The edition comes from the session, not the client: Anggaran is always read
+ *  and written in the context of the Ormawa Visit on screen, so a plan filed
+ *  against any other edition would simply be invisible on the page that made it. */
+export async function createBudgetPlanAction(input: { name: string }): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const v = parse(budgetPlanSchema, input);
   if (!v.ok) return v;
-  try { await createBudgetPlan(v.data); } catch (e) { return errMsg(e); }
+  const event = await getActiveEvent();
+  try { await createBudgetPlan({ ...v.data, event_id: event.id }); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }

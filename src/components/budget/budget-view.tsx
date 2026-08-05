@@ -13,7 +13,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ColorPicker } from "@/components/ui/color-picker";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
@@ -47,16 +46,18 @@ function catColor(name: string, items?: Pick<BudgetItem, "category_color">[]) {
   return chosen || presetCatColor(name);
 }
 
-export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEvent[]; defaultEventId: string }) {
+/** No Ormawa Visit picker: the plan lands on the edition currently on screen,
+ *  which the server action reads from the session. Picking another edition here
+ *  only ever produced a plan you could not see on the page that created it. */
+export function AddBudgetPlanButton() {
   const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   const [name, setName] = React.useState("");
-  const [eventId, setEventId] = React.useState(defaultEventId);
 
   function submit() {
     start(async () => {
-      const res = await createBudgetPlanAction({ name, event_id: eventId });
+      const res = await createBudgetPlanAction({ name });
       if (res.ok) { toast.success(t("Rencana anggaran ditambahkan")); setOpen(false); setName(""); }
       else toast.error(res.error);
     });
@@ -76,15 +77,6 @@ export function AddBudgetPlanButton({ events, defaultEventId }: { events: OVEven
           <div className="grid gap-1.5">
             <Label>{t("Nama rencana")} <span className="text-danger">*</span></Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="RAB Maksimal" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label>{t("Ormawa Visit")} <span className="text-danger">*</span></Label>
-            <Select value={eventId} onValueChange={setEventId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>

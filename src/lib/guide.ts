@@ -213,7 +213,7 @@ export const GUIDE: GuideSection[] = [
       en: "Draft the budget, optionally as several scenarios (e.g. minimum and maximum plans).",
     },
     steps: [
-      { id: "Buat rencana lewat 'Tambah Rencana', lalu isi itemnya dengan 'Tambah Item'.", en: "Create a plan via 'Add Plan', then fill it with 'Add Item'." },
+      { id: "Buat rencana lewat 'Tambah Rencana', lalu isi itemnya dengan 'Tambah Item'. Cukup isi namanya — rencana otomatis masuk ke Ormawa Visit yang sedang dibuka (lihat lencana edisi di samping tombolnya).", en: "Create a plan via 'Add Plan', then fill it with 'Add Item'. You only give it a name — the plan automatically belongs to the Ormawa Visit you are currently viewing (shown on the badge next to the button)." },
       { id: "Di pop-up 'Tambah Item', klik bulatan warna di sebelah kolom Kategori untuk memilih warna kategori tersebut — pilihan warnanya sama dengan yang dipakai saat mengatur warna divisi.", en: "In the 'Add Item' dialog, click the coloured dot next to the Category field to choose that category's colour — the same palette used for division colours." },
       { id: "Warna juga bisa diubah langsung dari bulatan kecil di baris ringkasan kategori, tanpa membuka pop-up.", en: "You can also recolour straight from the small dot in the category summary row, without opening a dialog." },
       { id: "Ubah Qty dan Harga satuan langsung di tabel; Total dan Subtotal dihitung otomatis. Tekan Enter untuk langsung menyimpan, atau klik di luar kolom.", en: "Edit Qty and Unit price inline; Total and Subtotal are computed automatically. Press Enter to save immediately, or just click outside the field." },
@@ -289,6 +289,7 @@ export const GUIDE: GuideSection[] = [
       { id: "Gunakan tombol panel di kepala menu samping untuk menciutkannya menjadi ikon saja; arahkan kursor ke bilah ikon untuk membukanya sementara.", en: "Use the panel button in the sidebar header to collapse it to icons only; hover the icon rail to expand it temporarily." },
       { id: "Gunakan Backup & Rollback untuk mencadangkan atau memulihkan data (khusus Admin, mode produksi).", en: "Use Backup & Rollback to snapshot or restore data (Admin only, production mode)." },
       { id: "Di Mode Demo, tersedia 'Reset ke data awal' untuk mengembalikan sandbox ke contoh semula.", en: "In Demo Mode you get 'Reset to initial data' to restore the sandbox to its original sample data." },
+      { id: "Bagian 'Kode Sumber Terbuka' memuat tautan ke repositori GitHub aplikasi ini — kodenya open source, jadi siapa pun boleh membacanya atau ikut mengembangkannya.", en: "The 'Open Source' section links to this app's GitHub repository — the code is open source, so anyone may read it or help develop it." },
     ],
     access: {
       id: "Semua peran kecuali Tamu bisa membuka untuk melihat matriks hak akses & changelog. Backup, rollback, dan reset data demo hanya untuk Admin.",

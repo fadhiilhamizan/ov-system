@@ -116,10 +116,15 @@ describe("budget schemas", () => {
     expect(parse(budgetItemSchema, { category: "K", name: "N", category_color: "orange" }).ok).toBe(false);
   });
 
-  it("requires plan name and event_id", () => {
-    expect(parse(budgetPlanSchema, { name: "RAB", event_id: "e1" }).ok).toBe(true);
-    expect(parse(budgetPlanSchema, { name: "", event_id: "e1" }).ok).toBe(false);
-    expect(parse(budgetPlanSchema, { name: "RAB" }).ok).toBe(false);
+  it("requires only a plan name — the edition comes from the session", () => {
+    expect(parse(budgetPlanSchema, { name: "RAB" }).ok).toBe(true);
+    expect(parse(budgetPlanSchema, { name: "" }).ok).toBe(false);
+  });
+
+  it("strips a client-supplied event_id so a plan cannot target another edition", () => {
+    const r = parse(budgetPlanSchema, { name: "RAB", event_id: "ov-lain" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data).toEqual({ name: "RAB" });
   });
 });
 
