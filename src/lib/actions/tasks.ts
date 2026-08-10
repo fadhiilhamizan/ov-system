@@ -7,7 +7,10 @@ import {
   syncTaskLinks, purgeTaskLinks,
 } from "@/lib/data/repo";
 import type { DivisionKey, Task, TaskLinkInput, TaskStatus } from "@/lib/types";
-import { createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema, idSchema, parse } from "./schemas";
+import {
+  createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema,
+  bulkTaskFieldsSchema, idSchema, parse,
+} from "./schemas";
 import { archivedGuard } from "./lock";
 
 export interface TaskInput {
@@ -108,6 +111,44 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
     : [];
   try {
     if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
+  revalidateEntities("tasks", "taskLinks");
+  return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
+}
+
+/**
+ * Set Divisi / PIC / Deadline on many selected tasks at once.
+ *
+ * Only the fields actually present in `patch` are written, so the bulk editor
+ * can change just the deadline without blanking the PIC of every row it
+ * touches. Unlike `bulkSetStatusAction` this is a real edit, so it needs
+ * `can.editTask` (not the looser progress-only permission) and it refuses when
+ * any selected task sits in an archived edition.
+ */
+export async function bulkUpdateTaskFieldsAction(
+  ids: string[],
+  patch: { division?: DivisionKey; pic?: string; end_date?: string | null },
+): Promise<BulkResult> {
+  const v = parse(bulkTaskFieldsSchema, patch);
+  if (!v.ok) return v;
+  if (!Object.keys(v.data).length) return { ok: false, error: "Tidak ada kolom yang diubah." };
+
+  const user = await getCurrentUser();
+  if (!can.editTask(user)) return { ok: false, error: "Kamu tidak punya akses mengedit tugas." };
+
+  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  // One guard per distinct edition rather than per task — the selection is
+  // normally all in the active Ormawa Visit, so this is a single lookup.
+  for (const eventId of new Set(tasks.map((t) => t.event_id))) {
+    const blocked = await archivedGuard(user, eventId);
+    if (blocked) return blocked;
+  }
+
+  const allowed = tasks.map((t) => t.id);
+  try {
+    if (allowed.length) await bulkUpdateTasks(allowed, v.data);
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }

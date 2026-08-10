@@ -68,7 +68,7 @@ export default async function EventsPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   {stats.total > 0 && <ProgressRing value={stats.progress} size={54} />}
-                  {manage && <EventActions event={e} canLock={mayLock} />}
+                  {manage && <EventActions event={e} events={events} canLock={mayLock} />}
                 </div>
               </div>
 

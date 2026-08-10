@@ -133,6 +133,55 @@ export async function deleteBackup(id: string): Promise<void> {
  * Not wrapped in a single DB transaction — callers should take a
  * `pre_restore` backup first so a partial failure is always recoverable.
  */
+/**
+ * Turn an untrusted parsed-JSON blob into a BackupData, or explain why not.
+ *
+ * This is the ONLY thing standing between an uploaded file and a full-database
+ * overwrite, so it is a whitelist, not a sanity check: any key that is not one
+ * of the backed-up tables is DROPPED rather than passed through. That matters
+ * because `profiles` is deliberately excluded from backups (restoring it could
+ * silently hand back an admin role that was removed on purpose) — a
+ * hand-edited file naming it must not be able to sneak it back in.
+ *
+ * Missing tables are tolerated and treated as empty: older snapshots predate
+ * `task_links`, and the demo project's schema legitimately lacks tables.
+ */
+export function parseSnapshot(
+  raw: unknown,
+): { ok: true; data: BackupData; tables: number; rows: number } | { ok: false; error: string } {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "File tidak dikenali: isinya bukan objek backup." };
+  }
+  const src = raw as Record<string, unknown>;
+
+  // A backup file has at least one known table. Without this check any random
+  // JSON object would "validate" into an all-empty snapshot and wipe the DB.
+  if (!DELETE_ORDER.some((tbl) => Array.isArray(src[tbl]))) {
+    return {
+      ok: false,
+      error: "File ini bukan backup Ormawa Visit (tidak ada satu pun tabel yang dikenali).",
+    };
+  }
+
+  const data = {} as BackupData;
+  let tables = 0;
+  let rows = 0;
+  for (const tbl of DELETE_ORDER) {
+    const value = src[tbl];
+    if (value === undefined || value === null) { data[tbl] = []; continue; }
+    if (!Array.isArray(value)) {
+      return { ok: false, error: `Tabel "${tbl}" pada file rusak: seharusnya berupa daftar baris.` };
+    }
+    const bad = value.findIndex((r) => !r || typeof r !== "object" || Array.isArray(r));
+    if (bad >= 0) {
+      return { ok: false, error: `Baris ke-${bad + 1} pada tabel "${tbl}" rusak.` };
+    }
+    data[tbl] = value as Record<string, unknown>[];
+    if (value.length) { tables++; rows += value.length; }
+  }
+  return { ok: true, data, tables, rows };
+}
+
 export async function restoreSnapshot(data: BackupData): Promise<void> {
   const client = await createClient();
   for (const table of DELETE_ORDER) {

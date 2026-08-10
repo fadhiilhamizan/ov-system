@@ -8,6 +8,8 @@ import { divisionFields } from "../members";
 import { uid } from "../utils";
 import type {
   BudgetItem,
+  CloneModule,
+  CloneSources,
   BudgetPlan,
   Division,
   Faq,
@@ -24,6 +26,7 @@ import type {
   TaskStatus,
   Team,
 } from "../types";
+import { CLONE_MODULES } from "../types";
 
 // ------------------------------------------------------------------
 // Backend-agnostic repository. Uses Supabase when configured, otherwise
@@ -482,6 +485,21 @@ export async function bulkDeleteBudgetItems(ids: string[]) {
   if (!USE_SUPABASE) { for (const id of ids) local.deleteBudgetItem(id); return; }
   await must((await sb()).from("budget_items").delete().in("id", ids));
 }
+/**
+ * Rewrite `order` across a whole plan after a drag.
+ *
+ * The caller sends the plan's COMPLETE item sequence, not just the dragged
+ * pair: category grouping in the UI is derived from this order, so a partial
+ * rewrite would leave the untouched items interleaved at stale positions.
+ */
+export async function reorderBudgetItems(orderedIds: string[]) {
+  if (!orderedIds.length) return;
+  if (!USE_SUPABASE) return local.reorderBudgetItems(orderedIds);
+  const client = await sb();
+  await Promise.all(
+    orderedIds.map((id, i) => must(client.from("budget_items").update({ order: i }).eq("id", id))),
+  );
+}
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
   if (!USE_SUPABASE) return local.createBudgetPlan(input);
   await must((await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id }));
@@ -548,6 +566,15 @@ export async function updateFaq(id: string, patch: { question?: string; answer?:
 export async function deleteFaq(id: string) {
   if (!USE_SUPABASE) return local.deleteFaq(id);
   await must((await sb()).from("faqs").delete().eq("id", id));
+}
+/** Rewrite `order` to match the given sequence (same shape as reorderJobs). */
+export async function reorderFaqs(orderedIds: string[]) {
+  if (!orderedIds.length) return;
+  if (!USE_SUPABASE) return local.reorderFaqs(orderedIds);
+  const client = await sb();
+  await Promise.all(
+    orderedIds.map((id, i) => must(client.from("faqs").update({ order: i + 1 }).eq("id", id))),
+  );
 }
 
 // ---------------- Teams ----------------
@@ -746,92 +773,135 @@ export async function setEventLocked(id: string, locked: boolean) {
   await must((await sb()).from("events").update({ locked }).eq("id", id));
 }
 
-export interface CloneOptions {
-  divisions?: boolean;
-  members?: boolean;
-  tasks?: boolean;
-  rundown?: boolean;
-  jobs?: boolean;
-  budget?: boolean;
-}
-
 /**
- * Copy data from one Ormawa Visit to another, as a starting template for a new
- * edition. Tasks & jobs are copied as a fresh skeleton (status reset, PIC and
- * dates cleared) so only reusable content (division, job description, notes,
- * rundown structure, budget estimate) carries over.
+ * Copy selected menus into `targetId`, each from its own source edition.
+ *
+ * Tasks & jobs arrive as a fresh skeleton (status reset, PIC and dates cleared)
+ * so only reusable content carries over. Reach & Offer is copied the same way:
+ * the pipeline state is reset, because "sudah dihubungi" belongs to the edition
+ * that did the contacting, not to the copy.
+ *
+ * With `replace`, the target's existing rows for a chosen menu are deleted
+ * first. That is what makes this usable on an edition that already has data —
+ * without it a second copy would just pile duplicates on top.
  */
-export async function cloneEventData(sourceId: string, targetId: string, opts: CloneOptions) {
-  if (!USE_SUPABASE) return local.cloneEventData(sourceId, targetId, opts);
+export async function cloneEventData(
+  targetId: string,
+  sources: CloneSources,
+  opts: { replace?: boolean } = {},
+) {
+  if (!USE_SUPABASE) return local.cloneEventData(targetId, sources, opts);
   const client = await sb();
 
-  // Divisions first (tasks/rundown/teams resolve their division by key within
-  // the new event, so the keys must exist there before the rest is copied).
-  if (opts.divisions) {
-    const src = await getDivisions(sourceId);
-    const rows = src.map((d) => ({
-      event_id: targetId, key: d.key, name: d.name, short: d.short, color: d.color,
-      order: d.order, exclude_from_rundown: d.exclude_from_rundown ?? false,
-    }));
-    if (rows.length) await must(client.from("divisions").insert(rows));
+  /** Wipe the target's rows for one menu before re-filling it. */
+  async function clear(mod: CloneModule) {
+    if (!opts.replace) return;
+    switch (mod) {
+      case "divisions": await must(client.from("divisions").delete().eq("event_id", targetId)); break;
+      case "members": await must(client.from("members").delete().eq("event_id", targetId)); break;
+      case "prospects": await must(client.from("prospects").delete().eq("event_id", targetId)); break;
+      // task_links go with their task via ON DELETE CASCADE (0025).
+      case "tasks": await must(client.from("tasks").delete().eq("event_id", targetId)); break;
+      case "rundown": await must(client.from("rundown").delete().eq("event_id", targetId)); break;
+      case "jobs": await must(client.from("job_harih").delete().eq("event_id", targetId)); break;
+      case "budget": {
+        // Items are deleted explicitly rather than trusting a cascade, because
+        // an orphaned budget_item is invisible in the UI but still counted.
+        const plans = await getBudgetPlans(targetId);
+        const planIds = plans.map((p) => p.id);
+        if (planIds.length) await must(client.from("budget_items").delete().in("plan_id", planIds));
+        await must(client.from("budget_plans").delete().eq("event_id", targetId));
+        break;
+      }
+    }
   }
 
-  if (opts.members) {
-    const src = await getMembers(sourceId);
-    const rows = src.map((m) => ({
-      event_id: targetId, name: m.name, nickname: m.nickname, nrp: m.nrp,
-      type: m.type, year: m.year,
-      ...divisionFields(m.divisions, m.division),
-    }));
-    if (rows.length) await must(client.from("members").insert(rows));
-  }
+  for (const mod of CLONE_MODULES) {
+    const sourceId = sources[mod];
+    if (!sourceId) continue;
+    await clear(mod);
 
-  if (opts.tasks) {
-    const src = await getTasks({ event_id: sourceId });
-    const noByDiv: Record<string, number> = {};
-    const rows = src.map((t) => {
-      noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
-      return {
-        event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
-        pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
-        notes: t.notes, result: "", status: "todo" as TaskStatus,
-      };
-    });
-    if (rows.length) await must(client.from("tasks").insert(rows));
-  }
+    if (mod === "divisions") {
+      const src = await getDivisions(sourceId);
+      const rows = src.map((d) => ({
+        event_id: targetId, key: d.key, name: d.name, short: d.short, color: d.color,
+        order: d.order, exclude_from_rundown: d.exclude_from_rundown ?? false,
+      }));
+      if (rows.length) await must(client.from("divisions").insert(rows));
+    }
 
-  if (opts.rundown) {
-    const src = await getRundown(sourceId, "A");
-    const rows = src.map((r) => ({
-      event_id: targetId, variant: r.variant, no: r.no, time_start: r.time_start, time_end: r.time_end,
-      duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,
-      mc: r.mc, job_lo: r.job_lo, job_event: r.job_event, job_consump: r.job_consump, job_creative: r.job_creative, job_opr: r.job_opr,
-    }));
-    if (rows.length) await must(client.from("rundown").insert(rows));
-  }
+    if (mod === "members") {
+      const src = await getMembers(sourceId);
+      const rows = src.map((m) => ({
+        event_id: targetId, name: m.name, nickname: m.nickname, nrp: m.nrp,
+        type: m.type, year: m.year,
+        ...divisionFields(m.divisions, m.division),
+      }));
+      if (rows.length) await must(client.from("members").insert(rows));
+    }
 
-  if (opts.jobs) {
-    const src = await getJobs(sourceId);
-    const rows = src.map((j) => ({ event_id: targetId, no: j.no, pic: "", job: j.job, notes: j.notes }));
-    if (rows.length) await must(client.from("job_harih").insert(rows));
-  }
+    if (mod === "prospects") {
+      const src = await getProspects(sourceId);
+      const rows = src.map((p, i) => ({
+        event_id: targetId, no: String(i + 1), month: p.month,
+        contact: p.contact, org_name: p.org_name, campus: p.campus,
+        location: p.location, mode: p.mode || null,
+        // Outreach state belongs to the edition that did the contacting, so the
+        // copy starts from scratch. `is_primary` is left off entirely: exactly
+        // one prospect per edition may hold it, and it is set from the UI.
+        date_text: "", pic: "", contact_status: "", their_response: "", our_response: "",
+        done: false, source: p.source,
+      }));
+      if (rows.length) await must(client.from("prospects").insert(rows));
+    }
 
-  if (opts.budget) {
-    const plans = await getBudgetPlans(sourceId);
-    for (const plan of plans) {
-      const created = await must(client
-        .from("budget_plans")
-        .insert({ name: plan.name, event_id: targetId })
-        .select("id")
-        .single());
-      if (created && plan.items.length)
-        await must(client.from("budget_items").insert(
-          plan.items.map((i, idx) => ({
-            plan_id: created.id, category: i.category, no: i.no, name: i.name,
-            qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total,
-            category_color: i.category_color ?? null, order: idx,
-          })),
-        ));
+    if (mod === "tasks") {
+      const src = await getTasks({ event_id: sourceId });
+      const noByDiv: Record<string, number> = {};
+      const rows = src.map((t) => {
+        noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
+        return {
+          event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
+          pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
+          notes: t.notes, result: "", status: "todo" as TaskStatus,
+        };
+      });
+      if (rows.length) await must(client.from("tasks").insert(rows));
+    }
+
+    if (mod === "rundown") {
+      const src = await getRundown(sourceId, "A");
+      const rows = src.map((r) => ({
+        event_id: targetId, variant: r.variant, no: r.no, time_start: r.time_start, time_end: r.time_end,
+        duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,
+        mc: r.mc, job_lo: r.job_lo, job_event: r.job_event, job_consump: r.job_consump, job_creative: r.job_creative, job_opr: r.job_opr,
+      }));
+      if (rows.length) await must(client.from("rundown").insert(rows));
+    }
+
+    if (mod === "jobs") {
+      const src = await getJobs(sourceId);
+      const rows = src.map((j) => ({ event_id: targetId, no: j.no, pic: "", job: j.job, notes: j.notes }));
+      if (rows.length) await must(client.from("job_harih").insert(rows));
+    }
+
+    if (mod === "budget") {
+      const plans = await getBudgetPlans(sourceId);
+      for (const plan of plans) {
+        const created = await must(client
+          .from("budget_plans")
+          .insert({ name: plan.name, event_id: targetId })
+          .select("id")
+          .single());
+        if (created && plan.items.length)
+          await must(client.from("budget_items").insert(
+            plan.items.map((i, idx) => ({
+              plan_id: created.id, category: i.category, no: i.no, name: i.name,
+              qty: i.qty, unit: i.unit, unit_price: i.unit_price, total: i.total,
+              category_color: i.category_color ?? null, order: idx,
+            })),
+          ));
+      }
     }
   }
 }

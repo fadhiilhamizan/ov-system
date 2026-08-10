@@ -32,7 +32,14 @@ export function AddEventButton({ events }: { events: OVEvent[] }) {
  * an archived edition is read-only for every other role — see `writable_event()`
  * in migration 0028.
  */
-export function EventActions({ event, canLock }: { event: OVEvent; canLock?: boolean }) {
+export function EventActions({
+  event, events = [], canLock,
+}: {
+  event: OVEvent;
+  /** Other editions, so the edit dialog can offer them as copy sources. */
+  events?: OVEvent[];
+  canLock?: boolean;
+}) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
@@ -85,7 +92,7 @@ export function EventActions({ event, canLock }: { event: OVEvent; canLock?: boo
         </DialogContent>
       </Dialog>
 
-      <EventFormDialog mode="edit" event={event} open={editOpen} onOpenChange={setEditOpen} />
+      <EventFormDialog mode="edit" event={event} events={events} open={editOpen} onOpenChange={setEditOpen} />
 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">

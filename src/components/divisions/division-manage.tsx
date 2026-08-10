@@ -31,7 +31,6 @@ function DivisionFormDialog({
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
   const [f, setF] = useResetOn(`${isOpen}:${division?.key ?? "new"}`, () => ({
-    key: division?.key ?? "",
     name: division?.name ?? "",
     short: division?.short ?? "",
     color: division?.color ?? COLOR_PRESET[0],
@@ -45,7 +44,6 @@ function DivisionFormDialog({
         short: (f.short || f.name.slice(0, 4)).toUpperCase(),
         color: f.color,
         exclude_from_rundown: f.exclude_from_rundown,
-        ...(mode === "create" ? { key: f.key || undefined } : {}),
       };
       const res = mode === "create" ? await createDivisionAction(payload) : await updateDivisionAction(division!.key, payload);
       if (res.ok) { toast.success(mode === "create" ? t("Divisi ditambahkan") : t("Divisi diperbarui")); setOpen(false); }
@@ -77,12 +75,8 @@ function DivisionFormDialog({
               />
             </div>
           </div>
-          {mode === "create" && (
-            <div className="grid gap-1.5">
-              <Label>{t("Kode unik (opsional)")}</Label>
-              <Input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value.toUpperCase() })} placeholder="LO" />
-            </div>
-          )}
+          {/* No "unique code" field: the key is an internal identifier the repo
+              generates itself, and nothing in the UI ever shows it. */}
           <div className="grid gap-1.5">
             <Label>{t("Warna")}</Label>
             <ColorPicker value={f.color} onChange={(color) => setF({ ...f, color })} />

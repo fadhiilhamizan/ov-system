@@ -26,7 +26,8 @@ const REPO_FNS = [
   "createLink", "createMember", "createRundown", "createTeam", "deleteBudgetItem",
   "deleteBudgetPlan", "deleteDivision", "deleteEvent", "deleteFaq", "deleteJob",
   "deleteLink", "deleteMember", "deleteRundown", "deleteTeam", "getBudgetPlans",
-  "getEvent", "getJobs", "getRundown", "reorderJobs", "setEventLocked",
+  "getEvent", "getJobs", "getRundown", "reorderBudgetItems", "reorderFaqs", "reorderJobs",
+  "setEventLocked",
   "updateBudgetItem", "updateDivision", "updateEvent", "updateFaq", "updateJob",
   "updateLink", "updateMember", "updateRundown", "updateTeam",
 ] as const;
@@ -61,10 +62,12 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["budget.createPlan", () => budget.createBudgetPlanAction({ name: "RAB" })],
   ["budget.deletePlan", () => budget.deleteBudgetPlanAction("p1")],
   ["budget.setCategoryColor", () => budget.setCategoryColorAction("p1", "KONSUMSI", "#f97316")],
+  ["budget.reorderItems", () => budget.reorderBudgetItemsAction(["i1", "i2"])],
 
   ["faq.create", () => faq.createFaqAction({ question: "Q?", answer: "A" })],
   ["faq.update", () => faq.updateFaqAction("f1", { question: "Q?", answer: "B" })],
   ["faq.delete", () => faq.deleteFaqAction("f1")],
+  ["faq.reorder", () => faq.reorderFaqsAction(["f1", "f2"])],
 
   ["rundown.create", () => schedule.createRundownAction({ event_id: "ov1" })],
   ["rundown.update", () => schedule.updateRundownAction("r1", { activity: "X" })],
@@ -79,6 +82,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["events.create", () => manage.createEventAction({ title: "OV Baru" })],
   ["events.update", () => manage.updateEventAction("ov1", { title: "X" })],
   ["events.duplicate", () => manage.duplicateEventAction("ov1")],
+  ["events.applyTemplate", () => manage.applyEventTemplateAction("ov1", { divisions: "ov2" })],
   ["events.delete", () => manage.deleteEventAction("ov1")],
   ["events.setLocked", () => manage.setEventLockedAction("ov1", true)],
   ["members.create", () => manage.createMemberAction({ name: "A", division: "EVENT" })],

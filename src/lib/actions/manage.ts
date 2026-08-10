@@ -8,21 +8,19 @@ import {
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
   createTeam, updateTeam, deleteTeam,
 } from "@/lib/data/repo";
-import type { CloneOptions } from "@/lib/data/repo";
-import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import type { CloneSources, Division, Member, OVEvent, Team } from "@/lib/types";
+import { CLONE_MODULES } from "@/lib/types";
 import { uid } from "@/lib/utils";
 import { getActiveEvent } from "@/lib/session";
-import { eventSchema, memberSchema, divisionSchema, teamSchema, idSchema, parse } from "./schemas";
+import {
+  eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, idSchema, parse,
+} from "./schemas";
 import { divisionFields } from "@/lib/members";
 import { archivedGuard } from "./lock";
 
 /** Keep the legacy primary `division` column in step with `divisions[]`. */
 function withPrimaryDivision<T extends { divisions?: string[] }>(data: T) {
   return data.divisions ? { ...data, ...divisionFields(data.divisions) } : data;
-}
-
-export interface EventTemplate extends CloneOptions {
-  sourceEventId: string;
 }
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -37,30 +35,73 @@ const errMsg = (e: unknown): Result => ({
 // ---------------- Events (Ormawa Visit) ----------------
 export async function createEventAction(
   input: Partial<OVEvent>,
-  template?: EventTemplate,
+  template?: CloneSources,
 ): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const v = parse(eventSchema, input);
   if (!v.ok) return v;
+  const sources = cleanSources(template);
+  if (sources && !sources.ok) return sources;
   // Generate the id up front so we can seed the new edition from a template.
   const id = uid("ov");
   try {
     await createEvent({ ...v.data, id });
-    if (template?.sourceEventId) {
-      const sv = parse(idSchema, template.sourceEventId);
-      if (sv.ok) {
-        await cloneEventData(sv.data, id, {
-          divisions: !!template.divisions,
-          members: !!template.members,
-          tasks: !!template.tasks,
-          rundown: !!template.rundown,
-          jobs: !!template.jobs,
-          budget: !!template.budget,
-        });
-      }
-    }
+    // A brand-new edition has nothing to replace, so `replace` stays off.
+    if (sources) await cloneEventData(id, sources.data, { replace: false });
   } catch (e) { return errMsg(e); }
   revalidateEntities("events");
+  return { ok: true };
+}
+
+/** Drop menus with no source and reject a source id that isn't a plausible id.
+ *  Returns null when nothing at all was selected. */
+function cleanSources(
+  input: CloneSources | undefined,
+): { ok: true; data: CloneSources } | { ok: false; error: string } | null {
+  if (!input) return null;
+  const v = parse(cloneSourcesSchema, input);
+  if (!v.ok) return v;
+  const data: CloneSources = {};
+  for (const mod of CLONE_MODULES) {
+    const src = v.data[mod];
+    if (src) data[mod] = src;
+  }
+  return Object.keys(data).length ? { ok: true, data } : null;
+}
+
+/**
+ * Copy menus into an Ormawa Visit that already exists.
+ *
+ * Destructive by design: each chosen menu has the target's current rows deleted
+ * and replaced by the source's. The dialog says so in as many words — without
+ * the wipe a second copy would simply stack duplicates, which is the bug this
+ * project has already paid for twice.
+ */
+export async function applyEventTemplateAction(
+  targetId: string,
+  template: CloneSources,
+): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.manageEvents(user)) return DENY;
+  const idv = parse(idSchema, targetId);
+  if (!idv.ok) return idv;
+  const sources = cleanSources(template);
+  if (!sources) return { ok: false, error: "Pilih minimal satu menu untuk disalin." };
+  if (!sources.ok) return sources;
+  // Copying INTO an archived edition is still a write to that edition.
+  const blocked = await archivedGuard(user, idv.data);
+  if (blocked) return blocked;
+  // A menu cannot be its own source: that would delete the rows and then read
+  // them back from the hole it just made.
+  for (const mod of CLONE_MODULES) {
+    if (sources.data[mod] === idv.data) {
+      return { ok: false, error: "Ormawa Visit tidak bisa menyalin dari dirinya sendiri." };
+    }
+  }
+  try {
+    await cloneEventData(idv.data, sources.data, { replace: true });
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("events", "divisions", "members", "tasks", "rundown", "jobs", "budget", "prospects");
   return { ok: true };
 }
 

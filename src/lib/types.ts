@@ -293,3 +293,21 @@ export interface AppUser {
   role: Role;
   avatarColor?: string;
 }
+
+/**
+ * Menus that can be copied from one Ormawa Visit into another.
+ *
+ * The array order is load-bearing: divisions must be written before tasks and
+ * rundown, which resolve their division by key within the target edition.
+ * It lives here rather than in repo.ts so the local (JSON) backend can share it
+ * without importing its own caller.
+ */
+export const CLONE_MODULES = [
+  "divisions", "members", "prospects", "tasks", "rundown", "jobs", "budget",
+] as const;
+export type CloneModule = (typeof CLONE_MODULES)[number];
+
+/** Which edition each menu is copied FROM. A menu that is absent (or maps to an
+ *  empty string) is not copied at all, so divisions can come from OV A while
+ *  the rundown comes from OV B. */
+export type CloneSources = Partial<Record<CloneModule, string>>;

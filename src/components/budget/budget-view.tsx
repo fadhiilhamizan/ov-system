@@ -1,7 +1,15 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy } from "lucide-react";
+import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy, GripVertical } from "lucide-react";
+import {
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +25,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
   duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction, setCategoryColorAction,
+  reorderBudgetItemsAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -279,6 +288,65 @@ function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: stri
   );
 }
 
+/** One budget item row. Sortable whenever the viewer may manage the budget;
+ *  read-only roles get the same markup without the grip or drag wiring. */
+function ItemRow({
+  item: it, canManage, selected, onToggle, onEdit,
+}: {
+  item: BudgetItem;
+  canManage: boolean;
+  selected: boolean;
+  onToggle: () => void;
+  onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
+}) {
+  const t = useT();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: it.id,
+    disabled: !canManage,
+  });
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn("border-b border-border/60 last:border-0", isDragging && "relative z-10 bg-muted shadow-lg")}
+      data-state={selected ? "selected" : undefined}
+    >
+      {canManage && (
+        <td className="px-3">
+          <div className="flex items-center gap-1">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab touch-none rounded p-0.5 text-muted-foreground/50 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
+              aria-label={t("Geser untuk mengurutkan")}
+            >
+              <GripVertical className="size-3.5" />
+            </button>
+            <Checkbox checked={selected} onCheckedChange={onToggle} aria-label={t("Pilih")} />
+          </div>
+        </td>
+      )}
+      <td className="px-5 py-2">{it.name}</td>
+      <td className="px-2 py-2 text-right tabular-nums">
+        {canManage ? <NumCell value={it.qty} onCommit={(v) => onEdit(it.id, { qty: v })} width="w-16" /> : (it.qty ?? "-")}
+      </td>
+      <td className="px-2 py-2 text-muted-foreground">{it.unit || "-"}</td>
+      <td className="px-2 py-2 text-right tabular-nums">
+        {canManage ? <NumCell value={it.unit_price} onCommit={(v) => onEdit(it.id, { unit_price: v })} width="w-24" /> : formatRupiah(it.unit_price)}
+      </td>
+      <td className="px-5 py-2 text-right font-medium tabular-nums">{formatRupiah(it.total)}</td>
+      {canManage && (
+        <td className="px-2 py-2">
+          <div className="flex items-center gap-0.5">
+            <DuplicateItemButton itemId={it.id} />
+            <DeleteItemButton itemId={it.id} itemName={it.name} />
+          </div>
+        </td>
+      )}
+    </tr>
+  );
+}
+
 export function BudgetView({
   plans,
   events,
@@ -325,6 +393,24 @@ export function BudgetView({
     });
   }
 
+  /** Move one item within its plan. Both ids always belong to the same category
+   *  (each category is its own SortableContext), so moving them inside the
+   *  plan-wide array keeps every group contiguous. */
+  function reorder(planId: string, activeId: string, overId: string) {
+    const plan = state.find((p) => p.id === planId);
+    if (!plan) return;
+    const from = plan.items.findIndex((i) => i.id === activeId);
+    const to = plan.items.findIndex((i) => i.id === overId);
+    if (from < 0 || to < 0 || from === to) return;
+    const nextItems = arrayMove(plan.items, from, to);
+    setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: nextItems } : p)));
+    autosave.run(async () => {
+      const r = await reorderBudgetItemsAction(nextItems.map((i) => i.id));
+      if (!r.ok) { toast.error(r.error); setState(plans); }
+      return r;
+    });
+  }
+
   return (
     <div className="space-y-5">
       {/* Qty/price edit inline and debounce-save; this confirms it stuck. */}
@@ -349,6 +435,7 @@ export function BudgetView({
           event={evMap.get(plan.event_id)}
           canManage={canManage}
           onEdit={edit}
+          onReorder={(a, o) => reorder(plan.id, a, o)}
           sel={sel}
         />
       ))}
@@ -361,16 +448,26 @@ function PlanCard({
   event,
   canManage,
   onEdit,
+  onReorder,
   sel,
 }: {
   plan: BudgetPlan;
   event?: OVEvent;
   canManage: boolean;
   onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
+  onReorder: (activeId: string, overId: string) => void;
   sel: ReturnType<typeof useMultiSelect>;
 }) {
   const t = useT();
   const [open, setOpen] = React.useState(true);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (over && active.id !== over.id) onReorder(String(active.id), String(over.id));
+  }
   const grand = plan.items.reduce((s, i) => s + (i.total ?? 0), 0);
   const allSelected = plan.items.length > 0 && plan.items.every((i) => sel.selected.has(i.id));
 
@@ -440,7 +537,13 @@ function PlanCard({
             )}
           </div>
 
+          {canManage && (
+            <p className="px-5 pt-2 text-xs text-muted-foreground">
+              {t("Seret ikon untuk mengurutkan item di dalam kategorinya.")}
+            </p>
+          )}
           <div className="overflow-x-auto">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
@@ -469,40 +572,21 @@ function PlanCard({
                         {c.name}
                       </td>
                     </tr>
-                    {c.items.map((it) => (
-                      <tr key={it.id} className="border-b border-border/60 last:border-0" data-state={sel.selected.has(it.id) ? "selected" : undefined}>
-                        {canManage && (
-                          <td className="px-3">
-                            <Checkbox checked={sel.selected.has(it.id)} onCheckedChange={() => sel.toggle(it.id)} aria-label={t("Pilih")} />
-                          </td>
-                        )}
-                        <td className="px-5 py-2">{it.name}</td>
-                        <td className="px-2 py-2 text-right tabular-nums">
-                          {canManage ? (
-                            <NumCell value={it.qty} onCommit={(v) => onEdit(it.id, { qty: v })} width="w-16" />
-                          ) : (
-                            it.qty ?? "-"
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-muted-foreground">{it.unit || "-"}</td>
-                        <td className="px-2 py-2 text-right tabular-nums">
-                          {canManage ? (
-                            <NumCell value={it.unit_price} onCommit={(v) => onEdit(it.id, { unit_price: v })} width="w-24" />
-                          ) : (
-                            formatRupiah(it.unit_price)
-                          )}
-                        </td>
-                        <td className="px-5 py-2 text-right font-medium tabular-nums">{formatRupiah(it.total)}</td>
-                        {canManage && (
-                          <td className="px-2 py-2">
-                            <div className="flex items-center gap-0.5">
-                              <DuplicateItemButton itemId={it.id} />
-                              <DeleteItemButton itemId={it.id} itemName={it.name} />
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
+                    {/* One sortable list PER CATEGORY. Dragging is scoped to the
+                        group because the category headings are derived from item
+                        order — a cross-group drop would split a category in two. */}
+                    <SortableContext items={c.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                      {c.items.map((it) => (
+                        <ItemRow
+                          key={it.id}
+                          item={it}
+                          canManage={canManage}
+                          selected={sel.selected.has(it.id)}
+                          onToggle={() => sel.toggle(it.id)}
+                          onEdit={onEdit}
+                        />
+                      ))}
+                    </SortableContext>
                     <tr className="border-b border-border">
                       <td colSpan={canManage ? 5 : 4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
                       <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums">{formatRupiah(c.subtotal)}</td>
@@ -517,6 +601,7 @@ function PlanCard({
                 </tr>
               </tbody>
             </table>
+            </DndContext>
           </div>
         </div>
       )}

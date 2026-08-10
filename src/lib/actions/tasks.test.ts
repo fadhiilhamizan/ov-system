@@ -29,6 +29,7 @@ vi.mock("@/lib/data/repo", () => repo);
 const {
   createTaskAction, updateTaskAction, deleteTaskAction,
   duplicateTaskAction, bulkSetStatusAction, bulkDeleteTasksAction,
+  bulkUpdateTaskFieldsAction,
 } = await import("./tasks");
 
 const user = (over: Partial<AppUser> = {}): AppUser => ({
@@ -252,6 +253,59 @@ describe("bulk task actions", () => {
   it("surfaces a bulk write failure", async () => {
     repo.bulkUpdateTasks.mockRejectedValueOnce(new Error("permission denied"));
     expect((await bulkSetStatusAction(["t1"], "done")).ok).toBe(false);
+  });
+
+  // ----------------------------------------------------------------
+  // bulkUpdateTaskFieldsAction — the Work Breakdown "Ubah massal" editor.
+  // The load-bearing property is that ONLY the ticked fields travel: a bulk
+  // write lands on rows nobody opened, so a key that slipped through would
+  // blank a PIC or a deadline across the whole selection.
+  // ----------------------------------------------------------------
+  it("writes only the fields that were supplied", async () => {
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    const res = await bulkUpdateTaskFieldsAction(["t1", "t2"], { end_date: "2026-09-01" });
+    expect(res.ok).toBe(true);
+    expect(repo.bulkUpdateTasks).toHaveBeenCalledTimes(1);
+    expect(repo.bulkUpdateTasks).toHaveBeenCalledWith(["t1", "t2"], { end_date: "2026-09-01" });
+  });
+
+  it("can set all three fields together", async () => {
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    await bulkUpdateTaskFieldsAction(["t1"], { division: "LO", pic: "Sinta", end_date: null });
+    expect(repo.bulkUpdateTasks).toHaveBeenCalledWith(["t1"], { division: "LO", pic: "Sinta", end_date: null });
+  });
+
+  it("refuses an empty patch rather than issuing a no-op write", async () => {
+    const res = await bulkUpdateTaskFieldsAction(["t1"], {});
+    expect(res.ok).toBe(false);
+    expect(repo.bulkUpdateTasks).not.toHaveBeenCalled();
+  });
+
+  it("strips keys outside the bulk allow-list (title stays per-task)", async () => {
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    const res = await bulkUpdateTaskFieldsAction(
+      ["t1"],
+      { pic: "Sinta", title: "diretas", status: "done" } as never,
+    );
+    expect(res.ok).toBe(true);
+    expect(repo.bulkUpdateTasks).toHaveBeenCalledWith(["t1"], { pic: "Sinta" });
+  });
+
+  it("needs edit access, not just progress access", async () => {
+    currentUser.mockResolvedValue(user({ role: "guest" }));
+    const res = await bulkUpdateTaskFieldsAction(["t1"], { pic: "Sinta" });
+    expect(res.ok).toBe(false);
+    expect(repo.bulkUpdateTasks).not.toHaveBeenCalled();
+  });
+
+  it("refuses when a selected task sits in an archived edition", async () => {
+    currentUser.mockResolvedValue(user({ role: "coordinator" }));
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    repo.getEvent.mockResolvedValue({ id: "ov1", locked: true });
+    const res = await bulkUpdateTaskFieldsAction(["t1"], { pic: "Sinta" });
+    expect(res.ok).toBe(false);
+    expect(repo.bulkUpdateTasks).not.toHaveBeenCalled();
+    repo.getEvent.mockResolvedValue({ id: "ov1", locked: false });
   });
 
   it("bulk delete needs full access and purges links for each row", async () => {

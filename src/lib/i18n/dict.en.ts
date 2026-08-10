@@ -826,6 +826,39 @@ export const EN: Record<string, string> = {
     "All the code behind this website is open source — anyone may read it, learn from it, or help develop it through the GitHub repository below.",
   "Lihat di GitHub": "View on GitHub",
   "Kode sumber:": "Source code:",
+  // Work Breakdown bulk edit (v1.28.0)
+  "Ubah massal": "Bulk edit",
+  "tugas terpilih. Centang kolom yang ingin diubah — kolom yang tidak dicentang dibiarkan apa adanya.":
+    "tasks selected. Tick the fields you want to change — unticked fields are left as they are.",
+  "Dibiarkan kosong = PIC dikosongkan.": "Left blank = the PIC is cleared.",
+  "Dibiarkan kosong = deadline dihapus.": "Left blank = the deadline is removed.",
+  "Terapkan ke": "Apply to",
+  "tugas diperbarui": "tasks updated",
+  // Drag-and-drop ordering (v1.28.0)
+  "Geser untuk mengurutkan": "Drag to reorder",
+  "Seret ikon untuk mengurutkan item di dalam kategorinya.":
+    "Drag the handle to reorder items within their category.",
+  "Seret ikon untuk mengurutkan pertanyaan; nomor tersusun otomatis.":
+    "Drag the handle to reorder the questions; numbering updates automatically.",
+  // Ormawa Visit copy template (v1.28.0)
+  "Tidak disalin": "Not copied",
+  "Salin data dari Ormawa Visit lain…": "Copy data from another Ormawa Visit…",
+  "Bisa juga menyalin data menu tertentu dari Ormawa Visit lain ke Ormawa Visit ini.":
+    "You can also copy specific menus from another Ormawa Visit into this one.",
+  "Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.":
+    "Save time — data is copied as a starting skeleton (status, PIC, and dates cleared). Each menu can come from a different Ormawa Visit.",
+  "PERINGATAN: data menu yang dicentang di Ormawa Visit ini akan DIHAPUS dan diganti dengan salinan dari Ormawa Visit yang dipilih. Menu yang tidak dicentang tidak tersentuh.":
+    "WARNING: the ticked menus' data in THIS Ormawa Visit will be DELETED and replaced with a copy from the selected Ormawa Visit. Unticked menus are left untouched.",
+  "Ormawa Visit diperbarui & data disalin": "Ormawa Visit updated & data copied",
+  // Backup import from file (v1.28.0)
+  "Impor dari File": "Import from File",
+  "File bukan JSON yang valid.": "That file is not valid JSON.",
+  "Pulihkan dari file ini?": "Restore from this file?",
+  "Seluruh data saat ini akan diganti total dengan isi file":
+    "All current data will be completely replaced by the contents of",
+  "tabel": "tables",
+  "baris": "rows",
+  "Data dipulihkan dari file": "Data restored from file",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the

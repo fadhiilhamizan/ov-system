@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CLONE_MODULES, type CloneModule } from "@/lib/types";
 
 // ============================================================
 // Zod schemas — the single input-validation layer for Server Actions.
@@ -108,6 +109,22 @@ export const updateTaskSchema = z
 
 export const taskStatusSchema = taskStatus;
 
+/**
+ * The only fields the Work Breakdown bulk editor may set on many tasks at once.
+ *
+ * Deliberately its own schema rather than a slice of `updateTaskSchema`: a bulk
+ * write touches rows the user never opened, so the blast radius is capped here
+ * instead of relying on the caller to hand-pick keys. Title and result are
+ * per-task by nature and are absent on purpose.
+ */
+export const bulkTaskFieldsSchema = z
+  .object({
+    division: z.string().trim().min(1).max(128),
+    pic: z.string().trim().max(255),
+    end_date: optionalDate,
+  })
+  .partial();
+
 /** One result link on a task. `url` must be a real http(s) link; `label` is the
  *  name used for its Super Link entry when published. */
 export const taskLinkSchema = z.object({
@@ -175,6 +192,20 @@ export const updateBudgetItemSchema = z
 export const budgetPlanSchema = z.object({
   name: nonEmpty("Nama rencana anggaran", 200),
 });
+
+/**
+ * Which Ormawa Visit each copyable menu is taken from.
+ *
+ * Every value is an edition id, so each menu can point at a DIFFERENT source
+ * (divisions from OV A, rundown from OV B). Unknown keys are stripped, which is
+ * what keeps a hand-crafted payload from naming a table that was never meant to
+ * be clonable. An empty string means "don't copy this menu".
+ */
+export const cloneSourcesSchema = z.object(
+  Object.fromEntries(
+    CLONE_MODULES.map((m) => [m, z.string().trim().max(128).optional()]),
+  ) as Record<CloneModule, z.ZodOptional<z.ZodString>>,
+);
 
 // ---------------- Events ----------------
 // title is required; every other field is optional.

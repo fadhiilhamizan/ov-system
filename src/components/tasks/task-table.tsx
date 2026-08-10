@@ -13,6 +13,7 @@ import { DivisionBadge } from "@/components/division-badge";
 import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useTaskLinks } from "./task-links-context";
 import { EmptyState } from "@/components/ui/empty";
 import { SortHead } from "@/components/ui/sort-indicator";
@@ -51,6 +52,9 @@ export function TaskTable({
 
   const canSelect = user.role !== "guest";
   const canBulkDelete = can.deleteTask(user);
+  // Changing Divisi/PIC/Deadline is a real edit, not a progress update, so it
+  // needs the same permission as opening a task's form.
+  const canBulkEdit = can.editTask(user);
 
 
   const rows = React.useMemo(() => {
@@ -132,6 +136,13 @@ export function TaskTable({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {canBulkEdit && (
+            <BulkEditDialog
+              ids={[...selected]}
+              divisions={divisions}
+              onDone={() => setSelected(new Set())}
+            />
+          )}
           {canBulkDelete && (
             <button
               onClick={bulkDelete}

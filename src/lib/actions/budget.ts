@@ -5,7 +5,7 @@ import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
-  createBudgetPlan, deleteBudgetPlan, getBudgetPlans, setCategoryColor,
+  createBudgetPlan, deleteBudgetPlan, getBudgetPlans, setCategoryColor, reorderBudgetItems,
 } from "@/lib/data/repo";
 import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
 
@@ -113,6 +113,18 @@ export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   try { await bulkDeleteBudgetItems(clean); } catch (e) { return errMsg(e); }
+  revalidateEntities("budget");
+  return { ok: true };
+}
+
+/** Persist a drag-and-drop reorder of a plan's items. Takes the plan's whole
+ *  sequence — see `reorderBudgetItems` in repo.ts for why a partial list is not
+ *  enough. */
+export async function reorderBudgetItemsAction(orderedIds: string[]): Promise<Result> {
+  if (!can.manageBudget(await getCurrentUser())) return DENY;
+  const clean: string[] = [];
+  for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  try { await reorderBudgetItems(clean); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }

@@ -5,6 +5,8 @@ import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
 import { divisionFields } from "../members";
 import type {
+  BudgetItem,
+  CloneModule,
   BudgetPlan,
   Division,
   Faq,
@@ -21,6 +23,7 @@ import type {
   TaskStatus,
   Team,
 } from "../types";
+import { CLONE_MODULES } from "../types";
 
 // ---------------- Divisions ----------------
 export function getDivisions(eventId?: string): Division[] {
@@ -353,6 +356,18 @@ export function deleteBudgetItem(itemId: string) {
     }
   });
 }
+/** Items live in a plain array here, so position IS the order. Only the plan
+ *  that actually owns the dragged ids is touched. */
+export function reorderBudgetItems(orderedIds: string[]) {
+  mutate((db) => {
+    const p = db.budgetPlans.find((x) => x.items.some((i) => orderedIds.includes(i.id)));
+    if (!p) return;
+    const byId = new Map(p.items.map((i) => [i.id, i]));
+    const moved = orderedIds.map((id) => byId.get(id)).filter((i): i is BudgetItem => !!i);
+    const rest = p.items.filter((i) => !orderedIds.includes(i.id));
+    p.items = [...moved, ...rest];
+  });
+}
 export function createBudgetPlan(input: { name: string; event_id: string }): BudgetPlan {
   const plan: BudgetPlan = { id: uid("bp"), name: input.name, event_id: input.event_id, items: [] };
   mutate((db) => db.budgetPlans.push(plan));
@@ -404,6 +419,16 @@ export function updateFaq(id: string, patch: { question?: string; answer?: strin
 export function deleteFaq(id: string) {
   mutate((db) => {
     db.faqs = db.faqs.filter((f) => f.id !== id);
+  });
+}
+/** No `order` column here — array position IS the order, so reorder the array.
+ *  Ids not in `orderedIds` keep their relative order and stay at the end. */
+export function reorderFaqs(orderedIds: string[]) {
+  mutate((db) => {
+    const byId = new Map(db.faqs.map((f) => [f.id, f]));
+    const moved = orderedIds.map((id) => byId.get(id)).filter((f): f is Faq => !!f);
+    const rest = db.faqs.filter((f) => !orderedIds.includes(f.id));
+    db.faqs = [...moved, ...rest];
   });
 }
 
@@ -511,50 +536,79 @@ export function setEventLocked(id: string, locked: boolean) {
   });
 }
 
+/** Mirrors repo.cloneEventData — one source edition PER MENU, optionally
+ *  replacing what the target already has. See the repo version for why. */
 export function cloneEventData(
-  sourceId: string,
   targetId: string,
-  opts: { divisions?: boolean; members?: boolean; tasks?: boolean; rundown?: boolean; jobs?: boolean; budget?: boolean },
+  sources: Partial<Record<CloneModule, string>>,
+  opts: { replace?: boolean } = {},
 ) {
   mutate((db) => {
-    if (opts.divisions) {
-      for (const d of db.divisions.filter((x) => x.event_id === sourceId)) {
-        db.divisions.push({ ...d, id: uid("DIV"), event_id: targetId });
+    const wipe = (mod: CloneModule) => {
+      if (!opts.replace) return;
+      const notTarget = <T extends { event_id?: string | null }>(x: T) => x.event_id !== targetId;
+      if (mod === "divisions") db.divisions = db.divisions.filter(notTarget);
+      if (mod === "members") db.members = db.members.filter(notTarget);
+      if (mod === "prospects") db.prospects = db.prospects.filter(notTarget);
+      if (mod === "tasks") db.tasks = db.tasks.filter(notTarget);
+      if (mod === "rundown") db.rundown = db.rundown.filter(notTarget);
+      if (mod === "jobs") db.jobHariH = db.jobHariH.filter(notTarget);
+      if (mod === "budget") db.budgetPlans = db.budgetPlans.filter(notTarget);
+    };
+
+    for (const mod of CLONE_MODULES) {
+      const sourceId = sources[mod];
+      if (!sourceId) continue;
+      wipe(mod);
+
+      if (mod === "divisions") {
+        for (const d of db.divisions.filter((x) => x.event_id === sourceId)) {
+          db.divisions.push({ ...d, id: uid("DIV"), event_id: targetId });
+        }
       }
-    }
-    if (opts.members) {
-      for (const m of db.members.filter((x) => x.event_id === sourceId)) {
-        db.members.push({ ...m, id: uid("m"), event_id: targetId });
+      if (mod === "members") {
+        for (const m of db.members.filter((x) => x.event_id === sourceId)) {
+          db.members.push({ ...m, id: uid("m"), event_id: targetId });
+        }
       }
-    }
-    if (opts.tasks) {
-      const src = db.tasks.filter((t) => t.event_id === sourceId);
-      const noByDiv: Record<string, number> = {};
-      for (const t of src) {
-        noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
-        db.tasks.push({
-          id: uid("t"), event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
-          pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
-          notes: t.notes, result: "", status: "todo",
+      if (mod === "prospects") {
+        db.prospects.filter((x) => x.event_id === sourceId).forEach((p, i) => {
+          db.prospects.push({
+            ...p, id: uid("p"), event_id: targetId, no: String(i + 1), date_text: "",
+            pic: "", contact_status: "", their_response: "", our_response: "",
+            done: false, is_primary: false,
+          });
         });
       }
-    }
-    if (opts.rundown) {
-      for (const r of db.rundown.filter((x) => x.event_id === sourceId)) {
-        db.rundown.push({ ...r, id: uid("r"), event_id: targetId });
+      if (mod === "tasks") {
+        const src = db.tasks.filter((t) => t.event_id === sourceId);
+        const noByDiv: Record<string, number> = {};
+        for (const t of src) {
+          noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
+          db.tasks.push({
+            id: uid("t"), event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
+            pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
+            notes: t.notes, result: "", status: "todo",
+          });
+        }
       }
-    }
-    if (opts.jobs) {
-      for (const j of db.jobHariH.filter((x) => x.event_id === sourceId)) {
-        db.jobHariH.push({ ...j, id: uid("j"), event_id: targetId, pic: "" });
+      if (mod === "rundown") {
+        for (const r of db.rundown.filter((x) => x.event_id === sourceId)) {
+          db.rundown.push({ ...r, id: uid("r"), event_id: targetId });
+        }
       }
-    }
-    if (opts.budget) {
-      for (const plan of db.budgetPlans.filter((p) => p.event_id === sourceId)) {
-        db.budgetPlans.push({
-          id: uid("bp"), name: plan.name, event_id: targetId,
-          items: plan.items.map((i) => ({ ...i, id: uid("bi") })),
-        });
+      if (mod === "jobs") {
+        for (const j of db.jobHariH.filter((x) => x.event_id === sourceId)) {
+          db.jobHariH.push({ ...j, id: uid("j"), event_id: targetId, pic: "" });
+        }
+      }
+      if (mod === "budget") {
+        for (const plan of db.budgetPlans.filter((p) => p.event_id === sourceId)) {
+          db.budgetPlans.push({
+            id: uid("bp"), name: plan.name, event_id: targetId,
+            items: plan.items.map((i) => ({ ...i, id: uid("bi") })),
+          });
+        }
       }
     }
   });

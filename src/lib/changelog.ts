@@ -7,6 +7,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.28.0",
+    date: "2026-08-10",
+    title: "Ubah massal di WBS, urutkan item RAB & FAQ dengan geser, salin template antar Ormawa Visit, & impor backup dari file",
+    changes: [
+      "WORK BREAKDOWN: pilih beberapa tugas sekaligus lalu ubah Divisi, PIC, dan Deadline dalam satu langkah lewat tombol 'Ubah massal'. Tiap kolom punya centangnya sendiri — kolom yang tidak dicentang dibiarkan apa adanya, jadi mengubah deadline tidak ikut mengosongkan PIC seluruh tugas yang dipilih.",
+      "ANGGARAN: item di dalam rencana kini bisa diurutkan dengan geser (drag & drop) memakai ikon di kiri baris. Pengurutan berlaku di dalam kategorinya masing-masing supaya satu kategori tidak terpecah jadi dua bagian.",
+      "FAQ: pertanyaan kini bisa diurutkan dengan geser; penomorannya menyesuaikan otomatis.",
+      "ORMAWA VISIT: fitur salin template dirombak. Sekarang tiap menu bisa diambil dari Ormawa Visit yang BERBEDA — misalnya Divisi dari OV A dan Rundown dari OV B — lewat dropdown sumber di tiap baris.",
+      "ORMAWA VISIT: 'Reach & Offer' kini ikut bisa disalin. Daftar himpunannya terbawa, tapi status kontak, PIC, dan responsnya dikosongkan karena itu milik edisi yang menghubungi, bukan salinannya.",
+      "ORMAWA VISIT: salin template tidak lagi hanya saat menambah OV baru — sekarang tersedia juga saat mengedit OV yang sudah ada, lengkap dengan peringatan bahwa data menu yang dicentang akan DIHAPUS dan diganti dengan salinan dari OV yang dipilih. Menu yang tidak dicentang tidak tersentuh.",
+      "PENGATURAN: Backup & Rollback kini bisa memulihkan dari file JSON yang sudah diunduh, lewat tombol 'Impor dari File'. File diperiksa dulu dan dialog menampilkan jumlah tabel & barisnya sebelum kamu mengonfirmasi, plus backup pengaman otomatis sebelum menimpa.",
+      "KEAMANAN: file backup yang diimpor disaring dengan daftar-putih tabel — tabel di luar daftar (termasuk 'profiles' yang memang sengaja tidak pernah dibackup) dibuang, jadi file yang diedit manual tidak bisa dipakai untuk mengembalikan peran admin yang sudah dicabut.",
+      "DIVISI & ANGGOTA: field 'Kode unik (opsional)' dihapus dari pop-up tambah divisi. Kodenya memang dibuat otomatis oleh sistem dan tidak pernah ditampilkan di mana pun.",
+    ],
+  },
+  {
     version: "1.27.0",
     date: "2026-08-05",
     title: "Rencana anggaran ikut Ormawa Visit yang dibuka, & info kode sumber terbuka di Pengaturan",

@@ -1,21 +1,19 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, Copy } from "lucide-react";
+import { Loader2, Copy, AlertTriangle } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createEventAction, updateEventAction } from "@/lib/actions/manage";
+import { createEventAction, updateEventAction, applyEventTemplateAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
-import type { OVEvent } from "@/lib/types";
-
-const NO_TEMPLATE = "__none__";
+import type { CloneSources, OVEvent } from "@/lib/types";
+import { ClonePicker } from "./clone-picker";
 
 export function EventFormDialog({
   mode, event, events = [], open, onOpenChange, trigger,
@@ -33,9 +31,12 @@ export function EventFormDialog({
   const setOpen = onOpenChange ?? setIo;
   const [pending, start] = React.useTransition();
 
-  // Template: copy data from an existing Ormawa Visit into the new one.
-  const [templateSource, setTemplateSource] = React.useState<string>(NO_TEMPLATE);
-  const [copy, setCopy] = React.useState({ divisions: true, members: false, tasks: true, rundown: true, jobs: true, budget: false });
+  // Template: each menu names the Ormawa Visit it is copied from, so one new
+  // edition can pull its divisions from OV A and its rundown from OV B.
+  const [sources, setSources] = React.useState<CloneSources>({});
+  // On edit the copy is destructive, so it is opt-in behind its own toggle
+  // rather than sitting open next to the ordinary "Simpan".
+  const [showTemplate, setShowTemplate] = React.useState(false);
 
   const UNSET = "__unset__";
   const [f, setF] = useResetOn(`${isOpen}:${event?.id ?? "new"}`, () => ({
@@ -83,31 +84,36 @@ export function EventFormDialog({
         feedback_partner_rating: f.feedback_partner_rating === "" ? null : Number(f.feedback_partner_rating),
         report_url: f.report_url.trim() || null,
       };
-      const template =
-        mode === "create" && templateSource !== NO_TEMPLATE
-          ? { sourceEventId: templateSource, ...copy }
-          : undefined;
-      const res =
-        mode === "create"
-          ? await createEventAction(payload, template)
-          : await updateEventAction(event!.id, payload);
-      if (res.ok) { toast.success(mode === "create" ? t("Ormawa Visit ditambahkan") : t("Ormawa Visit diperbarui")); setOpen(false); }
-      else toast.error(res.error);
+      const picked = Object.keys(sources).length > 0;
+
+      if (mode === "create") {
+        const res = await createEventAction(payload, picked ? sources : undefined);
+        if (res.ok) { toast.success(t("Ormawa Visit ditambahkan")); setOpen(false); }
+        else toast.error(res.error);
+        return;
+      }
+
+      // Edit: save the fields first, then run the (destructive) copy. Order
+      // matters — if the copy fails, the metadata edit is still saved and the
+      // error names what actually went wrong.
+      const res = await updateEventAction(event!.id, payload);
+      if (!res.ok) { toast.error(res.error); return; }
+      if (picked) {
+        const cloned = await applyEventTemplateAction(event!.id, sources);
+        if (!cloned.ok) { toast.error(cloned.error); return; }
+        toast.success(t("Ormawa Visit diperbarui & data disalin"));
+      } else {
+        toast.success(t("Ormawa Visit diperbarui"));
+      }
+      setOpen(false);
     });
   }
 
   /** "oleh HMD TC" etc — falls back to a generic word before a partner is set. */
   const partnerLabel = f.partner.trim() || t("himpunan partner");
 
+  // An edition can never be its own source, so it is excluded from the picker.
   const templateOptions = events.filter((e) => e.id !== event?.id);
-  const copyItems: { key: keyof typeof copy; label: string }[] = [
-    { key: "divisions", label: t("Divisi") },
-    { key: "members", label: t("Anggota & Tim") },
-    { key: "tasks", label: t("Tugas (WBS)") },
-    { key: "rundown", label: t("Rundown") },
-    { key: "jobs", label: t("Job Hari-H") },
-    { key: "budget", label: t("Anggaran (RAB)") },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -272,36 +278,43 @@ export function EventFormDialog({
             </div>
           </div>
 
-          {mode === "create" && templateOptions.length > 0 && (
+          {templateOptions.length > 0 && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <div className="mb-2 flex items-center gap-1.5">
                 <Copy className="size-3.5 text-muted-foreground" />
                 <p className="text-xs font-medium text-muted-foreground">{t("Salin data dari Ormawa Visit lain (template)")}</p>
               </div>
-              <p className="mb-2 text-[11px] text-muted-foreground">
-                {t("Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Bisa diedit setelahnya.")}
-              </p>
-              <Select value={templateSource} onValueChange={setTemplateSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_TEMPLATE}>{t("Tidak menyalin (kosong)")}</SelectItem>
-                  {templateOptions.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {templateSource !== NO_TEMPLATE && (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {copyItems.map((item) => (
-                    <label key={item.key} className="flex cursor-pointer items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={copy[item.key]}
-                        onCheckedChange={(v) => setCopy((c) => ({ ...c, [item.key]: v === true }))}
-                      />
-                      {item.label}
-                    </label>
-                  ))}
+
+              {mode === "create" ? (
+                <p className="mb-2 text-[11px] text-muted-foreground">
+                  {t("Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.")}
+                </p>
+              ) : !showTemplate ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("Bisa juga menyalin data menu tertentu dari Ormawa Visit lain ke Ormawa Visit ini.")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplate(true)}
+                    className="self-start rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium transition hover:bg-muted"
+                  >
+                    {t("Salin data dari Ormawa Visit lain…")}
+                  </button>
                 </div>
+              ) : (
+                // The wipe is the whole reason this warning exists: without it,
+                // "copy" on an edition that already has data reads as "merge".
+                <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 p-2.5 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    {t("PERINGATAN: data menu yang dicentang di Ormawa Visit ini akan DIHAPUS dan diganti dengan salinan dari Ormawa Visit yang dipilih. Menu yang tidak dicentang tidak tersentuh.")}
+                  </span>
+                </div>
+              )}
+
+              {(mode === "create" || showTemplate) && (
+                <ClonePicker options={templateOptions} value={sources} onChange={setSources} />
               )}
             </div>
           )}
