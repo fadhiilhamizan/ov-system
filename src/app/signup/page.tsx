@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus, MailCheck } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,7 @@ export default function SignUpPage() {
       },
     });
     if (error) {
-      setError(error.message);
+      setError(authErrorMessage(error));
       setPending(false);
       return;
     }

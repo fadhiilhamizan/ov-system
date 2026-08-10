@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, LogIn, Eye, FlaskConical } from "lucide-react";
 import { createClient, isSupabaseConfigured, isDemoConfigured } from "@/lib/supabase/client";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { enterGuestMode, enterDemoMode } from "@/lib/actions/session";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
@@ -38,7 +39,7 @@ function LoginForm() {
       if (isSupabaseConfigured) {
         const { error } = await createClient().auth.signInAnonymously();
         if (error) {
-          setError(error.message);
+          setError(authErrorMessage(error));
           return;
         }
       }
@@ -53,7 +54,7 @@ function LoginForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError(authErrorMessage(error));
       setPending(false);
     } else {
       router.push("/dashboard");

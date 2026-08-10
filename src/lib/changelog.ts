@@ -7,6 +7,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.28.1",
+    date: "2026-08-10",
+    title: "Perbaikan akun default yang tidak bisa login (error \"{}\")",
+    changes: [
+      "PERBAIKAN: akun default Koordinator/Staff/Intern tidak bisa dipakai login — yang muncul hanya pesan aneh \"{}\". Penyebabnya skrip default-accounts.sql membuat baris akun tanpa mengisi kolom token milik sistem autentikasi Supabase. Postgres membolehkannya kosong, tapi server autentikasinya tidak, sehingga permintaan login gagal tanpa pesan apa pun.",
+      "Skrip supabase/default-accounts.sql sudah diperbaiki DAN sekaligus memperbaiki akun yang terlanjur dibuat versi lama — cukup jalankan ulang skripnya, tidak perlu menghapus akun apa pun. Skripnya juga kini menampilkan status 'siap login' per akun di akhir.",
+      "Halaman Masuk & Daftar tidak akan lagi menampilkan \"{}\": pesan error yang tidak terbaca dari server kini diganti kalimat yang bisa ditindaklanjuti, lengkap dengan kode errornya.",
+      "Ditambahkan pemeriksaan otomatis yang menolak akun dengan kolom token kosong, supaya masalah yang sama tidak bisa kembali diam-diam.",
+    ],
+  },
+  {
     version: "1.28.0",
     date: "2026-08-10",
     title: "Ubah massal di WBS, urutkan item RAB & FAQ dengan geser, salin template antar Ormawa Visit, & impor backup dari file",

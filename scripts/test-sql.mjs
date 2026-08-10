@@ -602,7 +602,19 @@ create table auth.users (
   instance_id uuid, id uuid primary key, aud text, role text, email text unique,
   encrypted_password text, email_confirmed_at timestamptz,
   created_at timestamptz, updated_at timestamptz,
-  raw_app_meta_data jsonb default '{}', raw_user_meta_data jsonb default '{}');
+  raw_app_meta_data jsonb default '{}', raw_user_meta_data jsonb default '{}',
+  -- GoTrue's token columns. Nullable with NO default, exactly as Supabase
+  -- ships them — that is the whole point: a hand-written INSERT that skips
+  -- them leaves NULL, GoTrue scans NULL into a Go string, and login dies with
+  -- an empty-bodied 500 that the app renders as "{}".
+  confirmation_token varchar(255),
+  recovery_token varchar(255),
+  email_change varchar(255),
+  email_change_token_new varchar(255),
+  email_change_token_current varchar(255),
+  phone_change varchar(255),
+  phone_change_token varchar(255),
+  reauthentication_token varchar(255));
 create table auth.identities (
   id uuid primary key, user_id uuid references auth.users(id), provider_id text,
   identity_data jsonb, provider text, last_sign_in_at timestamptz,
@@ -631,11 +643,45 @@ language sql stable as $fn$ select '{}'::jsonb $fn$;
        from auth.users where email = 'staff@ormawavisit.id'`)).rows[0].m;
   ok("password ter-hash bcrypt & cocok dengan default", pwOk === true);
 
-  // Idempotensi: jalankan lagi — jumlah tidak berubah, peran tetap benar.
+  // ----------------------------------------------------------------
+  // Kolom token GoTrue TIDAK BOLEH NULL.
+  //
+  // Ini bug yang benar-benar terjadi: versi pertama skrip ini tidak mengisi
+  // kolom token, GoTrue membacanya sebagai string Go, dan login gagal dengan
+  // HTTP 500 tanpa isi — aplikasi menampilkannya sebagai "{}". Postgres sendiri
+  // tidak keberatan, jadi hanya assertion inilah yang bisa menangkapnya.
+  // ----------------------------------------------------------------
+  const TOKEN_COLS = [
+    "confirmation_token", "recovery_token", "email_change", "email_change_token_new",
+    "email_change_token_current", "phone_change", "phone_change_token", "reauthentication_token",
+  ];
+  const nullTokens = Number((await da.query(
+    `select count(*) c from auth.users where ${TOKEN_COLS.map((c) => `${c} is null`).join(" or ")}`,
+  )).rows[0].c);
+  ok("tidak ada kolom token yang NULL (penyebab error '{}' saat login)", nullTokens === 0);
+
+  // Baris rusak peninggalan skrip versi lama harus ikut diperbaiki, bukan cuma
+  // baris yang dibuat oleh skrip baru.
+  await da.exec(`
+insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
+        'lama@ormawavisit.id', crypt('x', gen_salt('bf')), now(), now(), now());
+`);
+  const brokenBefore = Number((await da.query(
+    `select count(*) c from auth.users where confirmation_token is null`)).rows[0].c);
   await da.exec(readFileSync(join(__dirname, "../supabase/default-accounts.sql"), "utf8"));
+  const brokenAfter = Number((await da.query(
+    `select count(*) c from auth.users where ${TOKEN_COLS.map((c) => `${c} is null`).join(" or ")}`,
+  )).rows[0].c);
+  ok("akun lama yang rusak ikut diperbaiki, bukan hanya akun baru", brokenBefore === 1 && brokenAfter === 0);
+
+  // Idempotensi: jalankan lagi — jumlah tidak berubah, peran tetap benar.
   const nUsers2 = Number((await da.query(`select count(*) c from auth.users`)).rows[0].c);
-  ok("dijalankan dua kali tidak menggandakan akun (tetap 3)", nUsers2 === 3);
+  ok("dijalankan dua kali tidak menggandakan akun (tetap 3 + 1 akun lama)", nUsers2 === 4);
   ok("peran tetap benar setelah dijalankan ulang", (await roleOf("intern@ormawavisit.id")) === "intern");
+
+  const ident = Number((await da.query(`select count(*) c from auth.identities`)).rows[0].c);
+  ok("identity tidak digandakan saat dijalankan ulang (tetap 3)", ident === 3);
 } catch (e) {
   ok("uji default-accounts berjalan", false, e.message.split("\n")[0]);
 }

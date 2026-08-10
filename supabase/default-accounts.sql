@@ -1,32 +1,68 @@
 -- ============================================================
 -- AKUN DEFAULT — Koordinator, Staff, Intern.
 --
--- Membuat tiga akun login siap pakai supaya orang bisa langsung masuk tanpa
--- harus mendaftar sendiri lalu menunggu peran disetujui admin.
---
 --   Email                          Peran         Kata sandi awal
 --   coordinator@ormawavisit.id     Koordinator   OrmawaVisit123
 --   staff@ormawavisit.id           Staff         OrmawaVisit123
 --   intern@ormawavisit.id          Intern        OrmawaVisit123
 --
--- ⚠️  GANTI kata sandinya setelah login pertama (lewat Supabase, atau minta
---     admin). Password default ini hanya untuk memulai.
+-- GANTI kata sandinya setelah login pertama.
 --
--- Idempotent: menjalankan ulang tidak menggandakan akun; kalau akunnya sudah
--- ada, hanya perannya yang dipastikan benar.
+-- Aman dijalankan berulang. Jalankan SETELAH setup.sql, di project PRODUKSI
+-- (bukan demo — demo tidak pakai login).
 --
--- Jalankan SETELAH setup.sql, DI PROJECT PRODUKSI (bukan demo — demo tidak
--- pakai login). Butuh ekstensi pgcrypto (sudah diaktifkan oleh setup.sql).
+-- ------------------------------------------------------------------
+-- KALAU LOGIN GAGAL DENGAN PESAN ANEH SEPERTI "{}"
 --
--- Kalau baris auth.users/auth.identities ditolak (versi GoTrue Supabase-mu
--- berbeda), buat ketiga akun lewat Dashboard → Authentication → Add User,
--- lalu jalankan HANYA bagian "set peran" di bawah (SELECT ... update profiles).
--- ============================================================
+-- Versi pertama skrip ini membuat baris auth.users tanpa mengisi kolom-kolom
+-- token milik GoTrue (confirmation_token, recovery_token, dsb). Kolom itu
+-- boleh NULL menurut Postgres, tetapi GoTrue membacanya sebagai string Go —
+-- NULL membuatnya gagal dengan "converting NULL to string is unsupported",
+-- lalu mengembalikan HTTP 500 tanpa isi pesan. Aplikasi menerima badan respons
+-- kosong dan menampilkannya apa adanya: {}.
+--
+-- BAGIAN 1 di bawah memperbaiki baris yang terlanjur dibuat seperti itu, jadi
+-- cukup jalankan ulang file ini — tidak perlu menghapus akunnya.
+-- ------------------------------------------------------------------
 
-do $do$
+-- ==================================================================
+-- BAGIAN 1 — Perbaiki kolom token yang NULL (penyebab error "{}").
+--
+-- Berlaku untuk SEMUA akun, bukan cuma tiga akun default: akun apa pun yang
+-- pernah dibuat lewat SQL manual kena masalah yang sama. Nama kolom diperiksa
+-- dulu ke information_schema karena daftar kolom GoTrue berbeda antar versi.
+-- ==================================================================
+do $fix$
+declare
+  col text;
+begin
+  foreach col in array array[
+    'confirmation_token',
+    'recovery_token',
+    'email_change',
+    'email_change_token_new',
+    'email_change_token_current',
+    'phone_change',
+    'phone_change_token',
+    'reauthentication_token'
+  ]
+  loop
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'auth' and table_name = 'users' and column_name = col
+    ) then
+      execute format('update auth.users set %I = %L where %I is null', col, '', col);
+    end if;
+  end loop;
+end $fix$;
+
+-- ==================================================================
+-- BAGIAN 2 — Buat tiga akun default (dilewati kalau emailnya sudah ada).
+-- ==================================================================
+do $seed$
 declare
   acc record;
-  uid uuid;
+  new_id uuid;
 begin
   for acc in
     select * from (values
@@ -35,56 +71,98 @@ begin
       ('intern@ormawavisit.id',      'Intern',      'intern')
     ) as t(email, name, role)
   loop
-    select id into uid from auth.users where email = acc.email;
+    if not exists (select 1 from auth.users u where u.email = acc.email) then
+      new_id := gen_random_uuid();
 
-    if uid is null then
-      uid := gen_random_uuid();
-
-      -- Akun email/password yang sudah terkonfirmasi.
+      -- Hanya kolom inti yang ada di semua versi GoTrue. Kolom token diisi
+      -- oleh BAGIAN 3 supaya skrip ini tidak patah kalau ada versi yang
+      -- namanya berbeda.
       insert into auth.users (
         instance_id, id, aud, role, email, encrypted_password,
         email_confirmed_at, created_at, updated_at,
         raw_app_meta_data, raw_user_meta_data
       ) values (
-        '00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated',
+        '00000000-0000-0000-0000-000000000000', new_id, 'authenticated', 'authenticated',
         acc.email, crypt('OrmawaVisit123', gen_salt('bf')),
         now(), now(), now(),
         '{"provider":"email","providers":["email"]}'::jsonb,
         jsonb_build_object('name', acc.name)
       );
 
-      -- Identity email — tanpa ini sebagian versi GoTrue menolak login password.
+      -- Tanpa baris identity, login email/password ditolak GoTrue.
       insert into auth.identities (
         id, user_id, provider_id, identity_data, provider,
         last_sign_in_at, created_at, updated_at
       ) values (
-        gen_random_uuid(), uid, uid::text,
-        jsonb_build_object('sub', uid::text, 'email', acc.email),
+        gen_random_uuid(), new_id, new_id::text,
+        jsonb_build_object('sub', new_id::text, 'email', acc.email),
         'email', now(), now(), now()
       );
     end if;
-
-    -- Pastikan profil ada dengan peran yang diinginkan. Trigger handle_new_user
-    -- membuat profil dengan role 'viewer'; upsert ini menimpanya ke peran yang benar.
-    insert into public.profiles (id, name, email, role)
-      values (uid, acc.name, acc.email, acc.role::app_role)
-      on conflict (id) do update set role = excluded.role, name = excluded.name;
   end loop;
-end $do$;
+end $seed$;
 
--- ------------------------------------------------------------------
--- Bagian "set peran" (jalankan sendiri kalau akun dibuat lewat Dashboard):
---   update public.profiles p set role = v.role::app_role
---   from (values
---     ('coordinator@ormawavisit.id','coordinator'),
---     ('staff@ormawavisit.id','staff'),
---     ('intern@ormawavisit.id','intern')
---   ) as v(email, role)
---   where p.email = v.email;
--- ------------------------------------------------------------------
+-- ==================================================================
+-- BAGIAN 3 — Isi lagi kolom token untuk akun yang baru dibuat di BAGIAN 2.
+-- (Perintah yang sama dengan BAGIAN 1; dijalankan dua kali memang disengaja.)
+-- ==================================================================
+do $fix2$
+declare
+  col text;
+begin
+  foreach col in array array[
+    'confirmation_token',
+    'recovery_token',
+    'email_change',
+    'email_change_token_new',
+    'email_change_token_current',
+    'phone_change',
+    'phone_change_token',
+    'reauthentication_token'
+  ]
+  loop
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'auth' and table_name = 'users' and column_name = col
+    ) then
+      execute format('update auth.users set %I = %L where %I is null', col, '', col);
+    end if;
+  end loop;
+end $fix2$;
 
--- Verifikasi: tiga akun dengan peran yang benar.
-select email, role
-from public.profiles
-where email in ('coordinator@ormawavisit.id', 'staff@ormawavisit.id', 'intern@ormawavisit.id')
-order by email;
+-- ==================================================================
+-- BAGIAN 4 — Pastikan perannya benar.
+--
+-- Trigger handle_new_user membuat profil dengan role 'viewer'; baris ini
+-- menimpanya. Jalankan BAGIAN INI SAJA kalau akunnya kamu buat lewat
+-- Dashboard (Authentication -> Add user) — cara itu paling aman karena
+-- Supabase sendiri yang mengisi semua kolomnya.
+-- ==================================================================
+insert into public.profiles (id, name, email, role)
+select u.id, v.name, v.email, v.role::app_role
+from (values
+  ('coordinator@ormawavisit.id', 'Koordinator', 'coordinator'),
+  ('staff@ormawavisit.id',       'Staff',       'staff'),
+  ('intern@ormawavisit.id',      'Intern',      'intern')
+) as v(email, name, role)
+join auth.users u on u.email = v.email
+on conflict (id) do update set role = excluded.role, name = excluded.name;
+
+-- ==================================================================
+-- VERIFIKASI — tiga baris, semuanya 'siap login'.
+-- ==================================================================
+select
+  p.email,
+  p.role,
+  case
+    when i.id is null then 'BELUM SIAP: identity email tidak ada'
+    when u.encrypted_password is null then 'BELUM SIAP: tanpa kata sandi'
+    when u.email_confirmed_at is null then 'BELUM SIAP: email belum terkonfirmasi'
+    when u.confirmation_token is null then 'BELUM SIAP: kolom token masih NULL'
+    else 'siap login'
+  end as status
+from public.profiles p
+join auth.users u on u.id = p.id
+left join auth.identities i on i.user_id = u.id and i.provider = 'email'
+where p.email in ('coordinator@ormawavisit.id', 'staff@ormawavisit.id', 'intern@ormawavisit.id')
+order by p.email;
