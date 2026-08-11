@@ -15,7 +15,7 @@ import { getActiveEvent } from "@/lib/session";
 import {
   eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, idSchema, parse,
 } from "./schemas";
-import { divisionFields, memberDivisions, withDivisionAdded, withDivisionRemoved } from "@/lib/members";
+import { divisionFields, memberDivisions, withDivisionAdded } from "@/lib/members";
 import { archivedGuard } from "./lock";
 
 /** Keep the legacy primary `division` column in step with `divisions[]`. */
@@ -212,17 +212,16 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
 }
 
 /**
- * Put EXISTING members into a division, or take them out of it.
+ * Put EXISTING members into a division.
  *
  * Distinct from `bulkUpdateMembersAction`, which REPLACES the whole divisions
  * array: that is right for "set these people's division", but wrong for
  * "also add them to Konsumsi" because it would strip every other division they
  * belong to. Here each member keeps what they had (see `withDivisionAdded`).
  */
-export async function setMembersDivisionAction(
+export async function addMembersToDivisionAction(
   ids: string[],
   divisionKey: string,
-  member: boolean,
 ): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageMembers(user)) return DENY;
@@ -239,9 +238,7 @@ export async function setMembersDivisionAction(
   const roster = (await getMembers(event.id)).filter((m) => wanted.has(m.id));
   try {
     for (const m of roster) {
-      const next = member
-        ? withDivisionAdded(m, keyv.data)
-        : withDivisionRemoved(m, keyv.data);
+      const next = withDivisionAdded(m, keyv.data);
       // Skip the write when nothing actually changes.
       if (next.join(" ") === memberDivisions(m).join(" ")) continue;
       await updateMember(m.id, divisionFields(next));

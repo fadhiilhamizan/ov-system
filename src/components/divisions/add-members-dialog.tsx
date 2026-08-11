@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
-import { setMembersDivisionAction } from "@/lib/actions/manage";
+import { addMembersToDivisionAction } from "@/lib/actions/manage";
 import { memberDivisions, memberInDivision, memberLabel } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
@@ -84,7 +84,7 @@ export function AddMembersToDivisionDialog({
   function submit() {
     const ids = [...picked];
     start(async () => {
-      const res = await setMembersDivisionAction(ids, division.key, true);
+      const res = await addMembersToDivisionAction(ids, division.key);
       if (res.ok) {
         toast.success(`${ids.length} ${t("anggota ditambahkan ke")} ${division.name}`);
         setOpen(false);

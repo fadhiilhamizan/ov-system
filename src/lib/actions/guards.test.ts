@@ -90,7 +90,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["members.delete", () => manage.deleteMemberAction("m1")],
   ["members.bulkDelete", () => manage.bulkDeleteMembersAction(["m1"])],
   ["members.bulkUpdate", () => manage.bulkUpdateMembersAction(["m1"], { division: "EVENT" })],
-  ["members.setDivision", () => manage.setMembersDivisionAction(["m1"], "EVENT", true)],
+  ["members.addToDivision", () => manage.addMembersToDivisionAction(["m1"], "EVENT")],
   ["divisions.create", () => manage.createDivisionAction({ name: "Divisi" })],
   ["divisions.update", () => manage.updateDivisionAction("EVENT", { name: "X" })],
   ["divisions.delete", () => manage.deleteDivisionAction("EVENT")],

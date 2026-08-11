@@ -8,7 +8,6 @@ import {
   coordinatorNames,
   isCoordinator,
   withDivisionAdded,
-  withDivisionRemoved,
 } from "./members";
 import type { Member } from "./types";
 
@@ -137,19 +136,3 @@ describe("withDivisionAdded", () => {
   });
 });
 
-describe("withDivisionRemoved", () => {
-  it("drops just that one and keeps the order", () => {
-    expect(withDivisionRemoved(m({ divisions: ["EVENT", "LO", "CRE"] }), "LO"))
-      .toEqual(["EVENT", "CRE"]);
-  });
-
-  it("promotes the next division to primary when the primary is removed", () => {
-    const next = withDivisionRemoved(m({ divisions: ["EVENT", "LO"] }), "EVENT");
-    expect(next).toEqual(["LO"]);
-    expect(divisionFields(next).division).toBe("LO");
-  });
-
-  it("can empty the list entirely", () => {
-    expect(withDivisionRemoved(m({ divisions: ["EVENT"] }), "EVENT")).toEqual([]);
-  });
-});

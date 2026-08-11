@@ -68,14 +68,6 @@ export function withDivisionAdded(
   return current.includes(key) ? current : [...current, key];
 }
 
-/** Remove a division, keeping the rest in order. */
-export function withDivisionRemoved(
-  m: Pick<Member, "division" | "divisions">,
-  key: DivisionKey,
-): DivisionKey[] {
-  return memberDivisions(m).filter((d) => d !== key);
-}
-
 /**
  * The coordinator names of a division. Stored on the team row as a
  * comma-joined display name (a division may have none - that's valid).
