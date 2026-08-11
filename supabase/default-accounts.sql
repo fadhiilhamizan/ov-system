@@ -1,5 +1,5 @@
 -- ============================================================
--- AKUN DEFAULT — Koordinator, Staff, Intern.
+-- AKUN DEFAULT - Koordinator, Staff, Intern.
 --
 --   Email                          Peran         Kata sandi awal
 --   coordinator@ormawavisit.id     Koordinator   OrmawaVisit123
@@ -9,24 +9,24 @@
 -- GANTI kata sandinya setelah login pertama.
 --
 -- Aman dijalankan berulang. Jalankan SETELAH setup.sql, di project PRODUKSI
--- (bukan demo — demo tidak pakai login).
+-- (bukan demo - demo tidak pakai login).
 --
 -- ------------------------------------------------------------------
 -- KALAU LOGIN GAGAL DENGAN PESAN ANEH SEPERTI "{}"
 --
 -- Versi pertama skrip ini membuat baris auth.users tanpa mengisi kolom-kolom
 -- token milik GoTrue (confirmation_token, recovery_token, dsb). Kolom itu
--- boleh NULL menurut Postgres, tetapi GoTrue membacanya sebagai string Go —
+-- boleh NULL menurut Postgres, tetapi GoTrue membacanya sebagai string Go -
 -- NULL membuatnya gagal dengan "converting NULL to string is unsupported",
 -- lalu mengembalikan HTTP 500 tanpa isi pesan. Aplikasi menerima badan respons
 -- kosong dan menampilkannya apa adanya: {}.
 --
 -- BAGIAN 1 di bawah memperbaiki baris yang terlanjur dibuat seperti itu, jadi
--- cukup jalankan ulang file ini — tidak perlu menghapus akunnya.
+-- cukup jalankan ulang file ini - tidak perlu menghapus akunnya.
 -- ------------------------------------------------------------------
 
 -- ==================================================================
--- BAGIAN 1 — Perbaiki kolom token yang NULL (penyebab error "{}").
+-- BAGIAN 1 - Perbaiki kolom token yang NULL (penyebab error "{}").
 --
 -- Berlaku untuk SEMUA akun, bukan cuma tiga akun default: akun apa pun yang
 -- pernah dibuat lewat SQL manual kena masalah yang sama. Nama kolom diperiksa
@@ -57,7 +57,7 @@ begin
 end $fix$;
 
 -- ==================================================================
--- BAGIAN 2 — Buat tiga akun default (dilewati kalau emailnya sudah ada).
+-- BAGIAN 2 - Buat tiga akun default (dilewati kalau emailnya sudah ada).
 -- ==================================================================
 do $seed$
 declare
@@ -103,7 +103,7 @@ begin
 end $seed$;
 
 -- ==================================================================
--- BAGIAN 3 — Isi lagi kolom token untuk akun yang baru dibuat di BAGIAN 2.
+-- BAGIAN 3 - Isi lagi kolom token untuk akun yang baru dibuat di BAGIAN 2.
 -- (Perintah yang sama dengan BAGIAN 1; dijalankan dua kali memang disengaja.)
 -- ==================================================================
 do $fix2$
@@ -131,11 +131,11 @@ begin
 end $fix2$;
 
 -- ==================================================================
--- BAGIAN 4 — Pastikan perannya benar.
+-- BAGIAN 4 - Pastikan perannya benar.
 --
 -- Trigger handle_new_user membuat profil dengan role 'viewer'; baris ini
 -- menimpanya. Jalankan BAGIAN INI SAJA kalau akunnya kamu buat lewat
--- Dashboard (Authentication -> Add user) — cara itu paling aman karena
+-- Dashboard (Authentication -> Add user) - cara itu paling aman karena
 -- Supabase sendiri yang mengisi semua kolomnya.
 -- ==================================================================
 insert into public.profiles (id, name, email, role)
@@ -149,7 +149,7 @@ join auth.users u on u.email = v.email
 on conflict (id) do update set role = excluded.role, name = excluded.name;
 
 -- ==================================================================
--- VERIFIKASI — tiga baris, semuanya 'siap login'.
+-- VERIFIKASI - tiga baris, semuanya 'siap login'.
 -- ==================================================================
 select
   p.email,

@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n/provider";
 import type { RequestableRole, RoleRequest } from "@/lib/types";
 
 /**
- * Shown to signed-up accounts that have no role yet — they can see everything a
+ * Shown to signed-up accounts that have no role yet - they can see everything a
  * Tamu can, and nothing more, until an admin approves a role request. Accounts
  * that already hold a role are not nagged; they change roles from the user menu.
  */

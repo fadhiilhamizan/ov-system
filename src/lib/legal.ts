@@ -9,7 +9,7 @@ import type { Bi } from "./guide";
 // MAINTENANCE
 //  - These describe what the app ACTUALLY does. When you add a data field, a
 //    cookie, or a third-party service, update the matching section here in the
-//    same change — an inaccurate privacy policy is worse than none.
+//    same change - an inaccurate privacy policy is worse than none.
 //  - Bump LEGAL_UPDATED whenever the wording changes materially.
 //  - NOT LEGAL ADVICE: this was drafted from the codebase, not by a lawyer.
 //    Have the department review it (and fill in LEGAL_CONTACT_EMAIL) before
@@ -73,28 +73,28 @@ export const PRIVACY: LegalDoc = {
       ],
       bullets: [
         {
-          id: "Data akun — nama, alamat email, dan warna avatar. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
-          en: "Account data — your name, email address, and avatar colour. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
+          id: "Data akun - nama, alamat email, dan warna avatar. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
+          en: "Account data - your name, email address, and avatar colour. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
         },
         {
-          id: "Data keanggotaan — nama, nama panggilan, NRP, angkatan, divisi, dan status (fungsionaris atau intern) anggota kepanitiaan.",
-          en: "Membership data — name, nickname, student ID (NRP), cohort year, division, and status (staff or intern) of committee members.",
+          id: "Data keanggotaan - nama, nama panggilan, NRP, angkatan, divisi, dan status (fungsionaris atau intern) anggota kepanitiaan.",
+          en: "Membership data - name, nickname, student ID (NRP), cohort year, division, and status (staff or intern) of committee members.",
         },
         {
-          id: "Data pekerjaan — tugas beserta penanggung jawab (PIC), tenggat, catatan, dan hasil; rundown acara termasuk MC dan operator; pembagian tugas hari-H; rencana anggaran; serta tautan dokumen yang kamu tambahkan.",
-          en: "Work data — tasks with their person in charge (PIC), deadlines, notes, and results; event rundowns including MC and operator; event-day job assignments; budget plans; and document links you add.",
+          id: "Data pekerjaan - tugas beserta penanggung jawab (PIC), tenggat, catatan, dan hasil; rundown acara termasuk MC dan operator; pembagian tugas hari-H; rencana anggaran; serta tautan dokumen yang kamu tambahkan.",
+          en: "Work data - tasks with their person in charge (PIC), deadlines, notes, and results; event rundowns including MC and operator; event-day job assignments; budget plans; and document links you add.",
         },
         {
-          id: "Data himpunan mitra (menu Reach & Offer) — nama himpunan, kampus, lokasi, narahubung, dan status komunikasi. Data ini menyangkut orang di luar HMSI ITS; lihat bagian 6.",
-          en: "Partner organisation data (the Reach & Offer menu) — organisation name, campus, location, contact person, and communication status. This concerns people outside HMSI ITS; see section 6.",
+          id: "Data himpunan mitra (menu Reach & Offer) - nama himpunan, kampus, lokasi, narahubung, dan status komunikasi. Data ini menyangkut orang di luar HMSI ITS; lihat bagian 6.",
+          en: "Partner organisation data (the Reach & Offer menu) - organisation name, campus, location, contact person, and communication status. This concerns people outside HMSI ITS; see section 6.",
         },
         {
-          id: "Pengajuan peran — peran yang kamu minta beserta catatan yang kamu tulis untuk admin.",
-          en: "Role requests — the role you ask for and any note you write for the admin.",
+          id: "Pengajuan peran - peran yang kamu minta beserta catatan yang kamu tulis untuk admin.",
+          en: "Role requests - the role you ask for and any note you write for the admin.",
         },
         {
-          id: "Data teknis — cookie yang diperlukan agar sistem berfungsi (lihat bagian 3). Kami tidak memasang alat analitik, piksel iklan, atau pelacak pihak ketiga apa pun.",
-          en: "Technical data — cookies required for the system to work (see section 3). We do not install any analytics tools, advertising pixels, or third-party trackers.",
+          id: "Data teknis - cookie yang diperlukan agar sistem berfungsi (lihat bagian 3). Kami tidak memasang alat analitik, piksel iklan, atau pelacak pihak ketiga apa pun.",
+          en: "Technical data - cookies required for the system to work (see section 3). We do not install any analytics tools, advertising pixels, or third-party trackers.",
         },
       ],
     },
@@ -102,27 +102,27 @@ export const PRIVACY: LegalDoc = {
       heading: { id: "3. Cookie yang dipakai", en: "3. Cookies we use" },
       body: [
         {
-          id: "Semua cookie di bawah ini bersifat fungsional — dipakai agar sistem berjalan dan mengingat pilihanmu. Tidak ada cookie iklan atau analitik.",
-          en: "Every cookie below is functional — used to make the system work and to remember your preferences. There are no advertising or analytics cookies.",
+          id: "Semua cookie di bawah ini bersifat fungsional - dipakai agar sistem berjalan dan mengingat pilihanmu. Tidak ada cookie iklan atau analitik.",
+          en: "Every cookie below is functional - used to make the system work and to remember your preferences. There are no advertising or analytics cookies.",
         },
       ],
       bullets: [
         {
-          id: "Cookie sesi Supabase (diawali sb-) — menjaga kamu tetap masuk setelah login.",
-          en: "Supabase session cookies (prefixed sb-) — keep you signed in after login.",
+          id: "Cookie sesi Supabase (diawali sb-) - menjaga kamu tetap masuk setelah login.",
+          en: "Supabase session cookies (prefixed sb-) - keep you signed in after login.",
         },
-        { id: "ov_guest — menandai sesi tamu (hanya lihat, tanpa akun).", en: "ov_guest — marks a guest session (view-only, no account)." },
-        { id: "ov_lang — bahasa tampilan pilihanmu (Indonesia atau Inggris).", en: "ov_lang — your chosen display language (Indonesian or English)." },
-        { id: "ov_sidebar — apakah menu samping sedang diciutkan.", en: "ov_sidebar — whether the sidebar is collapsed." },
-        { id: "ov_active_event dan ov_active_division — Ormawa Visit dan divisi yang sedang kamu lihat.", en: "ov_active_event and ov_active_division — the Ormawa Visit and division you are currently viewing." },
-        { id: "ov_demo dan ov_demo_user — hanya aktif di Mode Demo, untuk menandai sesi demo dan identitas contoh yang dipilih.", en: "ov_demo and ov_demo_user — only active in Demo Mode, marking the demo session and the sample identity in use." },
+        { id: "ov_guest - menandai sesi tamu (hanya lihat, tanpa akun).", en: "ov_guest - marks a guest session (view-only, no account)." },
+        { id: "ov_lang - bahasa tampilan pilihanmu (Indonesia atau Inggris).", en: "ov_lang - your chosen display language (Indonesian or English)." },
+        { id: "ov_sidebar - apakah menu samping sedang diciutkan.", en: "ov_sidebar - whether the sidebar is collapsed." },
+        { id: "ov_active_event dan ov_active_division - Ormawa Visit dan divisi yang sedang kamu lihat.", en: "ov_active_event and ov_active_division - the Ormawa Visit and division you are currently viewing." },
+        { id: "ov_demo dan ov_demo_user - hanya aktif di Mode Demo, untuk menandai sesi demo dan identitas contoh yang dipilih.", en: "ov_demo and ov_demo_user - only active in Demo Mode, marking the demo session and the sample identity in use." },
       ],
     },
     {
       heading: { id: "4. Untuk apa data dipakai", en: "4. What the data is used for" },
       bullets: [
         { id: "Menjalankan program Ormawa Visit: membagi tugas, memantau progres, menyusun rundown dan anggaran.", en: "Running the Ormawa Visit programme: assigning tasks, tracking progress, preparing rundowns and budgets." },
-        { id: "Menentukan hak akses — peran akunmu menentukan menu apa yang bisa kamu buka dan ubah.", en: "Determining access rights — your account role decides which menus you can open and edit." },
+        { id: "Menentukan hak akses - peran akunmu menentukan menu apa yang bisa kamu buka dan ubah.", en: "Determining access rights - your account role decides which menus you can open and edit." },
         { id: "Menjaga kesinambungan antar kepengurusan, sehingga kepanitiaan berikutnya bisa belajar dari data sebelumnya.", en: "Preserving continuity between cabinets, so the next committee can learn from previous data." },
         { id: "Mencadangkan data agar bisa dipulihkan bila terjadi kesalahan atau kehilangan data.", en: "Backing up data so it can be restored if something is lost or goes wrong." },
       ],
@@ -142,7 +142,7 @@ export const PRIVACY: LegalDoc = {
         },
         {
           id: "Alamat email akun hanya terlihat oleh Admin. Nama dan penugasanmu terlihat oleh sesama pengguna sistem, karena itulah inti dari alat kerja bersama ini.",
-          en: "Account email addresses are visible only to Admins. Your name and assignments are visible to other users of the system — that is the point of a shared working tool.",
+          en: "Account email addresses are visible only to Admins. Your name and assignments are visible to other users of the system - that is the point of a shared working tool.",
         },
       ],
     },
@@ -168,9 +168,9 @@ export const PRIVACY: LegalDoc = {
         },
       ],
       bullets: [
-        { id: "Supabase — basis data dan sistem autentikasi (penyimpanan akun serta seluruh data kerja).", en: "Supabase — database and authentication (storing accounts and all working data)." },
-        { id: "Vercel — hosting aplikasi dan penjadwal pencadangan otomatis.", en: "Vercel — application hosting and the automatic backup scheduler." },
-        { id: "Google — hanya bila kamu memilih Masuk/Daftar dengan Google, untuk memverifikasi identitasmu.", en: "Google — only if you choose to sign in or sign up with Google, to verify your identity." },
+        { id: "Supabase - basis data dan sistem autentikasi (penyimpanan akun serta seluruh data kerja).", en: "Supabase - database and authentication (storing accounts and all working data)." },
+        { id: "Vercel - hosting aplikasi dan penjadwal pencadangan otomatis.", en: "Vercel - application hosting and the automatic backup scheduler." },
+        { id: "Google - hanya bila kamu memilih Masuk/Daftar dengan Google, untuk memverifikasi identitasmu.", en: "Google - only if you choose to sign in or sign up with Google, to verify your identity." },
       ],
     },
     {
@@ -190,9 +190,9 @@ export const PRIVACY: LegalDoc = {
       heading: { id: "9. Hak kamu atas data", en: "9. Your rights over your data" },
       bullets: [
         { id: "Melihat data akun dan penugasanmu langsung di dalam sistem.", en: "View your account data and assignments directly inside the system." },
-        { id: "Memperbaiki data yang keliru — melalui menu terkait, atau dengan meminta bantuan Admin.", en: "Correct inaccurate data — through the relevant menu, or by asking an Admin." },
+        { id: "Memperbaiki data yang keliru - melalui menu terkait, atau dengan meminta bantuan Admin.", en: "Correct inaccurate data - through the relevant menu, or by asking an Admin." },
         { id: "Meminta penghapusan akun beserta data pribadimu. Penghapusan dilakukan manual oleh Admin; data pekerjaan yang sudah menjadi arsip program dapat dipertahankan dalam bentuk tanpa identitas.", en: "Request deletion of your account and personal data. Deletion is performed manually by an Admin; work data that has become a programme archive may be retained in de-identified form." },
-        { id: "Menarik diri — berhenti memakai sistem dan meminta peranmu dicabut kapan saja.", en: "Withdraw — stop using the system and ask for your role to be revoked at any time." },
+        { id: "Menarik diri - berhenti memakai sistem dan meminta peranmu dicabut kapan saja.", en: "Withdraw - stop using the system and ask for your role to be revoked at any time." },
       ],
     },
     {
@@ -239,8 +239,8 @@ export const TERMS: LegalDoc = {
       heading: { id: "1. Persetujuan", en: "1. Acceptance" },
       body: [
         {
-          id: "Dengan mendaftar, masuk, atau memakai sistem ini — termasuk sebagai tamu tanpa akun — kamu dianggap membaca dan menyetujui Ketentuan Layanan serta Kebijakan Privasi ini. Bila kamu tidak setuju, mohon jangan memakai sistem ini.",
-          en: "By registering, signing in, or using this system — including as a guest without an account — you are deemed to have read and agreed to these Terms of Service and the Privacy Policy. If you do not agree, please do not use the system.",
+          id: "Dengan mendaftar, masuk, atau memakai sistem ini - termasuk sebagai tamu tanpa akun - kamu dianggap membaca dan menyetujui Ketentuan Layanan serta Kebijakan Privasi ini. Bila kamu tidak setuju, mohon jangan memakai sistem ini.",
+          en: "By registering, signing in, or using this system - including as a guest without an account - you are deemed to have read and agreed to these Terms of Service and the Privacy Policy. If you do not agree, please do not use the system.",
         },
       ],
     },
@@ -258,7 +258,7 @@ export const TERMS: LegalDoc = {
       bullets: [
         { id: "Kamu boleh mendaftar sendiri memakai email atau akun Google. Satu orang satu akun, dengan data diri yang benar.", en: "You may register yourself using an email address or a Google account. One account per person, with accurate personal details." },
         { id: "Akun baru belum punya peran dan hanya bisa melihat. Peran diberikan lewat pengajuan yang disetujui Admin.", en: "A new account has no role and can only view. Roles are granted through a request approved by an Admin." },
-        { id: "Peran dapat diubah, diturunkan, atau dicabut oleh Admin — misalnya ketika kepengurusan berganti atau kamu tidak lagi aktif di kepanitiaan.", en: "Roles may be changed, downgraded, or revoked by an Admin — for example when the cabinet changes or you are no longer active on the committee." },
+        { id: "Peran dapat diubah, diturunkan, atau dicabut oleh Admin - misalnya ketika kepengurusan berganti atau kamu tidak lagi aktif di kepanitiaan.", en: "Roles may be changed, downgraded, or revoked by an Admin - for example when the cabinet changes or you are no longer active on the committee." },
         { id: "Kamu bertanggung jawab menjaga kerahasiaan kata sandi dan seluruh aktivitas yang terjadi lewat akunmu. Dilarang meminjamkan akun.", en: "You are responsible for keeping your password confidential and for all activity under your account. Lending your account is prohibited." },
       ],
     },
@@ -276,8 +276,8 @@ export const TERMS: LegalDoc = {
       heading: { id: "5. Data & konten yang kamu masukkan", en: "5. Data and content you enter" },
       body: [
         {
-          id: "Data yang kamu masukkan sebagai bagian dari kepanitiaan — tugas, rundown, anggaran, dokumen, dan sejenisnya — merupakan data kerja organisasi dan menjadi arsip Departemen External Affairs HMSI ITS. Kamu tetap wajib memastikan bahwa kamu berhak memasukkan data tersebut.",
-          en: "Data you enter as part of committee work — tasks, rundowns, budgets, documents, and the like — is organisational working data and forms part of the HMSI ITS External Affairs Department archive. You remain responsible for ensuring you have the right to enter it.",
+          id: "Data yang kamu masukkan sebagai bagian dari kepanitiaan - tugas, rundown, anggaran, dokumen, dan sejenisnya - merupakan data kerja organisasi dan menjadi arsip Departemen External Affairs HMSI ITS. Kamu tetap wajib memastikan bahwa kamu berhak memasukkan data tersebut.",
+          en: "Data you enter as part of committee work - tasks, rundowns, budgets, documents, and the like - is organisational working data and forms part of the HMSI ITS External Affairs Department archive. You remain responsible for ensuring you have the right to enter it.",
         },
         {
           id: "Simpan salinan sendiri untuk dokumen yang benar-benar penting. Sistem ini alat bantu koordinasi, bukan satu-satunya tempat penyimpanan yang kamu andalkan.",

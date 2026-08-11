@@ -4,7 +4,7 @@
  * Kept as a permanent reference: everything before the app existed lives only
  * in these sheets, and a committee member who needs to check how something was
  * done in a past edition should not have to hunt for the link. Read-only by
- * nature — nothing in the app writes back to them.
+ * nature - nothing in the app writes back to them.
  */
 export interface ArchiveSheet {
   year: string;

@@ -73,13 +73,13 @@ export function MembersView({
   }, [members, type, q, sort.rules, divMap]);
 
   // Only ever act on selections that are still visible under the current filter
-  // (ids selected then filtered away, or deleted, are simply ignored — no effect
+  // (ids selected then filtered away, or deleted, are simply ignored - no effect
   // needed to prune state).
   const filteredIds = filtered.map((m) => m.id);
   const selectedInView = visibleSelection(selected, filteredIds);
   const allChecked = filtered.length > 0 && selectedInView.length === filtered.length;
   const someChecked = selectedInView.length > 0 && !allChecked;
-  /** Adds/removes only the rows on screen — ticks hidden by the current filter
+  /** Adds/removes only the rows on screen - ticks hidden by the current filter
    *  are left alone rather than being thrown away by a "select all". */
   function toggleAll() {
     setSelected((prev) => {
@@ -117,7 +117,6 @@ export function MembersView({
           stats={divisionStats}
           teams={teams}
           members={members}
-          events={events}
           eventId={eventId}
           canManage={canManageDivisions}
           canManageTeams={canManageTeams}
@@ -188,7 +187,7 @@ export function MembersView({
               </TableHeader>
               <TableBody>
                 {filtered.map((m) => {
-                  // A member can sit in several divisions — show them all.
+                  // A member can sit in several divisions - show them all.
                   const divs = memberDivisions(m).map((k) => divMap.get(k)).filter(Boolean) as Division[];
                   return (
                     <TableRow key={m.id} data-state={selected.has(m.id) ? "selected" : undefined}>

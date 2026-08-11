@@ -1,9 +1,9 @@
 -- ============================================================
--- 0030 — Buang baris duplikat hasil menjalankan skrip seed/SQL lebih dari sekali.
+-- 0030 - Buang baris duplikat hasil menjalankan skrip seed/SQL lebih dari sekali.
 --
 -- Cara kerjanya: dua baris dianggap KEMBAR hanya kalau SELURUH isinya identik
 -- setelah `id` dan stempel waktu dikeluarkan. Jadi dua tugas yang kebetulan
--- berjudul sama tapi beda PIC / tanggal / divisi TIDAK tersentuh — yang dibuang
+-- berjudul sama tapi beda PIC / tanggal / divisi TIDAK tersentuh - yang dibuang
 -- hanya salinan yang benar-benar persis sama. Baris identik milik EDISI berbeda
 -- juga aman, karena event_id ikut dibandingkan.
 --
@@ -13,7 +13,7 @@
 -- CATATAN PENTING (versi sebelumnya gagal karena ini):
 --   Migrasi ini TIDAK memakai tabel sementara. Sebuah `create temporary table`
 --   hanya hidup dalam satu sesi, dan SQL editor Supabase berjalan lewat
---   connection pooler — statement berikutnya bisa mendarat di koneksi lain,
+--   connection pooler - statement berikutnya bisa mendarat di koneksi lain,
 --   sehingga tabelnya "tidak ada". Semua kerja di sini muat dalam SATU statement
 --   (blok DO), lalu satu SELECT laporan yang berdiri sendiri.
 --

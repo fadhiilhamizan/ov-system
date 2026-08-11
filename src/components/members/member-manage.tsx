@@ -25,7 +25,7 @@ import type { Division, Member, OVEvent, Team } from "@/lib/types";
 
 // ---------------- Division multi-select ----------------
 /** A member usually sits in one division, but the model deliberately allows
- *  several — so this is a checkbox list, not a single Select. */
+ *  several - so this is a checkbox list, not a single Select. */
 function DivisionMultiSelect({
   divisions, value, onChange,
 }: {
@@ -141,7 +141,7 @@ export function MemberFormDialog({
       if (mode === "create") {
         // Bulk-entry friendly: keep type/division/event, clear only identity
         // fields, and keep the dialog open so the user can add the next person.
-        toast.success(`${f.name} ${t("ditambahkan — lanjut menambahkan anggota lain")}`);
+        toast.success(`${f.name} ${t("ditambahkan - lanjut menambahkan anggota lain")}`);
         setF((prev) => emptyForm(prev));
         nameRef.current?.focus();
       } else {
@@ -304,7 +304,7 @@ export function MemberBulkBar({
             {divisions.map((d) => (
               <DropdownMenuItem
                 key={d.key}
-                // Bulk assignment REPLACES the selection's divisions — a member
+                // Bulk assignment REPLACES the selection's divisions - a member
                 // who needs several is edited one by one.
                 onSelect={() => run(() => bulkUpdateMembersAction(ids, { divisions: [d.key] }), t("Divisi anggota diperbarui"))}
               >
@@ -454,7 +454,7 @@ function MemberMultiSelect({
 // The roster itself is NOT edited here any more: fungsionaris and intern are
 // derived from each member's own division assignment (Anggota EA → Divisi), so
 // a person is entered exactly once. What's left on the team row is the
-// coordinator, which is a ROLE and can't be inferred — and a division is
+// coordinator, which is a ROLE and can't be inferred - and a division is
 // allowed to have none.
 export function TeamFormDialog({
   mode, team, divisions, members, eventId, defaultDivision, open, onOpenChange, trigger,
@@ -493,7 +493,7 @@ export function TeamFormDialog({
   function submit() {
     start(async () => {
       // fungsionaris/intern are derived from members now, so they are simply
-      // NOT sent — leaving any legacy roster text on the row untouched (the
+      // NOT sent - leaving any legacy roster text on the row untouched (the
       // card still falls back to it while a division has no members yet).
       const payload = { ...f, event_id: eventId };
       const res = mode === "create" ? await createTeamAction(payload) : await updateTeamAction(team!.id, payload);
@@ -537,7 +537,7 @@ export function TeamFormDialog({
             />
             {coordinatorPool.length === 0 && (
               <p className="text-[11px] text-muted-foreground">
-                {t("Belum ada fungsionaris di divisi ini — tambahkan lewat tab Anggota EA dulu.")}
+                {t("Belum ada fungsionaris di divisi ini - tambahkan lewat tab Anggota EA dulu.")}
               </p>
             )}
           </div>

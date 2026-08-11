@@ -35,7 +35,7 @@ Sistem memakai hak akses berjenjang (RBAC). Matriks lengkapnya dapat dilihat di 
 | Tanda | Tingkat | Artinya |
 |-------|---------|---------|
 | Centang hijau | Akses penuh | Buat, ubah, isi hasil, dan **hapus**. |
-| Centang kuning | Akses terbatas | Buat, ubah, dan isi hasil — **tidak bisa menghapus**. |
+| Centang kuning | Akses terbatas | Buat, ubah, dan isi hasil - **tidak bisa menghapus**. |
 | Centang biru | Hanya lihat | Bisa membuka dan melihat isinya saja. |
 | Strip | Tidak ada akses | Modul tidak bisa dibuka. |
 
@@ -51,7 +51,7 @@ Hak akses tidak dibatasi per divisi: peran berlaku untuk seluruh divisi dan selu
 
 ### Daftar akun dan permintaan peran
 
-Siapa pun bisa mendaftar sendiri dari halaman **Daftar** (email dan kata sandi, atau lewat **Google**). Akun baru belum punya peran — setara Tamu, hanya bisa melihat. Dari menu akun di kanan atas (atau spanduk di atas halaman) akun tersebut memilih **Ajukan Peran** dan meminta Koordinator, Staff, atau Intern. Admin membuka menu **Role Request** untuk **Setujui** (peran langsung aktif) atau **Abaikan**.
+Siapa pun bisa mendaftar sendiri dari halaman **Daftar** (email dan kata sandi, atau lewat **Google**). Akun baru belum punya peran - setara Tamu, hanya bisa melihat. Dari menu akun di kanan atas (atau spanduk di atas halaman) akun tersebut memilih **Ajukan Peran** dan meminta Koordinator, Staff, atau Intern. Admin membuka menu **Role Request** untuk **Setujui** (peran langsung aktif) atau **Abaikan**.
 
 Selama belum diputuskan, pengajuan masih bisa diperbaiki lewat **Ubah pengajuan**. Akun yang sudah punya peran juga bisa meminta perubahan peran (naik atau turun) lewat **Ajukan Ubah Peran**; peran yang sedang dipakai tidak ditawarkan, **Admin tidak pernah bisa diminta lewat pengajuan**, dan akun Admin tidak bisa diturunkan dengan cara ini.
 
@@ -105,7 +105,7 @@ npm run db:demo    # regenerasi seed & skrip akses untuk project Supabase demo
 2. Di **SQL Editor**, jalankan berurutan file pada `supabase/migrations/` (0001 hingga 0015), lalu `supabase/seed.sql` untuk data awal. Untuk instalasi yang sudah berjalan, jalankan hanya migrasi baru yang belum pernah dijalankan (0012 hingga 0015).
 3. Salin `.env.example` menjadi `.env.local`, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Settings > API pada dashboard Supabase).
 4. Buat user pertama (Authentication > Users), kemudian set `role = 'admin'` pada tabel `profiles`.
-5. `npm run dev` — `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
+5. `npm run dev` - `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
 
 Selama variabel Supabase kosong, aplikasi tetap berjalan penuh dalam mode demo lokal.
 
@@ -115,8 +115,8 @@ Mode Demo memungkinkan siapa pun mencoba sistem tanpa akun dan tanpa risiko, kar
 
 1. Buat **project Supabase kedua** khusus demo.
 2. Di SQL Editor project demo, jalankan skema `supabase/migrations/` (0001 hingga 0011, plus 0014 & 0015), lalu:
-   - `supabase/demo/demo-open-access.sql` — menonaktifkan RLS agar demo bisa dipakai tanpa login (jalankan **hanya** di project demo, jangan di produksi).
-   - `supabase/demo/demo-seed.sql` — mengisi data mockup contoh.
+   - `supabase/demo/demo-open-access.sql` - menonaktifkan RLS agar demo bisa dipakai tanpa login (jalankan **hanya** di project demo, jangan di produksi).
+   - `supabase/demo/demo-seed.sql` - mengisi data mockup contoh.
    - Berkas ini dihasilkan oleh `npm run db:demo`.
 3. Tambahkan env berikut (di `.env.local` dan di Vercel) dari **Settings > API project demo**:
    - `NEXT_PUBLIC_SUPABASE_DEMO_URL`

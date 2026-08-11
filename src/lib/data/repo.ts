@@ -303,6 +303,8 @@ export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> 
   const list = coalesce((data ?? []) as Prospect[], [
     "no", "date_text", "month", "contact", "org_name", "campus",
     "location", "mode", "pic", "contact_status", "their_response", "our_response", "source",
+    // 0036: rows written before these columns existed come back null.
+    "link", "link_label", "notes",
   ]);
   return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
 });
@@ -335,9 +337,12 @@ export async function unsetPrimaryProspect(prospectId: string) {
   if (!USE_SUPABASE) return local.unsetPrimaryProspect(prospectId);
   await must((await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId));
 }
-export async function createProspect(input: Partial<Prospect>) {
-  if (!USE_SUPABASE) return local.createProspect(input);
-  await must((await sb()).from("prospects").insert(stripId(input)));
+/** Returns the new row's id so the caller can publish its link (see
+ *  `syncProspectLink`). */
+export async function createProspect(input: Partial<Prospect>): Promise<string | null> {
+  if (!USE_SUPABASE) return local.createProspect(input).id;
+  const data = await must((await sb()).from("prospects").insert(stripId(input)).select("id").single());
+  return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateProspect(id: string, patch: Partial<Prospect>) {
   if (!USE_SUPABASE) return local.updateProspect(id, patch);
@@ -345,12 +350,68 @@ export async function updateProspect(id: string, patch: Partial<Prospect>) {
 }
 export async function deleteProspect(id: string) {
   if (!USE_SUPABASE) return local.deleteProspect(id);
+  await purgeProspectLink(id);
   await must((await sb()).from("prospects").delete().eq("id", id));
 }
 export async function bulkDeleteProspects(ids: string[]) {
   if (!ids.length) return;
   if (!USE_SUPABASE) { for (const id of ids) local.deleteProspect(id); return; }
+  for (const id of ids) await purgeProspectLink(id);
   await must((await sb()).from("prospects").delete().in("id", ids));
+}
+
+/**
+ * Publish (or unpublish) a prospect's link in Super Link.
+ *
+ * Same contract as `syncTaskLinks`: `prospects.link_id` remembers the row we
+ * created, so a second save UPDATES it instead of adding a duplicate, and
+ * clearing the URL or unticking the box deletes it instead of leaving an entry
+ * nobody can trace back. Call this after every prospect write.
+ */
+export async function syncProspectLink(id: string) {
+  if (!USE_SUPABASE) return local.syncProspectLink(id);
+  const client = await sb();
+  const { data } = await client.from("prospects").select("*").eq("id", id).maybeSingle();
+  const p = data as Prospect | null;
+  if (!p) return;
+
+  const url = (p.link ?? "").trim();
+  const wanted = !!url && !!p.link_in_super_link;
+
+  if (!wanted) {
+    if (p.link_id) {
+      await deleteLink(p.link_id);
+      await must(client.from("prospects").update({ link_id: null }).eq("id", id));
+    }
+    return;
+  }
+
+  const row = {
+    event_id: p.event_id ?? null,
+    // Prospects are not division-scoped, so the entry lands under
+    // "Umum (tanpa divisi)" in the Super Link grouping.
+    division: "",
+    section: "Reach & Offer",
+    name: (p.link_label ?? "").trim() || p.org_name || "Tautan prospek",
+    url,
+    note: p.org_name ?? "",
+    source: "prospect",
+  };
+
+  if (p.link_id) {
+    await updateLink(p.link_id, row);
+  } else {
+    const linkId = await createLink(row);
+    await must(client.from("prospects").update({ link_id: linkId }).eq("id", id));
+  }
+}
+
+/** Remove a prospect's Super Link entry before the prospect itself goes. */
+async function purgeProspectLink(id: string) {
+  const client = await sb();
+  const { data } = await client.from("prospects").select("link_id").eq("id", id).maybeSingle();
+  const linkId = (data as { link_id?: string | null } | null)?.link_id;
+  if (linkId) await deleteLink(linkId);
 }
 
 // ---------------- Links ----------------
@@ -782,7 +843,7 @@ export async function setEventLocked(id: string, locked: boolean) {
  * that did the contacting, not to the copy.
  *
  * With `replace`, the target's existing rows for a chosen menu are deleted
- * first. That is what makes this usable on an edition that already has data —
+ * first. That is what makes this usable on an edition that already has data -
  * without it a second copy would just pile duplicates on top.
  */
 export async function cloneEventData(

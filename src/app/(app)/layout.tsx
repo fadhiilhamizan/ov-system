@@ -10,12 +10,12 @@ import type { RoleRequest } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Auth FIRST: getCurrentUser() redirects unauthenticated visitors to /login.
-  // It must run before any data fetch — reads are RLS-gated, so an unauthed
+  // It must run before any data fetch - reads are RLS-gated, so an unauthed
   // request would otherwise get zero rows and crash on `activeEvent.id`
   // (rendering the error boundary instead of the login page).
   const user = await getCurrentUser();
 
-  // Runs on every navigation — keep it light. The division focus filter now
+  // Runs on every navigation - keep it light. The division focus filter now
   // lives in the Work Breakdown toolbar, so the shell no longer needs the
   // divisions list or the active division here.
   const activeEvent = await getActiveEvent();
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const sidebarCollapsed = store.get(SIDEBAR_COOKIE)?.value === SIDEBAR_COLLAPSED;
 
   // Which roles this account may ask for (empty for admins, demo identities and
-  // anonymous Tamu sessions — none of which pay for the lookup below).
+  // anonymous Tamu sessions - none of which pay for the lookup below).
   const roleOptions = sandboxMode ? [] : requestableRolesFor(user);
   const pendingRoleRequest: RoleRequest | null = roleOptions.length
     ? ((await getRoleRequestsFor(user.id)).find((r) => r.status === "pending") ?? null)

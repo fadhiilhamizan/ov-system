@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  * several people can be chosen in one go.
  *
  * Values are stored lower-cased (plus the `NO_PIC` sentinel) because the PIC
- * column is free text — see `matchesPics`.
+ * column is free text - see `matchesPics`.
  */
 export function PicFilter({
   options, picked, onChange, hasUnassigned,

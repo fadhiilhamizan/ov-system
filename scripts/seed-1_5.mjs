@@ -1,7 +1,7 @@
 // One-off seed migration for v1.5.0. Idempotent.
 //  1) Fix each member's `year` (angkatan) from their NRP.
 //  2) Delete the wrong ov2-2026 (HMSI ITS x HMD Eksternal) budget plans.
-//  3) Ensure no legacy "ov-demo" rows linger in the REAL database — the demo
+//  3) Ensure no legacy "ov-demo" rows linger in the REAL database - the demo
 //     now lives in a SEPARATE Supabase project (see scripts/gen-demo-seed.mjs).
 // Run: node scripts/seed-1_5.mjs   (then: node scripts/gen-seed-sql.mjs)
 import { readFileSync, writeFileSync } from "node:fs";

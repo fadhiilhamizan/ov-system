@@ -183,7 +183,7 @@ export default function SignUpPage() {
               <GoogleButton label={t("Daftar dengan Google")} onError={setError} />
 
               <p className="mt-4 rounded-lg bg-muted/60 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                {t("Akun baru belum punya peran — kamu bisa melihat data, lalu ajukan peran (Koordinator / Staff / Intern) lewat menu akun untuk disetujui admin.")}
+                {t("Akun baru belum punya peran - kamu bisa melihat data, lalu ajukan peran (Koordinator / Staff / Intern) lewat menu akun untuk disetujui admin.")}
               </p>
 
               <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground">

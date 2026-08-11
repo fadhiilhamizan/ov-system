@@ -23,7 +23,7 @@ afterEach(() => {
   }
 });
 
-describe("supabaseCreds — keeps demo and production isolated", () => {
+describe("supabaseCreds - keeps demo and production isolated", () => {
   it("returns production creds when not in demo mode", () => {
     expect(supabaseCreds(false)).toEqual({ url: "https://prod.supabase.co", key: "prod-key" });
   });

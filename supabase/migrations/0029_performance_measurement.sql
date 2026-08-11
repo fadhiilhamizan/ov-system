@@ -1,5 +1,5 @@
 -- ============================================================
--- 0029 — Performance Measurement per Ormawa Visit.
+-- 0029 - Performance Measurement per Ormawa Visit.
 --
 -- The numbers a committee reports back after the event: how many HMSI
 -- functionaries turned up, how much feedback each side gave, the average star
@@ -10,7 +10,7 @@
 -- dashboard reads them alongside the rest of the edition's data.
 --
 -- Ratings are 0-5 with two decimals (e.g. 4.78). CHECK constraints keep an
--- impossible value out of the dashboard rather than trusting the form alone —
+-- impossible value out of the dashboard rather than trusting the form alone -
 -- the app is not the only thing that can write here.
 --
 -- Run AFTER 0028. Idempotent and non-destructive.

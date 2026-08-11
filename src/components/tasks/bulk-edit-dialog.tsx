@@ -22,7 +22,7 @@ import type { Division, DivisionKey } from "@/lib/types";
  *
  * Each field has its own checkbox and only the TICKED ones are sent. That is
  * the whole point: a bulk write touches rows the user never opened, so an
- * untouched field must never be overwritten with an empty default — this is
+ * untouched field must never be overwritten with an empty default - this is
  * what separates it from opening one task's form.
  */
 export function BulkEditDialog({
@@ -60,7 +60,7 @@ export function BulkEditDialog({
         ...(f.useDivision ? { division: f.division } : {}),
         ...(f.usePic ? { pic: f.pic } : {}),
         // An empty date field means "clear the deadline", which is a deliberate
-        // edit — hence null rather than skipping the key.
+        // edit - hence null rather than skipping the key.
         ...(f.useDeadline ? { end_date: f.end_date || null } : {}),
       });
       if (res.ok) {
@@ -85,7 +85,7 @@ export function BulkEditDialog({
         <DialogHeader>
           <DialogTitle>{t("Ubah massal")}</DialogTitle>
           <DialogDescription>
-            {ids.length} {t("tugas terpilih. Centang kolom yang ingin diubah — kolom yang tidak dicentang dibiarkan apa adanya.")}
+            {ids.length} {t("tugas terpilih. Centang kolom yang ingin diubah - kolom yang tidak dicentang dibiarkan apa adanya.")}
           </DialogDescription>
         </DialogHeader>
 

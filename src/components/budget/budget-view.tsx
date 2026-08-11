@@ -149,7 +149,7 @@ function AddItemDialog({
           <div className="grid gap-1.5">
             <Label>{t("Kategori")}</Label>
             <div className="flex items-center gap-2">
-              {/* The dot next to the category name — click to recolour it. */}
+              {/* The dot next to the category name - click to recolour it. */}
               <Popover>
                 <PopoverTrigger asChild>
                   <button
@@ -577,7 +577,7 @@ function PlanCard({
                     </tr>
                     {/* One sortable list PER CATEGORY. Dragging is scoped to the
                         group because the category headings are derived from item
-                        order — a cross-group drop would split a category in two. */}
+                        order - a cross-group drop would split a category in two. */}
                     <SortableContext items={c.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       {c.items.map((it) => (
                         <ItemRow

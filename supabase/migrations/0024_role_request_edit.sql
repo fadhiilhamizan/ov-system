@@ -1,10 +1,10 @@
 -- ============================================================
--- 0024 — Let an account edit its own PENDING role request, and allow
+-- 0024 - Let an account edit its own PENDING role request, and allow
 -- requests from accounts that already hold a role. Run AFTER 0023.
 --
 -- Two changes:
 --  1. A pending request can be corrected (wrong role picked, typo in the note)
---     and resubmitted. Decided requests stay immutable — to change an approved
+--     and resubmitted. Decided requests stay immutable - to change an approved
 --     role you file a NEW request.
 --  2. Requests are no longer only for role-less accounts: a staff member may
 --     ask to become coordinator, or to be moved down to intern. `admin` is

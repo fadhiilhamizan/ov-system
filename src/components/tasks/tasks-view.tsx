@@ -64,7 +64,7 @@ export function TasksView({
 
   const divisionKeys = React.useMemo(() => divisionKeySet(divisions), [divisions]);
   // The PIC menu is built from what the DIVISION focus leaves, not from the
-  // fully filtered list — otherwise ticking a PIC would remove everyone else
+  // fully filtered list - otherwise ticking a PIC would remove everyone else
   // from the menu and you could never add a second one.
   const inDivision = React.useMemo(
     () => tasks.filter((t) => matchesDivision(t, division, divisionKeys)),
@@ -113,7 +113,7 @@ export function TasksView({
             />
           </div>
           {/* Division focus lives here (next to the other filters) rather than
-              in the topbar — it only ever affected the Work Breakdown. Hidden
+              in the topbar - it only ever affected the Work Breakdown. Hidden
               on a per-division board, where the division is already fixed. */}
           {!lockedDivision && (
             <DivisionFilter

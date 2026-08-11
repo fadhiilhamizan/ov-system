@@ -3,9 +3,9 @@ import * as React from "react";
 // ============================================================
 // Shared checkbox multi-select for tables/lists.
 //
-// The selection is NEVER auto-cleared when the rows change. It used to be —
+// The selection is NEVER auto-cleared when the rows change. It used to be -
 // every caller ran `useEffect(() => sel.clear(), [rows])`, and the Work
-// Breakdown table reset on the *filtered* array — so typing one letter in a
+// Breakdown table reset on the *filtered* array - so typing one letter in a
 // search box threw away everything you had ticked. Selecting a few rows, then
 // searching for the next few, was impossible.
 //
@@ -25,7 +25,7 @@ export function visibleSelection(
 
 /**
  * @param visibleIds ids rendered under the current search/filter. Omit only for
- *   a list that never filters — then every selected id counts.
+ *   a list that never filters - then every selected id counts.
  */
 export function useMultiSelect(visibleIds?: readonly string[]) {
   const [selected, setSelected] = React.useState<Set<string>>(new Set());

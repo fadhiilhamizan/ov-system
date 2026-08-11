@@ -1,17 +1,17 @@
 // ============================================================
 // Runs supabase/setup.sql on a REAL Postgres (PGlite, Postgres compiled to
-// WASM — no Docker, no server) and asserts the security model it produces.
+// WASM - no Docker, no server) and asserts the security model it produces.
 //
 //   npm run db:test
 //
 // Why this exists: the anon key is public and the session token lives in the
-// user's browser, so RLS is the only real boundary — `can.*` in permissions.ts
+// user's browser, so RLS is the only real boundary - `can.*` in permissions.ts
 // is advisory. A mistake in a policy is therefore a product-wide hole, and it
 // is invisible to tsc, eslint and Vitest. It has bitten this project twice:
 //   * 0002's profiles_update_own let ANY session (including the credential-less
 //     anonymous "Tamu") set its own role to admin.
 //   * 0020/0026 gated writes on owns_scope(event_id, division), columns that are
-//     always null here — so every coordinator/staff/intern write silently failed
+//     always null here - so every coordinator/staff/intern write silently failed
 //     in production for weeks.
 // Both are asserted below. `npm run db:lint` catches SQL that will not parse;
 // this catches SQL that parses and does the wrong thing.
@@ -133,10 +133,10 @@ async function as(uid, anon, statement) {
 
 /**
  * expect:
- *   allow  — the write succeeded AND touched a row
- *   deny   — rejected, or silently filtered to zero rows by a USING clause
- *   rows   — the read returned data
- *   norows — the read returned nothing
+ *   allow  - the write succeeded AND touched a row
+ *   deny   - rejected, or silently filtered to zero rows by a USING clause
+ *   rows   - the read returned data
+ *   norows - the read returned nothing
  */
 async function check(label, uid, anon, statement, expect) {
   const r = await as(uid, anon, statement);
@@ -159,7 +159,7 @@ const LINK = "'cccccccc-0000-0000-0000-000000000001'";
 const RUN = "'dddddddd-0000-0000-0000-000000000001'";
 const TL = "'eeeeeeee-0000-0000-0000-000000000001'";
 
-console.log("\nTugas — hak tulis mengikuti PERAN saja, bukan divisi");
+console.log("\nTugas - hak tulis mengikuti PERAN saja, bukan divisi");
 await check("staff mengubah tugas divisi lain", U.staff, false, `update tasks set status='ongoing' where id=${T_CONS}`, "allow");
 await check("intern mengubah tugas divisi lain", U.intern, false, `update tasks set result='x' where id=${T_CONS}`, "allow");
 await check("staff membuat tugas", U.staff, false, `insert into tasks (event_id,division,title) values ('ov-open','CONSUMPTION','Baru')`, "allow");
@@ -246,24 +246,24 @@ const REQUIRED = [
   "role_requests.requested_role", "backups.data", "profiles.role",
 ];
 const missing = REQUIRED.filter((c) => !have.has(c));
-ok(`semua kolom yang dipakai aplikasi ada${missing.length ? ` — hilang: ${missing.join(", ")}` : ""}`, missing.length === 0);
+ok(`semua kolom yang dipakai aplikasi ada${missing.length ? ` - hilang: ${missing.join(", ")}` : ""}`, missing.length === 0);
 ok("kolom warisan tasks.source_id sudah dibuang", !have.has("tasks.source_id"));
 
 const noRls = await db.query(`select tablename from pg_tables where schemaname='public' and not rowsecurity`);
-ok(`RLS aktif di semua tabel${noRls.rows.length ? ` — kecuali: ${noRls.rows.map((r) => r.tablename).join(", ")}` : ""}`, noRls.rows.length === 0);
+ok(`RLS aktif di semua tabel${noRls.rows.length ? ` - kecuali: ${noRls.rows.map((r) => r.tablename).join(", ")}` : ""}`, noRls.rows.length === 0);
 
 // ------------------------------------------------------------------
 // Migrasi yang belum tentu sudah dijalankan user, diuji SATU STATEMENT PER
-// EKSEKUSI — persis seperti SQL editor menjalankannya.
+// EKSEKUSI - persis seperti SQL editor menjalankannya.
 //
 // Ada karena migrasi 0030 pernah gagal di tangan user dengan
 //   ERROR: 42P01: relation "dedupe_report" does not exist
 // Penyebabnya tabel sementara: ia hanya hidup di satu sesi, sementara SQL
 // editor Supabase lewat connection pooler. `db:lint` sekarang menolak
-// `create temporary table` secara statis; bagian ini menangkap sisanya —
+// `create temporary table` secara statis; bagian ini menangkap sisanya -
 // statement yang hanya jalan kalau dieksekusi sekaligus dalam satu batch.
 // ------------------------------------------------------------------
-console.log("\nMigrasi lanjutan — dijalankan per statement");
+console.log("\nMigrasi lanjutan - dijalankan per statement");
 
 const PENDING = [
   "0029_performance_measurement.sql",
@@ -273,6 +273,7 @@ const PENDING = [
   "0033_performance_measurement_data.sql",
   "0034_task_links_scope_and_roster_pii.sql",
   "0035_rundown_single_version.sql",
+  "0036_prospect_link_notes.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -324,7 +325,7 @@ for (const round of ["pertama", "kedua (idempotency)"]) {
       try {
         await db.exec(stmt);
       } catch (e) {
-        failedAt = `statement #${n + 1}: ${e.message.split("\n")[0]} — ${stmt.slice(0, 70).replace(/\s+/g, " ")}`;
+        failedAt = `statement #${n + 1}: ${e.message.split("\n")[0]} - ${stmt.slice(0, 70).replace(/\s+/g, " ")}`;
         break;
       }
     }
@@ -338,7 +339,7 @@ for (const round of ["pertama", "kedua (idempotency)"]) {
 //
 // Ada karena `seed.sql` memuat 529 INSERT tanpa `on conflict`: menjalankannya
 // dua kali menggandakan hampir semua tabel, dan itulah sumber baris kembar yang
-// terus muncul. Bagian ini membuktikan tiga hal sekaligus — seed dua kali
+// terus muncul. Bagian ini membuktikan tiga hal sekaligus - seed dua kali
 // MEMANG menggandakan, reset-data.sql menyembuhkannya, dan akun tidak ikut
 // terhapus.
 // ------------------------------------------------------------------
@@ -376,7 +377,7 @@ try {
 
   await fresh.exec(sb("seed.sql"));
   const twice = await shape();
-  ok(`seed dua kali MENGGANDAKAN (tasks ${once.tasks} -> ${twice.tasks}) — inilah sumber duplikat`,
+  ok(`seed dua kali MENGGANDAKAN (tasks ${once.tasks} -> ${twice.tasks}) - inilah sumber duplikat`,
     twice.tasks === once.tasks * 2);
 
   // An account must outlive the reset; that is why profiles is excluded.
@@ -435,7 +436,7 @@ try {
 // membangun keadaan cacat itu persis, membuktikan celahnya ADA, lalu bahwa 0034
 // menutupnya.
 // ------------------------------------------------------------------
-console.log("\n0034 — menutup celah task_links jalur migrasi");
+console.log("\n0034 - menutup celah task_links jalur migrasi");
 
 const leak = await PGlite.create({ extensions: { pgcrypto } });
 await leak.exec(`
@@ -496,7 +497,7 @@ insert into task_links (id, task_id, label) values ('bbbbbbbb-0000-0000-0000-000
     return affected;
   };
 
-  ok("SEBELUM 0034: celah nyata — koordinator bisa tulis tautan di ARSIP", (await coordWrites()) === 1);
+  ok("SEBELUM 0034: celah nyata - koordinator bisa tulis tautan di ARSIP", (await coordWrites()) === 1);
   await leak.exec(readFileSync(join(__dirname, "../supabase/migrations/0034_task_links_scope_and_roster_pii.sql"), "utf8"));
   ok("SESUDAH 0034: koordinator DITOLAK menulis tautan di ARSIP", (await coordWrites()) === 0);
   const stale = (await leak.query(
@@ -511,37 +512,47 @@ insert into task_links (id, task_id, label) values ('bbbbbbbb-0000-0000-0000-000
 // demo-seed.sql menyembuhkan project demo yang skema-nya basi.
 //
 // Project demo berhenti di migrasi 0018 + 0027 dan tidak pernah dapat kolom
-// rundown.merges (0031) — itulah kenapa fitur gabung sel gagal di Mode Demo.
+// rundown.merges (0031) - itulah kenapa fitur gabung sel gagal di Mode Demo.
 // demo-seed.sql punya "Part 0" yang menambah kolom itu (idempotent), jadi
 // menjalankan ulang demo-seed memperbaikinya. Ini membangun rundown TANPA
 // merges (seperti demo basi), menjalankan catch-up, lalu membuktikan tulis
 // merges berhasil.
 // ------------------------------------------------------------------
-console.log("\nMode Demo — catch-up kolom merges");
+console.log("\nMode Demo - catch-up kolom merges");
 const demo = await PGlite.create({ extensions: { pgcrypto } });
 try {
+  // A stale demo schema: the tables exist, the newer columns do not. `links`
+  // is here because prospects.link_id references it (0036).
   await demo.exec(`
 create table events (id text primary key);
 create table rundown (id uuid primary key default gen_random_uuid(), event_id text, activity text);
+create table links (id uuid primary key default gen_random_uuid(), name text, url text);
+create table prospects (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
+insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
 `);
-  const beforeErr = await (async () => {
-    try { await demo.query(`update rundown set merges='{"mc":2}'::jsonb where event_id='demo-ov'`); return null; }
+  const tryWrite = async (sql) => {
+    try { await demo.query(sql); return null; }
     catch (e) { return e.message.split("\n")[0]; }
-  })();
+  };
+  const MERGES = `update rundown set merges='{"mc":2}'::jsonb where event_id='demo-ov'`;
+  const PLINK = `update prospects set link='https://x.test', notes='n' where event_id='demo-ov'`;
+
+  const beforeErr = await tryWrite(MERGES);
   ok("SEBELUM catch-up: tulis merges GAGAL (kolom tidak ada)", beforeErr !== null && /merges/.test(beforeErr));
+  const beforeLink = await tryWrite(PLINK);
+  ok("SEBELUM catch-up: tulis link prospek GAGAL (kolom tidak ada)", beforeLink !== null && /link/.test(beforeLink));
 
   // Jalankan hanya statement Part 0 dari demo-seed (add column if not exists).
   const demoSeed = readFileSync(join(__dirname, "../supabase/demo/demo-seed.sql"), "utf8");
   for (const m of demoSeed.matchAll(/alter table \w+ add column if not exists [^\n;]+;/g)) {
     await demo.exec(m[0]);
   }
-  const afterErr = await (async () => {
-    try { await demo.query(`update rundown set merges='{"mc":2}'::jsonb where event_id='demo-ov'`); return null; }
-    catch (e) { return e.message.split("\n")[0]; }
-  })();
+  const afterErr = await tryWrite(MERGES);
   ok("SESUDAH catch-up: tulis merges BERHASIL (fitur gabung sel jalan)", afterErr === null);
+  const afterLink = await tryWrite(PLINK);
+  ok("SESUDAH catch-up: tulis link prospek BERHASIL (Reach & Offer jalan)", afterLink === null);
 } catch (e) {
   ok("uji catch-up demo berjalan", false, e.message.split("\n")[0]);
 }
@@ -551,11 +562,11 @@ insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 //
 // Data lama punya baris A DAN B untuk edisi yang sama; halaman rundown yang
 // tidak menyaring variant menampilkannya dua kali. Bagian ini membangun tiga
-// kasus — edisi dengan A+B, edisi hanya-B, edisi hanya-A — dan membuktikan
+// kasus - edisi dengan A+B, edisi hanya-B, edisi hanya-A - dan membuktikan
 // hasilnya: semua jadi variant A, jumlah A dipertahankan, B hilang, dan edisi
 // yang tadinya hanya-B tidak jadi kosong.
 // ------------------------------------------------------------------
-console.log("\n0035 — rundown satu versi");
+console.log("\n0035 - rundown satu versi");
 const rd = await PGlite.create({ extensions: { pgcrypto } });
 try {
   await rd.exec(`
@@ -589,7 +600,7 @@ insert into rundown (event_id, variant, no, activity) values
 // akun terbentuk, perannya benar, password ter-hash (bisa diverifikasi crypt),
 // dan menjalankan ulang tidak menggandakan apa pun.
 // ------------------------------------------------------------------
-console.log("\ndefault-accounts — akun default koordinator/staff/intern");
+console.log("\ndefault-accounts - akun default koordinator/staff/intern");
 const da = await PGlite.create({ extensions: { pgcrypto } });
 try {
   // Skema auth yang lebih lengkap dari yang disediakan Supabase: kolom yang
@@ -604,7 +615,7 @@ create table auth.users (
   created_at timestamptz, updated_at timestamptz,
   raw_app_meta_data jsonb default '{}', raw_user_meta_data jsonb default '{}',
   -- GoTrue's token columns. Nullable with NO default, exactly as Supabase
-  -- ships them — that is the whole point: a hand-written INSERT that skips
+  -- ships them - that is the whole point: a hand-written INSERT that skips
   -- them leaves NULL, GoTrue scans NULL into a Go string, and login dies with
   -- an empty-bodied 500 that the app renders as "{}".
   confirmation_token varchar(255),
@@ -648,7 +659,7 @@ language sql stable as $fn$ select '{}'::jsonb $fn$;
   //
   // Ini bug yang benar-benar terjadi: versi pertama skrip ini tidak mengisi
   // kolom token, GoTrue membacanya sebagai string Go, dan login gagal dengan
-  // HTTP 500 tanpa isi — aplikasi menampilkannya sebagai "{}". Postgres sendiri
+  // HTTP 500 tanpa isi - aplikasi menampilkannya sebagai "{}". Postgres sendiri
   // tidak keberatan, jadi hanya assertion inilah yang bisa menangkapnya.
   // ----------------------------------------------------------------
   const TOKEN_COLS = [
@@ -675,7 +686,7 @@ values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticate
   )).rows[0].c);
   ok("akun lama yang rusak ikut diperbaiki, bukan hanya akun baru", brokenBefore === 1 && brokenAfter === 0);
 
-  // Idempotensi: jalankan lagi — jumlah tidak berubah, peran tetap benar.
+  // Idempotensi: jalankan lagi - jumlah tidak berubah, peran tetap benar.
   const nUsers2 = Number((await da.query(`select count(*) c from auth.users`)).rows[0].c);
   ok("dijalankan dua kali tidak menggandakan akun (tetap 3 + 1 akun lama)", nUsers2 === 4);
   ok("peran tetap benar setelah dijalankan ulang", (await roleOf("intern@ormawavisit.id")) === "intern");

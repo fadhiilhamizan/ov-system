@@ -1,5 +1,5 @@
 -- ============================================================
--- Row Level Security — mirrors the app's tiered RBAC.
+-- Row Level Security - mirrors the app's tiered RBAC.
 -- ============================================================
 
 -- Auto-create a profile when a new auth user signs up.

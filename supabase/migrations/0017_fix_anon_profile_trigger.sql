@@ -1,11 +1,11 @@
 -- ============================================================
--- 0017 — Fix handle_new_user() for anonymous sign-ins.
+-- 0017 - Fix handle_new_user() for anonymous sign-ins.
 --
 -- signInAnonymously() (added in 0016 for guest mode) creates an auth.users
 -- row with email = NULL. The on_auth_user_created trigger (0002_rls.sql)
 -- then tried to insert profiles.name = coalesce(meta->>'name',
 -- split_part(NULL,'@',1)) = NULL, violating profiles.name's NOT NULL
--- constraint — which fails the whole signup transaction. This is why the
+-- constraint - which fails the whole signup transaction. This is why the
 -- guest button broke after 0016 with an opaque database-error response.
 -- ============================================================
 

@@ -5,7 +5,7 @@ import { visibleSelection } from "./use-multi-select";
 // The bug this guards: selections used to be wiped by an effect whenever the
 // row array changed, so ticking a few rows and then typing in the search box
 // lost everything. The fix is to intersect the selection with what is on
-// screen instead of pruning the state — which is what makes a tick survive
+// screen instead of pruning the state - which is what makes a tick survive
 // being filtered away and back.
 // ------------------------------------------------------------------
 describe("visibleSelection", () => {

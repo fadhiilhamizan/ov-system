@@ -7,7 +7,7 @@ import { setActiveEvent } from "@/lib/actions/session";
 import { useT } from "@/lib/i18n/provider";
 
 /**
- * Switches which Ormawa Visit the whole app is scoped to — the same effect as
+ * Switches which Ormawa Visit the whole app is scoped to - the same effect as
  * the topbar event dropdown, but reachable from the detailed list.
  */
 export function EventSelectButton({ eventId, isActive }: { eventId: string; isActive: boolean }) {

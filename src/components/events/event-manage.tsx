@@ -29,7 +29,7 @@ export function AddEventButton({ events }: { events: OVEvent[] }) {
 
 /**
  * Archive toggle. Admin-only (the caller decides whether to render it), because
- * an archived edition is read-only for every other role — see `writable_event()`
+ * an archived edition is read-only for every other role - see `writable_event()`
  * in migration 0028.
  */
 export function EventActions({
@@ -62,7 +62,7 @@ export function EventActions({
             locked ? (
               <DropdownMenuItem onSelect={() => start(async () => {
                 const res = await setEventLockedAction(event.id, false);
-                if (res.ok) toast.success(t("Arsip dibuka — semua peran bisa mengubah lagi."));
+                if (res.ok) toast.success(t("Arsip dibuka - semua peran bisa mengubah lagi."));
                 else toast.error(res.error);
               })}><LockOpen /> {t("Buka kunci arsip")}</DropdownMenuItem>
             ) : (

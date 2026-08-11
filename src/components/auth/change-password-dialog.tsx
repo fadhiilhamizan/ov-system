@@ -17,7 +17,7 @@ import { useResetOn } from "@/lib/use-synced";
 /**
  * Change the signed-in account's own password.
  *
- * Supabase's `updateUser({ password })` does NOT ask for the current password —
+ * Supabase's `updateUser({ password })` does NOT ask for the current password -
  * a session alone is enough. That is unacceptable here: the default
  * Koordinator/Staff/Intern logins are meant to be shared, so an unattended
  * browser would let anyone lock the rest of the committee out. We therefore
@@ -102,7 +102,7 @@ export function ChangePasswordDialog({
           </DialogTitle>
           <DialogDescription>
             {hasPassword === false
-              ? t("Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu — bukan di sini.")
+              ? t("Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu - bukan di sini.")
               : t("Masukkan kata sandi saat ini, lalu kata sandi barunya.")}
           </DialogDescription>
         </DialogHeader>

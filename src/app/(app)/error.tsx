@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n/provider";
 /**
  * Segment-level error boundary for every page under (app).
  * Catches render/data errors so a single broken page can't take the whole
- * app shell down — the sidebar/topbar stay usable and the user can retry.
+ * app shell down - the sidebar/topbar stay usable and the user can retry.
  */
 export default function AppError({
   error,

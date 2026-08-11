@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -67,6 +68,10 @@ export function ProspectFormDialog({
     their_response: prospect?.their_response || "none",
     our_response: prospect?.our_response || "none",
     done: prospect?.done ?? false,
+    link: prospect?.link ?? "",
+    link_label: prospect?.link_label ?? "",
+    notes: prospect?.notes ?? "",
+    link_in_super_link: prospect?.link_in_super_link ?? false,
   }));
 
 
@@ -151,6 +156,50 @@ export function ProspectFormDialog({
             <FieldSelect label={t("Status Hubungi")} value={f.contact_status} options={CONTACT} onChange={(v) => setF({ ...f, contact_status: v })} />
             <FieldSelect label={t("Respons Mereka")} value={f.their_response} options={THEIRS} onChange={(v) => setF({ ...f, their_response: v })} />
             <FieldSelect label={t("Respons Kita")} value={f.our_response} options={OURS} onChange={(v) => setF({ ...f, our_response: v })} />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label>{t("Tautan (opsional)")}</Label>
+            <Input
+              value={f.link}
+              onChange={(e) => setF({ ...f, link: e.target.value })}
+              placeholder="https://drive.google.com/..."
+              inputMode="url"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("Misalnya handbook, profil organisasi, atau proposal dari himpunan tersebut.")}
+            </p>
+          </div>
+
+          {/* Same deal as a task result link: name it, then tick to publish. */}
+          {f.link.trim() !== "" && (
+            <div className="grid gap-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="grid gap-1.5">
+                <Label>{t("Nama tautan")}</Label>
+                <Input
+                  value={f.link_label}
+                  onChange={(e) => setF({ ...f, link_label: e.target.value })}
+                  placeholder={f.org_name || t("Handbook himpunan")}
+                />
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={f.link_in_super_link}
+                  onCheckedChange={(v) => setF({ ...f, link_in_super_link: !!v })}
+                />
+                {t("Tampilkan juga di Super Link")}
+              </label>
+            </div>
+          )}
+
+          <div className="grid gap-1.5">
+            <Label>{t("Catatan (opsional)")}</Label>
+            <Textarea
+              value={f.notes}
+              onChange={(e) => setF({ ...f, notes: e.target.value })}
+              className="min-h-[70px]"
+              placeholder={t("Catatan bebas tentang prospek ini.")}
+            />
           </div>
 
           <label className="flex items-center gap-2 text-sm">

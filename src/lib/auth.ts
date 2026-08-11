@@ -56,7 +56,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser> => {
 
     // Guest mode signs in anonymously (so reads pass RLS without exposing the
     // tables to the bare anon key). Anonymous users are always the read-only
-    // guest identity — never look up a profile / real role for them.
+    // guest identity - never look up a profile / real role for them.
     if (user.is_anonymous) return GUEST_USER;
 
     const { data: profile } = await supabase
@@ -65,7 +65,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser> => {
       .eq("id", user.id)
       .maybeSingle();
     // NOTE: profiles.division / profiles.event_id are deliberately NOT read.
-    // An account has no division and no edition scope — see AppUser in types.ts
+    // An account has no division and no edition scope - see AppUser in types.ts
     // and migration 0028, which removed the same assumption from RLS.
     return {
       id: user.id,

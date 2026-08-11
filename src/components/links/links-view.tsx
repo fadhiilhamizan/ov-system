@@ -68,7 +68,7 @@ function LinkFormDialog({
 
   // Exactly the divisions that BELONG to the chosen Ormawa Visit. Since
   // migration 0018 each division row carries its own event_id, so this is a
-  // direct match — no need to infer membership from team data, and no "show
+  // direct match - no need to infer membership from team data, and no "show
   // everything" fallback that used to leak other editions' divisions into the
   // dropdown. `divisions` here is the cross-event list (the page loads all, so
   // the directory stays cross-event), filtered per the selected edition.

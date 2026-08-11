@@ -93,7 +93,7 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* Quick access — first thing on the page, scrollable on narrow screens */}
+      {/* Quick access - first thing on the page, scrollable on narrow screens */}
       <div className="mb-5">
         <QuickAccessCarousel links={QUICK_LINKS} />
       </div>
@@ -295,7 +295,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Performance Measurement — entered on the Ormawa Visit form, read here. */}
+      {/* Performance Measurement - entered on the Ormawa Visit form, read here. */}
       <div className="mt-4">
         <PerformanceMeasurement event={event} t={t} />
       </div>

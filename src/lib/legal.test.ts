@@ -24,7 +24,7 @@ describe.each([
     expect(doc.sections.length).toBeGreaterThan(0);
     for (const s of doc.sections) {
       expect(s.heading.id.trim()).not.toBe("");
-      // A section must say something — paragraphs, bullets, or both.
+      // A section must say something - paragraphs, bullets, or both.
       expect((s.body?.length ?? 0) + (s.bullets?.length ?? 0)).toBeGreaterThan(0);
     }
   });
@@ -49,7 +49,7 @@ describe("legal metadata", () => {
 
   it("the privacy policy names every cookie the app actually sets", () => {
     // Keep this in step with the cookies in lib/ui-prefs, lib/demo, lib/auth,
-    // lib/session and lib/i18n/config — an unlisted cookie is an inaccurate
+    // lib/session and lib/i18n/config - an unlisted cookie is an inaccurate
     // policy, which is worse than no policy.
     const text = allStrings(PRIVACY).map((b) => b.id).join(" ");
     for (const cookie of [

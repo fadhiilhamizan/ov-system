@@ -1,5 +1,5 @@
 -- ============================================================
--- 0022 — Prospect mode + "primary" prospect per Ormawa Visit.
+-- 0022 - Prospect mode + "primary" prospect per Ormawa Visit.
 --
 -- A prospect can be marked as the OV's PRIMARY (the confirmed partner). The OV
 -- then pulls partner/campus/location/mode from it. Only ONE primary per event.

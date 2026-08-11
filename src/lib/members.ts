@@ -3,8 +3,8 @@
 //
 // A member may belong to MORE THAN ONE division (`Member.divisions`). The
 // legacy single `Member.division` column is kept in sync as the "primary"
-// division (= divisions[0]) so older readers — the division badge in tables,
-// task PIC scoping, seeds — keep working.
+// division (= divisions[0]) so older readers - the division badge in tables,
+// task PIC scoping, seeds - keep working.
 //
 // Plain module (no "use client"): imported from both Server and Client
 // Components.
@@ -51,8 +51,34 @@ export function divisionFields(divisions: DivisionKey[] | undefined, fallback?: 
 }
 
 /**
+ * Add a division to a member without disturbing the ones they already have.
+ *
+ * Appended, never prepended: `divisions[0]` is the PRIMARY division (the badge
+ * in tables, task scoping), so putting the new key first would silently
+ * re-label everyone you added. A member with no divisions yet gets this one as
+ * their primary, which is the only sensible answer.
+ *
+ * Returns the same array when nothing changes, so callers can skip the write.
+ */
+export function withDivisionAdded(
+  m: Pick<Member, "division" | "divisions">,
+  key: DivisionKey,
+): DivisionKey[] {
+  const current = memberDivisions(m);
+  return current.includes(key) ? current : [...current, key];
+}
+
+/** Remove a division, keeping the rest in order. */
+export function withDivisionRemoved(
+  m: Pick<Member, "division" | "divisions">,
+  key: DivisionKey,
+): DivisionKey[] {
+  return memberDivisions(m).filter((d) => d !== key);
+}
+
+/**
  * The coordinator names of a division. Stored on the team row as a
- * comma-joined display name (a division may have none — that's valid).
+ * comma-joined display name (a division may have none - that's valid).
  */
 export function coordinatorNames(team?: Pick<Team, "coordinator">): string[] {
   return (team?.coordinator ?? "")

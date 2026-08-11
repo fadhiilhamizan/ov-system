@@ -39,7 +39,7 @@ export async function deleteFaqAction(id: string): Promise<Result> {
 }
 
 /** Persist a drag-and-drop reorder. FAQs are not edition-scoped, so there is no
- *  archive lock to check here — unlike the Hari-H reorder this mirrors. */
+ *  archive lock to check here - unlike the Hari-H reorder this mirrors. */
 export async function reorderFaqsAction(orderedIds: string[]): Promise<Result> {
   if (!can.manageFaq(await getCurrentUser())) return DENY;
   const clean: string[] = [];

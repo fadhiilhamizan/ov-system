@@ -1,5 +1,5 @@
 -- ============================================================
--- 0026 — Restore the event-scoped task policies, and stop them locking
+-- 0026 - Restore the event-scoped task policies, and stop them locking
 -- non-admins out. Run AFTER 0020–0025.
 --
 -- Why this exists:

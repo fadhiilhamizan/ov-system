@@ -1,5 +1,5 @@
 -- ============================================================
--- 0031 — Gabung sel (merge) pada kolom rundown.
+-- 0031 - Gabung sel (merge) pada kolom rundown.
 --
 -- Sebuah divisi sering melakukan hal yang SAMA sepanjang beberapa slot waktu
 -- berturut-turut. Tanpa merge, teksnya harus diulang di tiap baris dan
@@ -9,7 +9,7 @@
 -- Model penyimpanan = rowspan HTML, disimpan di baris PALING ATAS:
 --   merges = { "MC": 3 }  berarti sel MC baris ini membentang 3 baris
 --   (dirinya sendiri + 2 baris di bawahnya). Baris yang tertutup tidak
---   menyimpan apa pun — nilainya diambil dari baris asal.
+--   menyimpan apa pun - nilainya diambil dari baris asal.
 --
 -- Kunci yang dipakai: 'mc', 'operator', dan key divisi (mis. 'EVENT').
 -- Kolom Catatan sengaja TIDAK bisa digabung: isinya spesifik per baris.

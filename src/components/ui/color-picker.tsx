@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // ============================================================
-// Shared colour picker — used by the division form (division colour) and the
+// Shared colour picker - used by the division form (division colour) and the
 // budget item dialog (the category dot). One palette, one behaviour, so the
 // two never drift apart.
 // ============================================================

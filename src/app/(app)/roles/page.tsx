@@ -26,14 +26,14 @@ export default async function RolesPage() {
       />
 
       {/* The menu stays visible in the demo so people can see what it looks
-          like — but nothing here can actually work without real accounts. */}
+          like - but nothing here can actually work without real accounts. */}
       {isDemo && (
         <Card className="flex items-start gap-3 border-amber-300/60 bg-amber-50/60 p-5 dark:border-amber-500/30 dark:bg-amber-500/10">
           <FlaskConical className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="space-y-1.5 text-sm">
             <p className="font-medium">{t("Kenapa Role Request tidak berfungsi di Mode Demo?")}</p>
             <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
-              <li>{t("Mode Demo memakai database terpisah berisi data contoh, bukan data asli — jadi tidak ada akun sungguhan di dalamnya.")}</li>
+              <li>{t("Mode Demo memakai database terpisah berisi data contoh, bukan data asli - jadi tidak ada akun sungguhan di dalamnya.")}</li>
               <li>{t("Di Mode Demo kamu tidak login: identitas diambil dari tombol peran di kanan atas, bukan dari akun. Karena itu tidak ada akun yang bisa mengajukan peran, dan tidak ada peran yang bisa disimpan.")}</li>
               <li>{t("Menyetujui pengajuan berarti mengubah peran sebuah akun. Tanpa akun, tidak ada yang bisa diubah.")}</li>
             </ul>

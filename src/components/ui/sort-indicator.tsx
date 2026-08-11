@@ -31,7 +31,7 @@ export function SortIndicator({
 /**
  * Clickable sortable column header. Defined at module scope (not inside a
  * component's render) so React keeps the same component identity between
- * renders — otherwise the header remounts on every keystroke and the
+ * renders - otherwise the header remounts on every keystroke and the
  * react-hooks/static-components rule fires.
  */
 export function SortHead<K extends string>({

@@ -2,12 +2,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowRight, Users2, Trash2, Loader2, X, CalendarOff, Calendar, Plus, UserPlus } from "lucide-react";
+import { ArrowRight, Users2, Trash2, Loader2, X, CalendarOff, Calendar, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DialogTrigger } from "@/components/ui/dialog";
-import { TeamActions, TeamFormDialog, MemberFormDialog } from "@/components/members/member-manage";
+import { TeamActions, TeamFormDialog } from "@/components/members/member-manage";
+import { AddMembersToDivisionDialog } from "./add-members-dialog";
 import { ProgressRing } from "@/components/charts/donut";
 import { StackedBar } from "@/components/charts/bars";
 import { AddDivisionButton, DivisionActions } from "@/components/divisions/division-manage";
@@ -17,7 +18,7 @@ import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/acti
 import { memberInDivision, memberLabel } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import type { Division, Member, Team } from "@/lib/types";
 
 export interface DivisionStat {
   division: Division;
@@ -39,13 +40,12 @@ const roster = (s: string) => (s ?? "").split(/\s{2,}|,|·/).map((x) => x.trim()
  * division membership) and a division may have none.
  */
 function TeamBlock({
-  division, team, divisions, members, events, eventId, canManageTeams, canManageMembers,
+  division, team, divisions, members, eventId, canManageTeams, canManageMembers,
 }: {
   division: Division;
   team?: Team;
   divisions: Division[];
   members: Member[];
-  events: OVEvent[];
   eventId: string;
   canManageTeams: boolean;
   canManageMembers: boolean;
@@ -75,25 +75,12 @@ function TeamBlock({
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           {t("Struktur Tim")}
         </span>
-        {/* Adding a member straight into this division, rather than making the
-            user go to the Anggota EA tab and hunt for the division in a list.
-            Gated on member permissions, which are not the same as team ones. */}
+        {/* Puts people who are ALREADY on the roster into this division, rather
+            than creating a duplicate record for someone who is simply in two
+            divisions. Gated on member permissions, not team ones. */}
         {canManageMembers && (
           <span className={cn(!canManageTeams && "ml-auto")}>
-            <MemberFormDialog
-              mode="create"
-              divisions={divisions}
-              events={events}
-              defaultEventId={eventId}
-              defaultDivisions={[division.key]}
-              trigger={
-                <DialogTrigger asChild>
-                  <button className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-primary transition hover:bg-muted">
-                    <UserPlus className="size-3" /> {t("Tambah anggota")}
-                  </button>
-                </DialogTrigger>
-              }
-            />
+            <AddMembersToDivisionDialog division={division} members={members} divisions={divisions} />
           </span>
         )}
         {canManageTeams && (
@@ -167,7 +154,6 @@ export function DivisionsGrid({
   stats,
   teams,
   members,
-  events,
   eventId,
   canManage,
   canManageTeams,
@@ -177,7 +163,6 @@ export function DivisionsGrid({
   stats: DivisionStat[];
   teams: Team[];
   members: Member[];
-  events: OVEvent[];
   eventId: string;
   canManage: boolean;
   canManageTeams: boolean;
@@ -289,7 +274,7 @@ export function DivisionsGrid({
                   </div>
                 </Link>
 
-                {/* Team structure lives on the division card — the separate
+                {/* Team structure lives on the division card - the separate
                     "Struktur Tim" tab was merged in here. Outside the <Link>
                     so its controls stay clickable. */}
                 <TeamBlock
@@ -298,7 +283,6 @@ export function DivisionsGrid({
                   divisions={divisions}
                   members={members}
                   eventId={eventId}
-                  events={events}
                   canManageTeams={canManageTeams}
                   canManageMembers={canManageMembers}
                 />

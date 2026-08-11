@@ -181,7 +181,7 @@
   to { opacity: 1; }
 }
 /*
- * Only opacity and scale — the centring is NOT repeated here.
+ * Only opacity and scale - the centring is NOT repeated here.
  *
  * Tailwind v4 compiles `-translate-x-1/2` to the standalone `translate`
  * property, not to `transform`. The two COMPOSE, so a keyframe that also said
@@ -200,7 +200,7 @@
 
 .animate-fade-in { animation: fade-in 0.25s ease both; }
 
-/* Auto-growing textareas (rundown cells) — height follows content so long
+/* Auto-growing textareas (rundown cells) - height follows content so long
    text wraps and stays fully visible instead of being clipped. Falls back to
    normal wrapping where field-sizing is unsupported. */
 textarea.autosize {

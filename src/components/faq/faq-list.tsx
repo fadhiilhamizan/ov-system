@@ -21,7 +21,7 @@ import type { Faq } from "@/lib/types";
 
 const CARD = "rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden";
 
-/** The card itself, with no drag wiring — rendered as-is for read-only roles. */
+/** The card itself, with no drag wiring - rendered as-is for read-only roles. */
 function FaqCard({
   faq, index, manage, defaultOpen, handle, style, dragging, innerRef,
 }: {

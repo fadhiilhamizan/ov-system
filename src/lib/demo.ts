@@ -1,5 +1,5 @@
 // ============================================================
-// Ormawa Visit "Demo" mode — a fully SEPARATE Supabase database.
+// Ormawa Visit "Demo" mode - a fully SEPARATE Supabase database.
 //
 // The demo runs against its own Supabase project (its own URL + anon key), so
 // demo data and real data can never read or write each other. A user enters

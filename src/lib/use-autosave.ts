@@ -5,7 +5,7 @@ import * as React from "react";
 //
 // Inline edits (rundown cells, job reorder, budget qty) save on blur/drop/debounce
 // with no Save button. Errors already surface as a toast, but a SUCCESSFUL save
-// gave no feedback at all — the user couldn't tell whether their change stuck.
+// gave no feedback at all - the user couldn't tell whether their change stuck.
 // This tracks a small idle → saving → saved/error lifecycle so a shared
 // SaveIndicator can show "Tersimpan" for a beat.
 // ============================================================

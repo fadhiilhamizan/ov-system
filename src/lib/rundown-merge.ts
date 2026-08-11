@@ -11,7 +11,7 @@ import type { RundownItem } from "./types";
 //   item.merges = { MC: 3 }  ->  that row's MC cell spans itself + 2 rows below.
 // Covered rows store nothing; their value is read from the origin row.
 //
-// Pure functions only — no React — so the rules are unit-testable.
+// Pure functions only - no React - so the rules are unit-testable.
 // ============================================================
 
 /** Columns that may be merged. Catatan is deliberately excluded: it is per-row. */
@@ -31,7 +31,7 @@ export type CellRole =
 function spanAt(items: RundownItem[], index: number, col: string): number {
   const raw = items[index]?.merges?.[col];
   const n = typeof raw === "number" ? Math.floor(raw) : 1;
-  // A span can never run past the end of the list — a row deleted from the
+  // A span can never run past the end of the list - a row deleted from the
   // middle of a merged run would otherwise leave a rowSpan pointing at nothing,
   // and the browser silently drops the rest of the table.
   return Math.max(1, Math.min(n, items.length - index));
@@ -67,7 +67,7 @@ export function canMergeDown(items: RundownItem[], col: string, index: number): 
   if (!role || role.kind === "covered") return false;
   const span = role.kind === "origin" ? role.span : 1;
   const next = index + span;
-  // The next row has to exist AND be entirely free — not covered by another run,
+  // The next row has to exist AND be entirely free - not covered by another run,
   // and not the origin of one either. Swallowing another origin would make
   // columnRoles() discard that run, silently destroying a merge the user made.
   return next < items.length && roles[next].kind === "normal";

@@ -20,7 +20,7 @@ export function DivisionFilter({
 }: {
   divisions: Division[];
   active: string;
-  /** Offer "Tanpa divisi" — only worth showing when some task actually has
+  /** Offer "Tanpa divisi" - only worth showing when some task actually has
    *  none, e.g. after the division it belonged to was deleted. */
   showNoDivision?: boolean;
 }) {

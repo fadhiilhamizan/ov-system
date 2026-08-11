@@ -72,7 +72,7 @@ export function TaskFormDialog({
   const existingLinks = useTaskLinks(task?.id);
 
   // Refill the form whenever the dialog opens (or targets a different task).
-  // Done during render rather than in an effect — see lib/use-synced.ts.
+  // Done during render rather than in an effect - see lib/use-synced.ts.
   const formKey = `${isOpen}:${task?.id ?? "new"}`;
   const [form, setForm] = useResetOn(formKey, () => ({
     event_id: task?.event_id ?? activeEventId,
@@ -140,7 +140,7 @@ export function TaskFormDialog({
       };
       // When the user only has progress access (staff/intern on their task),
       // send just status+result so the server keeps them in the "progress only"
-      // permission lane — sending every field would require full edit rights.
+      // permission lane - sending every field would require full edit rights.
       const res =
         mode === "create"
           ? await createTaskAction(fullPayload, payloadLinks)
@@ -300,7 +300,7 @@ export function TaskFormDialog({
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="result">{t("Hasil — deskripsi")}</Label>
+            <Label htmlFor="result">{t("Hasil - deskripsi")}</Label>
             <Textarea
               id="result"
               value={form.result}

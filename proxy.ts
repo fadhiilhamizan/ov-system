@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // Demo mode runs against a separate Supabase project with the anon key and no
-  // login — skip the production session refresh + auth redirect entirely.
+  // login - skip the production session refresh + auth redirect entirely.
   const demoConfigured =
     !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_URL &&
     !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_ANON_KEY;
@@ -17,10 +17,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Demo / local mode — do nothing.
+  // Demo / local mode - do nothing.
   if (!url || !anon) return NextResponse.next();
 
-  // Skip the auth round-trip on router prefetch requests — they don't need a
+  // Skip the auth round-trip on router prefetch requests - they don't need a
   // session refresh, and prefetching the whole sidebar would otherwise fire a
   // burst of getUser() calls (slow + hits Supabase auth rate limits).
   const isPrefetch =
@@ -51,12 +51,12 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Defense-in-depth route protection: block unauthenticated access to the
-  // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts —
+  // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts -
   // the guest cookie is an allowed read-only bypass. Public paths (login,
   // API routes with their own auth) are exempt. The per-page redirect in the
   // layout stays as a second layer.
   // /signup and /auth/* (the OAuth code exchange) must stay reachable without
-  // a session — that's the whole point of signing up. The legal pages are
+  // a session - that's the whole point of signing up. The legal pages are
   // public too: you have to be able to read them BEFORE agreeing to them.
   const path = request.nextUrl.pathname;
   const isPublic =

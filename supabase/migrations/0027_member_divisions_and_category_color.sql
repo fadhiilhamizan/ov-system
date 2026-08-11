@@ -1,5 +1,5 @@
 -- ============================================================
--- 0027 — Members may belong to MORE THAN ONE division, and budget categories
+-- 0027 - Members may belong to MORE THAN ONE division, and budget categories
 --        get their own colour.
 --
 -- Run AFTER 0026. Idempotent: safe to re-run.
@@ -8,7 +8,7 @@
 --   The division team structure shown on each division card is now DERIVED
 --   from the member roster instead of being typed a second time into
 --   teams.fungsionaris / teams.intern. So the member rows must carry every
---   division a person is in — backfilled here from (1) the existing single
+--   division a person is in - backfilled here from (1) the existing single
 --   `division` column and (2) the names already listed on the team rows.
 --   `members.division` is KEPT as the primary division (= divisions[1]) so
 --   older readers (badges, task PIC scoping, seeds) keep working.
@@ -22,7 +22,7 @@ begin;
 
 -- ---------------- Part 0: compatibility ----------------
 -- `teams.coordinator` was introduced by 0019_real_roster.sql, which ALSO wipes
--- and replaces the roster with HMSI's real data — so it is deliberately never
+-- and replaces the roster with HMSI's real data - so it is deliberately never
 -- run on the DEMO project, and the column is missing there. The backfill below
 -- reads it, so add it here first. No-op on production (0019 already added it).
 alter table public.teams

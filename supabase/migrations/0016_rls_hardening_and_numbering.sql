@@ -1,5 +1,5 @@
 -- ============================================================
--- 0016 — Security hardening + atomic numbering.
+-- 0016 - Security hardening + atomic numbering.
 --
 -- 1. Close the public read hole. 0003 created `read_public USING (true)`,
 --    which let ANYONE with the (public) anon key read members (NRP = PII),

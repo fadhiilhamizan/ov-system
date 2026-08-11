@@ -17,7 +17,7 @@ export const ARCHIVED: Fail = {
  * may proceed. Admins always pass, and so does a write with no edition scope
  * (legacy rows whose event_id is null).
  *
- * This is the UX half only — `writable_event()` in migration 0028 is the real
+ * This is the UX half only - `writable_event()` in migration 0028 is the real
  * control, and it still applies when the request bypasses this function.
  * Its job here is to produce a sentence a committee member can act on instead
  * of a raw "new row violates row-level security policy".

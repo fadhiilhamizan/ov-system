@@ -10,7 +10,7 @@ export const MIN_PASSWORD = 8;
 
 export type PasswordCheck = { ok: true } | { ok: false; error: string };
 
-/** Rules for choosing a NEW password. `current` is optional — pass it on a
+/** Rules for choosing a NEW password. `current` is optional - pass it on a
  *  change so "reusing the same password" is caught before the round-trip. */
 export function checkNewPassword(
   next: string,

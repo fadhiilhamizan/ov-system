@@ -1,9 +1,9 @@
 -- ============================================================
--- 0032 — Super Link diperbarui dari Main Sheet (Excel), 2026-07-29.
+-- 0032 - Super Link diperbarui dari Main Sheet (Excel), 2026-07-29.
 --
 -- Sumber: "MAIN SHEET ORMAWA VISIT.xlsx" + "ORMAWA VISIT 2026.xlsx".
 -- Hanya baris yang PUNYA URL http(s) sungguhan yang diambil (87 dari
--- 141 baris di sheet). Baris tanpa tautan dilewati —
+-- 141 baris di sheet). Baris tanpa tautan dilewati -
 -- di spreadsheet aslinya memang masih kosong.
 --
 -- Cara kerja: UPSERT berdasarkan (event_id, section, name).
@@ -14,7 +14,7 @@
 --
 -- Daftar tautannya ditulis ulang sebagai CTE di kedua statement, BUKAN ditaruh
 -- di tabel sementara: tabel sementara hanya hidup di satu sesi, sedangkan SQL
--- editor Supabase lewat connection pooler — statement kedua bisa mendarat di
+-- editor Supabase lewat connection pooler - statement kedua bisa mendarat di
 -- koneksi lain dan gagal dengan "relation does not exist".
 --
 -- Jalankan SETELAH 0031.

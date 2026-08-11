@@ -6,8 +6,8 @@ import type { Lang } from "./config";
 //
 // BUNDLE NOTE: the EN map itself lives in ./dict.en.ts and is NOT imported
 // here, so it never reaches the client bundle. It is loaded in two places:
-//   * server side — lib/i18n/server.ts imports it directly (server-only);
-//   * client side — the root layout resolves it (only when lang === "en") and
+//   * server side - lib/i18n/server.ts imports it directly (server-only);
+//   * client side - the root layout resolves it (only when lang === "en") and
 //     passes it to I18nProvider, so Indonesian visitors download 0 bytes of it
 //     and English visitors get it before hydration (no mismatch).
 export type Dict = Record<string, string>;

@@ -1,6 +1,6 @@
 -- ============================================================
 -- Derive each member's angkatan (year) from their NRP.
--- ITS NRP format: DDDD YY SSSS — a 4-digit study-program code, a 2-digit
+-- ITS NRP format: DDDD YY SSSS - a 4-digit study-program code, a 2-digit
 -- enrollment year, then a running number. Example: 5026(23)1128 -> 2023.
 -- Only rows whose NRP has at least 6 digits are updated.
 -- ============================================================

@@ -1,11 +1,11 @@
 // ============================================================
 // A tiny PostgreSQL lexer used to sanity-check GENERATED .sql before it is
-// written to disk. It does not understand SQL semantics — it only tracks how
+// written to disk. It does not understand SQL semantics - it only tracks how
 // the text is quoted, which is exactly where the generators kept going wrong:
 //
 //   1. a value containing a single quote emitted as '…'…'…' (unbalanced), and
 //   2. a `do $$ … $$` block whose COMMENT contained "$$", silently ending the
-//      block early — dollar-quoting is lexical, so `--` does not protect it.
+//      block early - dollar-quoting is lexical, so `--` does not protect it.
 //
 // Both produce SQL that looks fine to read and fails in the SQL editor.
 // Usage: assertSqlSane(sql, "demo-seed.sql")
@@ -73,14 +73,14 @@ export function lexStatements(sql, label = "sql", { nested = false } = {}) {
         }
         i++;
       }
-      // `'abc'def` is never valid SQL — it means a quote closed earlier than
+      // `'abc'def` is never valid SQL - it means a quote closed earlier than
       // intended, which is exactly what an un-escaped value produces when it is
       // interpolated into a '…' literal. Catching it here is the whole point:
       // the quotes still BALANCE, so nothing else would notice.
       if (/[A-Za-z0-9_]/.test(sql[i] ?? "")) {
         throw new Error(
           `${label}: string literal opened on line ${startLine} is followed directly by ` +
-            `"${sql.slice(i, i + 20)}" — a quote closed early. Escape the value ('' ) or ` +
+            `"${sql.slice(i, i + 20)}" - a quote closed early. Escape the value ('' ) or ` +
             `dollar-quote the statement.`,
         );
       }
@@ -135,7 +135,7 @@ export function lexStatements(sql, label = "sql", { nested = false } = {}) {
 
   // A nested (plpgsql) body legitimately ends with `end` and no trailing ';'.
   if (!nested && current.trim()) {
-    throw new Error(`${label}: trailing text after the last ';' — "${current.trim().slice(0, 60)}"`);
+    throw new Error(`${label}: trailing text after the last ';' - "${current.trim().slice(0, 60)}"`);
   }
   return statements;
 }
@@ -153,7 +153,7 @@ export function assertSqlSane(sql, label = "sql") {
     if (!STATEMENT_HEADS.has(head)) {
       throw new Error(
         `${label}: statement ending on line ${line} does not start with a SQL keyword ` +
-          `(got "${text.slice(0, 60)}"). A dollar-quoted block probably closed early — ` +
+          `(got "${text.slice(0, 60)}"). A dollar-quoted block probably closed early - ` +
           `check for "$$" inside its comments.`,
       );
     }
@@ -167,7 +167,7 @@ export function assertSqlSane(sql, label = "sql") {
  *
  * A temporary table lives in ONE session. The Supabase SQL editor talks to the
  * database through a connection pooler, so the next statement can land on a
- * different backend — and `create temporary table … on commit drop` is gone by
+ * different backend - and `create temporary table … on commit drop` is gone by
  * the time a later SELECT reads it. It fails with a bare
  *   ERROR: 42P01: relation "…" does not exist
  * which points at the SELECT and says nothing about the real cause. This shipped
@@ -189,7 +189,7 @@ export function assertNoSessionState(sql, label = "sql") {
     const line = stripped.slice(0, temp.index).split("\n").length;
     throw new Error(
       `${label}: "create temporary table" on line ~${line}. A temp table only exists in one ` +
-        `session, and the Supabase SQL editor runs through a connection pooler — a later ` +
+        `session, and the Supabase SQL editor runs through a connection pooler - a later ` +
         `statement can hit a different connection and fail with 'relation does not exist'. ` +
         `Use a "with … as (values …)" CTE inside the single statement that needs it, or do ` +
         `all the work inside one DO block.`,

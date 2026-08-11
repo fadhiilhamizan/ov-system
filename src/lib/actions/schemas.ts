@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CLONE_MODULES, type CloneModule } from "@/lib/types";
 
 // ============================================================
-// Zod schemas — the single input-validation layer for Server Actions.
+// Zod schemas - the single input-validation layer for Server Actions.
 //
 // Server Actions receive arbitrary client input over the wire, so every
 // action validates through one of these before touching the data layer.
@@ -52,7 +52,7 @@ export const urlSchema = z
   .min(1, "URL wajib diisi.")
   .regex(/^https?:\/\/\S+$/i, "URL harus berupa tautan http(s) yang valid.");
 
-/** Optional http(s) URL — empty string and null both mean "belum diisi". */
+/** Optional http(s) URL - empty string and null both mean "belum diisi". */
 const optionalUrl = z
   .string()
   .trim()
@@ -159,7 +159,7 @@ const money = z
   .nullable()
   .optional();
 
-/** Hex colour (#rgb or #rrggbb) — shared by divisions and budget categories. */
+/** Hex colour (#rgb or #rrggbb) - shared by divisions and budget categories. */
 const hexColor = z
   .string()
   .trim()
@@ -187,7 +187,7 @@ export const updateBudgetItemSchema = z
 
 // No `event_id`: a budget plan always belongs to the Ormawa Visit currently
 // being viewed, which the action reads from the session. Leaving it out of the
-// schema also means a client cannot file a plan against a different edition —
+// schema also means a client cannot file a plan against a different edition -
 // Zod strips the key before it ever reaches the repo.
 export const budgetPlanSchema = z.object({
   name: nonEmpty("Nama rencana anggaran", 200),
@@ -292,6 +292,23 @@ const prospectBase = z.object({
   their_response: z.string().trim().max(60).optional(),
   our_response: z.string().trim().max(60).optional(),
   done: z.boolean().optional(),
+  // A prospect's own link (handbook, org profile). Optional, but when filled it
+  // must be a real http(s) URL, same rule as Super Link entries.
+  // Empty stays an empty STRING here, not null: the whole Prospect model uses
+  // "" for "not filled in", and a stray null would have to be null-checked in
+  // every table cell that renders it.
+  link: z
+    .string()
+    .trim()
+    .nullish()
+    .transform((v) => v ?? "")
+    .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Tautan harus berupa URL http(s) yang valid."),
+  link_label: z.string().trim().max(200).optional(),
+  notes: z.string().trim().max(2000).optional(),
+  link_in_super_link: z.boolean().optional(),
+  // `link_id` is deliberately absent: it points at a Super Link row and is
+  // owned by the repo. Accepting it from a client would let anyone re-point a
+  // prospect at someone else's Super Link entry and then overwrite it.
   source: z.string().trim().max(120).optional(),
 });
 /** Create: require at least an org name or a contact. */

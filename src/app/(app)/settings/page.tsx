@@ -41,7 +41,7 @@ export default async function SettingsPage() {
   const isDemo = demoActive(store.get(DEMO_COOKIE)?.value);
   const modules = NAV.flatMap((g) => g.items);
   const canBackup = can.manageBackups(user);
-  // Backup only makes sense against the real (production) DB — in the demo
+  // Backup only makes sense against the real (production) DB - in the demo
   // sandbox we offer a "reset to initial data" instead.
   const backupsResult = canBackup && !isDemo ? await listBackupsAction() : null;
 
@@ -125,7 +125,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            {t("Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.")}
+            {t("Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan - semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.")}
           </p>
           <div className="divide-y divide-border rounded-lg border border-border">
             {ARCHIVE_SHEETS.map((sheet) => (
@@ -146,7 +146,7 @@ export default async function SettingsPage() {
       </Card>
 
       {/* Demo: reset to initial data (replaces backup while in the sandbox).
-          Both this and Backup are admin-only — the page itself is now readable
+          Both this and Backup are admin-only - the page itself is now readable
           by coordinator/staff/intern, who get the matrix + changelog only. */}
       {isDemo ? (
         canBackup && (
@@ -205,7 +205,7 @@ export default async function SettingsPage() {
             </span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            {t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil — tapi tidak bisa menghapus.")}
+            {t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.")}
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -266,7 +266,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Open source — the code behind this app is public. */}
+      {/* Open source - the code behind this app is public. */}
       <Card>
         <CardHeader className="flex-row items-center gap-2">
           <Code2 className="size-4 text-primary" />
@@ -274,7 +274,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            {t("Seluruh kode yang membangun website ini bersifat open source — siapa pun boleh melihat, mempelajari, atau ikut mengembangkannya lewat repositori GitHub di bawah.")}
+            {t("Seluruh kode yang membangun website ini bersifat open source - siapa pun boleh melihat, mempelajari, atau ikut mengembangkannya lewat repositori GitHub di bawah.")}
           </p>
           <a
             href={GITHUB_URL}

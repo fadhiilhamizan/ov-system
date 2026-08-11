@@ -57,7 +57,7 @@ insert into divisions(event_id,key,name,short,color,"order",exclude_from_rundown
 -- members (divisions[] is the real membership; division = the primary)
 -- 44 anggota di seed.json TIDAK ditulis: mereka belum punya event_id,
 -- dan anggota tanpa edisi akan muncul di SEMUA Ormawa Visit. Roster asli
--- per-edisi ada di migrations/0019_real_roster.sql — jalankan itu setelah file ini.
+-- per-edisi ada di migrations/0019_real_roster.sql - jalankan itu setelah file ini.
 
 -- tasks
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('ov2-2025','PIC','1','Fadhiil, Dona','Reach PIC Benchmarking di Himpunan tujuan',null,'10 Agustus',null,'27 Agustus','Chat dan cari kontak berbagai PIC Benchmark di jurusan dalam ITS','Cek sheet Offer','done');

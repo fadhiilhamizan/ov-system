@@ -4,7 +4,7 @@
 // the server layout reads the cookie to render the right markup on first paint,
 // and the client component writes it on toggle. (A constant exported from a
 // "use client" module would reach the server as a client reference, not the
-// string — which silently breaks the server-side read.)
+// string - which silently breaks the server-side read.)
 
 /** Sidebar collapsed state. Values: "collapsed" | "expanded". */
 export const SIDEBAR_COOKIE = "ov_sidebar";

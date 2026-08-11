@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { TaskLinkInput } from "@/lib/types";
 
-/** Row model — `key` is a stable client-side id for React lists. */
+/** Row model - `key` is a stable client-side id for React lists. */
 export interface DraftLink extends TaskLinkInput {
   key: string;
 }

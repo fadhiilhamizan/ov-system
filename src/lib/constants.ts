@@ -86,7 +86,7 @@ export function prospectStage(p: {
  *  MODULE_ACCESS (yang menggerbang navigasi) diturunkan dari sini. */
 export type AccessLevel = "full" | "limited" | "view" | "none";
 
-/** Ordering used by `atLeast()` — a higher level implies every lower one. */
+/** Ordering used by `atLeast()` - a higher level implies every lower one. */
 export const ACCESS_RANK: Record<AccessLevel, number> = {
   none: 0,
   view: 1,
@@ -98,7 +98,7 @@ export const ACCESS_LEVEL_META: Record<AccessLevel, { label: string; description
   full: { label: "Akses penuh (kelola)", description: "Buat, ubah, isi hasil, dan hapus." },
   limited: {
     label: "Akses terbatas",
-    description: "Buat, ubah, dan isi hasil — tidak bisa menghapus.",
+    description: "Buat, ubah, dan isi hasil - tidak bisa menghapus.",
   },
   view: { label: "Hanya lihat", description: "Bisa membuka dan melihat isinya saja." },
   none: { label: "Tidak ada akses", description: "Modul tidak bisa dibuka." },
@@ -121,13 +121,13 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   roles: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
   // Tamu boleh MEMBUKA Pengaturan (matriks akses, changelog, arsip spreadsheet,
-  // versi) tapi tidak boleh menyentuh apa pun di sana. Kartu yang destruktif —
-  // Backup & Rollback, Reset Data Demo — punya pemeriksaan `can.manageBackups`
+  // versi) tapi tidak boleh menyentuh apa pun di sana. Kartu yang destruktif -
+  // Backup & Rollback, Reset Data Demo - punya pemeriksaan `can.manageBackups`
   // sendiri, bukan hanya bergantung pada level modul ini.
   settings: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
 };
 
-/** Which roles can OPEN which modules (route keys) — any level except "none".
+/** Which roles can OPEN which modules (route keys) - any level except "none".
  *  Derived from MODULE_ACCESS_LEVEL so the two never drift apart. */
 export const MODULE_ACCESS: Record<string, Role[]> = Object.fromEntries(
   Object.entries(MODULE_ACCESS_LEVEL).map(([key, byRole]) => [

@@ -162,7 +162,7 @@ export function RundownView({
   // Division columns = the event's divisions not excluded from the rundown.
   // Divisions marked "tidak diikutsertakan pada rundown" (Sekretaris,
   // Bendahara, …) never have a column, so they are not offered in the filter
-  // either — there would be nothing to show or hide.
+  // either - there would be nothing to show or hide.
   const allCols = React.useMemo(
     () => divisions.filter((d) => !d.exclude_from_rundown).sort((a, b) => a.order - b.order),
     [divisions],
@@ -170,13 +170,13 @@ export function RundownView({
   /** Ticked divisions. Empty = show them all, which is the default. */
   const [focus, setFocus] = React.useState<Set<string>>(new Set());
   // Everything below renders from `cols`, so narrowing it here is all the
-  // filter has to do — including the merge bookkeeping.
+  // filter has to do - including the merge bookkeeping.
   const cols = React.useMemo(
     () => (focus.size ? allCols.filter((d) => focus.has(d.key)) : allCols),
     [allCols, focus],
   );
 
-  // Single rundown (versions were removed) — show every row, ordered by no.
+  // Single rundown (versions were removed) - show every row, ordered by no.
   const activeVariant = "A";
   const list = React.useMemo(() => [...items].sort((a, b) => a.no - b.no), [items]);
 
@@ -228,7 +228,7 @@ export function RundownView({
 
   // Merged cells: one value spanning several time slots, so "one activity that
   // runs for three slots" reads differently from "three identical activities".
-  // Catatan is excluded on purpose — it is per-row commentary.
+  // Catatan is excluded on purpose - it is per-row commentary.
   const mergeCols = [MERGE_MC, MERGE_OPERATOR, ...cols.map((d) => d.key)];
   const roles = Object.fromEntries(mergeCols.map((c) => [c, columnRoles(list, c)]));
 
@@ -241,7 +241,7 @@ export function RundownView({
 
   /**
    * Renders one mergeable cell, or nothing when another row's run covers it.
-   * Returns `null` so the caller omits the <td> entirely — that is what makes
+   * Returns `null` so the caller omits the <td> entirely - that is what makes
    * the rowSpan above actually occupy the space.
    */
   function MergeableCell({
@@ -299,7 +299,7 @@ export function RundownView({
   // the widths are pinned by a <colgroup> + `table-fixed` rather than left to
   // the automatic table algorithm. (With `table-layout: auto` the browser sizes
   // columns by content, the offsets drifted out of alignment, and the gaps let
-  // scrolled-under content show through the frozen block — the "hollow" look.)
+  // scrolled-under content show through the frozen block - the "hollow" look.)
   const W = { no: 44, time: 96, dur: 72, act: 220, mc: 140, opr: 160, div: 150, note: 180, actions: 44 };
   const noL = { left: 0 } as const;
   const timeL = { left: W.no } as const;

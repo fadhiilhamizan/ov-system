@@ -19,7 +19,7 @@ export interface RoleRequestInput {
 }
 
 /**
- * Submit a role request. Open to any real account except an admin — a role-less
+ * Submit a role request. Open to any real account except an admin - a role-less
  * account asks for its first role, and an account that already has one can ask
  * to be moved up or down. Nobody can request `admin`, and nobody can request
  * the role they already hold (see `requestableRolesFor`).
@@ -42,7 +42,7 @@ export async function requestRoleAction(input: RoleRequestInput): Promise<Result
   }
 
   // One open request at a time (the DB enforces this too with a partial unique
-  // index) — an existing one should be EDITED, not duplicated.
+  // index) - an existing one should be EDITED, not duplicated.
   const mine = await getRoleRequestsFor(user.id);
   if (mine.some((r) => r.status === "pending")) {
     return { ok: false, error: "Pengajuan kamu masih menunggu keputusan admin. Ubah pengajuan itu saja." };
@@ -64,7 +64,7 @@ export async function requestRoleAction(input: RoleRequestInput): Promise<Result
 }
 
 /**
- * Edit your own still-pending request — for fixing a wrong role choice or a
+ * Edit your own still-pending request - for fixing a wrong role choice or a
  * typo before an admin decides. Decided requests are immutable; to change an
  * approved role you file a new request.
  */
@@ -101,12 +101,12 @@ export async function updateRoleRequestAction(id: string, input: RoleRequestInpu
   return { ok: true };
 }
 
-/** Approve a request (grants the role) — admin only. */
+/** Approve a request (grants the role) - admin only. */
 export async function approveRoleRequestAction(id: string): Promise<Result> {
   return decide(id, true);
 }
 
-/** Ignore a request (leaves the current role untouched) — admin only. */
+/** Ignore a request (leaves the current role untouched) - admin only. */
 export async function ignoreRoleRequestAction(id: string): Promise<Result> {
   return decide(id, false);
 }

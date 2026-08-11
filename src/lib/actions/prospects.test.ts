@@ -7,7 +7,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("./revalidate", () => ({ revalidateEntities: vi.fn() }));
 
 const repo = {
-  createProspect: vi.fn(async () => {}),
+  createProspect: vi.fn(async () => "p-new"),
   updateProspect: vi.fn(async () => {}),
   deleteProspect: vi.fn(async () => {}),
   bulkDeleteProspects: vi.fn(async () => {}),
@@ -15,6 +15,7 @@ const repo = {
   setPrimaryProspect: vi.fn(async () => {}),
   unsetPrimaryProspect: vi.fn(async () => {}),
   syncEventFromProspect: vi.fn(async () => {}),
+  syncProspectLink: vi.fn(async () => {}),
   getEvent: vi.fn(async () => ({ id: "ov1", locked: false })),
 };
 vi.mock("@/lib/data/repo", () => repo);
@@ -32,7 +33,8 @@ const prospect = (over: Partial<Prospect> = {}): Prospect => ({
   id: "p1", event_id: "ov1", no: "1", date_text: "", month: "",
   contact: "", org_name: "HIMA X", campus: "ITS", location: "", mode: "",
   pic: "", contact_status: "", their_response: "", our_response: "",
-  done: false, is_primary: false, source: "manual", ...over,
+  done: false, is_primary: false, source: "manual",
+  link: "", link_label: "", notes: "", link_in_super_link: false, link_id: null, ...over,
 });
 
 beforeEach(() => {
@@ -80,6 +82,31 @@ describe("updateProspectAction", () => {
     const res = await updateProspectAction("p1", { org_name: "HIMA Y" });
     expect(res.ok).toBe(true);
     expect(repo.syncEventFromProspect).toHaveBeenCalledWith("ov1", expect.objectContaining({ is_primary: true }));
+  });
+
+  it("publishes the link to Super Link after every save", async () => {
+    // syncProspectLink is what keeps the Super Link entry in step; skipping it
+    // would leave a stale or orphaned row behind.
+    await updateProspectAction("p1", { link: "https://handbook.test", link_in_super_link: true });
+    expect(repo.syncProspectLink).toHaveBeenCalledWith("p1");
+  });
+
+  it("rejects a link that is not a real http(s) URL", async () => {
+    const res = await updateProspectAction("p1", { link: "bukan-url" });
+    expect(res.ok).toBe(false);
+    expect(repo.updateProspect).not.toHaveBeenCalled();
+  });
+
+  it("accepts an empty link (clearing it) and still syncs", async () => {
+    const res = await updateProspectAction("p1", { link: "" });
+    expect(res.ok).toBe(true);
+    expect(repo.syncProspectLink).toHaveBeenCalledWith("p1");
+  });
+
+  it("never lets a client set link_id (it points at a Super Link row)", async () => {
+    await updateProspectAction("p1", { link_id: "someone-elses-row" } as never);
+    const call = repo.updateProspect.mock.calls[0] as unknown[] | undefined;
+    expect(call?.[1] ?? {}).not.toHaveProperty("link_id");
   });
 
   it("does NOT touch the event for a non-primary prospect", async () => {

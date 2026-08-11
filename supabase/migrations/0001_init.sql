@@ -1,5 +1,5 @@
 -- ============================================================
--- Ormawa Visit Command Center — Schema
+-- Ormawa Visit Command Center - Schema
 -- HMSI ITS External Affairs
 -- ============================================================
 

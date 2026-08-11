@@ -76,7 +76,7 @@ export interface Member {
   nrp: string;
   type: "fungsionaris" | "intern";
   year: number;
-  /** Primary division — kept in sync with `divisions[0]` for older readers
+  /** Primary division - kept in sync with `divisions[0]` for older readers
    *  (badges, task PIC scoping, seeds). Read it via `primaryDivision()`. */
   division?: DivisionKey | null;
   /** Every division this member is part of. Most people have exactly one, but
@@ -125,7 +125,7 @@ export interface Prospect {
   id: string;
   event_id?: string | null;
   // NOTE: the `prospects.batch` DB column still exists (seed generation uses it
-  // to derive event_id), but it is no longer part of the app model — the
+  // to derive event_id), but it is no longer part of the app model - the
   // Ormawa Visit an item belongs to is already `event_id`, which made batch
   // redundant clutter. Nothing in the UI reads or writes it any more.
   no: string;
@@ -141,9 +141,21 @@ export interface Prospect {
   their_response: string; // DITERIMA | DITOLAK | DITUNGGU | ''
   our_response: string; // TERIMA | TOLAK | TUNGGU | ''
   done: boolean;
-  /** The confirmed partner for this OV — the OV pulls its partner/campus/
+  /** The confirmed partner for this OV - the OV pulls its partner/campus/
    *  location/mode from this prospect. At most one per event. */
   is_primary: boolean;
+  /** A link belonging to the organisation being contacted: their handbook,
+   *  org profile, a proposal they sent back. */
+  link: string;
+  /** Name shown for that link in Super Link. Falls back to the org name. */
+  link_label: string;
+  /** Free-text notes about this prospect. */
+  notes: string;
+  /** Publish `link` as a Super Link entry as well. */
+  link_in_super_link: boolean;
+  /** Which Super Link row this prospect created, so editing or clearing the
+   *  link updates it instead of leaving an orphan. Mirrors task_links. */
+  link_id?: string | null;
   source: string;
 }
 
@@ -228,7 +240,7 @@ export interface Team {
   id: string;
   event_id: string | null;
   division: DivisionKey;
-  /** The division's coordinator (atasan) — a role, not a division. One per
+  /** The division's coordinator (atasan) - a role, not a division. One per
    *  division per Ormawa Visit. Stored as a display name (usually also present
    *  in `fungsionaris`). */
   coordinator: string;
@@ -236,7 +248,7 @@ export interface Team {
   intern: string;
 }
 
-/** Roles an account may ask for — an upgrade OR a downgrade. Admin is never
+/** Roles an account may ask for - an upgrade OR a downgrade. Admin is never
  *  requestable (it is granted out of band, and an admin can't be demoted this
  *  way); "guest" is the no-role starting state, so it isn't requestable either. */
 export type RequestableRole = Extract<Role, "coordinator" | "staff" | "intern">;
@@ -282,7 +294,7 @@ export interface Database {
 /**
  * An account. Deliberately carries NO division and NO Ormawa Visit scope: an
  * account represents a level of access, not a person or a team. A role is
- * global — a coordinator is a coordinator for every edition in the database —
+ * global - a coordinator is a coordinator for every edition in the database -
  * and one account may be shared by several people. Anything that needs to know
  * *who* did something belongs on the data (e.g. a task's `pic`), not here.
  */

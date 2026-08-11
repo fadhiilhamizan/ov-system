@@ -1,11 +1,11 @@
-// One-off repair for v1.19.0 — restores the legacy team rosters in the local
+// One-off repair for v1.19.0 - restores the legacy team rosters in the local
 // JSON seed from the generated supabase/seed.sql (the two are kept in sync by
 // `npm run db:seed`, so seed.sql is the reliable copy).
 //
 // Context: the division team structure is now DERIVED from each member's own
 // `divisions`. The legacy seed's team rosters are SPACE-separated free text
 // ("Vika Daniel Mba Tahe") that cannot be split reliably into names, so they
-// are NOT folded into the members here — the UI keeps showing them as a
+// are NOT folded into the members here - the UI keeps showing them as a
 // fallback for any division that has no members assigned yet. Real (Supabase)
 // data uses comma-separated rosters and is migrated properly by 0027.
 //
@@ -43,7 +43,7 @@ for (const t of seed.teams) {
 }
 
 // Members: make the multi-division field explicit, seeded from the legacy
-// single column (empty for the legacy roster — that's expected).
+// single column (empty for the legacy roster - that's expected).
 let withDivision = 0;
 for (const m of seed.members) {
   m.divisions = m.divisions?.length ? m.divisions : m.division ? [m.division] : [];

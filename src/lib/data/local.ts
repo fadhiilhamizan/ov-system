@@ -157,6 +157,11 @@ export function createProspect(input: Partial<Prospect>): Prospect {
     our_response: input.our_response ?? "",
     done: input.done ?? false,
     is_primary: input.is_primary ?? false,
+    link: input.link ?? "",
+    link_label: input.link_label ?? "",
+    notes: input.notes ?? "",
+    link_in_super_link: input.link_in_super_link ?? false,
+    link_id: input.link_id ?? null,
     source: input.source ?? "manual",
   };
   mutate((db) => db.prospects.unshift(p));
@@ -193,7 +198,47 @@ export function unsetPrimaryProspect(prospectId: string) {
 }
 export function deleteProspect(id: string) {
   mutate((db) => {
-    db.prospects = db.prospects.filter((p) => p.id !== id);
+    // Take the Super Link entry with it, or it becomes an orphan nobody can
+    // trace back to anything (mirrors repo.purgeProspectLink).
+    const p = db.prospects.find((x) => x.id === id);
+    if (p?.link_id) db.links = db.links.filter((l) => l.id !== p.link_id);
+    db.prospects = db.prospects.filter((x) => x.id !== id);
+  });
+}
+
+/** Mirrors repo.syncProspectLink: publish, update, or withdraw the prospect's
+ *  link in Super Link, remembering which row it owns. */
+export function syncProspectLink(id: string) {
+  mutate((db) => {
+    const p = db.prospects.find((x) => x.id === id);
+    if (!p) return;
+    const url = (p.link ?? "").trim();
+    const wanted = !!url && !!p.link_in_super_link;
+
+    if (!wanted) {
+      if (p.link_id) {
+        db.links = db.links.filter((l) => l.id !== p.link_id);
+        p.link_id = null;
+      }
+      return;
+    }
+
+    const row = {
+      event_id: p.event_id ?? null,
+      division: "",
+      section: "Reach & Offer",
+      name: (p.link_label ?? "").trim() || p.org_name || "Tautan prospek",
+      url,
+      note: p.org_name ?? "",
+      source: "prospect",
+    };
+    const existing = p.link_id ? db.links.find((l) => l.id === p.link_id) : undefined;
+    if (existing) Object.assign(existing, row);
+    else {
+      const created: LinkItem = { id: uid("l"), ...row };
+      db.links.push(created);
+      p.link_id = created.id;
+    }
   });
 }
 
@@ -421,7 +466,7 @@ export function deleteFaq(id: string) {
     db.faqs = db.faqs.filter((f) => f.id !== id);
   });
 }
-/** No `order` column here — array position IS the order, so reorder the array.
+/** No `order` column here - array position IS the order, so reorder the array.
  *  Ids not in `orderedIds` keep their relative order and stay at the end. */
 export function reorderFaqs(orderedIds: string[]) {
   mutate((db) => {
@@ -536,7 +581,7 @@ export function setEventLocked(id: string, locked: boolean) {
   });
 }
 
-/** Mirrors repo.cloneEventData — one source edition PER MENU, optionally
+/** Mirrors repo.cloneEventData - one source edition PER MENU, optionally
  *  replacing what the target already has. See the repo version for why. */
 export function cloneEventData(
   targetId: string,

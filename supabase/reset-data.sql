@@ -1,5 +1,5 @@
 -- ============================================================
--- RESET DATA — kosongkan seluruh data aplikasi, siap diisi ulang dari seed.
+-- RESET DATA - kosongkan seluruh data aplikasi, siap diisi ulang dari seed.
 --
 -- ⚠️  SKRIP INI MENGHAPUS DATA. Ambil backup manual dulu lewat
 --     Pengaturan → Backup & Rollback → "Backup Sekarang", dan unduh JSON-nya.
@@ -9,15 +9,15 @@
 -- Itulah sumber baris kembar yang muncul berulang. Alur yang benar adalah
 -- mengosongkan dulu, lalu seed SEKALI.
 --
--- YANG DIHAPUS: seluruh data operasional Ormawa Visit —
+-- YANG DIHAPUS: seluruh data operasional Ormawa Visit -
 --   task_links, budget_items, tasks, members, teams, rundown, job_harih,
 --   prospects, links, budget_plans, faqs, divisions, events.
 --
 -- YANG TIDAK DISENTUH (sengaja):
---   * profiles / auth.users  — akun & peran orang tetap utuh, jadi tidak ada
+--   * profiles / auth.users  - akun & peran orang tetap utuh, jadi tidak ada
 --     yang perlu mendaftar ulang atau minta peran lagi.
---   * backups                — riwayat backup justru penyelamatmu di sini.
---   * role_requests          — pengajuan peran bukan data Ormawa Visit.
+--   * backups                - riwayat backup justru penyelamatmu di sini.
+--   * role_requests          - pengajuan peran bukan data Ormawa Visit.
 --
 -- URUTAN LENGKAP REBUILD (lihat supabase/README.md):
 --   1. Backup manual dari Pengaturan.
@@ -30,12 +30,12 @@
 --
 -- Langkah 5 penting: `seed.json` masih memuat roster lama (44 orang tanpa edisi),
 -- dan anggota tanpa edisi akan muncul di SEMUA Ormawa Visit. Karena itu seed.sql
--- sengaja TIDAK menulis anggota sama sekali — roster asli per edisi (119 orang,
+-- sengaja TIDAK menulis anggota sama sekali - roster asli per edisi (119 orang,
 -- 17 divisi, 17 tim) datang dari 0019.
 --
 -- Semua penghapusan ada di SATU blok DO: tidak memakai tabel sementara, dan
 -- tidak bergantung pada state antar-statement (SQL editor Supabase lewat
--- connection pooler — lihat catatan di AGENTS.md).
+-- connection pooler - lihat catatan di AGENTS.md).
 -- ============================================================
 
 begin;
@@ -74,7 +74,7 @@ commit;
 
 -- ------------------------------------------------------------------
 -- Verifikasi: semua kolom harus 0. Kalau ada yang bukan 0, jangan lanjut
--- ke seed.sql — laporkan dulu.
+-- ke seed.sql - laporkan dulu.
 -- ------------------------------------------------------------------
 select
   (select count(*) from events)       as events,

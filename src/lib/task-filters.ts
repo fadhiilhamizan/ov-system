@@ -3,8 +3,8 @@ import type { Division, Task } from "./types";
 // ============================================================
 // Pure filtering helpers for the Work Breakdown toolbar.
 //
-// Kept out of the components so the awkward cases — a task whose division was
-// deleted, a PIC field holding two names — are covered by tests rather than by
+// Kept out of the components so the awkward cases - a task whose division was
+// deleted, a PIC field holding two names - are covered by tests rather than by
 // hoping the JSX got it right.
 // ============================================================
 
@@ -44,7 +44,7 @@ export function picOptions(tasks: readonly Task[]): string[] {
  * Does this task belong to the focused division?
  *
  * `NO_DIVISION` covers both a blank division and one pointing at a division
- * that no longer exists — otherwise those tasks are unreachable from the
+ * that no longer exists - otherwise those tasks are unreachable from the
  * toolbar, which is exactly what happens after a division is deleted.
  */
 export function matchesDivision(
@@ -66,7 +66,7 @@ export function matchesPics(task: Task, picked: ReadonlySet<string>): boolean {
   return names.some((n) => picked.has(n.toLowerCase()));
 }
 
-/** Divisions that actually have somewhere to show — used to build the menu. */
+/** Divisions that actually have somewhere to show - used to build the menu. */
 export function divisionKeySet(divisions: readonly Division[]): Set<string> {
   return new Set(divisions.map((d) => d.key));
 }

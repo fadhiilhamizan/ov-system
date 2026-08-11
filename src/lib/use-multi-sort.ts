@@ -5,7 +5,7 @@ export interface SortRule<K extends string = string> { key: K; dir: SortDir }
 
 /**
  * Stacking multi-column sort. Clicking a new column ADDS it to the chain as a
- * tiebreaker instead of replacing the current sort — so "No" then "Nama" sorts
+ * tiebreaker instead of replacing the current sort - so "No" then "Nama" sorts
  * by No first, then Nama within equal No values.
  *
  * Click cycle per column: asc -> desc -> removed from the chain.

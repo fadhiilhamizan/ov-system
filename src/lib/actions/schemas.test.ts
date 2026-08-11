@@ -116,7 +116,7 @@ describe("budget schemas", () => {
     expect(parse(budgetItemSchema, { category: "K", name: "N", category_color: "orange" }).ok).toBe(false);
   });
 
-  it("requires only a plan name — the edition comes from the session", () => {
+  it("requires only a plan name - the edition comes from the session", () => {
     expect(parse(budgetPlanSchema, { name: "RAB" }).ok).toBe(true);
     expect(parse(budgetPlanSchema, { name: "" }).ok).toBe(false);
   });
@@ -146,7 +146,7 @@ describe("memberSchema", () => {
     expect(parse(memberSchema, { divisions: ["EVENT"] }).ok).toBe(false);
   });
 
-  it("accepts several divisions — one person may sit in more than one", () => {
+  it("accepts several divisions - one person may sit in more than one", () => {
     const r = parse(memberSchema, { name: "Dewi", divisions: ["CREATIVE", "MARKETING"] });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.data.divisions).toEqual(["CREATIVE", "MARKETING"]);
@@ -266,7 +266,7 @@ describe("roleRequestSchema", () => {
       expect(parse(roleRequestSchema, { requested_role: r }).ok).toBe(true);
     }
   });
-  it("rejects admin and guest — those are never requestable", () => {
+  it("rejects admin and guest - those are never requestable", () => {
     expect(parse(roleRequestSchema, { requested_role: "admin" }).ok).toBe(false);
     expect(parse(roleRequestSchema, { requested_role: "guest" }).ok).toBe(false);
     expect(parse(roleRequestSchema, {}).ok).toBe(false);

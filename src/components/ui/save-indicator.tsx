@@ -7,7 +7,7 @@ import type { SaveStatus } from "@/lib/use-autosave";
 /**
  * Ambient autosave badge. Shows nothing when idle so it never adds clutter to a
  * table that is not being edited; the detail on failure still comes from the
- * toast — this is only the "it saved" reassurance.
+ * toast - this is only the "it saved" reassurance.
  */
 export function SaveIndicator({ status, className }: { status: SaveStatus; className?: string }) {
   const t = useT();

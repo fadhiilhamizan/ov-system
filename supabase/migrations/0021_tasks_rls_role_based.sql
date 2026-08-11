@@ -1,5 +1,5 @@
 -- ============================================================
--- 0021 — SUPERSEDED. Intentionally a no-op. Do not restore the old body.
+-- 0021 - SUPERSEDED. Intentionally a no-op. Do not restore the old body.
 --
 -- This migration used to drop tasks_insert/tasks_update/tasks_delete and
 -- recreate them as plain role checks (`auth_role() in (...)`), because after
@@ -14,7 +14,7 @@
 -- H2 (staff/intern rewriting any task column).
 --
 -- If you already ran the old version of this file, 0026 re-asserts the correct
--- policies — run it.
+-- policies - run it.
 -- ============================================================
 
 -- no-op

@@ -10,7 +10,7 @@ const supabaseOrigins = [
   .join(" ");
 
 /**
- * Second line of defence. None of these fix a bug we have — the point is that
+ * Second line of defence. None of these fix a bug we have - the point is that
  * they turn a hypothetical future XSS into a blocked request instead of a
  * stolen session, and stop the app being framed by someone else's page.
  *
@@ -37,8 +37,8 @@ const nextConfig: NextConfig = {
   devIndicators: false,
 
   // The app uses no `next/image` at all (every graphic is inline SVG), so the
-  // image optimizer — and with it `sharp`, which currently carries unpatched
-  // libvips CVEs through Next's own dependency tree — is never invoked. Saying
+  // image optimizer - and with it `sharp`, which currently carries unpatched
+  // libvips CVEs through Next's own dependency tree - is never invoked. Saying
   // so explicitly keeps it that way if someone adds an <img> later.
   images: { unoptimized: true },
 

@@ -55,7 +55,7 @@ export function EventFormDialog({
     plan_end: event?.plan_end ?? "",
     event_date: event?.event_date ?? "",
     location: event?.location ?? "",
-    // Performance Measurement — filled in after the event. Kept as strings so an
+    // Performance Measurement - filled in after the event. Kept as strings so an
     // empty box stays empty (and saves as NULL) instead of collapsing to 0.
     attendance_hmsi: event?.attendance_hmsi?.toString() ?? "",
     feedback_hmsi_count: event?.feedback_hmsi_count?.toString() ?? "",
@@ -75,7 +75,7 @@ export function EventFormDialog({
         plan_start: f.plan_start || null,
         plan_end: f.plan_end || null,
         event_date: f.event_date || null,
-        // Empty box -> null ("belum diisi"), never 0 — the dashboard shows a
+        // Empty box -> null ("belum diisi"), never 0 - the dashboard shows a
         // dash for null and a real zero for zero, and those mean different things.
         attendance_hmsi: f.attendance_hmsi === "" ? null : Number(f.attendance_hmsi),
         feedback_hmsi_count: f.feedback_hmsi_count === "" ? null : Number(f.feedback_hmsi_count),
@@ -94,7 +94,7 @@ export function EventFormDialog({
       }
 
       // Edit: save the fields first, then run the (destructive) copy. Order
-      // matters — if the copy fails, the metadata edit is still saved and the
+      // matters - if the copy fails, the metadata edit is still saved and the
       // error names what actually went wrong.
       const res = await updateEventAction(event!.id, payload);
       if (!res.ok) { toast.error(res.error); return; }
@@ -109,7 +109,7 @@ export function EventFormDialog({
     });
   }
 
-  /** "oleh HMD TC" etc — falls back to a generic word before a partner is set. */
+  /** "oleh HMD TC" etc - falls back to a generic word before a partner is set. */
   const partnerLabel = f.partner.trim() || t("himpunan partner");
 
   // An edition can never be its own source, so it is excluded from the picker.
@@ -127,7 +127,7 @@ export function EventFormDialog({
         <div className="grid max-h-[65vh] gap-4 overflow-y-auto px-0.5 py-1">
           {mode === "create" && (
             <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              {t("Ini masih rencana — cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.")}
+              {t("Ini masih rencana - cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.")}
             </p>
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -218,7 +218,7 @@ export function EventFormDialog({
             <Input type="date" value={f.event_date} onChange={(e) => setF({ ...f, event_date: e.target.value })} />
           </div>
 
-          {/* Performance Measurement — the after-the-event numbers. Entered
+          {/* Performance Measurement - the after-the-event numbers. Entered
               here, read on the Dashboard. Blank stays blank (NULL), which the
               dashboard renders as "belum diisi" rather than as a zero. */}
           <div className="rounded-lg border border-border bg-muted/30 p-3">
@@ -287,7 +287,7 @@ export function EventFormDialog({
 
               {mode === "create" ? (
                 <p className="mb-2 text-[11px] text-muted-foreground">
-                  {t("Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.")}
+                  {t("Hemat waktu - data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.")}
                 </p>
               ) : !showTemplate ? (
                 <div className="flex flex-col gap-2">

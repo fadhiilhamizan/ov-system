@@ -1,5 +1,5 @@
 -- ============================================================
--- 0018 — Divisions become per-Ormawa-Visit; members roster assigned to an OV.
+-- 0018 - Divisions become per-Ormawa-Visit; members roster assigned to an OV.
 --
 -- Until now `divisions` was ONE global set (key = global primary key) shared by
 -- every OV, and the legacy member roster had no event_id (leaked into every OV).
@@ -28,7 +28,7 @@ alter table tasks   drop constraint if exists tasks_division_fkey;
 alter table members drop constraint if exists members_division_fkey;
 alter table teams   drop constraint if exists teams_division_fkey;
 
--- 3) Drop the OLD primary key on (key) BEFORE cloning — otherwise inserting the
+-- 3) Drop the OLD primary key on (key) BEFORE cloning - otherwise inserting the
 --    same key for multiple events violates it. (This was the bug in the first cut.)
 alter table divisions drop constraint if exists divisions_pkey;
 

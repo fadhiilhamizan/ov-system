@@ -7,13 +7,13 @@ import { createClient } from "./supabase/server";
  * `task_links` MUST stay first and ahead of both `tasks` and `links`: it is a
  * child of tasks (ON DELETE CASCADE) and of links (ON DELETE SET NULL). It was
  * missing from this list until v1.20.0, which meant a restore wiped every task
- * result link permanently — the delete pass cascaded them away with the tasks,
+ * result link permanently - the delete pass cascaded them away with the tasks,
  * and the snapshot had nothing to put back.
  *
  * Deliberately NOT backed up:
- *  - `profiles`  — who is an admin is account state, not project data. Rolling
+ *  - `profiles`  - who is an admin is account state, not project data. Rolling
  *    it back could silently restore a role someone had removed on purpose.
- *  - `role_requests` — administrative workflow, and its `user_id` points at
+ *  - `role_requests` - administrative workflow, and its `user_id` points at
  *    `auth.users`; restoring a row whose account was since deleted would fail
  *    the whole restore on a foreign key.
  *  - `backups` itself.
@@ -58,7 +58,7 @@ function isMissingTable(error: { code?: string; message?: string }): boolean {
 /**
  * Snapshot every mutable app table as raw rows (1:1 with the DB schema).
  *
- * Always runs as the signed-in admin (RLS-scoped). Backups are manual only —
+ * Always runs as the signed-in admin (RLS-scoped). Backups are manual only -
  * there is no unattended path that would need a service-role client.
  */
 export async function captureSnapshot(): Promise<BackupData> {
@@ -91,7 +91,7 @@ export async function createBackup(
   const totalRows = Object.values(data).reduce((n, rows) => n + rows.length, 0);
   if (totalRows === 0) {
     throw new Error(
-      "Snapshot kosong — backup dibatalkan. Biasanya ini berarti sesi tidak punya izin baca (RLS).",
+      "Snapshot kosong - backup dibatalkan. Biasanya ini berarti sesi tidak punya izin baca (RLS).",
     );
   }
 
@@ -130,7 +130,7 @@ export async function deleteBackup(id: string): Promise<void> {
  * Replace all current data with a snapshot's contents. Deletes every row in
  * the affected tables (children first) then reinserts the snapshot's rows
  * (parents first), preserving original IDs so foreign keys stay valid.
- * Not wrapped in a single DB transaction — callers should take a
+ * Not wrapped in a single DB transaction - callers should take a
  * `pre_restore` backup first so a partial failure is always recoverable.
  */
 /**
@@ -140,7 +140,7 @@ export async function deleteBackup(id: string): Promise<void> {
  * overwrite, so it is a whitelist, not a sanity check: any key that is not one
  * of the backed-up tables is DROPPED rather than passed through. That matters
  * because `profiles` is deliberately excluded from backups (restoring it could
- * silently hand back an admin role that was removed on purpose) — a
+ * silently hand back an admin role that was removed on purpose) - a
  * hand-edited file naming it must not be able to sneak it back in.
  *
  * Missing tables are tolerated and treated as empty: older snapshots predate

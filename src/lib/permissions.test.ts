@@ -47,7 +47,7 @@ describe("structural permissions (admin-only)", () => {
 });
 
 describe("budget (admin only)", () => {
-  it("allows admin only — coordinator is view-only since v1.15", () => {
+  it("allows admin only - coordinator is view-only since v1.15", () => {
     expect(can.manageBudget(user("admin"))).toBe(true);
     expect(can.manageBudget(user("coordinator"))).toBe(false);
     expect(can.manageBudget(user("staff"))).toBe(false);
@@ -76,10 +76,10 @@ describe("access levels", () => {
   });
 });
 
-describe("manageTasks — limited roles write, only full deletes", () => {
+describe("manageTasks - limited roles write, only full deletes", () => {
   it("is NOT scoped to a division (regression: staff could only edit some tasks)", () => {
     // An account carries no division at all, so task rights can never narrow by
-    // one — the access matrix is the only authority. Migration 0028 removed the
+    // one - the access matrix is the only authority. Migration 0028 removed the
     // same assumption from RLS, where it was silently blocking every write.
     for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
       expect(can.manageTasks(user(r))).toBe(true);
@@ -101,7 +101,7 @@ describe("manageTasks — limited roles write, only full deletes", () => {
   });
 });
 
-describe("limited access — rundown / Hari-H / Super Link", () => {
+describe("limited access - rundown / Hari-H / Super Link", () => {
   it("staff & intern may write but not delete", () => {
     for (const r of ["staff", "intern"] as const) {
       expect(can.manageRundown(user(r))).toBe(true);
@@ -200,7 +200,7 @@ describe("isAssignedTo", () => {
     expect(isAssignedTo(u, task({ pic: "Fadhiil, Ali, Dona" }))).toBe(true);
     expect(isAssignedTo(u, task({ pic: "Ali Naina Izzan" }))).toBe(true);
   });
-  it("no longer matches on a substring — 'Ali' is not part of 'Alifia'", () => {
+  it("no longer matches on a substring - 'Ali' is not part of 'Alifia'", () => {
     const u = user("staff");
     u.name = "Ali Andro";
     expect(isAssignedTo(u, task({ pic: "Alifia Rahma" }))).toBe(false);
@@ -211,7 +211,7 @@ describe("isAssignedTo", () => {
     u.name = "A (Ketua)";
     expect(isAssignedTo(u, task({ pic: "A" }))).toBe(false); // first name too short
   });
-  it("does NOT fall back to a division — an account has none", () => {
+  it("does NOT fall back to a division - an account has none", () => {
     const u = user("staff");
     u.name = "X";
     expect(isAssignedTo(u, task({ division: "EVENT", pic: "" }))).toBe(false);
@@ -268,7 +268,7 @@ describe("accessModule / isReadOnly", () => {
   it("but only admin may run anything destructive in there", () => {
     // Opening a module read-only is not permission for its dangerous actions.
     // Backup / rollback / demo-reset all hang off can.manageBackups, which needs
-    // "full" — so widening settings to guest cannot leak them.
+    // "full" - so widening settings to guest cannot leak them.
     for (const r of ROLE_ORDER) {
       expect(can.manageBackups(user(r))).toBe(r === "admin");
     }

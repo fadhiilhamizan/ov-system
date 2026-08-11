@@ -1,12 +1,12 @@
 -- ============================================================
--- 0020 — Structured task results: description + N links, with optional
+-- 0020 - Structured task results: description + N links, with optional
 -- publishing of a link into Super Link.
 --
 -- `tasks.result` keeps holding the free-text DESCRIPTION. Each attached link
 -- becomes a row here instead of being pasted into that text, so we can:
 --   * validate each URL on its own,
 --   * publish a link into Super Link and remember WHICH links row it created
---     (`link_id`) — so re-saving the task updates that row instead of
+--     (`link_id`) - so re-saving the task updates that row instead of
 --     inserting a duplicate,
 --   * cascade: editing/removing the link here edits/removes the Super Link row.
 -- Run after 0001-0019.

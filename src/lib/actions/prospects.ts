@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createProspect, deleteProspect, updateProspect, bulkDeleteProspects,
-  getProspects, setPrimaryProspect, unsetPrimaryProspect, syncEventFromProspect,
+  getProspects, setPrimaryProspect, unsetPrimaryProspect, syncEventFromProspect, syncProspectLink,
 } from "@/lib/data/repo";
 import type { Prospect } from "@/lib/types";
 import { prospectSchema, prospectUpdateSchema, idSchema, parse } from "./schemas";
@@ -23,8 +23,12 @@ export async function createProspectAction(input: Partial<Prospect>): Promise<Re
   if (!g.ok) return g;
   const v = parse(prospectSchema, input);
   if (!v.ok) return v;
-  try { await createProspect(v.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("prospects");
+  try {
+    const id = await createProspect(v.data);
+    // Publish the prospect's link to Super Link when the box is ticked.
+    if (id) await syncProspectLink(id);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("prospects", "links");
   return { ok: true };
 }
 
@@ -35,7 +39,10 @@ export async function updateProspectAction(id: string, patch: Partial<Prospect>)
   if (!idv.ok) return idv;
   const v = parse(prospectUpdateSchema, patch);
   if (!v.ok) return v;
-  try { await updateProspect(idv.data, v.data); } catch (e) { return errMsg(e); }
+  try {
+    await updateProspect(idv.data, v.data);
+    await syncProspectLink(idv.data);
+  } catch (e) { return errMsg(e); }
   // Editing the primary prospect re-syncs the OV's partner/campus/location/mode.
   const updated = (await getProspects()).find((p) => p.id === idv.data);
   if (updated?.is_primary && updated.event_id) await syncEventFromProspect(updated.event_id, updated);

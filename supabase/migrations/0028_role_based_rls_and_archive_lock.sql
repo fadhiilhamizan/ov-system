@@ -1,5 +1,5 @@
 -- ============================================================
--- 0028 — Aturan tulis berbasis PERAN saja, + kunci arsip per Ormawa Visit.
+-- 0028 - Aturan tulis berbasis PERAN saja, + kunci arsip per Ormawa Visit.
 -- Jalankan SETELAH 0001-0027.
 --
 -- LATAR BELAKANG (kenapa migrasi ini ada):
@@ -19,7 +19,7 @@
 --   * policy restrictive "no_anon" (sesi anonim = baca saja).
 --
 -- YANG BARU:
---   * events.locked — Ormawa Visit yang diarsipkan. Selain Admin, tidak ada
+--   * events.locked - Ormawa Visit yang diarsipkan. Selain Admin, tidak ada
 --     peran yang bisa mengubah apa pun di dalamnya. Admin bisa membuka lagi.
 --   * Anggaran & Super Link kini juga tertutup untuk akun TERDAFTAR yang belum
 --     punya peran (role 'viewer'), bukan cuma untuk tamu anonim.
@@ -161,7 +161,7 @@ end $do$;
 -- 6) Kolom tugas: batasan kolom dari 0020/0026 dicabut.
 --    Alasannya, batasan itu dibuat untuk menahan Staff/Intern pada kolom
 --    status+hasil saja. Matriks sekarang memberi mereka "limited" (buat & ubah
---    penuh, tanpa hapus), jadi pembatasan kolomnya justru salah — dan sempat
+--    penuh, tanpa hapus), jadi pembatasan kolomnya justru salah - dan sempat
 --    memblokir kolom yang memang perlu ditulis form tugas.
 -- ------------------------------------------------------------------
 grant update on public.tasks to authenticated;
@@ -170,7 +170,7 @@ grant update on public.tasks to authenticated;
 -- 7) Baca Anggaran & Super Link: hanya akun yang sudah punya peran.
 --    0016 memakai `not is_anon()`, yang cukup ketika satu-satunya "Tamu"
 --    adalah sesi anonim. Sejak pendaftaran mandiri (0023) ada Tamu jenis
---    kedua — akun terdaftar dengan role 'viewer' — dan akun itu lolos.
+--    kedua - akun terdaftar dengan role 'viewer' - dan akun itu lolos.
 --    Matriks bilang Tamu tidak punya akses ke dua modul ini.
 -- ------------------------------------------------------------------
 do $do$

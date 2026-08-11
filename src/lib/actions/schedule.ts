@@ -23,7 +23,7 @@ const scopeOf = async (explicit?: string | null) => explicit ?? (await getActive
 export async function createRundownAction(input: Partial<RundownItem>): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageRundown(user)) return DENY;
-  // Empty rows are allowed — the rundown table lets you add a blank row and
+  // Empty rows are allowed - the rundown table lets you add a blank row and
   // fill it in inline.
   const v = parse(rundownSchema, input);
   if (!v.ok) return v;
@@ -67,7 +67,7 @@ export async function duplicateRundownAction(id: string): Promise<Result> {
   return { ok: true };
 }
 export async function deleteRundownAction(id: string): Promise<Result> {
-  // Deleting needs FULL access — "limited" roles (staff/intern) may add and
+  // Deleting needs FULL access - "limited" roles (staff/intern) may add and
   // edit rows but never remove them.
   const user = await getCurrentUser();
   if (!can.deleteRundown(user)) return DENY;
@@ -124,7 +124,7 @@ export async function duplicateJobAction(id: string): Promise<Result> {
   return { ok: true };
 }
 export async function deleteJobAction(id: string): Promise<Result> {
-  // Deleting needs FULL access — see deleteRundownAction.
+  // Deleting needs FULL access - see deleteRundownAction.
   const user = await getCurrentUser();
   if (!can.deleteJob(user)) return DENY;
   const idv = parse(idSchema, id);

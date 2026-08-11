@@ -37,7 +37,7 @@ describe("columnRoles", () => {
   it("keeps columns independent", () => {
     const items = [row({ merges: { mc: 2 } }), row({ merges: { EVENT: 2 } }), row()];
     expect(columnRoles(items, "mc")[1].kind).toBe("covered");
-    // The EVENT run starts on row 1, which MC covers — different column, so fine.
+    // The EVENT run starts on row 1, which MC covers - different column, so fine.
     expect(columnRoles(items, "EVENT")[1]).toEqual({ kind: "origin", span: 2 });
   });
 

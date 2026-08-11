@@ -139,7 +139,7 @@ export async function bulkUpdateTaskFieldsAction(
   if (!can.editTask(user)) return { ok: false, error: "Kamu tidak punya akses mengedit tugas." };
 
   const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
-  // One guard per distinct edition rather than per task — the selection is
+  // One guard per distinct edition rather than per task - the selection is
   // normally all in the active Ormawa Visit, so this is a single lookup.
   for (const eventId of new Set(tasks.map((t) => t.event_id))) {
     const blocked = await archivedGuard(user, eventId);
@@ -208,7 +208,7 @@ export async function deleteTaskAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   const task = await getTask(idv.data);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
-  // Deleting needs FULL access — "limited" roles (staff/intern) may create,
+  // Deleting needs FULL access - "limited" roles (staff/intern) may create,
   // edit and fill in results, but never delete.
   if (!can.deleteTask(user)) {
     return { ok: false, error: "Kamu tidak punya akses menghapus tugas ini." };

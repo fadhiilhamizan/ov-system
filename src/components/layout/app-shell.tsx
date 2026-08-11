@@ -32,7 +32,7 @@ export function AppShell({
   activeEventId: string;
   demoMode: boolean;
   sandboxMode: boolean;
-  /** The active Ormawa Visit is archived — read-only for everyone but admin. */
+  /** The active Ormawa Visit is archived - read-only for everyone but admin. */
   activeEventLocked?: boolean;
   defaultCollapsed?: boolean;
   /** Roles this account may request (empty = the flow doesn't apply to them). */
@@ -51,7 +51,7 @@ export function AppShell({
   const t = useT();
 
   // Persisted in a cookie (not localStorage) so the server can render the right
-  // width on first paint — no flash of the wrong sidebar.
+  // width on first paint - no flash of the wrong sidebar.
   function toggleCollapsed() {
     const next = !collapsed;
     setCollapsed(next);
@@ -64,7 +64,7 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh">
-      {/* Desktop sidebar — a rail when collapsed, expanding on hover. */}
+      {/* Desktop sidebar - a rail when collapsed, expanding on hover. */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden border-r border-sidebar-border transition-[width] duration-200 ease-out lg:block",
@@ -102,7 +102,7 @@ export function AppShell({
         </div>
       )}
 
-      {/* Main — padding follows the PERSISTED state only, so a hover-peek
+      {/* Main - padding follows the PERSISTED state only, so a hover-peek
           overlays the content instead of shoving it sideways. */}
       <div className={cn("transition-[padding] duration-200 ease-out", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
         {sandboxMode && <DemoBanner />}

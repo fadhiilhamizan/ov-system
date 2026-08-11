@@ -1,7 +1,7 @@
 -- ============================================================
 -- Scope members to a specific Ormawa Visit (different OV can have a
 -- different committee). Existing members are left unscoped (NULL),
--- meaning they show up for every OV — matches how prospects/links
+-- meaning they show up for every OV - matches how prospects/links
 -- were scoped in migration 0005. New members added going forward
 -- can be assigned to a specific event.
 -- ============================================================

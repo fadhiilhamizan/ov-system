@@ -1,19 +1,19 @@
 -- ============================================================
--- 0034 — Dua celah RLS yang tersisa di jalur migrasi (bukan di setup.sql).
+-- 0034 - Dua celah RLS yang tersisa di jalur migrasi (bukan di setup.sql).
 --
 -- A. task_links: kunci arsip bisa ditembus.
 --    Migrasi 0025 membuat policy `task_links_write` (FOR ALL, hanya cek peran,
 --    TANPA scope edisi). Migrasi 0028 menambah policy baru task_links_insert/
 --    update/delete yang ter-scope lewat writable_event(), TAPI lupa men-drop
---    `task_links_write` yang lama. Policy permissive di-OR — jadi policy lama
+--    `task_links_write` yang lama. Policy permissive di-OR - jadi policy lama
 --    yang longgar itu masih hidup dan tetap mengizinkan tulis di Ormawa Visit
 --    yang sudah DIARSIPKAN. Perbaikannya: buang policy basi itu.
 --    (setup.sql sudah benar sejak awal; ini hanya menutup jalur migrasi.)
 --
 -- B. Roster (members, teams) = PII bagi Tamu.
 --    Nama + NRP mahasiswa adalah data pribadi. Read policy-nya masih
---    `auth.uid() is not null`, jadi Tamu — sesi anonim maupun akun terdaftar
---    ber-peran 'viewer' — bisa menariknya. Diperketat ke has_role(): hanya
+--    `auth.uid() is not null`, jadi Tamu - sesi anonim maupun akun terdaftar
+--    ber-peran 'viewer' - bisa menariknya. Diperketat ke has_role(): hanya
 --    akun dengan peran nyata (admin/koordinator/staff/intern) yang boleh baca.
 --    teams ikut ditutup karena coordinator/fungsionaris/intern juga nama.
 --

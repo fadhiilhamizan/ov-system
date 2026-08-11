@@ -6,7 +6,7 @@ import {
   createEvent, updateEvent, deleteEvent, setEventLocked, cloneEventData, getEvent,
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
-  createTeam, updateTeam, deleteTeam,
+  createTeam, updateTeam, deleteTeam, getMembers,
 } from "@/lib/data/repo";
 import type { CloneSources, Division, Member, OVEvent, Team } from "@/lib/types";
 import { CLONE_MODULES } from "@/lib/types";
@@ -15,7 +15,7 @@ import { getActiveEvent } from "@/lib/session";
 import {
   eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, idSchema, parse,
 } from "./schemas";
-import { divisionFields } from "@/lib/members";
+import { divisionFields, memberDivisions, withDivisionAdded, withDivisionRemoved } from "@/lib/members";
 import { archivedGuard } from "./lock";
 
 /** Keep the legacy primary `division` column in step with `divisions[]`. */
@@ -73,7 +73,7 @@ function cleanSources(
  * Copy menus into an Ormawa Visit that already exists.
  *
  * Destructive by design: each chosen menu has the target's current rows deleted
- * and replaced by the source's. The dialog says so in as many words — without
+ * and replaced by the source's. The dialog says so in as many words - without
  * the wipe a second copy would simply stack duplicates, which is the bug this
  * project has already paid for twice.
  */
@@ -208,6 +208,46 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
   if (!v.ok) return v;
   try { await bulkUpdateMembers(idv.data, withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
+  return { ok: true };
+}
+
+/**
+ * Put EXISTING members into a division, or take them out of it.
+ *
+ * Distinct from `bulkUpdateMembersAction`, which REPLACES the whole divisions
+ * array: that is right for "set these people's division", but wrong for
+ * "also add them to Konsumsi" because it would strip every other division they
+ * belong to. Here each member keeps what they had (see `withDivisionAdded`).
+ */
+export async function setMembersDivisionAction(
+  ids: string[],
+  divisionKey: string,
+  member: boolean,
+): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.manageMembers(user)) return DENY;
+  const idv = parseIds(ids);
+  if (!idv.ok) return idv;
+  const keyv = parse(idSchema, divisionKey);
+  if (!keyv.ok) return keyv;
+
+  const event = await getActiveEvent();
+  const blocked = await archivedGuard(user, event.id);
+  if (blocked) return blocked;
+
+  const wanted = new Set(idv.data);
+  const roster = (await getMembers(event.id)).filter((m) => wanted.has(m.id));
+  try {
+    for (const m of roster) {
+      const next = member
+        ? withDivisionAdded(m, keyv.data)
+        : withDivisionRemoved(m, keyv.data);
+      // Skip the write when nothing actually changes.
+      if (next.join(" ") === memberDivisions(m).join(" ")) continue;
+      await updateMember(m.id, divisionFields(next));
+    }
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("members", "teams");
   return { ok: true };
 }
 

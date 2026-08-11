@@ -1,8 +1,8 @@
 -- ============================================================
--- 0035 — Rundown jadi SATU versi (buang sisa 'variant B').
+-- 0035 - Rundown jadi SATU versi (buang sisa 'variant B').
 --
 -- Dulu rundown punya dua versi berdampingan (A & B). Versi B dihapus dari UI
--- sejak v1.13.0, tapi baris datanya masih tertinggal di sebagian edisi — dan
+-- sejak v1.13.0, tapi baris datanya masih tertinggal di sebagian edisi - dan
 -- halaman rundown menampilkan SEMUA baris tanpa menyaring variant, jadi tiap
 -- kegiatan muncul dua kali. Itulah "duplikat rundown" yang terlihat.
 --

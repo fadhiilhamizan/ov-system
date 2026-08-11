@@ -1,4 +1,4 @@
-// The English map. 33KB — deliberately kept OUT of the client bundle: it is
+// The English map. 33KB - deliberately kept OUT of the client bundle: it is
 // imported only by the server translator and by a server-side dynamic import
 // in the root layout (see lib/i18n/dict.ts). Never import this from a
 // "use client" module, or every visitor downloads it.
@@ -163,9 +163,9 @@ export const EN: Record<string, string> = {
   "Struktur tim untuk": "Team structure for",
   "Belum ada struktur tim": "No team structure yet",
   "Struktur tim untuk Ormawa Visit ini belum diisi.": "The team structure for this Ormawa Visit hasn't been filled in yet.",
-  "ditambahkan — lanjut menambahkan anggota lain": "added — keep adding more members",
+  "ditambahkan - lanjut menambahkan anggota lain": "added - keep adding more members",
   "Anggota diperbarui": "Member updated",
-  "Dialog tetap terbuka setelah menambah, cocok untuk mengisi banyak anggota sekaligus.": "The dialog stays open after adding — handy for entering many members at once.",
+  "Dialog tetap terbuka setelah menambah, cocok untuk mengisi banyak anggota sekaligus.": "The dialog stays open after adding - handy for entering many members at once.",
   "Anggota External Affairs (fungsionaris atau intern).": "External Affairs members (functionaries or interns).",
   "Nama lengkap": "Full name",
   "Nama panggilan": "Nickname",
@@ -196,13 +196,13 @@ export const EN: Record<string, string> = {
   "Kamu tidak punya akses mengubah status tugas ini.": "You don't have access to change this task's status.",
   "Geser": "Drag",
 
-  // Calendar — months
+  // Calendar - months
   "Januari": "January", "Februari": "February", "Maret": "March", "April": "April",
   "Mei": "May", "Juni": "June", "Juli": "July", "Agustus": "August",
   "September": "September", "Oktober": "October", "November": "November", "Desember": "December",
-  // Calendar — days
+  // Calendar - days
   "Min": "Sun", "Sen": "Mon", "Sel": "Tue", "Rab": "Wed", "Kam": "Thu", "Jum": "Fri", "Sab": "Sat",
-  // Calendar — misc
+  // Calendar - misc
   "Hari ini": "Today",
   "lagi": "more",
   "Hari pelaksanaan": "Event day",
@@ -210,7 +210,7 @@ export const EN: Record<string, string> = {
   "Belum ada tugas dengan deadline di hari ini.": "No tasks are due on this day.",
   "Tambah tugas di tanggal ini": "Add a task on this date",
 
-  // Timeline — month abbreviations
+  // Timeline - month abbreviations
   "Jan": "Jan", "Feb": "Feb", "Mar": "Mar", "Apr": "Apr", "Jun": "Jun",
   "Jul": "Jul", "Ags": "Aug", "Sep": "Sep", "Okt": "Oct", "Nov": "Nov", "Des": "Dec",
   "Belum ada tugas berjadwal": "No scheduled tasks yet",
@@ -243,9 +243,9 @@ export const EN: Record<string, string> = {
   "Agenda dihapus": "Agenda item deleted",
 
   // FAQ
-  "Pertanyaan yang sering diajukan seputar Ormawa Visit - External Affairs HMSI ITS.": "Frequently asked questions about Ormawa Visit — External Affairs HMSI ITS.",
+  "Pertanyaan yang sering diajukan seputar Ormawa Visit - External Affairs HMSI ITS.": "Frequently asked questions about Ormawa Visit - External Affairs HMSI ITS.",
   "Masih ada pertanyaan?": "Still have questions?",
-  "Tanyakan ke PIC Ormawa Visit atau fungsionaris yang menemani tugasmu, jangan malu bertanya ya :)": "Ask the Ormawa Visit PIC or the functionary supervising your task — don't be shy to ask :)",
+  "Tanyakan ke PIC Ormawa Visit atau fungsionaris yang menemani tugasmu, jangan malu bertanya ya :)": "Ask the Ormawa Visit PIC or the functionary supervising your task - don't be shy to ask :)",
 
   // Settings
   "Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Management System.": "System configuration, role permissions, backups, and Ormawa Visit Management System info.",
@@ -270,7 +270,7 @@ export const EN: Record<string, string> = {
 
   // Demo mode (separate database)
   "Coba Mode Demo (database terpisah)": "Try Demo Mode (separate database)",
-  "Mode Demo — database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.": "Demo Mode — separate database, safe to experiment. Changes don't affect real data.",
+  "Mode Demo - database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.": "Demo Mode - separate database, safe to experiment. Changes don't affect real data.",
 
   // Divisions
   "maks. 4 huruf": "max 4 letters",
@@ -292,7 +292,7 @@ export const EN: Record<string, string> = {
   "Otomatis dari waktu": "Auto from time",
   "Menyimpan…": "Saving…",
   "Belum ada baris rundown untuk versi ini.": "No rundown rows for this version yet.",
-  "Susunan acara hari-H: tiap divisi menjadi kolom, isi kegiatannya langsung di tabel.": "Event-day schedule: each division is a column — fill its activity in the table.",
+  "Susunan acara hari-H: tiap divisi menjadi kolom, isi kegiatannya langsung di tabel.": "Event-day schedule: each division is a column - fill its activity in the table.",
 
   // FAQ CRUD
   "FAQ ditambahkan": "FAQ added",
@@ -324,7 +324,7 @@ export const EN: Record<string, string> = {
   "Belum diisi.": "Not filled in yet.",
   "atasan divisi": "division lead",
   // Task result links
-  "Hasil — deskripsi": "Result — description",
+  "Hasil - deskripsi": "Result - description",
   "Ringkas apa yang sudah dikerjakan / hasilnya": "Summarise what was done / the outcome",
   "Tautan hasil": "Result links",
   "Tambah tautan": "Add link",
@@ -371,7 +371,7 @@ export const EN: Record<string, string> = {
 
   // Event template (clone)
   "Salin data dari Ormawa Visit lain (template)": "Copy data from another Ormawa Visit (template)",
-  "Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Bisa diedit setelahnya.": "Save time — data is copied as a starting skeleton (status, PIC, and dates are cleared). Editable afterwards.",
+  "Hemat waktu - data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Bisa diedit setelahnya.": "Save time - data is copied as a starting skeleton (status, PIC, and dates are cleared). Editable afterwards.",
   "Tidak menyalin (kosong)": "Don't copy (empty)",
   "Tugas (WBS)": "Tasks (WBS)",
   "Job Hari-H": "D-Day jobs",
@@ -625,8 +625,8 @@ export const EN: Record<string, string> = {
 
   // Access levels (settings matrix)
   "Akses terbatas": "Limited access",
-  "Akses terbatas: bisa membuat, mengubah, dan mengisi hasil — tapi tidak bisa menghapus.":
-    "Limited access: can create, edit, and fill in results — but cannot delete.",
+  "Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.":
+    "Limited access: can create, edit, and fill in results - but cannot delete.",
   "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat":
     "Manages Work Breakdown, Rundown, D-Day & Super Link; view-only elsewhere",
   "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)":
@@ -648,8 +648,8 @@ export const EN: Record<string, string> = {
   "Masuk dengan Google": "Sign in with Google",
   "Daftar dengan Google": "Sign up with Google",
   "Kode otorisasi tidak ditemukan.": "Authorization code not found.",
-  "Akun baru belum punya peran — kamu bisa melihat data, lalu ajukan peran (Koordinator / Staff / Intern) lewat menu akun untuk disetujui admin.":
-    "A new account has no role — you can view data, then request a role (Coordinator / Staff / Intern) from the account menu for an admin to approve.",
+  "Akun baru belum punya peran - kamu bisa melihat data, lalu ajukan peran (Koordinator / Staff / Intern) lewat menu akun untuk disetujui admin.":
+    "A new account has no role - you can view data, then request a role (Coordinator / Staff / Intern) from the account menu for an admin to approve.",
 
   // Role requests
   "Role Request": "Role Request",
@@ -667,8 +667,8 @@ export const EN: Record<string, string> = {
   "Catatan untuk admin": "Note for the admin",
   "Contoh: staff divisi Event": "e.g. staff of the Event division",
   "Kirim permintaan": "Send request",
-  "Pilih peran yang kamu inginkan — admin akan menyetujui atau mengabaikannya. Peran berlaku untuk semua Ormawa Visit.":
-    "Pick the role you want — an admin will approve or ignore it. A role applies across every Ormawa Visit.",
+  "Pilih peran yang kamu inginkan - admin akan menyetujui atau mengabaikannya. Peran berlaku untuk semua Ormawa Visit.":
+    "Pick the role you want - an admin will approve or ignore it. A role applies across every Ormawa Visit.",
   "Pengajuanmu belum diputuskan admin, jadi masih bisa diperbaiki.":
     "An admin hasn't decided on your request yet, so you can still correct it.",
   "Pengajuan peran diperbarui.": "Role request updated.",
@@ -706,8 +706,8 @@ export const EN: Record<string, string> = {
   "Anggota divisi terisi otomatis dari data Anggota EA. Di sini kamu hanya menunjuk koordinatornya.":
     "A division's members come automatically from the EA Members list. All you set here is who coordinates it.",
   "hanya fungsionaris, boleh dikosongkan": "staff only; may be left empty",
-  "Belum ada fungsionaris di divisi ini — tambahkan lewat tab Anggota EA dulu.":
-    "This division has no staff yet — add them in the EA Members tab first.",
+  "Belum ada fungsionaris di divisi ini - tambahkan lewat tab Anggota EA dulu.":
+    "This division has no staff yet - add them in the EA Members tab first.",
   "Anggota divisi ini": "Members of this division",
   "Belum ada. Tetapkan divisi anggota di tab Anggota EA.":
     "None yet. Assign members to this division in the EA Members tab.",
@@ -724,8 +724,8 @@ export const EN: Record<string, string> = {
   // Role Request in demo mode
   "Kenapa Role Request tidak berfungsi di Mode Demo?":
     "Why doesn't Role Request work in Demo Mode?",
-  "Mode Demo memakai database terpisah berisi data contoh, bukan data asli — jadi tidak ada akun sungguhan di dalamnya.":
-    "Demo Mode runs on a separate database of sample data, not the real one — so there are no real accounts in it.",
+  "Mode Demo memakai database terpisah berisi data contoh, bukan data asli - jadi tidak ada akun sungguhan di dalamnya.":
+    "Demo Mode runs on a separate database of sample data, not the real one - so there are no real accounts in it.",
   "Di Mode Demo kamu tidak login: identitas diambil dari tombol peran di kanan atas, bukan dari akun. Karena itu tidak ada akun yang bisa mengajukan peran, dan tidak ada peran yang bisa disimpan.":
     "In Demo Mode you are not logged in: your identity comes from the role button at the top right, not from an account. So there is no account to file a request, and no role to save.",
   "Menyetujui pengajuan berarti mengubah peran sebuah akun. Tanpa akun, tidak ada yang bisa diubah.":
@@ -749,10 +749,10 @@ export const EN: Record<string, string> = {
   "Buka kunci arsip": "Unlock archive",
   "Ormawa Visit diarsipkan": "Ormawa Visit archived",
   "Kunci Ormawa Visit ini sebagai arsip?": "Lock this Ormawa Visit as an archive?",
-  "Diarsipkan — hanya admin yang bisa mengubah isinya.":
-    "Archived — only an admin can change its contents.",
-  "Arsip dibuka — semua peran bisa mengubah lagi.":
-    "Archive unlocked — every role can make changes again.",
+  "Diarsipkan - hanya admin yang bisa mengubah isinya.":
+    "Archived - only an admin can change its contents.",
+  "Arsip dibuka - semua peran bisa mengubah lagi.":
+    "Archive unlocked - every role can make changes again.",
   "akan jadi hanya-baca. Koordinator, Staff, dan Intern tidak bisa lagi mengubah tugas, rundown, Hari-H, atau tautannya. Hanya admin yang bisa mengubah isinya dan membuka kuncinya kembali.":
     "will become read-only. Coordinators, Staff, and Interns can no longer change its tasks, rundown, event-day jobs, or links. Only an admin can edit it and unlock it again.",
   "Ormawa Visit ini sudah diarsipkan. Minta admin membuka kuncinya dulu.":
@@ -770,20 +770,20 @@ export const EN: Record<string, string> = {
   "pilih": "select",
   "buka": "open",
   "Hasil mengikuti Ormawa Visit yang aktif": "Results follow the active Ormawa Visit",
-  // Timeline (v1.20.0) — "Hari ini" is already defined above.
+  // Timeline (v1.20.0) - "Hari ini" is already defined above.
   "hari": "days",
   // Backup (v1.20.0)
-  "Backup dibuat manual — klik tombol di kanan sebelum melakukan perubahan besar. Setiap backup bisa diunduh sebagai JSON atau dipulihkan kembali.":
-    "Backups are manual — use the button on the right before any big change. Each backup can be downloaded as JSON or restored.",
+  "Backup dibuat manual - klik tombol di kanan sebelum melakukan perubahan besar. Setiap backup bisa diunduh sebagai JSON atau dipulihkan kembali.":
+    "Backups are manual - use the button on the right before any big change. Each backup can be downloaded as JSON or restored.",
   "Otomatis (lama)": "Automatic (legacy)",
   // Search palette + archive banner (v1.21.0)
   "Tutup pencarian": "Close search",
   "Pencarian terakhir": "Recent searches",
   "Bersihkan": "Clear",
-  "Ormawa Visit ini diarsipkan — hanya kamu (admin) yang masih bisa mengubah isinya. Buka kunci dari menu Daftar Ormawa Visit.":
-    "This Ormawa Visit is archived — only you (admin) can still change its contents. Unlock it from the Ormawa Visit list.",
-  "Ormawa Visit ini diarsipkan — isinya hanya bisa dilihat. Minta admin membuka kuncinya untuk mengubah data.":
-    "This Ormawa Visit is archived — its contents are read-only. Ask an admin to unlock it to make changes.",
+  "Ormawa Visit ini diarsipkan - hanya kamu (admin) yang masih bisa mengubah isinya. Buka kunci dari menu Daftar Ormawa Visit.":
+    "This Ormawa Visit is archived - only you (admin) can still change its contents. Unlock it from the Ormawa Visit list.",
+  "Ormawa Visit ini diarsipkan - isinya hanya bisa dilihat. Minta admin membuka kuncinya untuk mengubah data.":
+    "This Ormawa Visit is archived - its contents are read-only. Ask an admin to unlock it to make changes.",
   // Performance Measurement (v1.22.0)
   "Performance Measurement": "Performance Measurement",
   "Diisi setelah acara selesai. Angkanya tampil di Dashboard. Boleh dikosongkan dulu.":
@@ -809,8 +809,8 @@ export const EN: Record<string, string> = {
   "Pisahkan sel": "Split cell",
   // Settings archive (v1.22.0)
   "Arsip Spreadsheet": "Spreadsheet Archive",
-  "Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan — semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.":
-    "The original Main Sheets from before this system existed. Kept for reference — every Ormawa Visit that predates this app is recorded there.",
+  "Main Sheet asli sebelum sistem ini dibuat. Disimpan sebagai rujukan - semua riwayat Ormawa Visit sebelum aplikasi ini ada tercatat di sana.":
+    "The original Main Sheets from before this system existed. Kept for reference - every Ormawa Visit that predates this app is recorded there.",
   "Daftar nama & NRP anggota hanya tampil untuk akun yang sudah punya peran. Ajukan peran lewat menu akun untuk melihatnya.":
     "Member names & student IDs are only shown to accounts that already have a role. Request a role from the account menu to see them.",
   // Autosave indicator (v1.25.0)
@@ -822,14 +822,14 @@ export const EN: Record<string, string> = {
   "Tunggu": "Wait",
   // Settings: open source (v1.27.0)
   "Kode Sumber Terbuka": "Open Source",
-  "Seluruh kode yang membangun website ini bersifat open source — siapa pun boleh melihat, mempelajari, atau ikut mengembangkannya lewat repositori GitHub di bawah.":
-    "All the code behind this website is open source — anyone may read it, learn from it, or help develop it through the GitHub repository below.",
+  "Seluruh kode yang membangun website ini bersifat open source - siapa pun boleh melihat, mempelajari, atau ikut mengembangkannya lewat repositori GitHub di bawah.":
+    "All the code behind this website is open source - anyone may read it, learn from it, or help develop it through the GitHub repository below.",
   "Lihat di GitHub": "View on GitHub",
   "Kode sumber:": "Source code:",
   // Work Breakdown bulk edit (v1.28.0)
   "Ubah massal": "Bulk edit",
-  "tugas terpilih. Centang kolom yang ingin diubah — kolom yang tidak dicentang dibiarkan apa adanya.":
-    "tasks selected. Tick the fields you want to change — unticked fields are left as they are.",
+  "tugas terpilih. Centang kolom yang ingin diubah - kolom yang tidak dicentang dibiarkan apa adanya.":
+    "tasks selected. Tick the fields you want to change - unticked fields are left as they are.",
   "Dibiarkan kosong = PIC dikosongkan.": "Left blank = the PIC is cleared.",
   "Dibiarkan kosong = deadline dihapus.": "Left blank = the deadline is removed.",
   "Terapkan ke": "Apply to",
@@ -845,8 +845,8 @@ export const EN: Record<string, string> = {
   "Salin data dari Ormawa Visit lain…": "Copy data from another Ormawa Visit…",
   "Bisa juga menyalin data menu tertentu dari Ormawa Visit lain ke Ormawa Visit ini.":
     "You can also copy specific menus from another Ormawa Visit into this one.",
-  "Hemat waktu — data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.":
-    "Save time — data is copied as a starting skeleton (status, PIC, and dates cleared). Each menu can come from a different Ormawa Visit.",
+  "Hemat waktu - data disalin sebagai kerangka awal (status, PIC, dan tanggal dikosongkan). Tiap menu bisa diambil dari Ormawa Visit yang berbeda.":
+    "Save time - data is copied as a starting skeleton (status, PIC, and dates cleared). Each menu can come from a different Ormawa Visit.",
   "PERINGATAN: data menu yang dicentang di Ormawa Visit ini akan DIHAPUS dan diganti dengan salinan dari Ormawa Visit yang dipilih. Menu yang tidak dicentang tidak tersentuh.":
     "WARNING: the ticked menus' data in THIS Ormawa Visit will be DELETED and replaced with a copy from the selected Ormawa Visit. Unticked menus are left untouched.",
   "Ormawa Visit diperbarui & data disalin": "Ormawa Visit updated & data copied",
@@ -868,8 +868,8 @@ export const EN: Record<string, string> = {
   "Ulangi kata sandi baru": "Repeat new password",
   "Kata sandi saat ini salah.": "Your current password is incorrect.",
   "Kata sandi berhasil diubah": "Password changed",
-  "Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu — bukan di sini.":
-    "This account signs in with Google, so its password is managed in your Google account — not here.",
+  "Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu - bukan di sini.":
+    "This account signs in with Google, so its password is managed in your Google account - not here.",
   "Tutup": "Close",
   // Work Breakdown & Rundown focus filters (v1.30.0)
   "Fokus PIC": "PIC focus",
@@ -884,15 +884,40 @@ export const EN: Record<string, string> = {
   "Tidak ada divisi yang diikutsertakan pada rundown.":
     "No division is included in the rundown.",
   "Tambah anggota": "Add member",
+  // Changelog categories (v1.31.0). Reached through t(CHANGE_KIND[k].label),
+  // which the coverage scanner cannot see, so they are listed by hand.
+  "Baru": "New",
+  "Perbaikan": "Fix",
+  "Keamanan": "Security",
+  "Tampilan": "UI",
+  "Data": "Data",
+  "Tidak ada perubahan pada kategori itu.": "No changes in that category.",
+  // Reach & Offer link + notes (v1.31.0)
+  "Tautan (opsional)": "Link (optional)",
+  "Misalnya handbook, profil organisasi, atau proposal dari himpunan tersebut.":
+    "For example their handbook, org profile, or a proposal they sent back.",
+  "Nama tautan": "Link name",
+  "Handbook himpunan": "Their handbook",
+  "Catatan bebas tentang prospek ini.": "Free-text notes about this prospect.",
+  // Add existing members to a division (v1.31.0)
+  "Tambah anggota ke": "Add members to",
+  "Pilih anggota yang sudah terdaftar. Divisi lain yang mereka ikuti tidak akan hilang.":
+    "Pick people already on the roster. The other divisions they belong to are kept.",
+  "Semua anggota sudah masuk divisi ini": "Everyone is already in this division",
+  "Tambahkan orang baru lewat tab Anggota EA kalau memang belum terdaftar.":
+    "Add a brand-new person from the EA Members tab if they are not on the roster yet.",
+  "Pilih semua yang tampil": "Select all shown",
+  "Tambahkan": "Add",
+  "anggota ditambahkan ke": "members added to",
 
   // ==========================================================
-  // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the
+  // v1.23.0 - gap closed by src/lib/i18n/coverage.test.ts, which now fails the
   // build when a t() string has no entry here. Everything below was showing in
   // Indonesian even with the language set to English.
   // ==========================================================
 
   // --- Panduan flowchart ---
-  "Mulai — buka aplikasi": "Start — open the app",
+  "Mulai - buka aplikasi": "Start - open the app",
   "Login, Mode Demo, atau Mode Tamu.": "Sign in, Demo Mode, or Guest Mode.",
   "Masuk ke sistem": "Sign in",
   "Login dengan email & kata sandi.": "Sign in with your email and password.",
@@ -928,7 +953,7 @@ export const EN: Record<string, string> = {
   "Acara sudah selesai?": "Has the event finished?",
   "Kembali memantau progres di Dashboard sampai semua tugas Done.":
     "Go back to watching progress on the Dashboard until every task is Done.",
-  "Selesai — evaluasi & arsip": "Done — evaluate & archive",
+  "Selesai - evaluasi & arsip": "Done - evaluate & archive",
   "Isi catatan/evaluasi (mis. 'terlalu cepat/lama') pada rundown, lalu buat laporan akhir.":
     "Add notes/evaluations (e.g. 'ran too fast/slow') on the rundown, then write the final report.",
   "Langkah": "Step",
@@ -940,8 +965,8 @@ export const EN: Record<string, string> = {
   "Edit Ormawa Visit": "Edit Ormawa Visit",
   "Edit Divisi": "Edit Division",
   "Edit Anggota": "Edit Member",
-  "Ini masih rencana — cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.":
-    "This is still a plan — just fill in the name and dates. Details like partner, campus, location, type, and mode can be left empty for now; they fill in automatically from the primary prospect in Reach & Offer.",
+  "Ini masih rencana - cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.":
+    "This is still a plan - just fill in the name and dates. Details like partner, campus, location, type, and mode can be left empty for now; they fill in automatically from the primary prospect in Reach & Offer.",
   "Pilih dari anggota divisi ini": "Choose from this division's members",
   "Pilih koordinator…": "Choose a coordinator…",
 

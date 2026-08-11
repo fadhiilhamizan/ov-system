@@ -1,5 +1,5 @@
 -- ============================================================
--- Ormawa Visit Management System — SETUP LENGKAP (satu file)
+-- Ormawa Visit Management System - SETUP LENGKAP (satu file)
 -- Setara migrasi 0001–0028 · v1.20.0
 --
 -- CARA PAKAI: tempel SELURUH isi file ini ke Supabase SQL Editor, lalu Run.
@@ -10,13 +10,13 @@
 -- file ini TIDAK memuat satu pun perintah yang menghapus atau menimpa data.
 --
 -- Yang TIDAK ada di sini, dan memang tidak boleh ada:
---   * Migrasi data sekali-jalan — 0004 (isi FAQ), 0007 (perbaikan URL Super
+--   * Migrasi data sekali-jalan - 0004 (isi FAQ), 0007 (perbaikan URL Super
 --     Link), 0013 (hapus RAB HMD), 0019 (roster asli HMSI). Semuanya sudah
 --     dijalankan di produksi; mengulangnya akan menimpa data yang sekarang.
---   * Backfill sekali-jalan (0005/0012/0014/0018/0027) — hanya relevan untuk
+--   * Backfill sekali-jalan (0005/0012/0014/0018/0027) - hanya relevan untuk
 --     database yang isinya masih berformat lama. Kalau kamu memang menyiapkan
 --     project baru dari nol, jalankan `supabase/seed.sql` setelah file ini.
---   * 0006 (bucket Storage) — fiturnya sudah dicabut, bucketnya tidak dipakai.
+--   * 0006 (bucket Storage) - fiturnya sudah dicabut, bucketnya tidak dipakai.
 --
 -- SETELAH menjalankan file ini:
 --   1. Supabase → Authentication → Providers → aktifkan "Anonymous sign-ins"
@@ -24,7 +24,7 @@
 --   2. Untuk login Google: aktifkan provider Google, callback
 --      https://<domain-kamu>/auth/callback
 --   3. Project DEMO saja: lanjutkan dengan supabase/demo/demo-open-access.sql
---      (mematikan RLS — JANGAN PERNAH dijalankan di produksi).
+--      (mematikan RLS - JANGAN PERNAH dijalankan di produksi).
 -- ============================================================
 
 begin;
@@ -178,7 +178,7 @@ create table if not exists tasks (
 -- ID warisan dari spreadsheet, dibuang di 0008.
 alter table tasks drop column if exists source_id;
 -- Sejak 0018 sebuah key divisi boleh berulang antar edisi, jadi tasks.division
--- bukan lagi foreign key — relasinya diselesaikan di aplikasi via (event_id, key).
+-- bukan lagi foreign key - relasinya diselesaikan di aplikasi via (event_id, key).
 alter table tasks drop constraint if exists tasks_division_fkey;
 alter table members drop constraint if exists members_division_fkey;
 create index if not exists tasks_event_idx on tasks(event_id);
@@ -241,9 +241,20 @@ create table if not exists prospects (
 alter table prospects add column if not exists event_id text references events(id) on delete set null;
 alter table prospects add column if not exists mode text;
 alter table prospects add column if not exists is_primary boolean not null default false;
+-- 0036: tautan + catatan per prospek. `link_in_super_link`/`link_id` meniru
+-- task_links: kalau dicentang, tautannya juga jadi entri Super Link dan
+-- `link_id` mengingat baris mana, supaya mengubah/menghapusnya di sini ikut
+-- memperbarui Super Link alih-alih meninggalkan entri yatim.
+alter table prospects add column if not exists link text default '';
+alter table prospects add column if not exists link_label text default '';
+alter table prospects add column if not exists notes text default '';
+alter table prospects add column if not exists link_in_super_link boolean not null default false;
+alter table prospects add column if not exists link_id uuid references links(id) on delete set null;
 create index if not exists prospects_event_idx on prospects(event_id);
 -- Paling banyak satu prospek utama per Ormawa Visit.
 create unique index if not exists prospects_primary_uniq on prospects(event_id) where is_primary;
+-- Satu baris Super Link hanya boleh dimiliki satu prospek.
+create unique index if not exists prospects_link_uniq on prospects(link_id) where link_id is not null;
 
 -- 2.9 budget -------------------------------------------------------
 create table if not exists budget_plans (
@@ -376,7 +387,7 @@ comment on column role_requests.event_id is
 -- ------------------------------------------------------------------
 
 -- Buat profil otomatis untuk setiap akun baru. Berlaku juga untuk sesi
--- ANONIM (tombol Tamu), yang emailnya NULL — karena itu ada cadangan 'Tamu',
+-- ANONIM (tombol Tamu), yang emailnya NULL - karena itu ada cadangan 'Tamu',
 -- sebab profiles.name NOT NULL dan kegagalan di sini membatalkan seluruh
 -- proses pendaftaran. Google menaruh nama di `full_name`.
 create or replace function handle_new_user() returns trigger
@@ -551,13 +562,13 @@ create trigger trg_assign_job_no before insert on job_harih
 -- 5. Row Level Security
 --
 -- PENTING: kunci anon key BERSIFAT PUBLIK dan token sesi ada di browser
--- pengguna, jadi penyerang tidak perlu lewat aplikasi — ia memanggil PostgREST
+-- pengguna, jadi penyerang tidak perlu lewat aplikasi - ia memanggil PostgREST
 -- langsung. Artinya RLS adalah SATU-SATUNYA batas keamanan yang nyata;
 -- pemeriksaan `can.*` di src/lib/permissions.ts hanya untuk pengalaman
 -- pengguna. Setiap tabel baru WAJIB datang bersama policy-nya di sini.
 --
 -- Aturan tulis mengikuti MODULE_ACCESS_LEVEL di src/lib/constants.ts, dan
--- HANYA berdasarkan PERAN — tidak ada penyaringan per divisi maupun per edisi
+-- HANYA berdasarkan PERAN - tidak ada penyaringan per divisi maupun per edisi
 -- (lihat 0028: asumsi itu membuat semua penyimpanan gagal diam-diam).
 -- ------------------------------------------------------------------
 
@@ -574,7 +585,7 @@ end $do$;
 
 -- 5.1 Baca ---------------------------------------------------------
 -- Tabel operasional: setiap sesi masuk, termasuk Tamu anonim.
--- members & teams SENGAJA TIDAK di sini — roster memuat nama + NRP (PII), lihat
+-- members & teams SENGAJA TIDAK di sini - roster memuat nama + NRP (PII), lihat
 -- blok berikutnya.
 do $do$
 declare t text;
@@ -591,8 +602,8 @@ begin
 end $do$;
 
 -- Roster (members, teams): hanya akun BERPERAN yang boleh membacanya. Nama dan
--- NRP mahasiswa adalah data pribadi, jadi Tamu — baik sesi anonim maupun akun
--- terdaftar yang perannya masih 'viewer' — tidak boleh menariknya (has_role()
+-- NRP mahasiswa adalah data pribadi, jadi Tamu - baik sesi anonim maupun akun
+-- terdaftar yang perannya masih 'viewer' - tidak boleh menariknya (has_role()
 -- menolak keduanya). Kolom teams.coordinator/fungsionaris/intern juga nama, jadi
 -- teams ikut ditutup, bukan cuma members.
 do $do$
@@ -753,7 +764,7 @@ end $do$;
 
 -- ------------------------------------------------------------------
 -- 6. Hak kolom
---    RLS tidak bisa menyatakan "semua kolom KECUALI yang ini" — itu urusan
+--    RLS tidak bisa menyatakan "semua kolom KECUALI yang ini" - itu urusan
 --    GRANT. Inilah perbaikan sesungguhnya untuk celah angkat-diri-jadi-admin.
 -- ------------------------------------------------------------------
 revoke update on public.profiles from authenticated, anon;
@@ -767,7 +778,7 @@ grant update on public.tasks to authenticated;
 commit;
 
 -- ------------------------------------------------------------------
--- 7. Verifikasi — semuanya harus mengembalikan `true`.
+-- 7. Verifikasi - semuanya harus mengembalikan `true`.
 -- ------------------------------------------------------------------
 select
   (select count(*) from pg_tables where schemaname = 'public') >= 16            as tabel_lengkap,

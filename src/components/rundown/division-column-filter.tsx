@@ -12,7 +12,7 @@ import type { Division } from "@/lib/types";
 /**
  * Choose which division columns the rundown shows.
  *
- * The rundown is the widest table in the app — one column per division — so on
+ * The rundown is the widest table in the app - one column per division - so on
  * a laptop or a phone most of it is off-screen. Ticking a couple of divisions
  * makes it readable without changing any data.
  *

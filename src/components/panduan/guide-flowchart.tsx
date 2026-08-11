@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n/provider";
 
 // A hand-built, responsive flowchart of how to use the app end-to-end.
 // Node kinds: terminal (pill), process (card), decision (branches with
-// conditions — if / and / or logic made explicit through branch labels).
+// conditions - if / and / or logic made explicit through branch labels).
 
 function Down() {
   return <div className="mx-auto h-6 w-px bg-border" aria-hidden />;
@@ -80,15 +80,15 @@ export function GuideFlowchart() {
   const t = useT();
   return (
     <div className="space-y-0.5">
-      <Terminal tone="start" icon={<Play className="size-4" />}>{t("Mulai — buka aplikasi")}</Terminal>
+      <Terminal tone="start" icon={<Play className="size-4" />}>{t("Mulai - buka aplikasi")}</Terminal>
       <Down />
 
       <Decision
         question={t("Sudah punya akun?")}
         branches={[
           { label: "Ya", tone: "yes", text: t("Login dengan email & kata sandi.") },
-          { label: "Tidak — coba dulu", tone: "opt", text: t("Klik 'Coba Mode Demo' (database terpisah) atau 'Masuk sebagai Tamu' (hanya lihat).") },
-          { label: "Tidak — butuh akun", tone: "no", text: t("Hubungi PIC Ormawa Visit untuk dibuatkan akun.") },
+          { label: "Tidak - coba dulu", tone: "opt", text: t("Klik 'Coba Mode Demo' (database terpisah) atau 'Masuk sebagai Tamu' (hanya lihat).") },
+          { label: "Tidak - butuh akun", tone: "no", text: t("Hubungi PIC Ormawa Visit untuk dibuatkan akun.") },
         ]}
       />
       <Down />
@@ -134,7 +134,7 @@ export function GuideFlowchart() {
         ]}
       />
       <Down />
-      <Terminal tone="end" icon={<Flag className="size-4" />}>{t("Selesai — evaluasi & arsip")}</Terminal>
+      <Terminal tone="end" icon={<Flag className="size-4" />}>{t("Selesai - evaluasi & arsip")}</Terminal>
 
       {/* Legend */}
       <div className="!mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">

@@ -6,7 +6,7 @@ import type { AppUser } from "./types";
 
 /**
  * Server-side route guard. The sidebar hides modules a role can't open, but
- * that's cosmetic — a direct URL, a back-button, or switching role while
+ * that's cosmetic - a direct URL, a back-button, or switching role while
  * already on the page would still render restricted content. Call this at the
  * top of every page whose module has a "none" level for some role
  * (see MODULE_ACCESS_LEVEL): links, budget, settings.

@@ -9,7 +9,7 @@ export function ThemeToggle() {
   const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
   // next-themes leaves resolvedTheme undefined until it has read the client
-  // preference, which doubles as the "mounted" signal — no effect needed.
+  // preference, which doubles as the "mounted" signal - no effect needed.
   const mounted = resolvedTheme !== undefined;
   const dark = resolvedTheme === "dark";
   return (

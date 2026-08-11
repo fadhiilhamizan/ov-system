@@ -8,7 +8,7 @@ import { EN } from "./dict.en";
 // Translation coverage.
 //
 // `translate()` falls back to the Indonesian source string when a key is
-// missing, which is deliberate (a partial dictionary still renders) — but it
+// missing, which is deliberate (a partial dictionary still renders) - but it
 // also means a forgotten entry is INVISIBLE unless someone switches to English
 // and reads every screen. Sixty strings had quietly accumulated that way.
 //
@@ -29,7 +29,7 @@ function sourceFiles(dir: string): string[] {
 
 /**
  * Strings that are the same word in both languages, so an entry would be noise.
- * Keep this list short and specific — it is an exemption, not a dumping ground.
+ * Keep this list short and specific - it is an exemption, not a dumping ground.
  */
 const IDENTICAL_IN_BOTH = new Set([
   "Dashboard", "Work Breakdown", "Rundown", "Status", "Email", "Offline", "Online",
@@ -69,7 +69,7 @@ describe("EN translation coverage", () => {
   });
 
   it("no dictionary entry is blank", () => {
-    // A value IDENTICAL to its key is fine and common — "Kanban", "Deadline",
+    // A value IDENTICAL to its key is fine and common - "Kanban", "Deadline",
     // "Qty", "Backup", "Ormawa Visit" are the same word in both languages, and
     // spelling them out beats leaving them to the fallback (an explicit entry is
     // a decision; a missing one is an oversight). A BLANK value is always a bug:

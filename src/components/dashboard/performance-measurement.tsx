@@ -53,7 +53,7 @@ function Metric({
 /**
  * The after-the-event numbers for one Ormawa Visit.
  *
- * Every field is optional. A null renders as "—", deliberately NOT as 0: "no
+ * Every field is optional. A null renders as "-", deliberately NOT as 0: "no
  * feedback yet" and "zero people rated it" are different facts, and a committee
  * reading this card should not have to guess which one it is looking at.
  */
@@ -66,7 +66,7 @@ export function PerformanceMeasurement({
 }) {
   const partner = event.partner?.trim() || t("himpunan partner");
   const num = (v: number | null | undefined) =>
-    v === null || v === undefined ? "—" : v.toLocaleString("id-ID");
+    v === null || v === undefined ? "-" : v.toLocaleString("id-ID");
   const rating = (v: number | null | undefined) =>
     v === null || v === undefined ? null : Math.max(0, Math.min(5, v));
 
@@ -115,7 +115,7 @@ export function PerformanceMeasurement({
             label={t("Rata-rata rating HMSI")}
             value={
               hmsiRating === null ? (
-                "—"
+                "-"
               ) : (
                 <span className="flex items-center gap-2">
                   {hmsiRating.toFixed(2)}<span className="text-xs font-normal text-muted-foreground">/5.0</span>
@@ -137,7 +137,7 @@ export function PerformanceMeasurement({
             label={`${t("Rata-rata rating")} ${partner}`}
             value={
               partnerRating === null ? (
-                "—"
+                "-"
               ) : (
                 <span className="flex items-center gap-2">
                   {partnerRating.toFixed(2)}<span className="text-xs font-normal text-muted-foreground">/5.0</span>
@@ -162,7 +162,7 @@ export function PerformanceMeasurement({
                 {t("Buka LPJ")} <ExternalLink className="size-3.5" />
               </a>
             ) : (
-              <div className="mt-1.5 text-xl font-bold text-muted-foreground/50">—</div>
+              <div className="mt-1.5 text-xl font-bold text-muted-foreground/50">-</div>
             )}
           </div>
         </div>

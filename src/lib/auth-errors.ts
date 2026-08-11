@@ -11,7 +11,7 @@
  * without GoTrue's token columns (`confirmation_token` and friends). Postgres
  * allows NULL there; GoTrue scans them into Go strings and dies with
  * "converting NULL to string is unsupported", returning a 500 with no body.
- * `supabase/default-accounts.sql` repairs those rows — this function makes sure
+ * `supabase/default-accounts.sql` repairs those rows - this function makes sure
  * the symptom is legible while that is happening.
  *
  * Anything the server DID phrase is passed through untouched.

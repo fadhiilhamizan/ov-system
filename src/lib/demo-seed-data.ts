@@ -1,4 +1,4 @@
-// Fictional demo dataset — the "initial data" the demo sandbox resets to.
+// Fictional demo dataset - the "initial data" the demo sandbox resets to.
 // Kept in sync with scripts/gen-demo-seed.mjs (same mockup).
 export const DEMO_EVENT_ID = "demo-ov";
 
@@ -35,7 +35,7 @@ export const demoSeed = {
     ["MARKETING", "Marketing", "MRT", "#f43f5e", 10, false],
     ["OUTSOURCE", "Outsource", "OUT", "#14b8a6", 11, false],
   ] as const,
-  // [name, nickname, nrp, type, divisions] — a member may sit in several
+  // [name, nickname, nrp, type, divisions] - a member may sit in several
   // divisions; the first one is the primary. Dewi shows that off.
   members: [
     ["Budi Santoso", "Budi", "5026221001", "fungsionaris", ["EVENT"]],
@@ -87,7 +87,7 @@ export const demoSeed = {
     ["LO himpunan partner", "Andi"],
     ["Konsumsi & perlengkapan", "Putri, Fajar"],
   ] as const,
-  // [division, coordinator] — the roster itself is derived from members, so a
+  // [division, coordinator] - the roster itself is derived from members, so a
   // team row only names the coordinator (always a fungsionaris of that
   // division). CONSUMPTION/OPERATIONAL deliberately have none.
   teams: [

@@ -12,7 +12,7 @@ const { parseSnapshot } = await import("./backup");
 // overwrite, so these tests are written from the attacker's seat rather than
 // the happy path.
 // ------------------------------------------------------------------
-describe("parseSnapshot — accepting a real backup", () => {
+describe("parseSnapshot - accepting a real backup", () => {
   it("accepts a snapshot and counts what it holds", () => {
     const res = parseSnapshot({
       events: [{ id: "ov1", title: "OV" }],
@@ -35,7 +35,7 @@ describe("parseSnapshot — accepting a real backup", () => {
   });
 });
 
-describe("parseSnapshot — refusing everything else", () => {
+describe("parseSnapshot - refusing everything else", () => {
   it("DROPS tables that are not backed up, so profiles can never ride along", () => {
     // profiles is excluded from backups on purpose: restoring it could hand
     // back an admin role that was removed deliberately. A hand-edited file

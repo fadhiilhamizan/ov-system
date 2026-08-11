@@ -17,7 +17,7 @@ export const getActiveEvent = cache(async (): Promise<OVEvent> => {
  * Currently focused division key, or "all".
  *
  * The fallback MUST be `||`, not `??`. Deleting a cookie inside a Server Action
- * does not remove it from the request store — reading it back in that same
+ * does not remove it from the request store - reading it back in that same
  * render returns `{ value: "" }`, and `??` only catches null/undefined. The
  * empty string then flowed through as a division key that matches no task, so
  * switching the focus back to "Semua Divisi" emptied the whole Work Breakdown

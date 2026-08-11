@@ -58,7 +58,7 @@ export default async function EventsPage() {
                     <Badge variant="outline">{e.code}</Badge>
                     {isActive && <Badge variant="primary">{t("Sedang dilihat")}</Badge>}
                     {e.locked && (
-                      <Badge variant="outline" title={t("Diarsipkan — hanya admin yang bisa mengubah isinya.")}>
+                      <Badge variant="outline" title={t("Diarsipkan - hanya admin yang bisa mengubah isinya.")}>
                         <Lock className="size-3" /> {t("Arsip")}
                       </Badge>
                     )}

@@ -1,5 +1,5 @@
 -- ============================================================
--- 0023 — Self sign-up + role requests. Run AFTER 0001–0022.
+-- 0023 - Self sign-up + role requests. Run AFTER 0001–0022.
 --
 -- Anyone can now create an account (email/password or Google). A fresh
 -- account has NO role: handle_new_user() gives it 'viewer', which the app
@@ -19,7 +19,7 @@ begin;
 -- handle_new_user: also understand Google's OAuth metadata.
 --
 -- Google puts the display name in `full_name` (and `name`), and the picture
--- in `avatar_url` — 0017 only looked at `name`, so Google sign-ups landed
+-- in `avatar_url` - 0017 only looked at `name`, so Google sign-ups landed
 -- with the email local-part as their display name. Anonymous guests still
 -- fall back to 'Tamu' (their email is NULL and profiles.name is NOT NULL).
 -- ------------------------------------------------------------------
@@ -70,7 +70,7 @@ create table if not exists role_requests (
   constraint role_requests_requestable check (requested_role in ('coordinator','staff','intern'))
 );
 
--- One open request per account — re-requesting replaces nothing, it is simply
+-- One open request per account - re-requesting replaces nothing, it is simply
 -- rejected until the pending one is decided.
 create unique index if not exists role_requests_one_pending
   on role_requests(user_id) where status = 'pending';

@@ -74,7 +74,7 @@ export function pct(part: number, whole: number) {
 
 /**
  * Derive the enrollment year (angkatan) from an ITS NRP.
- * NRP format is `DDDD YY SSSS` — a 4-digit study-program code, then a 2-digit
+ * NRP format is `DDDD YY SSSS` - a 4-digit study-program code, then a 2-digit
  * enrollment year, then a running number. Example: `5026(23)1128` → 2023.
  * Returns null when the NRP is too short / not derivable.
  */
@@ -90,3 +90,4 @@ export function angkatanFromNrp(nrp: string | null | undefined): number | null {
   if (year < 2000 || year > new Date().getFullYear() + 1) return null;
   return year;
 }
+

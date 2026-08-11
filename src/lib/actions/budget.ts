@@ -118,7 +118,7 @@ export async function bulkDeleteBudgetItemsAction(ids: string[]): Promise<Result
 }
 
 /** Persist a drag-and-drop reorder of a plan's items. Takes the plan's whole
- *  sequence — see `reorderBudgetItems` in repo.ts for why a partial list is not
+ *  sequence - see `reorderBudgetItems` in repo.ts for why a partial list is not
  *  enough. */
 export async function reorderBudgetItemsAction(orderedIds: string[]): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;

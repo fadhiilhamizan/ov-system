@@ -47,7 +47,7 @@ export function TaskTable({
   const evMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
   const sort = useMultiSort<SortKey>();
   // `tasks` is the ALREADY-FILTERED list, so this used to reset on every
-  // keystroke in the search box — select a few rows, search for the next few,
+  // keystroke in the search box - select a few rows, search for the next few,
   // and the first lot was gone. The selection now simply intersects with what
   // is on screen (see use-multi-select).
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
@@ -81,7 +81,7 @@ export function TaskTable({
 
   // Only ticks that are currently on screen count. Ones hidden by the search or
   // a division/PIC filter stay in state untouched and come back when the filter
-  // is cleared — that is what makes "select some, search, select more" work.
+  // is cleared - that is what makes "select some, search, select more" work.
   const visibleIds = rows.map((t) => t.id);
   const selectedInView = visibleSelection(selected, visibleIds);
   const allChecked = rows.length > 0 && selectedInView.length === rows.length;

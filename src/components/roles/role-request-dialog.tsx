@@ -27,7 +27,7 @@ export function RoleRequestDialog({
   open,
   onOpenChange,
 }: {
-  /** Roles this account may ask for — already excludes admin and its own role. */
+  /** Roles this account may ask for - already excludes admin and its own role. */
   options: RequestableRole[];
   existing?: RoleRequest | null;
   open: boolean;
@@ -79,7 +79,7 @@ export function RoleRequestDialog({
           <DialogDescription>
             {editing
               ? t("Pengajuanmu belum diputuskan admin, jadi masih bisa diperbaiki.")
-              : t("Pilih peran yang kamu inginkan — admin akan menyetujui atau mengabaikannya. Peran berlaku untuk semua Ormawa Visit.")}
+              : t("Pilih peran yang kamu inginkan - admin akan menyetujui atau mengabaikannya. Peran berlaku untuk semua Ormawa Visit.")}
           </DialogDescription>
         </DialogHeader>
 

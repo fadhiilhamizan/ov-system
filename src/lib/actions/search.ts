@@ -12,7 +12,7 @@ import { memberDivisions } from "@/lib/members";
 /** One row in the palette. `href` is where Enter takes you. */
 export interface SearchHit {
   id: string;
-  /** Module key — also the group heading and the icon the client picks. */
+  /** Module key - also the group heading and the icon the client picks. */
   group: string;
   title: string;
   subtitle: string;
@@ -31,7 +31,7 @@ function norm(s: unknown): string {
  * Runs on the server and filters in JS over the already-cached per-request
  * getters rather than issuing per-module `ilike` queries: the whole dataset for
  * one Ormawa Visit is small (hundreds of rows), and this way the results honour
- * exactly the same reads — and therefore the same RLS — as the pages do.
+ * exactly the same reads - and therefore the same RLS - as the pages do.
  *
  * Access is checked per module with `can.accessModule`, so a Tamu never gets
  * budget or Super Link hits back even as raw JSON.

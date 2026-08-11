@@ -8,7 +8,7 @@ import { ACCESS_RANK, MODULE_ACCESS, MODULE_ACCESS_LEVEL, type AccessLevel } fro
  *   must not be able to demote themselves through this flow.
  * - Anonymous "Tamu" sessions (no email) have no account to promote.
  * - Everyone else may request any requestable role EXCEPT the one they already
- *   hold — so a role-less account upgrades, and a staff member can move to
+ *   hold - so a role-less account upgrades, and a staff member can move to
  *   coordinator or down to intern.
  */
 export function requestableRolesFor(user: AppUser): RequestableRole[] {
@@ -24,11 +24,11 @@ export function canRequestRole(user: AppUser): boolean {
 /**
  * Does the user's name appear in a task's free-text PIC field?
  *
- * Presentational only — it highlights "your" tasks and must never gate a write.
+ * Presentational only - it highlights "your" tasks and must never gate a write.
  * `pic` is a comma-joined display string ("Fadhiil, Dona"), so we match the
  * user's first name as a WHOLE WORD inside it, splitting on both commas and
  * spaces. A substring check used to make "Ali" light up every task assigned to
- * "Alifia"; whole-word matching fixes that. There is no division fallback — an
+ * "Alifia"; whole-word matching fixes that. There is no division fallback - an
  * account has no division (see AppUser).
  */
 export function isAssignedTo(user: AppUser, task: Task): boolean {
@@ -44,7 +44,7 @@ export function isAssignedTo(user: AppUser, task: Task): boolean {
  *
  * An archived (locked) Ormawa Visit is read-only for every role except admin,
  * who can still correct it and unlock it. Mirrors `writable_event()` in
- * migration 0028 — that policy is the real control, this is the UX half.
+ * migration 0028 - that policy is the real control, this is the UX half.
  * A missing event is treated as writable so unscoped legacy rows keep working.
  */
 export function canWriteEvent(user: AppUser, event?: Pick<OVEvent, "locked"> | null): boolean {
@@ -65,7 +65,7 @@ export function canToggleLock(user: AppUser): boolean {
  * the tree, so handing them an attenuated identity turns the whole surface
  * read-only without threading a `locked` flag through every component.
  *
- * Gating only — never use the result to DISPLAY someone's role: the returned
+ * Gating only - never use the result to DISPLAY someone's role: the returned
  * role is deliberately not their real one.
  */
 export function attenuate(user: AppUser, event?: Pick<OVEvent, "locked"> | null): AppUser {
@@ -151,7 +151,7 @@ export const can = {
   // --- Work Breakdown ---
   // NOTE: task rights are NOT scoped to the user's division. An earlier cut
   // confined non-admins to `profiles.division`, which made staff/intern able to
-  // edit only *some* tasks — the access matrix is the sole authority.
+  // edit only *some* tasks - the access matrix is the sole authority.
   /** Create / edit tasks. */
   manageTasks(user: AppUser): boolean {
     return atLeast(user, "tasks", "limited");
@@ -159,7 +159,7 @@ export const can = {
   editTask(user: AppUser): boolean {
     return can.manageTasks(user);
   },
-  /** Delete a task — only "full" access (admin & koordinator). */
+  /** Delete a task - only "full" access (admin & koordinator). */
   deleteTask(user: AppUser): boolean {
     return atLeast(user, "tasks", "full");
   },

@@ -7,6 +7,8 @@ import {
   divisionFields,
   coordinatorNames,
   isCoordinator,
+  withDivisionAdded,
+  withDivisionRemoved,
 } from "./members";
 import type { Member } from "./types";
 
@@ -109,5 +111,45 @@ describe("coordinator", () => {
     expect(isCoordinator(m({ nickname: "Budi" }), { coordinator: "Budi" })).toBe(true);
     expect(isCoordinator(m({ nickname: "", name: "Budi Santoso" }), { coordinator: "budi santoso" })).toBe(true);
     expect(isCoordinator(m({ nickname: "Maya" }), { coordinator: "Budi" })).toBe(false);
+  });
+});
+
+describe("withDivisionAdded", () => {
+  it("appends so the PRIMARY division is not silently changed", () => {
+    // divisions[0] drives the badge in tables and task scoping; prepending
+    // would re-label everyone added to a division.
+    expect(withDivisionAdded(m({ divisions: ["EVENT", "LO"] }), "CONSUMPTION"))
+      .toEqual(["EVENT", "LO", "CONSUMPTION"]);
+  });
+
+  it("is a no-op when the member is already in that division", () => {
+    const before = m({ divisions: ["EVENT", "LO"] });
+    expect(withDivisionAdded(before, "LO")).toEqual(["EVENT", "LO"]);
+  });
+
+  it("makes it the primary when the member had none", () => {
+    expect(withDivisionAdded(m({ divisions: [] }), "EVENT")).toEqual(["EVENT"]);
+  });
+
+  it("reads the legacy single division as the starting point", () => {
+    expect(withDivisionAdded(m({ division: "EVENT", divisions: undefined }), "LO"))
+      .toEqual(["EVENT", "LO"]);
+  });
+});
+
+describe("withDivisionRemoved", () => {
+  it("drops just that one and keeps the order", () => {
+    expect(withDivisionRemoved(m({ divisions: ["EVENT", "LO", "CRE"] }), "LO"))
+      .toEqual(["EVENT", "CRE"]);
+  });
+
+  it("promotes the next division to primary when the primary is removed", () => {
+    const next = withDivisionRemoved(m({ divisions: ["EVENT", "LO"] }), "EVENT");
+    expect(next).toEqual(["LO"]);
+    expect(divisionFields(next).division).toBe("LO");
+  });
+
+  it("can empty the list entirely", () => {
+    expect(withDivisionRemoved(m({ divisions: ["EVENT"] }), "EVENT")).toEqual([]);
   });
 });

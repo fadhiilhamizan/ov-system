@@ -24,7 +24,7 @@ const arr = (v) =>
 //
 // `getProspects(eventId)` / `getMembers(eventId)` filter LENIENTLY: a row whose
 // event_id is null is treated as belonging to every edition. That is deliberate
-// (legacy unscoped rows still render), but it means an unscoped row LEAKS —
+// (legacy unscoped rows still render), but it means an unscoped row LEAKS -
 // every Ormawa Visit showed all 61 prospects instead of its own 12-19.
 //
 // So the generator refuses to emit an unscoped prospect or member. Prospects
@@ -44,7 +44,7 @@ function prospectEvent(p) {
   if (!mapped) {
     throw new Error(
       `seed.json: prospek "${p.org_name || p.id}" tidak punya event_id dan batch-nya ` +
-        `("${p.batch}") tidak dikenal. Tambahkan pemetaannya di BATCH_TO_EVENT — ` +
+        `("${p.batch}") tidak dikenal. Tambahkan pemetaannya di BATCH_TO_EVENT - ` +
         `sebuah prospek tanpa edisi akan muncul di SEMUA Ormawa Visit.`,
     );
   }
@@ -53,7 +53,7 @@ function prospectEvent(p) {
 
 let out = `-- Auto-generated from Excel seed. Run after migrations.\n-- HMSI ITS Ormawa Visit\nbegin;\n\n`;
 
-// Events first — divisions are per-event (migration 0018) and reference them.
+// Events first - divisions are per-event (migration 0018) and reference them.
 out += `-- events\n`;
 for (const e of seed.events)
   out += `insert into events(id,code,title,partner,campus,type,mode,cabinet,event_date,plan_start,plan_end,location,status,"order") values (${q(e.id)},${q(e.code)},${q(e.title)},${q(e.partner)},${q(e.campus)},${q(e.type)},${q(e.mode)},${q(e.cabinet)},${d(e.event_date)},${d(e.plan_start)},${d(e.plan_end)},${q(e.location)},${q(e.status)},${e.order}) on conflict (id) do nothing;\n`;
@@ -74,7 +74,7 @@ out += `\n-- members (divisions[] is the real membership; division = the primary
 if (unscopedMembers) {
   out += `-- ${unscopedMembers} anggota di seed.json TIDAK ditulis: mereka belum punya event_id,\n`;
   out += `-- dan anggota tanpa edisi akan muncul di SEMUA Ormawa Visit. Roster asli\n`;
-  out += `-- per-edisi ada di migrations/0019_real_roster.sql — jalankan itu setelah file ini.\n`;
+  out += `-- per-edisi ada di migrations/0019_real_roster.sql - jalankan itu setelah file ini.\n`;
 }
 for (const m of scopedMembers) {
   const divs = m.divisions?.length ? m.divisions : m.division ? [m.division] : [];
@@ -85,7 +85,7 @@ out += `\n-- tasks\n`;
 for (const t of seed.tasks)
   out += `insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values (${q(t.event_id)},${q(t.division)},${q(t.no)},${q(t.pic)},${q(t.title)},${d(t.start_date)},${q(t.start_raw)},${d(t.end_date)},${q(t.end_raw)},${q(t.notes)},${q(t.result)},${q(t.status)});\n`;
 
-// prospects — `batch` is no longer written (the app dropped the concept; the
+// prospects - `batch` is no longer written (the app dropped the concept; the
 // edition is `event_id`). We still READ seed.json's batch above via
 // prospectEvent() to derive that event_id. The DB column stays (default '').
 out += `\n-- prospects\n`;

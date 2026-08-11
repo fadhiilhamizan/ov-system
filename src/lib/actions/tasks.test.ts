@@ -256,7 +256,7 @@ describe("bulk task actions", () => {
   });
 
   // ----------------------------------------------------------------
-  // bulkUpdateTaskFieldsAction — the Work Breakdown "Ubah massal" editor.
+  // bulkUpdateTaskFieldsAction - the Work Breakdown "Ubah massal" editor.
   // The load-bearing property is that ONLY the ticked fields travel: a bulk
   // write lands on rows nobody opened, so a key that slipped through would
   // blank a PIC or a deadline across the whole selection.

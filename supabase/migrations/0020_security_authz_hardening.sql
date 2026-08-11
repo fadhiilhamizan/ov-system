@@ -1,11 +1,11 @@
 -- ============================================================
--- 0020 — Security hardening. Run AFTER 0001–0019.
+-- 0020 - Security hardening. Run AFTER 0001–0019.
 --
 -- C1 (CRITICAL) Privilege escalation via profiles.
 --   0002's `profiles_update_own` is a ROW-level policy with no WITH CHECK and
 --   no column restriction. Because the anon key is public and the session JWT
---   lives in the browser, ANY session — including the credential-less
---   anonymous "Tamu" sign-in — could call PostgREST directly:
+--   lives in the browser, ANY session - including the credential-less
+--   anonymous "Tamu" sign-in - could call PostgREST directly:
 --       supabase.from('profiles').update({ role: 'admin' }).eq('id', <own uid>)
 --   `id = auth.uid()` still holds after the change, so the policy passed and
 --   auth_role() started returning 'admin'. That is unauthenticated full
@@ -14,7 +14,7 @@
 --   WITH CHECK that pins role/division to their stored values for non-admins.
 --
 -- H1 Cross-Ormawa-Visit authorization. Since 0018 a division `key` is unique
---   only PER EVENT, but auth_division() compares the bare key — so the
+--   only PER EVENT, but auth_division() compares the bare key - so the
 --   coordinator of EVENT@ov1-2025 could write EVENT@ov2-2026. profiles gains
 --   `event_id`, and the task policies now match on (event_id, division).
 --
@@ -29,7 +29,7 @@
 begin;
 
 -- ------------------------------------------------------------------
--- C1 — profiles: no self-promotion.
+-- C1 - profiles: no self-promotion.
 -- ------------------------------------------------------------------
 
 -- RLS is row-level; column protection must come from GRANTs. Revoke the blanket
@@ -78,7 +78,7 @@ revoke all on function set_user_role(uuid, app_role, text) from public, anon;
 grant execute on function set_user_role(uuid, app_role, text) to authenticated;
 
 -- ------------------------------------------------------------------
--- M4 — profiles read: stop anonymous guests harvesting member emails.
+-- M4 - profiles read: stop anonymous guests harvesting member emails.
 -- ------------------------------------------------------------------
 drop policy if exists "profiles_read" on profiles;
 create policy "profiles_read" on profiles for select
@@ -86,7 +86,7 @@ create policy "profiles_read" on profiles for select
   using (id = auth.uid() or (auth.uid() is not null and not is_anon()));
 
 -- ------------------------------------------------------------------
--- H1 — profiles gain an event scope, and a matching helper.
+-- H1 - profiles gain an event scope, and a matching helper.
 -- ------------------------------------------------------------------
 alter table profiles add column if not exists event_id text
   references events(id) on delete set null;
@@ -97,7 +97,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- A scoped role only has authority inside its own Ormawa Visit + division.
--- A NULL profiles.event_id means "not scoped to one edition" — deliberately
+-- A NULL profiles.event_id means "not scoped to one edition" - deliberately
 -- treated as NO authority for non-admins (fail closed). Backfill the column for
 -- every real coordinator/staff/intern before relying on this.
 create or replace function owns_scope(row_event text, row_division text) returns boolean
@@ -109,7 +109,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- ------------------------------------------------------------------
--- H1 + H2 — tasks.
+-- H1 + H2 - tasks.
 -- ------------------------------------------------------------------
 drop policy if exists "tasks_insert" on tasks;
 create policy "tasks_insert" on tasks for insert to authenticated with check (
@@ -143,7 +143,7 @@ create policy "tasks_delete" on tasks for delete to authenticated using (
 );
 
 -- ------------------------------------------------------------------
--- H3 — budget: admin, or a coordinator of that Ormawa Visit.
+-- H3 - budget: admin, or a coordinator of that Ormawa Visit.
 -- ------------------------------------------------------------------
 drop policy if exists "budget_plans_write" on budget_plans;
 create policy "budget_plans_write" on budget_plans for all to authenticated
@@ -172,7 +172,7 @@ with check (
 );
 
 -- ------------------------------------------------------------------
--- H3 — rundown / job_harih / teams: admin, or coordinator of that edition.
+-- H3 - rundown / job_harih / teams: admin, or coordinator of that edition.
 -- ------------------------------------------------------------------
 do $$
 declare t text;
@@ -190,7 +190,7 @@ end $$;
 
 -- ------------------------------------------------------------------
 -- Anonymous guests are READ-ONLY everywhere. 0016 aligned the read policies
--- but left every write policy relying on auth_role() alone — and a guest's
+-- but left every write policy relying on auth_role() alone - and a guest's
 -- auto-created profile row carries a real role value. Deny writes outright.
 -- ------------------------------------------------------------------
 do $$

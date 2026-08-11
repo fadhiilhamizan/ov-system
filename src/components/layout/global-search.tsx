@@ -25,7 +25,7 @@ const MAX_RECENT = 6;
  * Deliberately NOT persisted: it survives closing and reopening the palette and
  * navigating between pages (the module stays loaded), and disappears on reload.
  * Search history is a trail of what someone was looking at, so keeping it out of
- * localStorage and off the server is the privacy-preserving default — and it
+ * localStorage and off the server is the privacy-preserving default - and it
  * means nothing new has to be disclosed in the Privacy Policy.
  */
 let recentHits: SearchHit[] = [];
@@ -48,7 +48,7 @@ export function GlobalSearch() {
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  // Everything resets when the palette opens or closes — done during render
+  // Everything resets when the palette opens or closes - done during render
   // (see lib/use-synced.ts) rather than in an effect, which would flash the
   // previous query for one frame.
   const [q, setQ] = useResetOn(open, () => "");
@@ -154,7 +154,7 @@ export function GlobalSearch() {
     }
   }
 
-  /** One result row — shared by the search results and the recent list. */
+  /** One result row - shared by the search results and the recent list. */
   function Row({ hit, index }: { hit: SearchHit; index: number }) {
     const Icon = NAV_BY_KEY.get(hit.group)?.icon ?? Search;
     return (
@@ -180,7 +180,7 @@ export function GlobalSearch() {
 
   // The palette is portalled to <body>. It has to be: the topbar carries
   // `backdrop-blur`, and a backdrop-filter makes that element the containing
-  // block for `position: fixed` descendants — so `fixed inset-0` rendered in
+  // block for `position: fixed` descendants - so `fixed inset-0` rendered in
   // place covered only the header strip, not the screen.
   const mounted = React.useSyncExternalStore(
     () => () => {},
@@ -190,7 +190,7 @@ export function GlobalSearch() {
 
   return (
     <>
-      {/* Trigger — a search-box lookalike on wide screens, an icon on mobile. */}
+      {/* Trigger - a search-box lookalike on wide screens, an icon on mobile. */}
       <button
         onClick={() => setOpen(true)}
         aria-label={t("Cari")}
@@ -225,7 +225,7 @@ export function GlobalSearch() {
               )}
               <input
                 // The input mounts fresh each time the palette opens, so
-                // autoFocus is enough — no focus effect needed.
+                // autoFocus is enough - no focus effect needed.
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}

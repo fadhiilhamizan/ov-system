@@ -1,5 +1,5 @@
 -- ============================================================
--- 0033 — Isi Performance Measurement dari Main Sheet.
+-- 0033 - Isi Performance Measurement dari Main Sheet.
 --
 -- Sumber: "MAIN SHEET ORMAWA VISIT.xlsx", sheet WBS, blok
 -- "PERFORMANCE MEASUREMENT" (baris 8-15):
@@ -12,11 +12,11 @@
 --   Pertanggungjawaban                       https://bit.ly/FeedbackHMSIxHMTG
 --
 -- Blok ini ada di sheet HMSI ITS x HMTG ITS, jadi datanya milik ov2-2025.
--- Edisi 2026 belum terlaksana, sheet-nya belum punya blok ini — kolomnya
--- dibiarkan NULL dan Dashboard menampilkannya sebagai "—".
+-- Edisi 2026 belum terlaksana, sheet-nya belum punya blok ini - kolomnya
+-- dibiarkan NULL dan Dashboard menampilkannya sebagai "-".
 --
 -- HANYA mengisi kolom yang masih kosong (`is null`). Kalau kamu sudah
--- memasukkan angka lewat menu Ormawa Visit, angka itu yang menang — migrasi ini
+-- memasukkan angka lewat menu Ormawa Visit, angka itu yang menang - migrasi ini
 -- tidak akan menimpanya. Karena itu aman dijalankan berulang.
 --
 -- Jalankan SETELAH 0032.

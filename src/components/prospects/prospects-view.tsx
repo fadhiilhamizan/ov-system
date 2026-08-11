@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2 } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2, ExternalLink, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -75,7 +75,7 @@ export function ProspectsView({
     const query = q.toLowerCase().trim();
     return prospects.filter((p) => {
       if (stage !== "all" && prospectStage(p) !== stage) return false;
-      if (query && !`${p.org_name} ${p.campus} ${p.contact} ${p.pic}`.toLowerCase().includes(query))
+      if (query && !`${p.org_name} ${p.campus} ${p.contact} ${p.pic} ${p.notes} ${p.link_label}`.toLowerCase().includes(query))
         return false;
       return true;
     });
@@ -205,6 +205,8 @@ export function ProspectsView({
                   <SortHead sort={sort} k="contact">{t("Kontak")}</SortHead>
                   <SortHead sort={sort} k="pic">{t("PIC")}</SortHead>
                   <SortHead sort={sort} k="stage">{t("Tahap")}</SortHead>
+                  <TableHead className="w-16">{t("Tautan")}</TableHead>
+                  <TableHead className="min-w-[160px]">{t("Catatan")}</TableHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -237,6 +239,26 @@ export function ProspectsView({
                     <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
                     <TableCell className="text-sm">{p.pic || "-"}</TableCell>
                     <TableCell><StageBadge p={p} /></TableCell>
+                    <TableCell>
+                      {p.link ? (
+                        <a
+                          href={p.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={p.link_label || p.link}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <ExternalLink className="size-3.5" />
+                          {/* The tick is the only cue that this also lives in Super Link. */}
+                          {p.link_in_super_link && <Share2 className="size-3 text-muted-foreground" />}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground" title={p.notes || undefined}>
+                      {p.notes || "-"}
+                    </TableCell>
                     {manage && (
                       <TableCell>
                         <ProspectActions prospect={p} members={members} eventId={activeEventId} />

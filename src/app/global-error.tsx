@@ -3,7 +3,7 @@ import * as React from "react";
 
 /**
  * Last-resort error boundary. Replaces the ROOT layout (including <html>),
- * so it can't rely on providers, fonts, theme, or the design-token CSS —
+ * so it can't rely on providers, fonts, theme, or the design-token CSS -
  * everything here is inlined and self-contained. Only trips when the root
  * layout itself fails; ordinary page errors are caught by (app)/error.tsx.
  */

@@ -113,8 +113,8 @@ describe("angkatanFromNrp", () => {
     expect(angkatanFromNrp("5026991128")).toBeNull();
   });
   it("requires a canonical NRP length (9–10 digits)", () => {
-    expect(angkatanFromNrp("50262311")).toBeNull(); // 8 digits — too short
-    expect(angkatanFromNrp("50262311280000")).toBeNull(); // 14 digits — too long
-    expect(angkatanFromNrp("502623112")).toBe(2023); // 9 digits — ok
+    expect(angkatanFromNrp("50262311")).toBeNull(); // 8 digits - too short
+    expect(angkatanFromNrp("50262311280000")).toBeNull(); // 14 digits - too long
+    expect(angkatanFromNrp("502623112")).toBe(2023); // 9 digits - ok
   });
 });

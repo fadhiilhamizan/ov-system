@@ -25,7 +25,7 @@ const PAD_DAYS = 2;
  * pinned to the top of the screen.
  *
  * Measured, never hardcoded. A fixed 64px (the topbar's own height) put the
- * banner *behind* the topbar as soon as anything pushed the header down — the
+ * banner *behind* the topbar as soon as anything pushed the header down - the
  * Demo strip, the archive strip, or the role-request strip. Reading the header's
  * real bottom edge handles every combination, including none of them.
  */
@@ -37,7 +37,7 @@ function chromeBottom(): number {
   return Math.max(0, bottom) + 8;
 }
 
-/** Midnight local time — timeline maths must be day-aligned, not time-of-day. */
+/** Midnight local time - timeline maths must be day-aligned, not time-of-day. */
 function startOfDay(ms: number): number {
   const d = new Date(ms);
   d.setHours(0, 0, 0, 0);
@@ -98,12 +98,12 @@ export function TaskTimeline({
 
   // --- hover state: a vertical guide line that follows the cursor ---
   // Two coordinates are kept for one cursor:
-  //   x       — relative to the track's content box, positions the LINE and
+  //   x       - relative to the track's content box, positions the LINE and
   //             stays correct while the timeline is scrolled sideways.
-  //   clientX — viewport coordinate, positions the floating date banner.
+  //   clientX - viewport coordinate, positions the floating date banner.
   // The banner has to be `position: fixed`, because `sticky` cannot escape the
   // `overflow-x-auto` wrapper (an element with overflow-x:auto is a scrollport
-  // on BOTH axes, so a sticky child sticks to *it*, not to the page — and it
+  // on BOTH axes, so a sticky child sticks to *it*, not to the page - and it
   // never scrolls vertically, so the banner would simply scroll away).
   const trackRef = React.useRef<HTMLDivElement>(null);
   const [hoverX, setHoverX] = React.useState<number | null>(null);
@@ -122,7 +122,7 @@ export function TaskTimeline({
    * One tick per day. The old axis only marked month boundaries, which left a
    * short range (anything inside a single month) with no date reference at all,
    * and drew the 1st-of-month tick at a NEGATIVE offset whenever it fell before
-   * the range — that stray line to the left of the chart was the "left border"
+   * the range - that stray line to the left of the chart was the "left border"
    * bug. Every tick here is inside the track by construction.
    */
   const dayCols = React.useMemo(() => {
@@ -156,7 +156,7 @@ export function TaskTimeline({
   // "Today" comes from useSyncExternalStore, not from render or an effect: the
   // clock is impure, and rendering it on the server would risk a hydration
   // mismatch across midnight. The server snapshot is null, so the marker simply
-  // appears after hydration. getSnapshot is stable — it returns the same
+  // appears after hydration. getSnapshot is stable - it returns the same
   // millisecond value for the whole day.
   const today = React.useSyncExternalStore(
     subscribeNever,
@@ -174,7 +174,7 @@ export function TaskTimeline({
    * Date under the cursor.
    *
    * `hoverX` is measured from the left edge of the row container, which INCLUDES
-   * the sticky task-name column — so LABEL_W has to come off before converting
+   * the sticky task-name column - so LABEL_W has to come off before converting
    * to days, or the readout lands ~9 days late. The subtraction is also correct
    * while scrolled horizontally: the chart always begins at content-x LABEL_W.
    */
@@ -230,7 +230,7 @@ export function TaskTimeline({
 
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         {/* One scroll container holds BOTH the axis and the rows, so a month
-            label can never drift out of line with the bars underneath it —
+            label can never drift out of line with the bars underneath it -
             they share the same origin and the same pixel scale. */}
         <div className="overflow-x-auto">
           <div style={{ minWidth: LABEL_W + bounds.width }}>
@@ -293,7 +293,7 @@ export function TaskTimeline({
               {/* Cursor date guide.
                   z-0 keeps it BEHIND the sticky task-name column (z-20), so the
                   line slides under the names instead of striking through them.
-                  The date label is NOT here — see the fixed banner below. */}
+                  The date label is NOT here - see the fixed banner below. */}
               {hoverX != null && hoverDate != null && (
                 <div
                   className="pointer-events-none absolute inset-y-0 z-0 w-px bg-foreground/40"
@@ -305,12 +305,12 @@ export function TaskTimeline({
                 const div = divMap.get(task.division);
                 const left = ((start - bounds.min) / DAY) * PX_PER_DAY;
                 // Inclusive of the end day, so a same-day task is one day wide
-                // rather than zero — this is what made short bars look like
+                // rather than zero - this is what made short bars look like
                 // they sat on the wrong date.
                 const days = Math.round((end - start) / DAY) + 1;
                 const width = Math.max(PX_PER_DAY * 0.8, days * PX_PER_DAY);
                 const color = div?.color ?? "var(--primary)";
-                const range = `${formatDate(task.start_date) ?? "—"} → ${formatDate(task.end_date) ?? "—"}`;
+                const range = `${formatDate(task.start_date) ?? "-"} → ${formatDate(task.end_date) ?? "-"}`;
                 return (
                   <div key={task.id} className="flex border-b border-border/50 last:border-b-0">
                     <div

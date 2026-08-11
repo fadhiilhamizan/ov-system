@@ -4,7 +4,7 @@ import * as React from "react";
 // Deriving state from props WITHOUT an effect.
 //
 // `useEffect(() => setX(prop), [prop])` renders once with the stale value, then
-// again with the new one — an extra render, a visible flash, and the pattern
+// again with the new one - an extra render, a visible flash, and the pattern
 // react-hooks/set-state-in-effect flags. React's documented alternative is to
 // adjust state *during* render when a tracked value changed; React discards the
 // in-progress output and immediately re-renders with the new state, before the

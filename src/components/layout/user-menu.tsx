@@ -34,12 +34,12 @@ export function UserMenu({
   const [requestOpen, setRequestOpen] = React.useState(false);
   const [passwordOpen, setPasswordOpen] = React.useState(false);
 
-  // Any real account except an admin can use the flow — a role-less account to
+  // Any real account except an admin can use the flow - a role-less account to
   // get its first role, an existing one to move up or down. The server decides
   // the option list (see `requestableRolesFor`).
   const showRoleRequest = roleOptions.length > 0;
   // Guest is an anonymous Supabase session with no email and no password, so
-  // there is nothing to change. (Demo mode never renders this menu at all —
+  // there is nothing to change. (Demo mode never renders this menu at all -
   // the topbar shows the RoleSwitcher instead.)
   const showChangePassword = user.role !== "guest" && !!user.email;
 

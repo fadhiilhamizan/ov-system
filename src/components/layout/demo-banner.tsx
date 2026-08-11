@@ -11,7 +11,7 @@ export function DemoBanner() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-amber-500 px-4 py-1.5 text-center text-xs font-medium text-white dark:bg-amber-600">
       <FlaskConical className="size-3.5 shrink-0" />
-      <span>{t("Mode Demo — database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.")}</span>
+      <span>{t("Mode Demo - database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.")}</span>
       <button
         type="button"
         onClick={() => start(() => exitDemoMode())}

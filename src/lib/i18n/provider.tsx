@@ -8,7 +8,7 @@ const I18nCtx = React.createContext<Ctx>({ lang: "id", t: (s) => s });
 
 /**
  * `dict` is resolved on the SERVER (root layout) and only sent when the active
- * language is English — so Indonesian visitors never download the 33KB map, and
+ * language is English - so Indonesian visitors never download the 33KB map, and
  * English visitors already have it at hydration time (no text mismatch).
  */
 export function I18nProvider({

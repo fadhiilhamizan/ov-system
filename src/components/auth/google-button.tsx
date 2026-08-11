@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/provider";
 
-/** Google's brand mark — inlined so no external request is needed. */
+/** Google's brand mark - inlined so no external request is needed. */
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden focusable="false">
@@ -18,7 +18,7 @@ function GoogleIcon() {
 }
 
 /**
- * Google sign-in / sign-up. Both are the same OAuth call — Supabase creates
+ * Google sign-in / sign-up. Both are the same OAuth call - Supabase creates
  * the account on first use, and the profile trigger gives it no role.
  * Requires the Google provider to be enabled in the Supabase dashboard.
  */

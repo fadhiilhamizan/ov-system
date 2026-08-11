@@ -10,10 +10,10 @@ import { DEMO_EVENT_ID as EV, DEMO_EVENT, demoSeed, angkatanFromNrpNum } from "@
 type Result = { ok: true } | { ok: false; error: string };
 
 /**
- * Reset the DEMO sandbox to its initial mockup data. Gated to demo mode — the
+ * Reset the DEMO sandbox to its initial mockup data. Gated to demo mode - the
  * server Supabase client only points at the demo project when the ov_demo
  * cookie is set, and we double-check `demoActive` so this can never touch
- * production. Everything — including any OVs the user created — is wiped, then
+ * production. Everything - including any OVs the user created - is wiped, then
  * the single demo Ormawa Visit and its data are re-created.
  */
 export async function resetDemoDataAction(): Promise<Result> {
@@ -22,7 +22,7 @@ export async function resetDemoDataAction(): Promise<Result> {
     return { ok: false, error: "Reset hanya tersedia di Mode Demo." };
   }
   // Pengaturan is now readable by coordinator/staff/intern, so this destructive
-  // action needs its own admin check — opening the page is not permission to
+  // action needs its own admin check - opening the page is not permission to
   // wipe it.
   if (!can.manageBackups(await getCurrentUser())) {
     return { ok: false, error: "Kamu tidak punya akses untuk ini." };
@@ -102,7 +102,7 @@ export async function resetDemoDataAction(): Promise<Result> {
     demoSeed.jobs.map(([job, pic], i) => ({ event_id: EV, no: String(i + 1), job, pic })),
   );
   await seed("teams",
-    // fungsionaris/intern are derived from members.divisions now — the legacy
+    // fungsionaris/intern are derived from members.divisions now - the legacy
     // columns stay empty so nothing reads a stale second copy of the roster.
     demoSeed.teams.map(([division, coordinator]) => ({
       event_id: EV, division, coordinator, fungsionaris: "", intern: "",

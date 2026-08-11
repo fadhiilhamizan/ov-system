@@ -10,7 +10,7 @@ export async function getLang(): Promise<Lang> {
 }
 
 /** Loads the English map. Server-only (this module is "server-only"), so the
- *  33KB dictionary never enters the client graph — the root layout calls this
+ *  33KB dictionary never enters the client graph - the root layout calls this
  *  and passes the result down to the client provider as a prop. */
 export async function loadDict(lang: Lang): Promise<Dict | null> {
   if (lang !== "en") return null;
