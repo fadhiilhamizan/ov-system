@@ -1,11 +1,12 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronsUpDown, LogOut, Loader2, UserRoundCheck } from "lucide-react";
+import { ChevronsUpDown, LogOut, Loader2, UserRoundCheck, KeyRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { exitGuestMode } from "@/lib/actions/session";
 import { ROLE_META } from "@/lib/constants";
 import { RoleRequestDialog } from "@/components/roles/role-request-dialog";
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,11 +32,16 @@ export function UserMenu({
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [requestOpen, setRequestOpen] = React.useState(false);
+  const [passwordOpen, setPasswordOpen] = React.useState(false);
 
   // Any real account except an admin can use the flow — a role-less account to
   // get its first role, an existing one to move up or down. The server decides
   // the option list (see `requestableRolesFor`).
   const showRoleRequest = roleOptions.length > 0;
+  // Guest is an anonymous Supabase session with no email and no password, so
+  // there is nothing to change. (Demo mode never renders this menu at all —
+  // the topbar shows the RoleSwitcher instead.)
+  const showChangePassword = user.role !== "guest" && !!user.email;
 
   function signOut() {
     start(async () => {
@@ -79,11 +85,20 @@ export function UserMenu({
                   : t("Ajukan Ubah Peran")}
             </DropdownMenuItem>
           )}
+          {showChangePassword && (
+            <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+              <KeyRound /> {t("Ubah Kata Sandi")}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem destructive onSelect={(e) => { e.preventDefault(); signOut(); }}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut />} {t("Keluar")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {showChangePassword && (
+        <ChangePasswordDialog email={user.email} open={passwordOpen} onOpenChange={setPasswordOpen} />
+      )}
 
       {showRoleRequest && (
         <RoleRequestDialog

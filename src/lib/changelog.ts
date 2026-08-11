@@ -7,6 +7,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.29.0",
+    date: "2026-08-10",
+    title: "Ubah kata sandi sendiri dari dalam aplikasi",
+    changes: [
+      "BARU — Ubah Kata Sandi: buka menu akun di pojok kanan atas, pilih 'Ubah Kata Sandi'. Berguna terutama untuk akun default Koordinator/Staff/Intern yang kata sandi awalnya perlu segera diganti.",
+      "Kata sandi saat ini wajib diisi. Ini disengaja: Supabase sebenarnya membolehkan ganti kata sandi hanya bermodal sesi yang sedang terbuka, dan karena akun default memang dipakai bersama, tanpa pengecekan ini siapa pun yang menemukan browser tak terjaga bisa mengunci anggota lain di luar.",
+      "Kata sandi baru minimal 8 karakter, harus diketik dua kali, dan tidak boleh sama dengan yang lama. Aturannya kini satu sumber dengan halaman Daftar supaya keduanya tidak berbeda.",
+      "Akun yang masuk lewat Google diberi tahu bahwa kata sandinya diatur di akun Google, bukan gagal dengan pesan 'kata sandi salah' yang menyesatkan.",
+      "Menu ini tidak muncul untuk Tamu (tidak punya kata sandi) maupun di Mode Demo (tidak pakai login sama sekali).",
+    ],
+  },
+  {
     version: "1.28.1",
     date: "2026-08-10",
     title: "Perbaikan akun default yang tidak bisa login (error \"{}\")",

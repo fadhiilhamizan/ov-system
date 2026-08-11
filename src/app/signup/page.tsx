@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, UserPlus, MailCheck } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { checkNewPassword, MIN_PASSWORD } from "@/lib/password";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/provider";
 
-const MIN_PASSWORD = 8;
 
 export default function SignUpPage() {
   const t = useT();
@@ -49,12 +49,10 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
     if (cooldown > 0) return;
-    if (password.length < MIN_PASSWORD) {
-      setError(t("Kata sandi minimal 8 karakter."));
-      return;
-    }
-    if (password !== confirm) {
-      setError(t("Konfirmasi kata sandi tidak cocok."));
+    // Shared with Ubah Kata Sandi so the two cannot drift apart.
+    const check = checkNewPassword(password, confirm);
+    if (!check.ok) {
+      setError(check.error);
       return;
     }
     // Prune old attempts, then enforce the per-window cap.

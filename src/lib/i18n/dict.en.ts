@@ -859,6 +859,18 @@ export const EN: Record<string, string> = {
   "tabel": "tables",
   "baris": "rows",
   "Data dipulihkan dari file": "Data restored from file",
+  // Change password (v1.29.0)
+  "Ubah Kata Sandi": "Change Password",
+  "Masukkan kata sandi saat ini, lalu kata sandi barunya.":
+    "Enter your current password, then the new one.",
+  "Kata sandi saat ini": "Current password",
+  "Kata sandi baru": "New password",
+  "Ulangi kata sandi baru": "Repeat new password",
+  "Kata sandi saat ini salah.": "Your current password is incorrect.",
+  "Kata sandi berhasil diubah": "Password changed",
+  "Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu — bukan di sini.":
+    "This account signs in with Google, so its password is managed in your Google account — not here.",
+  "Tutup": "Close",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the
