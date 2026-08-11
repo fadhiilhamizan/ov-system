@@ -102,7 +102,7 @@ export function ProspectFormDialog({
         </DialogHeader>
 
         <div className="grid max-h-[65vh] gap-4 overflow-y-auto px-0.5 py-1">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Nama Ormawa / Himpunan")}</Label>
               <Input value={f.org_name} onChange={(e) => setF({ ...f, org_name: e.target.value })} placeholder="HMTI, KBMDSI…" />
@@ -113,7 +113,7 @@ export function ProspectFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Kontak")}</Label>
               <Input value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} placeholder={t("No. WA / IG / email")} />
@@ -129,7 +129,7 @@ export function ProspectFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Lokasi")}</Label>
               <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="Gedung / kota…" />
@@ -147,7 +147,7 @@ export function ProspectFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <FieldSelect label={t("Status Hubungi")} value={f.contact_status} options={CONTACT} onChange={(v) => setF({ ...f, contact_status: v })} />
             <FieldSelect label={t("Respons Mereka")} value={f.their_response} options={THEIRS} onChange={(v) => setF({ ...f, their_response: v })} />
             <FieldSelect label={t("Respons Kita")} value={f.our_response} options={OURS} onChange={(v) => setF({ ...f, our_response: v })} />

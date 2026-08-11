@@ -14,6 +14,7 @@ import {
 import { useT } from "@/lib/i18n/provider";
 import { useAutosave } from "@/lib/use-autosave";
 import { SaveIndicator } from "@/components/ui/save-indicator";
+import { DivisionColumnFilter } from "./division-column-filter";
 import type { Division, RundownItem } from "@/lib/types";
 
 /** Keep local input state in sync when the server value changes (no effect). */
@@ -159,9 +160,20 @@ export function RundownView({
   const [pending, start] = React.useTransition();
 
   // Division columns = the event's divisions not excluded from the rundown.
-  const cols = React.useMemo(
+  // Divisions marked "tidak diikutsertakan pada rundown" (Sekretaris,
+  // Bendahara, …) never have a column, so they are not offered in the filter
+  // either — there would be nothing to show or hide.
+  const allCols = React.useMemo(
     () => divisions.filter((d) => !d.exclude_from_rundown).sort((a, b) => a.order - b.order),
     [divisions],
+  );
+  /** Ticked divisions. Empty = show them all, which is the default. */
+  const [focus, setFocus] = React.useState<Set<string>>(new Set());
+  // Everything below renders from `cols`, so narrowing it here is all the
+  // filter has to do — including the merge bookkeeping.
+  const cols = React.useMemo(
+    () => (focus.size ? allCols.filter((d) => focus.has(d.key)) : allCols),
+    [allCols, focus],
   );
 
   // Single rundown (versions were removed) — show every row, ordered by no.
@@ -306,13 +318,21 @@ export function RundownView({
     <div className="space-y-3">
       {/* Autosave (inline cell edits) and structural ops (add/remove/duplicate)
           each get their own cue: the badge for the former, toasts for the latter. */}
-      <div className="flex h-4 items-center">
-        <SaveIndicator status={autosave.status} />
-        {pending && autosave.status === "idle" && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            {t("Menyimpan…")}
+      <div className="flex flex-wrap items-center gap-2">
+        <DivisionColumnFilter options={allCols} focus={focus} onChange={setFocus} />
+        {focus.size > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {cols.length} {t("dari")} {allCols.length} {t("kolom divisi")}
           </span>
         )}
+        <div className="ml-auto flex h-4 items-center">
+          <SaveIndicator status={autosave.status} />
+          {pending && autosave.status === "idle" && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              {t("Menyimpan…")}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* border-separate (not collapse): sticky/frozen columns don't paint their

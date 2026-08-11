@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Check, ChevronsUpDown, LayoutGrid } from "lucide-react";
+import { Check, ChevronsUpDown, LayoutGrid, CircleSlash } from "lucide-react";
 import { setActiveDivision } from "@/lib/actions/session";
 import {
   DropdownMenu,
@@ -10,14 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NO_DIVISION } from "@/lib/task-filters";
 import type { Division } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 
-export function DivisionFilter({ divisions, active }: { divisions: Division[]; active: string }) {
+export function DivisionFilter({
+  divisions, active, showNoDivision = false,
+}: {
+  divisions: Division[];
+  active: string;
+  /** Offer "Tanpa divisi" — only worth showing when some task actually has
+   *  none, e.g. after the division it belonged to was deleted. */
+  showNoDivision?: boolean;
+}) {
   const t = useT();
   const [pending, start] = React.useTransition();
   const current = divisions.find((d) => d.key === active);
+  const isNone = active === NO_DIVISION;
 
   return (
     <DropdownMenu>
@@ -33,13 +43,17 @@ export function DivisionFilter({ divisions, active }: { divisions: Division[]; a
         >
           {current ? (
             <span className="text-[9px] font-bold">{current.short}</span>
+          ) : isNone ? (
+            <CircleSlash className="size-3.5" />
           ) : (
             <LayoutGrid className="size-3.5" />
           )}
         </span>
         <div className="hidden min-w-0 leading-tight sm:block">
           <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("Fokus divisi")}</div>
-          <div className="truncate text-xs font-semibold">{current?.name ?? t("Semua Divisi")}</div>
+          <div className="truncate text-xs font-semibold">
+            {current?.name ?? (isNone ? t("Tanpa divisi") : t("Semua Divisi"))}
+          </div>
         </div>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -60,6 +74,18 @@ export function DivisionFilter({ divisions, active }: { divisions: Division[]; a
             {active === d.key && <Check className="size-3.5 text-primary" />}
           </DropdownMenuItem>
         ))}
+        {showNoDivision && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => start(() => setActiveDivision(NO_DIVISION))} className="gap-2">
+              <span className="flex size-5 items-center justify-center rounded bg-muted text-muted-foreground">
+                <CircleSlash className="size-3" />
+              </span>
+              <span className="flex-1 italic text-muted-foreground">{t("Tanpa divisi")}</span>
+              {isNone && <Check className="size-3.5 text-primary" />}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

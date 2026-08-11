@@ -130,7 +130,7 @@ export function EventFormDialog({
               {t("Ini masih rencana — cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.")}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Nama Ormawa Visit")}</Label>
               <Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="HMSI ITS x ..." />
@@ -141,7 +141,7 @@ export function EventFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Himpunan / Partner")}</Label>
               <Input value={f.partner} onChange={(e) => setF({ ...f, partner: e.target.value })} placeholder="HIMASTA" />
@@ -152,7 +152,7 @@ export function EventFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Kabinet")}</Label>
               <Input value={f.cabinet} onChange={(e) => setF({ ...f, cabinet: e.target.value })} placeholder="PilarAksi 2026" />
@@ -163,7 +163,7 @@ export function EventFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="grid gap-1.5">
               <Label>{t("Tipe")}</Label>
               <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}>
@@ -201,7 +201,7 @@ export function EventFormDialog({
 
           <div className="rounded-lg border border-border bg-muted/30 p-3">
             <p className="mb-2 text-xs font-medium text-muted-foreground">{t("Rentang tanggal perencanaan")}</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label>{t("Mulai rencana")}</Label>
                 <Input type="date" value={f.plan_start} onChange={(e) => setF({ ...f, plan_start: e.target.value })} />

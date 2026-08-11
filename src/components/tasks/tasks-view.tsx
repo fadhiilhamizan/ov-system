@@ -20,6 +20,10 @@ import { can } from "@/lib/permissions";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { DivisionFilter } from "@/components/layout/division-filter";
+import { PicFilter } from "./pic-filter";
+import {
+  divisionKeySet, hasOrphanTasks, matchesDivision, matchesPics, picOptions, taskPicList,
+} from "@/lib/task-filters";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 type View = "table" | "kanban" | "timeline";
@@ -56,10 +60,26 @@ export function TasksView({
   // on a per-division board). No separate dropdown here.
   const division = lockedDivision ?? initialDivision;
 
+  const [pics, setPics] = React.useState<Set<string>>(new Set());
+
+  const divisionKeys = React.useMemo(() => divisionKeySet(divisions), [divisions]);
+  // The PIC menu is built from what the DIVISION focus leaves, not from the
+  // fully filtered list — otherwise ticking a PIC would remove everyone else
+  // from the menu and you could never add a second one.
+  const inDivision = React.useMemo(
+    () => tasks.filter((t) => matchesDivision(t, division, divisionKeys)),
+    [tasks, division, divisionKeys],
+  );
+  const picChoices = React.useMemo(() => picOptions(inDivision), [inDivision]);
+  const someUnassigned = React.useMemo(
+    () => inDivision.some((t) => taskPicList(t.pic).length === 0),
+    [inDivision],
+  );
+
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
-    return tasks.filter((t) => {
-      if (division !== "all" && t.division !== division) return false;
+    return inDivision.filter((t) => {
+      if (!matchesPics(t, pics)) return false;
       if (status !== "all" && t.status !== status) return false;
       if (
         query &&
@@ -68,7 +88,7 @@ export function TasksView({
         return false;
       return true;
     });
-  }, [tasks, q, division, status]);
+  }, [inDivision, q, status, pics]);
 
   const counts = React.useMemo(() => {
     const by: Record<TaskStatus, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
@@ -76,7 +96,7 @@ export function TasksView({
     return by;
   }, [filtered]);
 
-  const hasFilters = q || status !== "all";
+  const hasFilters = q || status !== "all" || pics.size > 0;
 
   return (
     <div className="space-y-4">
@@ -95,7 +115,19 @@ export function TasksView({
           {/* Division focus lives here (next to the other filters) rather than
               in the topbar — it only ever affected the Work Breakdown. Hidden
               on a per-division board, where the division is already fixed. */}
-          {!lockedDivision && <DivisionFilter divisions={divisions} active={division} />}
+          {!lockedDivision && (
+            <DivisionFilter
+              divisions={divisions}
+              active={division}
+              showNoDivision={hasOrphanTasks(tasks, divisionKeys)}
+            />
+          )}
+          <PicFilter
+            options={picChoices}
+            picked={pics}
+            onChange={setPics}
+            hasUnassigned={someUnassigned}
+          />
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-auto min-w-[130px]">
               <SelectValue placeholder={t("Status")} />
@@ -116,6 +148,7 @@ export function TasksView({
               onClick={() => {
                 setQ("");
                 setStatus("all");
+                setPics(new Set());
               }}
             >
               <X className="size-4" /> {t("Reset")}

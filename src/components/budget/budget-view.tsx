@@ -181,7 +181,7 @@ function AddItemDialog({
             <Label>{t("Nama item")} <span className="text-danger">*</span></Label>
             <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Konsumsi Peserta" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="grid gap-1.5">
               <Label>{t("Qty")}</Label>
               <Input type="number" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} />
@@ -359,8 +359,11 @@ export function BudgetView({
   const t = useT();
   const evMap = new Map(events.map((e) => [e.id, e]));
   const [state, setState] = useSynced(plans);
-  const sel = useMultiSelect();
-  React.useEffect(() => sel.clear(), [plans]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Every item across every plan is "on screen"; a deleted id just stops
+  // counting, so the selection needs no cleanup effect (see use-multi-select).
+  const sel = useMultiSelect(
+    React.useMemo(() => state.flatMap((p) => p.items.map((i) => i.id)), [state]),
+  );
   const [bulkPending, startBulk] = React.useTransition();
   const autosave = useAutosave();
   function bulkDelete() {

@@ -95,13 +95,16 @@ function DivisionMultiSelect({
 
 // ---------------- Member ----------------
 export function MemberFormDialog({
-  mode, member, divisions, events, defaultEventId, open, onOpenChange, trigger,
+  mode, member, divisions, events, defaultEventId, defaultDivisions, open, onOpenChange, trigger,
 }: {
   mode: "create" | "edit";
   member?: Member;
   divisions: Division[];
   events: OVEvent[];
   defaultEventId: string;
+  /** Pre-ticked divisions when adding from a division card, so the person
+   *  lands in that division without hunting for it in the list. */
+  defaultDivisions?: string[];
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   trigger?: React.ReactNode;
@@ -118,7 +121,7 @@ export function MemberFormDialog({
     nrp: "",
     type: (base?.type ?? "fungsionaris") as Member["type"],
     year: base?.year ?? new Date().getFullYear(),
-    divisions: base?.divisions ?? (divisions[0] ? [divisions[0].key] : []),
+    divisions: base?.divisions ?? defaultDivisions ?? (divisions[0] ? [divisions[0].key] : []),
     event_id: base?.event_id ?? defaultEventId,
   });
   const [f, setF] = useResetOn(`${isOpen}:${member?.id ?? "new"}`, () => ({
@@ -127,7 +130,7 @@ export function MemberFormDialog({
     nrp: member?.nrp ?? "",
     type: member?.type ?? "fungsionaris",
     year: member?.year ?? new Date().getFullYear(),
-    divisions: member ? memberDivisions(member) : divisions[0] ? [divisions[0].key] : [],
+    divisions: member ? memberDivisions(member) : defaultDivisions ?? (divisions[0] ? [divisions[0].key] : []),
     event_id: member?.event_id ?? defaultEventId,
   }));
 
@@ -161,7 +164,7 @@ export function MemberFormDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Nama lengkap")} <span className="text-danger">*</span></Label>
               <Input ref={nameRef} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
@@ -171,7 +174,7 @@ export function MemberFormDialog({
               <Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>NRP</Label>
               <Input

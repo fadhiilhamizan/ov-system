@@ -7,6 +7,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.30.0",
+    date: "2026-08-11",
+    title: "Pilihan tidak hilang saat mencari, fokus PIC & kolom rundown, penomoran WBS dirapikan, & perbaikan tampilan mobile",
+    changes: [
+      "PERBAIKAN PENTING: mencentang beberapa baris lalu mencari sesuatu TIDAK lagi menghapus centang sebelumnya. Dulu di Work Breakdown, mengetik satu huruf di kotak pencarian langsung membuang semua yang sudah dipilih, jadi 'pilih beberapa, cari lagi, pilih lagi' mustahil dilakukan. Sekarang centang yang tersembunyi oleh filter tetap tersimpan dan muncul kembali begitu filternya dibersihkan.",
+      "Perbaikan yang sama diterapkan ke SEMUA tabel yang punya multi-select: Work Breakdown, Reach & Offer, Super Link, Anggaran, Divisi, dan Anggota EA. Tombol 'pilih semua' juga hanya menyentuh baris yang sedang tampil, tidak lagi membuang pilihan di luar layar.",
+      "WORK BREAKDOWN: penomoran pada tabel dirapikan. Nomor sekarang murni urutan baris (1 sampai baris terakhir) dan tidak lagi terikat ke nomor tugas — dulu nomornya dihitung per divisi, jadi saat melihat 'Semua Divisi' tabelnya terbaca 1,2,3,1,2,1,2,3… Kalau tampilan difokuskan ke satu divisi, penomoran tetap mulai dari 1.",
+      "WORK BREAKDOWN: ditambah 'Fokus PIC' — dropdown dengan checkbox untuk menampilkan tugas milik satu atau beberapa orang sekaligus. Menunya tetap terbuka saat mencentang, jadi bisa pilih beberapa orang sekali jalan, dan ada pilihan 'Tanpa PIC'.",
+      "WORK BREAKDOWN: 'Fokus divisi' kini punya pilihan 'Tanpa divisi' untuk tugas yang tidak masuk divisi mana pun — termasuk tugas yang divisinya sudah dihapus, yang sebelumnya tidak bisa dijangkau sama sekali dari toolbar.",
+      "RUNDOWN: ditambah filter 'Fokus divisi' untuk memilih kolom divisi mana yang ditampilkan. Sangat membantu karena rundown adalah tabel terlebar di aplikasi. Divisi yang ditandai 'tidak diikutsertakan pada rundown' tidak muncul sebagai pilihan, karena memang tidak punya kolom.",
+      "DIVISI & ANGGOTA: anggota kini bisa ditambahkan langsung dari kartu divisinya lewat tombol 'Tambah anggota', dengan divisi tersebut sudah tercentang otomatis — tidak perlu lagi pindah ke tab Anggota EA dan mencari divisinya di daftar.",
+      "PERBAIKAN TAMPILAN MOBILE: semua pop-up sempat muncul melenceng ke kiri layar sebelum melompat ke tengah. Penyebabnya animasi pop-up yang menggeser posisinya dua kali; di layar 375px pop-up sampai keluar dari tepi kiri. Sekarang benar-benar di tengah.",
+      "MOBILE: kolom isian yang tadinya dipaksa berdampingan pada pop-up (Nama+Kode, Partner+Kampus, Qty+Satuan, dan 14 pasangan lain) kini menumpuk ke bawah di layar ponsel, jadi tidak lagi terjepit selebar ~135px.",
+      "MOBILE: area sentuh kotak centang diperbesar dari 24px menjadi 32px tanpa mengubah tampilannya, supaya kolom pilihan di tabel lebih mudah ditekan dengan jari.",
+    ],
+  },
+  {
     version: "1.29.0",
     date: "2026-08-10",
     title: "Ubah kata sandi sendiri dari dalam aplikasi",

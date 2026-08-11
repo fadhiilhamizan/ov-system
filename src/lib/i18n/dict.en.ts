@@ -871,6 +871,19 @@ export const EN: Record<string, string> = {
   "Akun ini masuk lewat Google, jadi kata sandinya diatur di akun Google-mu — bukan di sini.":
     "This account signs in with Google, so its password is managed in your Google account — not here.",
   "Tutup": "Close",
+  // Work Breakdown & Rundown focus filters (v1.30.0)
+  "Fokus PIC": "PIC focus",
+  "Fokus ke PIC": "Focus on PIC",
+  "Semua PIC": "All PICs",
+  "Tanpa PIC": "No PIC",
+  "Belum ada PIC": "No PIC yet",
+  "Tanpa divisi": "No division",
+  "Kolom divisi": "Division columns",
+  "Tampilkan semua": "Show all",
+  "kolom divisi": "division columns",
+  "Tidak ada divisi yang diikutsertakan pada rundown.":
+    "No division is included in the rundown.",
+  "Tambah anggota": "Add member",
 
   // ==========================================================
   // v1.23.0 — gap closed by src/lib/i18n/coverage.test.ts, which now fails the

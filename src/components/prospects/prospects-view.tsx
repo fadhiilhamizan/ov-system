@@ -69,8 +69,6 @@ export function ProspectsView({
   const [q, setQ] = React.useState("");
   const [stage, setStage] = React.useState("all");
   const sort = useMultiSort<ProspectSortKey>();
-  const sel = useMultiSelect();
-  React.useEffect(() => sel.clear(), [prospects]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkPending, startBulk] = React.useTransition();
 
   const filtered = React.useMemo(() => {
@@ -100,8 +98,10 @@ export function ProspectsView({
     return sortRows(filtered, sort.rules, val);
   }, [filtered, sort.rules, stageOrder]);
 
+  // Selection follows what is on screen; ticks survive a search (see use-multi-select).
+  const sel = useMultiSelect(React.useMemo(() => rows.map((p) => p.id), [rows]));
   const hasFilters = q || stage !== "all";
-  const allSelected = rows.length > 0 && rows.every((p) => sel.selected.has(p.id));
+  const allSelected = sel.allVisibleSelected;
   function bulkDelete() {
     startBulk(async () => {
       const res = await bulkDeleteProspectsAction(sel.ids);

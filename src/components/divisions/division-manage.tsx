@@ -60,7 +60,7 @@ function DivisionFormDialog({
           <DialogDescription>{t("Divisi bisa berbeda tiap Ormawa Visit.")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Nama divisi")}</Label>
               <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Liaison Officer" />

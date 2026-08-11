@@ -133,7 +133,7 @@ function LinkFormDialog({
               <p className="text-[11px] text-danger">{t("Harus berupa tautan (diawali http:// atau https://).")}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>
                 {t("Jenis Ormawa Visit")} <span className="text-danger">*</span>
@@ -250,8 +250,6 @@ export function LinksView({
   const [q, setQ] = React.useState("");
   const [eventFilter, setEventFilter] = React.useState<string>("all");
   const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
-  const sel = useMultiSelect();
-  React.useEffect(() => sel.clear(), [links]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkPending, startBulk] = React.useTransition();
   function bulkDelete() {
     startBulk(async () => {
@@ -269,6 +267,9 @@ export function LinksView({
       return true;
     });
   }, [links, q, eventFilter]);
+
+  // Selection follows what is on screen; ticks survive a search (see use-multi-select).
+  const sel = useMultiSelect(React.useMemo(() => filtered.map((l) => l.id), [filtered]));
 
   // Group: Ormawa Visit -> Divisi -> links. When a specific event is
   // selected, the outer level collapses to a single group.

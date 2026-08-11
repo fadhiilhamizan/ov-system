@@ -17,6 +17,7 @@ import {
 import { DivisionsGrid, type DivisionStat } from "@/components/divisions/divisions-grid";
 import { SortIndicator } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
+import { visibleSelection } from "@/lib/use-multi-select";
 import { cn } from "@/lib/utils";
 import { memberDivisions, primaryDivision } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
@@ -75,11 +76,17 @@ export function MembersView({
   // (ids selected then filtered away, or deleted, are simply ignored — no effect
   // needed to prune state).
   const filteredIds = filtered.map((m) => m.id);
-  const selectedInView = filteredIds.filter((id) => selected.has(id));
+  const selectedInView = visibleSelection(selected, filteredIds);
   const allChecked = filtered.length > 0 && selectedInView.length === filtered.length;
   const someChecked = selectedInView.length > 0 && !allChecked;
+  /** Adds/removes only the rows on screen — ticks hidden by the current filter
+   *  are left alone rather than being thrown away by a "select all". */
   function toggleAll() {
-    setSelected(allChecked ? new Set() : new Set(filteredIds));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of filteredIds) { if (allChecked) next.delete(id); else next.add(id); }
+      return next;
+    });
   }
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -110,9 +117,11 @@ export function MembersView({
           stats={divisionStats}
           teams={teams}
           members={members}
+          events={events}
           eventId={eventId}
           canManage={canManageDivisions}
           canManageTeams={canManageTeams}
+          canManageMembers={canManageMembers}
         />
       </TabsContent>
 
