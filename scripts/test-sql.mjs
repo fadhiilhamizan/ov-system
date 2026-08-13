@@ -274,6 +274,7 @@ const PENDING = [
   "0034_task_links_scope_and_roster_pii.sql",
   "0035_rundown_single_version.sql",
   "0036_prospect_link_notes.sql",
+  "0037_task_refs.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -695,6 +696,56 @@ values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticate
   ok("identity tidak digandakan saat dijalankan ulang (tetap 3)", ident === 3);
 } catch (e) {
   ok("uji default-accounts berjalan", false, e.message.split("\n")[0]);
+}
+
+// ------------------------------------------------------------------
+// task_refs (0037): tautan RUJUKAN sebuah tugas.
+//
+// Bedanya dengan task_links harus dijaga: task_links adalah HASIL tugas yang
+// diterbitkan ke Super Link, satu baris Super Link milik satu tugas (ada unique
+// index). task_refs menunjuk KE Super Link, dan satu baris Super Link memang
+// boleh dirujuk banyak tugas. Kalau unique index ikut tersalin ke sini,
+// merujuk dokumen yang sama dari dua tugas akan gagal.
+// ------------------------------------------------------------------
+console.log("\ntask_refs - rujukan tugas");
+{
+  const REF_A = "'ffffffff-0000-0000-0000-00000000000a'";
+  const REF_B = "'ffffffff-0000-0000-0000-00000000000b'";
+
+  await check("koordinator boleh menambah rujukan di edisi terbuka", U.coord, false,
+    `insert into task_refs (id, task_id, url, link_id) values (${REF_A}, ${T_EVENT}, 'https://ref.test', ${LINK})`, "allow");
+
+  // The whole point of dropping the unique index: the SAME Super Link row,
+  // referenced by a DIFFERENT task.
+  await check("satu entri Super Link boleh dirujuk tugas LAIN juga", U.coord, false,
+    `insert into task_refs (id, task_id, url, link_id) values (${REF_B}, ${T_CONS}, 'https://ref.test', ${LINK})`, "allow");
+
+  await check("staff boleh menambah rujukan (akses terbatas, bukan hanya-lihat)", U.staff, false,
+    `insert into task_refs (task_id, url) values (${T_EVENT}, 'https://manual.test')`, "allow");
+
+  await check("koordinator DITOLAK menambah rujukan di ARSIP", U.coord, false,
+    `insert into task_refs (task_id, url) values (${T_LOCK}, 'https://arsip.test')`, "deny");
+
+  await check("koordinator DITOLAK mengubah rujukan milik tugas di ARSIP", U.coord, false,
+    `update task_refs set url = 'https://x.test' where task_id = ${T_LOCK}`, "deny");
+
+  await check("Tamu anonim tidak bisa menambah rujukan", U.anon, true,
+    `insert into task_refs (task_id, url) values (${T_EVENT}, 'https://tamu.test')`, "deny");
+
+  await check("Tamu tetap boleh MEMBACA rujukan", U.viewer, false,
+    `select * from task_refs`, "rows");
+
+  const uniq = (await db.query(
+    `select 1 from pg_indexes where tablename = 'task_refs' and indexdef ilike '%unique%' and indexdef ilike '%link_id%'`,
+  )).rows.length;
+  ok("TIDAK ada unique index pada task_refs.link_id (beda dari task_links)", uniq === 0);
+
+  // Deleting the Super Link entry must not delete the reference: the URL text
+  // survives so the task still shows where it pointed.
+  await db.exec(`delete from links where id = ${LINK};`);
+  const survived = Number((await db.query(
+    `select count(*) c from task_refs where url = 'https://ref.test' and link_id is null`)).rows[0].c);
+  ok("menghapus entri Super Link menyisakan rujukan (link_id jadi null)", survived === 2);
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

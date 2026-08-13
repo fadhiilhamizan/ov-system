@@ -23,6 +23,8 @@ import type {
   Task,
   TaskLink,
   TaskLinkInput,
+  TaskRef,
+  TaskRefInput,
   TaskStatus,
   Team,
 } from "../types";
@@ -292,8 +294,70 @@ export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
 export async function purgeTaskLinks(taskId: string) {
   const links = await getTaskLinks(taskId);
   for (const l of links) if (l.link_id) await deleteLink(l.link_id);
-  if (!USE_SUPABASE) return local.deleteTaskLinksFor(taskId);
+  // References go too, but nothing is deleted from Super Link for them: a
+  // reference only POINTS at an entry that other tasks may also use.
+  // In Supabase the FK cascade handles it; the local store has no FKs.
+  if (!USE_SUPABASE) { local.deleteTaskRefsFor(taskId); return local.deleteTaskLinksFor(taskId); }
   await must((await sb()).from("task_links").delete().eq("task_id", taskId));
+}
+
+// ---------------- Task references ----------------
+// Links a task USES. See the TaskRef type and migration 0037 for why this is
+// not the same thing as task_links, and why one Super Link entry may be
+// referenced by many tasks.
+export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
+  if (!USE_SUPABASE) return local.getTaskRefs(taskId);
+  const { data } = await (await sb()).from("task_refs").select("*").eq("task_id", taskId).order("order");
+  return coalesce((data ?? []) as TaskRef[], ["url", "label"]);
+});
+
+/** All references for an event's tasks, keyed by task id (one round trip). */
+export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<string, TaskRef[]>> => {
+  const rows = USE_SUPABASE
+    ? await (async () => {
+        const client = await sb();
+        const { data: tasks } = await client.from("tasks").select("id").eq("event_id", eventId);
+        const ids = (tasks ?? []).map((t: { id: string }) => t.id);
+        if (!ids.length) return [] as TaskRef[];
+        const { data } = await client.from("task_refs").select("*").in("task_id", ids).order("order");
+        return coalesce((data ?? []) as TaskRef[], ["url", "label"]);
+      })()
+    : local.getTaskRefsByEvent(eventId);
+  const byTask: Record<string, TaskRef[]> = {};
+  for (const r of rows) (byTask[r.task_id] ??= []).push(r);
+  return byTask;
+});
+
+/**
+ * Replace a task's references with exactly what the form sent.
+ *
+ * Simpler than `syncTaskLinks`: nothing is published anywhere, so there is no
+ * Super Link row to create or clean up. `link_id` merely records that the URL
+ * came from a Super Link entry, and is left alone if that entry is later
+ * deleted (the FK is ON DELETE SET NULL, so the URL text survives).
+ */
+export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
+  if (!USE_SUPABASE) return local.syncTaskRefs(taskId, inputs);
+  const client = await sb();
+  const existing = await getTaskRefs(taskId);
+  const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
+
+  for (const ex of existing) {
+    if (!keep.has(ex.id)) await must(client.from("task_refs").delete().eq("id", ex.id));
+  }
+  for (const [i, input] of inputs.entries()) {
+    const row = {
+      url: input.url,
+      label: input.label ?? "",
+      link_id: input.link_id ?? null,
+      order: i,
+    };
+    if (input.id && existing.some((e) => e.id === input.id)) {
+      await must(client.from("task_refs").update(row).eq("id", input.id));
+    } else {
+      await must(client.from("task_refs").insert({ task_id: taskId, ...row }));
+    }
+  }
 }
 
 // ---------------- Prospects ----------------

@@ -20,6 +20,10 @@ import { createClient } from "./supabase/server";
  */
 const DELETE_ORDER = [
   "task_links",
+  // task_refs is a child of tasks (CASCADE) and of links (SET NULL), so it has
+  // to be deleted before both, for the same reason task_links does. Leaving it
+  // out would mean a restore silently loses every task reference.
+  "task_refs",
   "budget_items",
   "tasks",
   "members",

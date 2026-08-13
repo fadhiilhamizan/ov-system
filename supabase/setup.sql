@@ -217,6 +217,24 @@ create index if not exists task_links_task_idx on task_links(task_id);
 create index if not exists task_links_link_idx on task_links(link_id);
 create unique index if not exists task_links_link_uniq on task_links(link_id) where link_id is not null;
 
+-- 2.7b task_refs (0037): tautan yang DIPAKAI tugas sebagai rujukan.
+-- Arahnya berlawanan dengan task_links di atas: task_links adalah hasil tugas
+-- yang diterbitkan ke Super Link (satu baris Super Link milik satu tugas, itu
+-- sebabnya ada unique index). task_refs menunjuk ke Super Link, dan SATU baris
+-- Super Link boleh dirujuk BANYAK tugas, jadi di sini sengaja TIDAK ada unique
+-- index pada link_id. link_id null = tautan diketik manual.
+create table if not exists task_refs (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  url text not null,
+  label text default '',
+  link_id uuid references links(id) on delete set null,
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists task_refs_task_idx on task_refs(task_id);
+create index if not exists task_refs_link_idx on task_refs(link_id);
+
 -- 2.8 prospects (Reach & Offer) ------------------------------------
 create table if not exists prospects (
   id uuid primary key default gen_random_uuid(),
@@ -575,7 +593,7 @@ create trigger trg_assign_job_no before insert on job_harih
 do $do$
 declare t text;
 begin
-  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links',
+  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs',
                            'prospects', 'links', 'budget_plans', 'budget_items', 'rundown',
                            'job_harih', 'faqs', 'teams', 'backups', 'role_requests']
   loop
@@ -590,7 +608,7 @@ end $do$;
 do $do$
 declare t text;
 begin
-  foreach t in array array['divisions', 'events', 'tasks', 'task_links',
+  foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs',
                            'prospects', 'rundown', 'job_harih', 'faqs']
   loop
     execute format('drop policy if exists "read_all" on %I;', t);
@@ -693,6 +711,23 @@ create policy "task_links_update" on task_links for update to authenticated
 create policy "task_links_delete" on task_links for delete to authenticated
   using (has_role()
     and writable_event((select t.event_id from tasks t where t.id = task_links.task_id)));
+
+-- task_refs (0037) ikut tugas induknya juga, aturannya sama persis.
+drop policy if exists "task_refs_write" on task_refs;
+drop policy if exists "task_refs_insert" on task_refs;
+drop policy if exists "task_refs_update" on task_refs;
+drop policy if exists "task_refs_delete" on task_refs;
+create policy "task_refs_insert" on task_refs for insert to authenticated
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
+create policy "task_refs_update" on task_refs for update to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)))
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
+create policy "task_refs_delete" on task_refs for delete to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
 
 -- 5.3 Tulis: modul "admin saja" ------------------------------------
 do $do$

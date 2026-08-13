@@ -4,11 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createTask, deleteTask, getTask, updateTask, bulkUpdateTasks, bulkDeleteTasks,
-  syncTaskLinks, purgeTaskLinks,
+  syncTaskLinks, purgeTaskLinks, syncTaskRefs,
 } from "@/lib/data/repo";
-import type { DivisionKey, Task, TaskLinkInput, TaskStatus } from "@/lib/types";
+import type { DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
 import {
-  createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema,
+  createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema, taskRefsSchema,
   bulkTaskFieldsSchema, idSchema, parse,
 } from "./schemas";
 import { archivedGuard } from "./lock";
@@ -31,7 +31,11 @@ type Result = { ok: true } | { ok: false; error: string };
 const errMsg = (e: unknown) =>
   e instanceof Error ? `Gagal menyimpan: ${e.message}` : "Gagal menyimpan tugas.";
 
-export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]): Promise<Result> {
+export async function createTaskAction(
+  input: TaskInput,
+  links?: TaskLinkInput[],
+  refs?: TaskRefInput[],
+): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageTasks(user)) {
     return { ok: false, error: "Kamu tidak punya akses membuat tugas." };
@@ -40,6 +44,8 @@ export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]
   if (!v.ok) return v;
   const lv = parse(taskLinksSchema, links ?? []);
   if (!lv.ok) return lv;
+  const rv = parse(taskRefsSchema, refs ?? []);
+  if (!rv.ok) return rv;
   const blocked = await archivedGuard(user, v.data.event_id);
   if (blocked) return blocked;
 
@@ -49,6 +55,7 @@ export async function createTaskAction(input: TaskInput, links?: TaskLinkInput[]
       const created = await getTask(id);
       if (created) await syncTaskLinks(created, lv.data);
     }
+    if (id && rv.data.length) await syncTaskRefs(id, rv.data);
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
@@ -60,6 +67,7 @@ export async function updateTaskAction(
   id: string,
   patch: Partial<Task>,
   links?: TaskLinkInput[],
+  refs?: TaskRefInput[],
 ): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
@@ -67,6 +75,8 @@ export async function updateTaskAction(
   if (!v.ok) return v;
   const lv = links ? parse(taskLinksSchema, links) : null;
   if (lv && !lv.ok) return lv;
+  const rv = refs ? parse(taskRefsSchema, refs) : null;
+  if (rv && !rv.ok) return rv;
 
   const user = await getCurrentUser();
   const task = await getTask(idv.data);
@@ -84,6 +94,7 @@ export async function updateTaskAction(
   try {
     await updateTask(idv.data, v.data);
     if (lv && lv.ok) await syncTaskLinks({ ...task, ...v.data }, lv.data);
+    if (rv && rv.ok) await syncTaskRefs(idv.data, rv.data);
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }

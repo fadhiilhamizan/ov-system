@@ -113,6 +113,31 @@ export interface TaskLink {
   order: number;
 }
 
+/**
+ * A link a task REFERENCES (handbook, template, past proposal).
+ *
+ * The mirror image of TaskLink: that one is a RESULT published TO Super Link
+ * and owned by exactly one task. A reference points AT Super Link, and one
+ * Super Link entry may be referenced by many tasks. `link_id` is null when the
+ * URL was typed by hand.
+ */
+export interface TaskRef {
+  id: string;
+  task_id: string;
+  url: string;
+  label: string;
+  link_id?: string | null;
+  order: number;
+}
+
+/** Shape the references editor sends back; `id` is absent for new rows. */
+export interface TaskRefInput {
+  id?: string;
+  url: string;
+  label: string;
+  link_id?: string | null;
+}
+
 /** Shape the task form sends back; `id` is absent for newly-added rows. */
 export interface TaskLinkInput {
   id?: string;
@@ -281,6 +306,7 @@ export interface Database {
   members: Member[];
   tasks: Task[];
   taskLinks?: TaskLink[];
+  taskRefs?: TaskRef[];
   prospects: Prospect[];
   links: LinkItem[];
   budgetPlans: BudgetPlan[];

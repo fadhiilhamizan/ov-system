@@ -150,6 +150,57 @@ export const taskLinksSchema = z
     }
   });
 
+/**
+ * One reference link on a task.
+ *
+ * `link_id` IS accepted here, unlike on prospects: it only records that the URL
+ * was picked from Super Link, and the row it names is read-only from a task's
+ * point of view. Nothing about a Super Link entry is written through this path,
+ * so a forged id can at worst mislabel a task's own reference.
+ */
+export const taskRefSchema = z.object({
+  id: z.string().trim().max(128).optional(),
+  url: urlSchema,
+  label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
+  link_id: z.string().trim().max(128).nullish().transform((v) => v || null),
+});
+export const taskRefsSchema = z
+  .array(taskRefSchema)
+  .max(20, "Maksimal 20 referensi per tugas.")
+  .superRefine((refs, ctx) => {
+    // The same URL twice on one task is always a mistake, and it makes the
+    // "open" shortcuts ambiguous.
+    const seen = new Set<string>();
+    for (const r of refs) {
+      const key = r.url.trim().toLowerCase().replace(/\/+$/, "");
+      if (seen.has(key)) {
+        ctx.addIssue({ code: "custom", message: "Ada referensi yang sama lebih dari sekali." });
+        return;
+      }
+      seen.add(key);
+    }
+  });
+
+// ---------------- Violet (chatbot) ----------------
+/**
+ * What the chat box may send. Caps exist because every field is forwarded to a
+ * paid API: an unbounded question or a thousand-turn history is somebody
+ * running up a bill through a form nobody validated.
+ */
+export const violetAskSchema = z.object({
+  question: nonEmpty("Pertanyaan", 1000),
+  history: z
+    .array(z.object({
+      role: z.enum(["user", "model"]),
+      text: z.string().trim().max(4000),
+    }))
+    // Only the recent turns matter for a follow-up, and the cap bounds the
+    // prompt size no matter how long the conversation runs.
+    .max(20, "Riwayat percakapan terlalu panjang.")
+    .optional()
+    .transform((v) => (v ?? []).slice(-8)),
+});
+
 // ---------------- Budget ----------------
 const money = z
   .number()

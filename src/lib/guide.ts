@@ -66,6 +66,8 @@ export const GUIDE: GuideSection[] = [
       { id: "Urutkan dengan mengklik judul kolom. Klik kolom kedua untuk menambah urutan bertingkat - angka kecil menunjukkan prioritas urutan. Klik ketiga menghapus kolom itu dari urutan.", en: "Sort by clicking a column header. Click a second column to add a tiebreaker - the small number shows sort priority. A third click removes that column from the sort." },
       { id: "Untuk mengisi hasil, buka tugasnya (menu titik tiga → Edit). Kolom Hasil di tabel hanya bisa dilihat, tidak bisa diketik langsung.", en: "To submit a result, open the task (three-dot menu → Edit). The Result column in the table is read-only." },
       { id: "Di dalam pop-up, isi 'Hasil - deskripsi' lalu tambahkan tautan lewat 'Tambah tautan'. Bisa lebih dari satu tautan.", en: "Inside the dialog, fill in 'Result - description', then attach links via 'Add link'. You can add more than one." },
+      { id: "Bagian 'Referensi' di bawahnya untuk bahan rujukan yang DIPAKAI mengerjakan tugas (handbook, template, proposal tahun lalu). Ketik URL-nya, atau klik 'Ambil dari Super Link' untuk memilih dari direktori. Tombol panah di samping tiap baris langsung membuka tautannya.", en: "The 'References' block below is for material you WORK FROM (a handbook, a template, last year's proposal). Type a URL or click 'Pick from Super Link'. The arrow button next to each row opens it straight away." },
+      { id: "Referensi berbeda dari tautan hasil: hasil adalah keluaran tugas yang diterbitkan KE Super Link, sedangkan referensi menunjuk KE Super Link. Satu tautan Super Link boleh dijadikan referensi oleh banyak tugas sekaligus.", en: "References are the opposite of result links: a result is the task's OUTPUT, published TO Super Link, while a reference points AT Super Link. One Super Link entry may be referenced by any number of tasks." },
       { id: "Centang 'Tampilkan juga di Super Link' bila tautan itu perlu muncul di direktori Super Link, lalu beri nama tautannya.", en: "Tick 'Also show in Super Link' if the link belongs in the Super Link directory, then give it a name." },
       { id: "Simpan dengan 'Simpan Perubahan', atau 'Simpan & Selesai' untuk sekaligus menandai tugas selesai.", en: "Save with 'Save Changes', or use 'Save & Done' to save and mark the task complete in one step." },
       { id: "Pilih beberapa tugas lewat kotak centang untuk ubah status atau hapus massal.", en: "Select several tasks with the checkboxes to change status or delete them in bulk." },
@@ -285,6 +287,29 @@ export const GUIDE: GuideSection[] = [
       { id: "Di Mode Demo menu ini tetap bisa dibuka, tapi isinya selalu kosong: demo memakai database contoh yang terpisah dan tidak memakai login sama sekali (peran diganti lewat tombol peran di kanan atas), jadi tidak ada akun yang bisa mengajukan maupun diberi peran. Penjelasan ini juga ditampilkan di halamannya.", en: "In Demo Mode this menu still opens but is always empty: the demo runs on a separate sample database with no login at all (you switch role with the role button at the top right), so there is no account to file or receive a request. The page itself explains this too." },
     ],
     access: { id: "Hanya Admin yang bisa membuka dan memutuskan.", en: "Only Admins can open it and decide." },
+  },
+  {
+    key: "violet",
+    title: { id: "Violet (asisten chat)", en: "Violet (chat assistant)" },
+    purpose: {
+      id: "Tanya jawab cepat soal sistem ini: menu, cara pakai, hak akses, dan data Ormawa Visit yang sedang dibuka.",
+      en: "Quick answers about this system: menus, how to use them, access rules, and the data of the Ormawa Visit you are viewing.",
+    },
+    steps: [
+      { id: "Klik tombol ungu 'Violet' di pojok kanan bawah, lalu ketik pertanyaanmu. Enter mengirim, Shift+Enter membuat baris baru.", en: "Click the purple 'Violet' button at the bottom right and type your question. Enter sends, Shift+Enter makes a new line." },
+      { id: "Tiap jawaban menyertakan sumbernya di bawah. Klik sumbernya untuk langsung membuka menu yang dimaksud.", en: "Every answer lists its sources underneath. Click one to jump straight to the menu it came from." },
+      { id: "Ikon tong sampah di kepala panel membersihkan percakapan.", en: "The bin icon in the panel header clears the conversation." },
+    ],
+    tips: [
+      { id: "Violet HANYA menjawab soal sistem ini. Pertanyaan di luar itu ditolak, dan kalau jawabannya memang tidak ada di sistem, Violet mengaku tidak tahu alih-alih mengarang nama menu atau angka.", en: "Violet ONLY answers about this system. Anything else is declined, and when the answer genuinely is not in the system it says so rather than inventing a menu name or a figure." },
+      { id: "Violet membaca data lewat sesi kamu sendiri, jadi hak aksesmu tetap berlaku. Tamu tidak bisa memancing daftar nama anggota lewat chat.", en: "Violet reads data through your own session, so your access rules still apply. A guest cannot coax the member roster out of it." },
+      { id: "Percakapannya tidak disimpan: hilang saat panel ditutup atau halaman dimuat ulang. Jawabannya mengutip data yang terus berubah, jadi transkrip lama akan cepat menyesatkan.", en: "The conversation is not stored: it goes when you close the panel or reload. Answers quote live data that keeps changing, so an old transcript would quickly mislead." },
+      { id: "Tombolnya hanya muncul kalau admin sudah mengisi GEMINI_API_KEY di server.", en: "The button only appears once an admin has set GEMINI_API_KEY on the server." },
+    ],
+    access: {
+      id: "Semua peran yang sudah masuk bisa memakai Violet. Yang bisa dijawab menyesuaikan hak akses masing-masing.",
+      en: "Every signed-in role can use Violet. What it can answer follows each role's own access.",
+    },
   },
   {
     key: "settings",

@@ -20,6 +20,8 @@ import type {
   Task,
   TaskLink,
   TaskLinkInput,
+  TaskRef,
+  TaskRefInput,
   TaskStatus,
   Team,
 } from "../types";
@@ -260,6 +262,38 @@ export function getTaskLinksByEvent(eventId: string): TaskLink[] {
 export function deleteTaskLinksFor(taskId: string) {
   mutate((db) => {
     db.taskLinks = (db.taskLinks ?? []).filter((l) => l.task_id !== taskId);
+  });
+}
+
+// ---------------- Task references ----------------
+const taskRefs = () => (getDb().taskRefs ??= []);
+
+export function getTaskRefs(taskId: string): TaskRef[] {
+  return taskRefs().filter((r) => r.task_id === taskId).sort((a, b) => a.order - b.order);
+}
+export function getTaskRefsByEvent(eventId: string): TaskRef[] {
+  const ids = new Set(getDb().tasks.filter((t) => t.event_id === eventId).map((t) => t.id));
+  return taskRefs().filter((r) => ids.has(r.task_id)).sort((a, b) => a.order - b.order);
+}
+/** Mirrors repo.syncTaskRefs: the form's list becomes the whole truth. */
+export function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
+  mutate((db) => {
+    const others = (db.taskRefs ?? []).filter((r) => r.task_id !== taskId);
+    const kept = new Map((db.taskRefs ?? []).filter((r) => r.task_id === taskId).map((r) => [r.id, r]));
+    const next = inputs.map((input, order): TaskRef => ({
+      id: (input.id && kept.has(input.id)) ? input.id : uid("tr"),
+      task_id: taskId,
+      url: input.url,
+      label: input.label ?? "",
+      link_id: input.link_id ?? null,
+      order,
+    }));
+    db.taskRefs = [...others, ...next];
+  });
+}
+export function deleteTaskRefsFor(taskId: string) {
+  mutate((db) => {
+    db.taskRefs = (db.taskRefs ?? []).filter((r) => r.task_id !== taskId);
   });
 }
 export function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {

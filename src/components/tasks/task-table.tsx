@@ -14,7 +14,7 @@ import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { BulkEditDialog } from "./bulk-edit-dialog";
-import { useTaskLinks } from "./task-links-context";
+import { useTaskLinks, useTaskRefs } from "./task-links-context";
 import { EmptyState } from "@/components/ui/empty";
 import { SortHead } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
@@ -193,6 +193,7 @@ export function TaskTable({
               <SortHead sort={sort} k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
               <SortHead sort={sort} k="deadline">{tr("Deadline")}</SortHead>
               <SortHead sort={sort} k="status">{tr("Status")}</SortHead>
+              <TableHead className="min-w-[110px]">{tr("Referensi")}</TableHead>
               <TableHead className="min-w-[180px]">{tr("Hasil")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -227,6 +228,7 @@ export function TaskTable({
                     </span>
                   </TableCell>
                   <TableCell><StatusMenu task={t} user={user} /></TableCell>
+                  <TableCell><RefsCell task={t} /></TableCell>
                   <TableCell><ResultCell task={t} /></TableCell>
                   <TableCell>
                     <TaskActions task={t} divisions={divisions} events={events} activeEventId={activeEventId} user={user} />
@@ -237,6 +239,35 @@ export function TaskTable({
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The task's REFERENCE links, each a one-click shortcut straight to the source.
+ *
+ * Read-only here on purpose: references are edited in the task dialog, same as
+ * the result. A chip shows the name, or the bare URL when it has none.
+ */
+function RefsCell({ task }: { task: Task }) {
+  const tr = useT();
+  const refs = useTaskRefs(task.id);
+  if (!refs.length) return <span className="text-sm text-muted-foreground">-</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {refs.map((r) => (
+        <a
+          key={r.id}
+          href={r.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`${r.label || r.url}${r.link_id ? ` (${tr("Super Link")})` : ""}`}
+          className="inline-flex max-w-[140px] items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] transition hover:bg-muted"
+        >
+          <span className="truncate">{r.label || r.url}</span>
+          <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+        </a>
+      ))}
     </div>
   );
 }

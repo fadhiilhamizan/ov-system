@@ -884,6 +884,30 @@ export const EN: Record<string, string> = {
   "Tidak ada divisi yang diikutsertakan pada rundown.":
     "No division is included in the rundown.",
   "Tambah anggota": "Add member",
+  // Violet chatbot (v1.32.0)
+  "Buka Violet": "Open Violet",
+  "Asisten Ormawa Visit Management System": "Ormawa Visit Management System assistant",
+  "Halo! Aku Violet. Aku hanya menjawab seputar sistem ini: menu, cara pakai, hak akses, dan datanya.":
+    "Hi! I'm Violet. I only answer questions about this system: its menus, how to use them, access rules, and its data.",
+  "Tanya tentang sistem ini…": "Ask about this system…",
+  "Violet sedang mengetik…": "Violet is typing…",
+  "Bersihkan percakapan": "Clear conversation",
+  "Kirim": "Send",
+  // Task references (v1.32.0)
+  "Referensi": "References",
+  "Referensi (opsional)": "References (optional)",
+  "Tambah referensi": "Add reference",
+  "Hapus referensi": "Remove reference",
+  "Nama referensi (opsional)": "Reference name (optional)",
+  "Ambil dari Super Link": "Pick from Super Link",
+  "Bahan rujukan untuk mengerjakan tugas ini. Boleh diketik manual atau diambil dari Super Link, dan satu tautan Super Link boleh dipakai banyak tugas.":
+    "Material to work from. Type a URL or pick one from Super Link; the same Super Link entry may be used by any number of tasks.",
+  "Tidak ada tautan yang cocok.": "No matching link.",
+  "Ada tautan yang belum diawali http:// atau https://.":
+    "A link is missing its http:// or https:// prefix.",
+  "Ada referensi yang tidak valid (harus diawali http:// atau https://).":
+    "A reference is not a valid link (it must start with http:// or https://).",
+  "Ada referensi yang sama lebih dari sekali.": "The same reference appears more than once.",
   // Changelog categories (v1.31.0). Reached through t(CHANGE_KIND[k].label),
   // which the coverage scanner cannot see, so they are listed by hand.
   "Baru": "New",

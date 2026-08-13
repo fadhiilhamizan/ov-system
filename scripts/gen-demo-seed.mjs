@@ -144,7 +144,7 @@ begin;
 -- ------------------------------------------------------------------
 -- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
 -- and never runs 0028+, but the APP has kept adding columns since (perf
--- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036). Without them the demo's own
+-- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037). Without them the demo's own
 -- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
 -- These add-column statements are idempotent no-ops on a caught-up schema, so
 -- re-running demo-seed silently heals an out-of-date demo project.
@@ -162,6 +162,16 @@ alter table prospects add column if not exists link_label text default '';
 alter table prospects add column if not exists notes text default '';
 alter table prospects add column if not exists link_in_super_link boolean not null default false;
 alter table prospects add column if not exists link_id uuid references links(id) on delete set null;
+-- 0037: tabel referensi tugas (tidak ada sama sekali di project demo lama).
+create table if not exists task_refs (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  url text not null,
+  label text default '',
+  link_id uuid references links(id) on delete set null,
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
 
 -- Clear this edition's data first (FK-safe order) so the seed is idempotent.
 -- task_links is guarded: it only exists once migration 0025 has been applied.
@@ -248,7 +258,7 @@ writeFileSync(join(outDir, "demo-seed.sql"), out, "utf8");
 
 // --- open access: the demo uses the anon key with no login, so disable RLS ---
 const tablesForRls = [
-  "divisions", "events", "members", "tasks", "task_links", "prospects", "links",
+  "divisions", "events", "members", "tasks", "task_links", "task_refs", "prospects", "links",
   "budget_plans", "budget_items", "rundown", "job_harih", "faqs", "teams",
 ];
 let openSql = `-- ============================================================

@@ -10,6 +10,7 @@ do $$ begin if to_regclass('public.events') is not null then execute 'alter tabl
 do $$ begin if to_regclass('public.members') is not null then execute 'alter table public.members disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.tasks') is not null then execute 'alter table public.tasks disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.task_links') is not null then execute 'alter table public.task_links disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.task_refs') is not null then execute 'alter table public.task_refs disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.prospects') is not null then execute 'alter table public.prospects disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.links') is not null then execute 'alter table public.links disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.budget_plans') is not null then execute 'alter table public.budget_plans disable row level security'; end if; end $$;

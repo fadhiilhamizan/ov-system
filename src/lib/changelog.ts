@@ -53,6 +53,20 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.32.0",
+    date: "2026-08-12",
+    title: "Violet, asisten chat sistem ini, dan referensi pada tugas",
+    changes: [
+      { kind: "new", text: "Violet: asisten chat di pojok kanan bawah yang menjawab seputar sistem ini saja, termasuk data Ormawa Visit yang sedang dibuka. Tiap jawaban menyertakan sumbernya." },
+      { kind: "new", text: "Violet menolak pertanyaan di luar sistem ini dan mengaku tidak tahu kalau jawabannya tidak ada, jadi tidak mengarang nama menu atau angka." },
+      { kind: "security", text: "Violet membaca data lewat sesi penanya sendiri, jadi aturan akses tetap berlaku. Tamu tidak bisa memancing daftar anggota lewat chat." },
+      { kind: "new", text: "Work Breakdown: field Referensi pada tiap tugas. Boleh lebih dari satu, diketik manual atau diambil dari Super Link, dan ada tombol pintas untuk langsung membukanya." },
+      { kind: "new", text: "Satu tautan Super Link boleh dirujuk banyak tugas sekaligus, tidak terbatas satu tugas." },
+      { kind: "data", text: "Jalankan migrasi 0037 untuk membuat tabel referensi tugas." },
+      { kind: "data", text: "Violet baru muncul kalau GEMINI_API_KEY diisi di .env.local. Kuncinya hanya dibaca di server dan tidak pernah ikut ke browser." },
+    ],
+  },
+  {
     version: "1.31.0",
     date: "2026-08-11",
     title: "Tautan & catatan di Reach & Offer, anggota lama bisa ditambah ke divisi",

@@ -29,8 +29,9 @@ import { useT } from "@/lib/i18n/provider";
 import { MemberPicker, type PickerRole } from "@/components/members/member-picker";
 import { useMembers, useTeams } from "@/components/members/members-context";
 import { memberInDivision } from "@/lib/members";
-import { useTaskLinks } from "./task-links-context";
+import { useTaskLinks, useTaskRefs, useSuperLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
+import { RefsEditor, toRefDraft, validateRefs, cleanRefs, newRefDraft, type DraftRef } from "./refs-editor";
 import { useResetOn } from "@/lib/use-synced";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
@@ -70,6 +71,8 @@ export function TaskFormDialog({
   const progressOnly = mode === "edit" && task ? !can.editTask(user) : false;
 
   const existingLinks = useTaskLinks(task?.id);
+  const existingRefs = useTaskRefs(task?.id);
+  const superLinks = useSuperLinks();
 
   // Refill the form whenever the dialog opens (or targets a different task).
   // Done during render rather than in an effect - see lib/use-synced.ts.
@@ -86,6 +89,9 @@ export function TaskFormDialog({
     status: (task?.status ?? "todo") as TaskStatus,
   }));
   const [links, setLinks] = useResetOn<DraftLink[]>(formKey, () => existingLinks.map(toDraft));
+  // Always keep one blank row so adding a reference needs no extra click.
+  const [refs, setRefs] = useResetOn<DraftRef[]>(formKey, () =>
+    existingRefs.length ? existingRefs.map(toRefDraft) : [newRefDraft()]);
 
   // PIC picker: only this division's members, grouped by role (coordinator from
   // the division's team, else the member's fungsionaris/intern type).
@@ -125,7 +131,16 @@ export function TaskFormDialog({
       toast.error(t("Ada tautan hasil yang sama lebih dari sekali."));
       return;
     }
-    // Drop empty rows and strip the client-only `key`.
+    const refProblem = validateRefs(refs);
+    if (refProblem === "invalid") {
+      toast.error(t("Ada referensi yang tidak valid (harus diawali http:// atau https://)."));
+      return;
+    }
+    if (refProblem === "duplicate") {
+      toast.error(t("Ada referensi yang sama lebih dari sekali."));
+      return;
+    }
+    // Drop empty rows and strip the client-only key.
     const payloadLinks = links
       .filter((l) => l.url.trim())
       .map(({ id, url, label, in_super_link }) => ({ id, url: url.trim(), label, in_super_link }));
@@ -143,11 +158,12 @@ export function TaskFormDialog({
       // permission lane - sending every field would require full edit rights.
       const res =
         mode === "create"
-          ? await createTaskAction(fullPayload, payloadLinks)
+          ? await createTaskAction(fullPayload, payloadLinks, cleanRefs(refs))
           : await updateTaskAction(
               task!.id,
               progressOnly ? { status, result: form.result } : fullPayload,
               payloadLinks,
+              cleanRefs(refs),
             );
       if (res.ok) {
         toast.success(
@@ -311,6 +327,7 @@ export function TaskFormDialog({
           </div>
 
           <ResultLinksEditor links={links} onChange={setLinks} />
+          <RefsEditor refs={refs} onChange={setRefs} links={superLinks} />
         </div>
 
         <DialogFooter>

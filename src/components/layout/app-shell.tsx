@@ -4,6 +4,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
+import { VioletChat } from "@/components/violet/violet-chat";
 import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
 import { ArchiveBanner } from "./archive-banner";
@@ -25,6 +26,7 @@ export function AppShell({
   roleOptions = [],
   pendingRoleRequest = null,
   showRoleBanner = false,
+  violetEnabled = false,
   children,
 }: {
   user: AppUser;
@@ -41,6 +43,8 @@ export function AppShell({
   pendingRoleRequest?: RoleRequest | null;
   /** Only role-less accounts get the banner; others use the user menu. */
   showRoleBanner?: boolean;
+  /** The chat assistant only renders when a Gemini key is configured. */
+  violetEnabled?: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -121,6 +125,7 @@ export function AppShell({
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>
+        {violetEnabled && <VioletChat />}
         <footer className="border-t border-border px-6 py-5">
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
             <div className="flex items-center gap-2">
