@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.33.0",
+    date: "2026-08-13",
+    title: "Violet: tulisan rapi, tautan yang benar, dan tetap jalan saat kuota habis",
+    changes: [
+      { kind: "fix", text: "Jawaban Violet kini tampil rapi: tebal, poin bernomor, dan daftar bertitik benar-benar dirender, tidak lagi muncul sebagai tanda bintang di tengah kalimat." },
+      { kind: "fix", text: "Tautan yang diberikan Violet diperiksa dulu ke daftar halaman yang benar-benar ada, jadi tidak ada lagi pintasan ke halaman kosong seperti /violet." },
+      { kind: "new", text: "Pintasan ke bagian tertentu langsung menggulir ke sana, misalnya changelog di Pengaturan, lengkap dengan sorotan sesaat pada bagian yang dituju." },
+      { kind: "new", text: "Violet otomatis pindah ke layanan AI cadangan saat kuota layanan utamanya habis, jadi chat tetap bisa dipakai." },
+      { kind: "fix", text: "Pesan kegagalan Violet ditulis untuk pengguna: kuota habis, layanan sedang ramai, atau koneksi bermasalah, masing-masing dengan saran tindakan dan tombol 'Coba lagi' bila mengulang memang membantu." },
+      { kind: "ui", text: "Panel Violet dipercantik: kepala panel bergradasi, gelembung pesan baru, daftar sumber yang lebih jelas, tombol salin jawaban, dan Esc untuk menutup." },
+    ],
+  },
+  {
     version: "1.32.0",
     date: "2026-08-12",
     title: "Violet, asisten chat sistem ini, dan referensi pada tugas",

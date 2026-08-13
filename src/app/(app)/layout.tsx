@@ -6,7 +6,7 @@ import { getActiveEvent } from "@/lib/session";
 import { getEvents, getRoleRequestsFor } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { requestableRolesFor } from "@/lib/permissions";
-import { violetConfigured } from "@/lib/violet/gemini";
+import { violetConfigured } from "@/lib/violet/llm";
 import type { RoleRequest } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

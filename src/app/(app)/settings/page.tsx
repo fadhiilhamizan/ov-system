@@ -77,8 +77,11 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Account */}
-      <Card>
+      {/* Account. The `id` on this and the cards below are anchor targets:
+          Violet links to them (e.g. /settings#changelog) and the app shell's
+          AnchorScroller scrolls the section into view. Keep them in step with
+          APP_ROUTES in lib/violet/links.ts. */}
+      <Card id="akun">
         <CardHeader className="flex-row items-center gap-2">
           <UserCircle className="size-4 text-primary" />
           <CardTitle>{t("Akun Saya")}</CardTitle>
@@ -94,7 +97,7 @@ export default async function SettingsPage() {
       </Card>
 
       {/* Backend status */}
-      <Card>
+      <Card id="backend">
         <CardHeader className="flex-row items-center gap-2">
           <Cloud className="size-4 text-primary" />
           <CardTitle>{t("Status Backend")}</CardTitle>
@@ -118,7 +121,7 @@ export default async function SettingsPage() {
 
       {/* Archive of the original spreadsheets this system replaced. Read-only
           reference, visible to everyone who can open Pengaturan. */}
-      <Card>
+      <Card id="arsip">
         <CardHeader className="flex-row items-center gap-2">
           <FileSpreadsheet className="size-4 text-primary" />
           <CardTitle>{t("Arsip Spreadsheet")}</CardTitle>
@@ -150,7 +153,7 @@ export default async function SettingsPage() {
           by coordinator/staff/intern, who get the matrix + changelog only. */}
       {isDemo ? (
         canBackup && (
-        <Card>
+        <Card id="demo">
           <CardHeader className="flex-row items-center gap-2">
             <FlaskConical className="size-4 text-amber-500" />
             <CardTitle>{t("Data Mode Demo")}</CardTitle>
@@ -162,7 +165,7 @@ export default async function SettingsPage() {
         )
       ) : (
         canBackup && (
-          <Card>
+          <Card id="backup">
             <CardHeader className="flex-row items-center gap-2">
               <DatabaseBackup className="size-4 text-primary" />
               <CardTitle>{t("Backup & Rollback")}</CardTitle>
@@ -183,7 +186,7 @@ export default async function SettingsPage() {
       )}
 
       {/* Roles matrix */}
-      <Card>
+      <Card id="akses">
         <CardHeader className="flex-row items-center gap-2">
           <ShieldCheck className="size-4 text-primary" />
           <CardTitle>{t("Hak Akses per Peran")}</CardTitle>
@@ -256,7 +259,7 @@ export default async function SettingsPage() {
       </Card>
 
       {/* Changelog */}
-      <Card>
+      <Card id="changelog">
         <CardHeader className="flex-row items-center gap-2">
           <History className="size-4 text-primary" />
           <CardTitle>Changelog</CardTitle>

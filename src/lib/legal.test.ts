@@ -67,7 +67,7 @@ describe("legal metadata", () => {
 
   it("the privacy policy names every third-party processor", () => {
     const text = allStrings(PRIVACY).map((b) => b.id).join(" ");
-    for (const vendor of ["Supabase", "Vercel", "Google"]) {
+    for (const vendor of ["Supabase", "Vercel", "Google", "Gemini", "Groq"]) {
       expect(text, `${vendor} is not disclosed`).toContain(vendor);
     }
   });

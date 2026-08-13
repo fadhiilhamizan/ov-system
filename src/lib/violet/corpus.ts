@@ -11,6 +11,7 @@ import { getActiveEvent } from "@/lib/session";
 import { formatDate, formatRupiah } from "@/lib/format";
 import type { AppUser } from "@/lib/types";
 import type { Passage } from "./retrieve";
+import { guideHref, resolveHref } from "./links";
 
 // ============================================================
 // Violet's knowledge base: THIS system and nothing else.
@@ -44,10 +45,45 @@ function guidePassages(): Passage[] {
     return [{
       id: `guide-${s.key}`,
       source: `Panduan: ${s.title.id}`,
-      href: `/${s.key === "tasks" ? "tasks" : s.key}`,
+      // Was `/${s.key}`, which produced /violet: a guide section is not always
+      // a menu. `guideHref` returns the menu when there is one and the anchored
+      // guide section when there is not.
+      href: guideHref(s.key),
       text: parts.join(" "),
     }];
   });
+}
+
+/**
+ * What Violet itself can do.
+ *
+ * "Apa saja yang bisa kamu lakukan?" is the first thing almost everybody asks,
+ * and it used to retrieve NOTHING: every content word in it is a stop word
+ * except "lakukan", which appeared in no passage, so the most common opening
+ * question got the "I do not know" fallback. This passage is deliberately
+ * padded with the ways people phrase it (bisa apa, kemampuan, fitur, bantu,
+ * gunanya, what can you do) so the retriever finds it however it is asked.
+ */
+function selfPassage(): Passage {
+  return {
+    id: "violet-self",
+    source: "Tentang Violet",
+    href: "/panduan#guide-violet",
+    text:
+      "Violet bisa apa saja, kemampuan Violet, fitur Violet, gunanya Violet, apa yang bisa Violet lakukan, " +
+      "what can you do, capabilities. " +
+      "Violet adalah asisten chat untuk Ormawa Visit Management System. Yang bisa Violet lakukan: " +
+      "(1) menjelaskan cara memakai sistem, fungsi tiap menu, dan aturan hak akses tiap peran; " +
+      "(2) menjawab pertanyaan tentang data Ormawa Visit yang sedang dibuka, misalnya jumlah tugas, tugas yang overtime, " +
+      "daftar divisi, rundown, anggaran, prospek himpunan, dan pembagian tugas hari-H, sebatas hak akses penanya; " +
+      "(3) memberi pintasan ke menu atau bagian halaman yang dimaksud, dan halamannya langsung tergulir ke sana; " +
+      "(4) merangkum isi Panduan, FAQ, dan changelog versi terbaru. " +
+      "Yang TIDAK bisa Violet lakukan: mengubah, membuat, atau menghapus data apa pun (Violet hanya membaca), " +
+      "menjawab hal di luar sistem ini, dan menampilkan data yang tidak boleh dilihat oleh peran penanya. " +
+      "Cara memakai: Enter untuk mengirim, Shift+Enter untuk baris baru, Esc untuk menutup panel, " +
+      "ikon tong sampah untuk membersihkan percakapan, dan tombol Salin untuk menyalin jawaban. " +
+      "Percakapan tidak disimpan dan hilang saat panel ditutup atau halaman dimuat ulang.",
+  };
 }
 
 function accessPassages(): Passage[] {
@@ -63,6 +99,9 @@ function accessPassages(): Passage[] {
     return {
       id: `access-${m.key}`,
       source: `Hak akses menu ${m.label}`,
+      // The matrix that answers this lives inside Pengaturan, not on the menu
+      // being asked about.
+      href: "/settings#akses",
       text: `Hak akses untuk menu ${m.label}. ${parts.join(". ")}.`,
     };
   }).filter(Boolean) as Passage[];
@@ -70,6 +109,7 @@ function accessPassages(): Passage[] {
   const roles: Passage = {
     id: "access-roles",
     source: "Peran & hak akses",
+    href: "/settings#akses",
     text:
       `Peran di sistem ini: ${ROLE_ORDER.map((r) => `${ROLE_META[r].label} (${ROLE_META[r].description})`).join("; ")}. ` +
       "Peran berlaku global untuk SEMUA Ormawa Visit, tidak terikat divisi atau edisi tertentu. " +
@@ -84,7 +124,9 @@ function changelogPassages(): Passage[] {
   return CHANGELOG.slice(0, 8).map((e) => ({
     id: `changelog-${e.version}`,
     source: `Changelog v${e.version}`,
-    href: "/settings",
+    // Anchored: Pengaturan is a long page and the changelog sits at the bottom
+    // of it, so the bare path would land the reader nowhere near the answer.
+    href: "/settings#changelog",
     text: `Versi ${e.version} (${e.date}): ${e.title}. ${e.changes.map((c) => c.text).join(" ")}`,
   }));
 }
@@ -226,5 +268,12 @@ async function faqPassages(): Promise<Passage[]> {
  */
 export async function buildCorpus(user: AppUser): Promise<Passage[]> {
   const [faqs, live] = await Promise.all([faqPassages(), livePassages(user)]);
-  return [...guidePassages(), ...accessPassages(), ...faqs, ...changelogPassages(), ...live];
+  const all = [
+    selfPassage(), ...guidePassages(), ...accessPassages(), ...faqs,
+    ...changelogPassages(), ...live,
+  ];
+  // One last sweep so a passage can never carry a shortcut to a page that does
+  // not exist, however it was built. A missing link is fine; a broken one is
+  // what made a user distrust the whole assistant.
+  return all.map((p) => ({ ...p, href: resolveHref(p.href) }));
 }

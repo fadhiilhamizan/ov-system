@@ -893,6 +893,13 @@ export const EN: Record<string, string> = {
   "Violet sedang mengetik…": "Violet is typing…",
   "Bersihkan percakapan": "Clear conversation",
   "Kirim": "Send",
+  // Violet chat polish (v1.33.0)
+  "Coba tanyakan": "Try asking",
+  "Sumber": "Sources",
+  "Salin": "Copy",
+  "Salin jawaban": "Copy answer",
+  "Tersalin": "Copied",
+  // NOTE: "Coba lagi" already has an entry further up in this file.
   // Task references (v1.32.0)
   "Referensi": "References",
   "Referensi (opsional)": "References (optional)",

@@ -207,3 +207,16 @@ textarea.autosize {
   field-sizing: content;
   overflow: hidden;
 }
+
+/* Landing highlight for an in-page anchor (see lib/scroll-to-anchor.ts).
+   Arriving silently in the middle of a long page reads like the link did
+   nothing, so the section it scrolled to outlines itself for a moment. */
+@keyframes anchor-flash {
+  0%, 15% { box-shadow: 0 0 0 3px var(--primary); }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+.anchor-flash {
+  border-radius: var(--radius, 0.75rem);
+  animation: anchor-flash 1.8s ease-out both;
+  scroll-margin-top: 6rem;
+}

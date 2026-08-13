@@ -17,7 +17,7 @@ import type { Bi } from "./guide";
 // ============================================================
 
 /** Shown as "last updated" on both documents (ISO date). */
-export const LEGAL_UPDATED = "2026-07-26";
+export const LEGAL_UPDATED = "2026-08-13";
 
 /** Public contact already published in-app (Settings + README). */
 export const LEGAL_CONTACT_WA = "https://wa.me/6281311598126";
@@ -171,6 +171,7 @@ export const PRIVACY: LegalDoc = {
         { id: "Supabase - basis data dan sistem autentikasi (penyimpanan akun serta seluruh data kerja).", en: "Supabase - database and authentication (storing accounts and all working data)." },
         { id: "Vercel - hosting aplikasi dan penjadwal pencadangan otomatis.", en: "Vercel - application hosting and the automatic backup scheduler." },
         { id: "Google - hanya bila kamu memilih Masuk/Daftar dengan Google, untuk memverifikasi identitasmu.", en: "Google - only if you choose to sign in or sign up with Google, to verify your identity." },
+        { id: "Google Gemini dan Groq - layanan AI di balik asisten chat Violet. Keduanya hanya menerima pertanyaan yang kamu ketik beserta kutipan data yang relevan dengan pertanyaan itu, dan hanya sebatas yang boleh kamu lihat sendiri. Violet dipakai layanan cadangan (Groq) hanya bila layanan utamanya (Gemini) sedang tidak bisa menjawab. Percakapannya tidak kami simpan.", en: "Google Gemini and Groq - the AI services behind the Violet chat assistant. They only receive the question you type plus the excerpts of data relevant to it, and only what you are allowed to see yourself. The backup service (Groq) is used only when the primary one (Gemini) cannot answer. We do not store the conversation." },
       ],
     },
     {

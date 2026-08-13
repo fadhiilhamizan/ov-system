@@ -296,15 +296,18 @@ export const GUIDE: GuideSection[] = [
       en: "Quick answers about this system: menus, how to use them, access rules, and the data of the Ormawa Visit you are viewing.",
     },
     steps: [
-      { id: "Klik tombol ungu 'Violet' di pojok kanan bawah, lalu ketik pertanyaanmu. Enter mengirim, Shift+Enter membuat baris baru.", en: "Click the purple 'Violet' button at the bottom right and type your question. Enter sends, Shift+Enter makes a new line." },
-      { id: "Tiap jawaban menyertakan sumbernya di bawah. Klik sumbernya untuk langsung membuka menu yang dimaksud.", en: "Every answer lists its sources underneath. Click one to jump straight to the menu it came from." },
+      { id: "Klik tombol ungu 'Violet' di pojok kanan bawah, lalu ketik pertanyaanmu. Enter mengirim, Shift+Enter membuat baris baru, Esc menutup panel.", en: "Click the purple 'Violet' button at the bottom right and type your question. Enter sends, Shift+Enter makes a new line, Esc closes the panel." },
+      { id: "Tiap jawaban menyertakan sumbernya di bawah. Klik sumbernya untuk langsung membuka menu yang dimaksud, dan halamannya otomatis tergulir ke bagian yang dibahas.", en: "Every answer lists its sources underneath. Click one to jump straight to the menu it came from, and the page scrolls itself to the section being discussed." },
+      { id: "Tombol 'Salin' di bawah jawaban menyalin isinya sebagai teks biasa, misalnya untuk ditempel ke grup chat.", en: "The 'Copy' button under an answer copies it as plain text, handy for pasting into a group chat." },
       { id: "Ikon tong sampah di kepala panel membersihkan percakapan.", en: "The bin icon in the panel header clears the conversation." },
     ],
     tips: [
       { id: "Violet HANYA menjawab soal sistem ini. Pertanyaan di luar itu ditolak, dan kalau jawabannya memang tidak ada di sistem, Violet mengaku tidak tahu alih-alih mengarang nama menu atau angka.", en: "Violet ONLY answers about this system. Anything else is declined, and when the answer genuinely is not in the system it says so rather than inventing a menu name or a figure." },
       { id: "Violet membaca data lewat sesi kamu sendiri, jadi hak aksesmu tetap berlaku. Tamu tidak bisa memancing daftar nama anggota lewat chat.", en: "Violet reads data through your own session, so your access rules still apply. A guest cannot coax the member roster out of it." },
       { id: "Percakapannya tidak disimpan: hilang saat panel ditutup atau halaman dimuat ulang. Jawabannya mengutip data yang terus berubah, jadi transkrip lama akan cepat menyesatkan.", en: "The conversation is not stored: it goes when you close the panel or reload. Answers quote live data that keeps changing, so an old transcript would quickly mislead." },
-      { id: "Tombolnya hanya muncul kalau admin sudah mengisi GEMINI_API_KEY di server.", en: "The button only appears once an admin has set GEMINI_API_KEY on the server." },
+      { id: "Tautan yang diberikan Violet selalu diperiksa dulu ke daftar halaman yang benar-benar ada. Kalau Violet menyebut halaman yang tidak ada, tautannya tidak ditampilkan, jadi kamu tidak akan dibawa ke halaman kosong.", en: "Any link Violet offers is checked against the list of pages that really exist. If it names a page that does not exist the link is not shown, so you never get sent to a dead page." },
+      { id: "Violet memakai layanan AI gratis, jadi kuotanya bisa habis. Kalau layanan utamanya penuh, Violet otomatis pindah ke layanan cadangan; kalau dua-duanya penuh, akan muncul keterangan jelas beserta tombol 'Coba lagi' bila mengulang memang bisa membantu.", en: "Violet runs on free AI tiers, so it can run out of allowance. If the primary service is exhausted it automatically switches to a backup one; if both are exhausted you get a plain explanation, plus a 'Try again' button when retrying could actually help." },
+      { id: "Tombolnya hanya muncul kalau admin sudah mengisi kunci API (GEMINI_API_KEY atau GROQ_API_KEY) di server.", en: "The button only appears once an admin has set an API key (GEMINI_API_KEY or GROQ_API_KEY) on the server." },
     ],
     access: {
       id: "Semua peran yang sudah masuk bisa memakai Violet. Yang bisa dijawab menyesuaikan hak akses masing-masing.",

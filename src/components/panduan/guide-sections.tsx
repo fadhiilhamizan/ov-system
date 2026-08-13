@@ -1,6 +1,7 @@
 import { ChevronDown, Lightbulb, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { GUIDE, pick } from "@/lib/guide";
+import { GuideDetails } from "./guide-details";
 import type { Lang } from "@/lib/i18n/config";
 
 /**
@@ -17,20 +18,27 @@ export function GuideSections({ lang }: { lang: Lang }) {
   return (
     <div className="space-y-4">
       {GUIDE.map((s, i) => (
-        <Card key={s.key} className="overflow-hidden">
-          <details open={i === 0} className="group">
-            <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 transition hover:bg-muted/40 [&::-webkit-details-marker]:hidden">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                {i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-semibold">{pick(s.title, lang)}</h3>
-                <p className="truncate text-xs text-muted-foreground">{pick(s.purpose, lang)}</p>
-              </div>
-              {/* Same chevron as the FAQ accordion, so both read as one system. */}
-              <ChevronDown className="size-5 shrink-0 text-muted-foreground transition group-open:rotate-180" />
-            </summary>
-
+        // `id` is the anchor target: Violet links guide sections that have no
+        // menu of their own as /panduan#guide-<key> (see lib/violet/links.ts),
+        // and AnchorScroller opens the <details> before scrolling to it.
+        <Card key={s.key} id={`guide-${s.key}`} className="overflow-hidden">
+          <GuideDetails
+            sectionKey={s.key}
+            defaultOpen={i === 0}
+            summary={
+              <>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold">{pick(s.title, lang)}</h3>
+                  <p className="truncate text-xs text-muted-foreground">{pick(s.purpose, lang)}</p>
+                </div>
+                {/* Same chevron as the FAQ accordion, so both read as one system. */}
+                <ChevronDown className="size-5 shrink-0 text-muted-foreground transition group-open:rotate-180" />
+              </>
+            }
+          >
             <div className="space-y-4 border-t border-border px-5 py-4">
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -74,7 +82,7 @@ export function GuideSections({ lang }: { lang: Lang }) {
                 </p>
               )}
             </div>
-          </details>
+          </GuideDetails>
         </Card>
       ))}
     </div>

@@ -9,6 +9,7 @@ import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
 import { ArchiveBanner } from "./archive-banner";
 import { RoleRequestBanner } from "@/components/roles/role-request-banner";
+import { AnchorScroller } from "./anchor-scroller";
 import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -125,6 +126,9 @@ export function AppShell({
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>
+        {/* Applies the URL's #anchor after a navigation, so a shortcut lands on
+            its section instead of at the top of a long page. */}
+        <AnchorScroller />
         {violetEnabled && <VioletChat />}
         <footer className="border-t border-border px-6 py-5">
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
