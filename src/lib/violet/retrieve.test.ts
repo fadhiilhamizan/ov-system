@@ -107,3 +107,113 @@ describe("buildContext", () => {
     expect(buildContext([])).toBe("");
   });
 });
+
+// ============================================================
+// Row-level retrieval.
+//
+// These pin the fix for "Violet sometimes knows a fact and sometimes does
+// not". Two causes, both reproduced here: a specific question had to win
+// against near-identical neighbours, and equal scores were broken by whatever
+// order the database returned rows in.
+// ============================================================
+
+const ROWS: Passage[] = [
+  p("task-a", "Tugas: Susun konsep acara",
+    'Tugas "Susun konsep acara" di divisi Event. Status tugas: Overtime. PIC atau penanggung jawab tugas ini: Dewi. Deadline, tenggat, batas waktu, atau tanggal selesai: 10 Agustus 2026.'),
+  p("task-b", "Tugas: Buat rundown acara",
+    'Tugas "Buat rundown acara" di divisi Event. Status tugas: To Do. PIC atau penanggung jawab tugas ini: Rian. Deadline, tenggat, batas waktu, atau tanggal selesai: 20 Agustus 2026.'),
+  p("task-c", "Tugas: Pesan konsumsi peserta",
+    'Tugas "Pesan konsumsi peserta" di divisi Consumption. Status tugas: To Do. PIC atau penanggung jawab tugas ini: Sari. Deadline: 19 September 2026.'),
+];
+
+describe("retrieving one row out of many", () => {
+  it("puts the named task first, not a near-identical sibling", () => {
+    // "acara" and "divisi Event" are shared, so term overlap alone leaves
+    // these two nearly tied and the answer came down to array order.
+    expect(retrieve(ROWS, "kapan deadline Buat rundown acara")[0].id).toBe("task-b");
+    expect(retrieve(ROWS, "siapa PIC Susun konsep acara")[0].id).toBe("task-a");
+  });
+
+  it("finds a row through any of the words for the same thing", () => {
+    // The passage carries the synonyms deliberately: lexical retrieval can
+    // only match words that are literally present.
+    for (const q of [
+      "deadline Pesan konsumsi peserta",
+      "tenggat Pesan konsumsi peserta",
+      "batas waktu Pesan konsumsi peserta",
+      "kapan Pesan konsumsi peserta selesai",
+    ]) {
+      expect(retrieve(ROWS, q)[0].id, q).toBe("task-c");
+    }
+  });
+
+  it("gives the same answer to the same question every time", () => {
+    const once = retrieve(ROWS, "siapa PIC Buat rundown acara").map((h) => h.id);
+    for (let i = 0; i < 5; i++) {
+      expect(retrieve(ROWS, "siapa PIC Buat rundown acara").map((h) => h.id)).toEqual(once);
+    }
+  });
+
+  it("does not depend on the order the rows arrived in", () => {
+    // Several getters have no ORDER BY, so this really does vary in production.
+    const forwards = retrieve(ROWS, "PIC tugas divisi Event").map((h) => h.id);
+    const backwards = retrieve([...ROWS].reverse(), "PIC tugas divisi Event").map((h) => h.id);
+    expect(backwards).toEqual(forwards);
+  });
+
+  it("still returns nothing for something that is not there", () => {
+    // Load-bearing: this is how the action answers "I do not know".
+    expect(retrieve(ROWS, "harga saham nvidia")).toEqual([]);
+  });
+});
+
+describe("buildContext budget", () => {
+  it("stops before blowing the character budget", () => {
+    const big = Array.from({ length: 40 }, (_, i) =>
+      ({ ...p(`x-${i}`, `Sumber ${i}`, "kata ".repeat(200)), score: 40 - i }));
+    const ctx = buildContext(big, 2000);
+    expect(ctx.length).toBeLessThanOrEqual(2200);
+    expect(ctx).toContain("Sumber 0");
+  });
+
+  it("always keeps the best passage, even when it alone exceeds the budget", () => {
+    // An empty context makes Violet say "I do not know" about something it was
+    // holding in its hand.
+    const huge = [{ ...p("x", "Sumber besar", "kata ".repeat(5000)), score: 9 }];
+    expect(buildContext(huge, 100)).toContain("Sumber besar");
+  });
+});
+
+describe("pulling in the summary behind a matched row", () => {
+  const WITH_PARENT: Passage[] = [
+    p("live-divisions", "Data: Divisi",
+      "Divisi pada Ormawa Visit Demo: Secretary (SEC), Liaison Officer (LO), Event (EVE), Consumption (CON), Operational (OPR), Creative (CRE), Marketing (MRT)."),
+    { ...p("division-CON", "Divisi: Consumption", "Divisi Consumption, disingkat CON. Divisi Consumption belum punya koordinator."), parent: "live-divisions" },
+    { ...p("division-OPR", "Divisi: Operational", "Divisi Operational, disingkat OPR. Divisi Operational belum punya koordinator."), parent: "live-divisions" },
+    { ...p("division-MRT", "Divisi: Marketing", "Divisi Marketing, disingkat MRT. Koordinator divisi Marketing: Rizky."), parent: "live-divisions" },
+  ];
+
+  it("includes the summary when only some rows scored", () => {
+    // The bug this pins: three division rows matched, so Violet listed three
+    // divisions out of seven and sounded completely sure about it.
+    const ids = retrieve(WITH_PARENT, "divisi apa saja yang ada dan siapa koordinatornya").map((h) => h.id);
+    expect(ids).toContain("live-divisions");
+  });
+
+  it("does not duplicate a summary that already matched on its own", () => {
+    const ids = retrieve(WITH_PARENT, "divisi Consumption koordinator").map((h) => h.id);
+    expect(ids.filter((id) => id === "live-divisions")).toHaveLength(1);
+  });
+
+  it("keeps the summary next to its rows, not at the bottom", () => {
+    // It has to survive the context budget, which cuts from the end.
+    const hits = retrieve(WITH_PARENT, "divisi apa saja yang ada");
+    const summary = hits.findIndex((h) => h.id === "live-divisions");
+    expect(summary).toBeGreaterThanOrEqual(0);
+    expect(summary).toBeLessThanOrEqual(1);
+  });
+
+  it("adds nothing when no row matched", () => {
+    expect(retrieve(WITH_PARENT, "harga saham nvidia")).toEqual([]);
+  });
+});

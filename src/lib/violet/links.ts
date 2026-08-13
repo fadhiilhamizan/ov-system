@@ -138,9 +138,19 @@ export function guideHref(key: string): string {
  * rest the bare path is the whole answer.
  */
 export function routeCatalogue(): string {
-  return Object.entries(APP_ROUTES)
-    .map(([path, anchors]) =>
-      anchors.length ? `${path} (bagian: ${anchors.map((a) => `${path}#${a}`).join(", ")})` : path,
-    )
+  // One line, not one per route. Every character here is paid for on every
+  // question, and the free tiers Violet runs on are metered by the minute in
+  // tokens, so the prompt earns its length or it goes.
+  const plain = Object.entries(APP_ROUTES)
+    .filter(([, anchors]) => !anchors.length)
+    .map(([path]) => path)
+    .join(", ");
+  // Anchored routes are written out IN FULL, even though "#a #b" would be
+  // shorter. The model has to reproduce the whole path, and handing it the
+  // anchors detached from their page is an invitation to emit a bare "#akses".
+  const anchored = Object.entries(APP_ROUTES)
+    .filter(([, anchors]) => anchors.length)
+    .map(([path, anchors]) => anchors.map((a) => `${path}#${a}`).join(" "))
     .join("\n");
+  return `${plain}\n${anchored}`;
 }

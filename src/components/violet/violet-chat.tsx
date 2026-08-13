@@ -52,6 +52,31 @@ export function VioletChat() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, pending]);
 
+  // Re-opening the panel lands at the bottom, on the latest exchange.
+  //
+  // The conversation survives closing the panel, so without this you came back
+  // to the top of a long transcript and had to scroll down to find the answer
+  // you had just asked for. Jumped instantly rather than animated: this is
+  // where the panel STARTS, not a movement the user should watch.
+  //
+  // Repeated rather than done once, and that is not belt-and-braces. Measured:
+  // one frame after opening, the list reported scrollHeight 421 against its
+  // final 697 - the transcript is still being laid out, so scrolling "to the
+  // bottom" then lands well short of it. Each repeat is idempotent.
+  React.useEffect(() => {
+    if (!open) return;
+    const toBottom = () => {
+      const el = listRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+    const raf = requestAnimationFrame(toBottom);
+    const timers = [100, 300].map((ms) => window.setTimeout(toBottom, ms));
+    return () => {
+      cancelAnimationFrame(raf);
+      for (const t of timers) window.clearTimeout(t);
+    };
+  }, [open]);
+
   // Escape closes the panel, the way every other overlay in the app behaves.
   React.useEffect(() => {
     if (!open) return;

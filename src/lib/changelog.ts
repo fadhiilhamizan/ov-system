@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.34.0",
+    date: "2026-08-13",
+    title: "Violet tahu data rinci, dan jawabannya konsisten",
+    changes: [
+      { kind: "new", text: "Violet sekarang membaca data per baris, jadi bisa menjawab hal spesifik seperti deadline dan PIC satu tugas, jam dan MC satu sesi rundown, harga satu item anggaran, isi satu divisi, atau status satu prospek himpunan." },
+      { kind: "fix", text: "Violet tidak lagi kadang tahu kadang tidak saat ditanya hal yang sama: urutan data yang dibaca dibuat tetap, jawaban ditarik dari baris datanya sendiri, dan modelnya disetel supaya tidak mengarang variasi jawaban." },
+      { kind: "fix", text: "Pertanyaan daftar (misalnya divisi apa saja yang ada) kini dijawab lengkap, tidak lagi hanya sebagian yang kebetulan cocok dengan kata-kata pertanyaan." },
+      { kind: "fix", text: "Kalau sebuah kolom memang belum diisi, Violet mengatakannya apa adanya alih-alih menebak." },
+      { kind: "ui", text: "Membuka kembali panel Violet langsung menggulir ke pesan terbaru, bukan ke awal percakapan." },
+      { kind: "fix", text: "Pemakaian kuota AI per pertanyaan dihemat sekitar setengahnya, jadi Violet bisa menjawab lebih banyak pertanyaan sebelum kena batas layanan gratisnya." },
+    ],
+  },
+  {
     version: "1.33.0",
     date: "2026-08-13",
     title: "Violet: tulisan rapi, tautan yang benar, dan tetap jalan saat kuota habis",

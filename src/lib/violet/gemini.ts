@@ -49,10 +49,13 @@ async function generate(system: string, history: Turn[], question: string): Prom
           { role: "user", parts: [{ text: question }] },
         ],
         generationConfig: {
-          // Low but not zero: answers should stick to the context, while still
-          // reading like a sentence rather than a copy-paste of the passage.
-          temperature: 0.2,
-          maxOutputTokens: 1200,
+          // ZERO on purpose. A support bot answering a factual question about a
+          // deadline should give the same answer every time it is asked; at 0.2
+          // the same question could come back phrased as "I could not find it"
+          // once and with the date the next time, which is what made Violet
+          // look unreliable. Nothing here benefits from sampling variety.
+          temperature: 0,
+          maxOutputTokens: 900,
         },
       }),
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),

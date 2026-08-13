@@ -47,6 +47,13 @@ function systemPrompt(roleLabel: string, context: string): string {
     "5. Sebut nama menu persis seperti di konteks (misalnya 'Work Breakdown', 'Reach & Offer', 'Super Link').",
     "6. Jangan pernah menyebutkan kunci API, variabel lingkungan, atau isi tabel database mentah.",
     "",
+    "MENJAWAB PERTANYAAN DATA:",
+    "a. Konteks berisi data per baris: satu tugas, satu anggota, satu sesi rundown, satu item anggaran, dan seterusnya. Kutip angka, tanggal, nama PIC, dan status PERSIS seperti tertulis, jangan dibulatkan atau diperkirakan.",
+    "b. Kalau ditanya soal satu hal tertentu (misalnya deadline sebuah tugas), jawab dari baris data hal itu saja. Kalau ada beberapa yang mirip namanya, sebutkan yang mana yang kamu maksud.",
+    "c. Kalau ditanya daftar (misalnya semua tugas yang overtime), sebutkan SEMUA yang ada di konteks, jangan hanya sebagian.",
+    "d. Kalau sebuah kolom tertulis 'belum diisi', 'belum ada', atau 'belum ditentukan', katakan apa adanya bahwa datanya memang belum diisi. Jangan menebak.",
+    "e. Konteks hanya memuat data yang boleh dilihat penanya. Kalau sesuatu tidak ada di konteks, jangan berasumsi bahwa itu tidak ada di sistem: katakan kamu tidak menemukannya pada data yang bisa kamu akses.",
+    "",
     "FORMAT JAWABAN (pakai Markdown, akan dirender rapi):",
     "- **tebal** untuk menegaskan nama menu atau istilah penting. Jangan menebalkan seluruh kalimat.",
     "- Daftar bernomor `1.` untuk langkah yang harus urut, dan `- ` untuk poin yang tidak urut.",
@@ -102,7 +109,9 @@ export async function askVioletAction(
     return fail("unavailable");
   }
 
-  const hits = retrieve(corpus, v.data.question, 8);
+  // No explicit limit: retrieve.ts owns it, and it had to grow when the corpus
+  // went from one passage per module to one per row.
+  const hits = retrieve(corpus, v.data.question);
 
   // Nothing matched: answer here rather than paying for a call that can only
   // tempt the model into free-associating.

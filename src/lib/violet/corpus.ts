@@ -1,17 +1,13 @@
 import "server-only";
 import { GUIDE } from "@/lib/guide";
 import { CHANGELOG } from "@/lib/changelog";
-import { MODULE_ACCESS_LEVEL, ROLE_META, ROLE_ORDER, STATUS_META } from "@/lib/constants";
+import { MODULE_ACCESS_LEVEL, ROLE_META, ROLE_ORDER } from "@/lib/constants";
 import { NAV } from "@/components/layout/nav-config";
-import {
-  getFaqs, getEvents, getDivisions, getTasks, getProspects, getLinks,
-  getRundown, getJobs, getBudgetPlans, getMembers,
-} from "@/lib/data/repo";
-import { getActiveEvent } from "@/lib/session";
-import { formatDate, formatRupiah } from "@/lib/format";
+import { getFaqs } from "@/lib/data/repo";
 import type { AppUser } from "@/lib/types";
 import type { Passage } from "./retrieve";
 import { guideHref, resolveHref } from "./links";
+import { livePassages } from "./live";
 
 // ============================================================
 // Violet's knowledge base: THIS system and nothing else.
@@ -19,18 +15,16 @@ import { guideHref, resolveHref } from "./links";
 // Two kinds of passage:
 //   * Documentation that ships with the app (Panduan, FAQ, the access matrix,
 //     the changelog). Static, identical for everyone.
-//   * A snapshot of the ACTIVE Ormawa Visit's data, so Violet can answer
-//     "how many tasks are overdue" rather than only "what is a task".
+//   * A row-by-row snapshot of the ACTIVE Ormawa Visit's data (./live.ts), so
+//     Violet can answer "when is the deadline for Susun konsep acara" and not
+//     only "what is a task".
 //
 // PRIVACY: every read goes through the repo, which goes through the caller's
 // own Supabase session, so RLS applies. A Tamu asking about the roster gets an
-// empty list from the database, not a leak. The roster passage is additionally
-// skipped for roles that cannot read it, so Violet does not even hint at names
-// it is not allowed to show.
+// empty list from the database, not a leak. The roster passages are
+// additionally skipped for roles that cannot read it, so Violet does not even
+// hint at names it is not allowed to show.
 // ============================================================
-
-/** Roles allowed to see the roster (names + NRP are PII, see migration 0034). */
-const CAN_SEE_ROSTER = new Set(["admin", "coordinator", "staff", "intern"]);
 
 function guidePassages(): Passage[] {
   return GUIDE.flatMap((s) => {
@@ -131,123 +125,6 @@ function changelogPassages(): Passage[] {
   }));
 }
 
-/** A snapshot of the Ormawa Visit currently on screen. */
-async function livePassages(user: AppUser): Promise<Passage[]> {
-  const event = await getActiveEvent();
-  if (!event?.id) return [];
-
-  const [events, divisions, tasks, prospects, links, rundown, jobs, plans] = await Promise.all([
-    getEvents(), getDivisions(event.id), getTasks({ event_id: event.id }),
-    getProspects(event.id), getLinks(event.id), getRundown(event.id, "A"),
-    getJobs(event.id), getBudgetPlans(event.id),
-  ]);
-
-  const out: Passage[] = [];
-
-  out.push({
-    id: "live-events",
-    source: "Data: Daftar Ormawa Visit",
-    href: "/events",
-    text:
-      `Ada ${events.length} Ormawa Visit di sistem: ${events.map((e) => `${e.title}${e.locked ? " (diarsipkan)" : ""}`).join(", ")}. ` +
-      `Yang sedang dibuka sekarang: ${event.title}${event.partner ? `, partner ${event.partner}` : ""}` +
-      `${event.event_date ? `, tanggal acara ${formatDate(event.event_date, { long: true })}` : ""}.`,
-  });
-
-  const byStatus = { todo: 0, ongoing: 0, done: 0, overtime: 0 } as Record<string, number>;
-  for (const t of tasks) byStatus[t.status]++;
-  const overdue = tasks.filter((t) => t.status === "overtime");
-  out.push({
-    id: "live-tasks",
-    source: "Data: Work Breakdown",
-    href: "/tasks",
-    text:
-      `Ormawa Visit ${event.title} punya ${tasks.length} tugas: ` +
-      `${Object.entries(byStatus).map(([k, v]) => `${STATUS_META[k as keyof typeof STATUS_META]?.label ?? k} ${v}`).join(", ")}. ` +
-      (overdue.length
-        ? `Tugas overtime (lewat deadline dan belum selesai): ${overdue.map((t) => `${t.title}${t.pic ? ` (PIC ${t.pic})` : ""}`).join("; ")}.`
-        : "Tidak ada tugas yang overtime."),
-  });
-
-  out.push({
-    id: "live-divisions",
-    source: "Data: Divisi",
-    href: "/members",
-    text:
-      `Divisi pada ${event.title}: ${divisions.map((d) => `${d.name} (${d.short})`).join(", ") || "belum ada"}. ` +
-      `Divisi yang tidak diikutsertakan pada rundown: ${divisions.filter((d) => d.exclude_from_rundown).map((d) => d.name).join(", ") || "tidak ada"}.`,
-  });
-
-  if (CAN_SEE_ROSTER.has(user.role)) {
-    const members = await getMembers(event.id);
-    if (members.length) {
-      out.push({
-        id: "live-members",
-        source: "Data: Anggota EA",
-        href: "/members",
-        text:
-          `Ada ${members.length} anggota pada ${event.title}: ` +
-          `${members.filter((m) => m.type === "fungsionaris").length} fungsionaris, ` +
-          `${members.filter((m) => m.type === "intern").length} intern. ` +
-          `Nama: ${members.map((m) => m.name).join(", ")}.`,
-      });
-    }
-  }
-
-  if (prospects.length) {
-    out.push({
-      id: "live-prospects",
-      source: "Data: Reach & Offer",
-      href: "/prospects",
-      text:
-        `Ada ${prospects.length} prospek himpunan pada ${event.title}. ` +
-        `${prospects.map((p) => `${p.org_name || "(tanpa nama)"}${p.campus ? ` dari ${p.campus}` : ""}${p.their_response ? `, respons ${p.their_response}` : ""}`).join("; ")}.`,
-    });
-  }
-
-  if (rundown.length) {
-    out.push({
-      id: "live-rundown",
-      source: "Data: Rundown",
-      href: "/rundown",
-      text:
-        `Rundown ${event.title} punya ${rundown.length} sesi: ` +
-        `${rundown.map((r) => `${r.time_start || "?"}-${r.time_end || "?"} ${r.activity}`).join("; ")}.`,
-    });
-  }
-
-  if (jobs.length) {
-    out.push({
-      id: "live-jobs",
-      source: "Data: Job Hari-H",
-      href: "/jobs",
-      text: `Pembagian tugas hari-H: ${jobs.map((j) => `${j.job}${j.pic ? ` (${j.pic})` : ""}`).join("; ")}.`,
-    });
-  }
-
-  if (plans.length) {
-    const grand = plans.reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0);
-    out.push({
-      id: "live-budget",
-      source: "Data: Anggaran",
-      href: "/budget",
-      text:
-        `Anggaran ${event.title}: ${plans.length} rencana, total ${formatRupiah(grand)}. ` +
-        `${plans.map((p) => `${p.name} (${p.items.length} item)`).join(", ")}.`,
-    });
-  }
-
-  if (links.length) {
-    out.push({
-      id: "live-links",
-      source: "Data: Super Link",
-      href: "/links",
-      text: `Super Link ${event.title} berisi ${links.length} tautan: ${links.map((l) => l.name).join(", ")}.`,
-    });
-  }
-
-  return out;
-}
 
 async function faqPassages(): Promise<Passage[]> {
   const faqs = await getFaqs();
@@ -272,6 +149,17 @@ export async function buildCorpus(user: AppUser): Promise<Passage[]> {
     selfPassage(), ...guidePassages(), ...accessPassages(), ...faqs,
     ...changelogPassages(), ...live,
   ];
+
+  // Sorted by id, which makes the corpus ORDER deterministic.
+  //
+  // This is not tidiness. `retrieve` breaks score ties by corpus position, and
+  // several getters return rows in whatever order Postgres felt like (no ORDER
+  // BY), so two identical questions could see two different orderings and pick
+  // two different sets of passages. That is half of "sometimes it knows,
+  // sometimes it does not"; the other half was one passage per module, fixed in
+  // ./live.ts.
+  all.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
   // One last sweep so a passage can never carry a shortcut to a page that does
   // not exist, however it was built. A missing link is fine; a broken one is
   // what made a user distrust the whole assistant.

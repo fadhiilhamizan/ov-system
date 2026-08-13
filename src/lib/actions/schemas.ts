@@ -192,13 +192,18 @@ export const violetAskSchema = z.object({
   history: z
     .array(z.object({
       role: z.enum(["user", "model"]),
-      text: z.string().trim().max(4000),
+      // Trimmed, not rejected: an over-long turn is a long ANSWER Violet itself
+      // produced, and refusing the next question because of it would be absurd.
+      // The tail is what a follow-up refers back to.
+      text: z.string().trim().max(4000).transform((s) => (s.length > 1200 ? s.slice(-1200) : s)),
     }))
     // Only the recent turns matter for a follow-up, and the cap bounds the
-    // prompt size no matter how long the conversation runs.
+    // prompt size no matter how long the conversation runs. Six rather than
+    // eight because the providers meter tokens per minute on their free tiers,
+    // and history is paid for on every single question (see retrieve.ts).
     .max(20, "Riwayat percakapan terlalu panjang.")
     .optional()
-    .transform((v) => (v ?? []).slice(-8)),
+    .transform((v) => (v ?? []).slice(-6)),
 });
 
 // ---------------- Budget ----------------

@@ -53,8 +53,10 @@ async function generate(system: string, history: Turn[], question: string): Prom
           })),
           { role: "user", content: question },
         ],
-        temperature: 0.2,
-        max_tokens: 1200,
+        // Zero, for the same reason as Gemini: the same factual question must
+        // not come back with a different answer on a second asking.
+        temperature: 0,
+        max_tokens: 900,
       }),
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
