@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   taskPicList, picOptions, matchesDivision, matchesPics, hasOrphanTasks,
-  NO_DIVISION, NO_PIC,
+  parseDivisionFocus, serialiseDivisionFocus, NO_DIVISION, NO_PIC,
 } from "./task-filters";
 import type { Task } from "./types";
 
@@ -38,23 +38,60 @@ describe("picOptions", () => {
 });
 
 describe("matchesDivision", () => {
-  it("'all' matches everything", () => {
-    expect(matchesDivision(task(), "all", KEYS)).toBe(true);
-    expect(matchesDivision(task({ division: "" }), "all", KEYS)).toBe(true);
+  const focus = (...keys: string[]) => new Set(keys);
+
+  it("an empty focus matches everything", () => {
+    expect(matchesDivision(task(), focus(), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "" }), focus(), KEYS)).toBe(true);
   });
   it("matches an exact division", () => {
-    expect(matchesDivision(task({ division: "EVENT" }), "EVENT", KEYS)).toBe(true);
-    expect(matchesDivision(task({ division: "LO" }), "EVENT", KEYS)).toBe(false);
+    expect(matchesDivision(task({ division: "EVENT" }), focus("EVENT"), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "LO" }), focus("EVENT"), KEYS)).toBe(false);
+  });
+  it("matches any one of several ticked divisions", () => {
+    // The reason this became a set: "LO and Event" is one question, and the
+    // single-select made it a choice between them.
+    expect(matchesDivision(task({ division: "LO" }), focus("EVENT", "LO"), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "EVENT" }), focus("EVENT", "LO"), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "DIHAPUS" }), focus("EVENT", "LO"), KEYS)).toBe(false);
   });
   it("'tanpa divisi' catches a blank division", () => {
-    expect(matchesDivision(task({ division: "" }), NO_DIVISION, KEYS)).toBe(true);
-    expect(matchesDivision(task({ division: "EVENT" }), NO_DIVISION, KEYS)).toBe(false);
+    expect(matchesDivision(task({ division: "" }), focus(NO_DIVISION), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "EVENT" }), focus(NO_DIVISION), KEYS)).toBe(false);
   });
   it("'tanpa divisi' also catches a division that no longer exists", () => {
     // After a division is deleted its tasks keep the old key; without this they
     // would be unreachable from the toolbar entirely.
-    expect(matchesDivision(task({ division: "DIHAPUS" }), NO_DIVISION, KEYS)).toBe(true);
-    expect(matchesDivision(task({ division: "DIHAPUS" }), "EVENT", KEYS)).toBe(false);
+    expect(matchesDivision(task({ division: "DIHAPUS" }), focus(NO_DIVISION), KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "DIHAPUS" }), focus("EVENT"), KEYS)).toBe(false);
+  });
+  it("'tanpa divisi' combines with a real division", () => {
+    const both = focus("EVENT", NO_DIVISION);
+    expect(matchesDivision(task({ division: "EVENT" }), both, KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "" }), both, KEYS)).toBe(true);
+    expect(matchesDivision(task({ division: "LO" }), both, KEYS)).toBe(false);
+  });
+});
+
+describe("division focus cookie", () => {
+  it("reads 'all' and an empty cookie as no filter", () => {
+    expect(parseDivisionFocus("all").size).toBe(0);
+    expect(parseDivisionFocus("").size).toBe(0);
+    expect(parseDivisionFocus(null).size).toBe(0);
+    expect(parseDivisionFocus(undefined).size).toBe(0);
+  });
+  it("round-trips a selection", () => {
+    const set = parseDivisionFocus("EVENT,LO");
+    expect([...set].sort()).toEqual(["EVENT", "LO"]);
+    expect(parseDivisionFocus(serialiseDivisionFocus(set))).toEqual(set);
+  });
+  it("serialises an empty selection back to 'all'", () => {
+    // Not an empty string: a deleted/blank cookie value used to reach the table
+    // as a division key that matches nothing. See getActiveDivision.
+    expect(serialiseDivisionFocus(new Set())).toBe("all");
+  });
+  it("ignores stray whitespace and the 'all' sentinel inside a list", () => {
+    expect([...parseDivisionFocus(" EVENT , all , LO ")].sort()).toEqual(["EVENT", "LO"]);
   });
 });
 

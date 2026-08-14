@@ -2,7 +2,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  Search, Plus, ExternalLink, Link2, Loader2, MoreHorizontal, Pencil, Trash2, X,
+  Search, Plus, ExternalLink, Link2, Loader2, MoreHorizontal, Pencil, Trash2, X, CalendarRange,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import { createLinkAction, updateLinkAction, deleteLinkAction, bulkDeleteLinksAction } from "@/lib/actions/links";
 import { isUrl } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
@@ -248,7 +250,12 @@ export function LinksView({
 }) {
   const t = useT();
   const [q, setQ] = React.useState("");
-  const [eventFilter, setEventFilter] = React.useState<string>("all");
+  // Empty = every edition. Several at once is useful here: the directory is
+  // cross-event on purpose, and comparing two editions' links is a real task.
+  const [eventFilter, setEventFilter] = React.useState<Set<string>>(new Set());
+  /** The single ticked edition, when exactly one is - used for the group
+   *  headings and as the default edition on the create form. */
+  const soleEvent = eventFilter.size === 1 ? [...eventFilter][0] : null;
   const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
   const [bulkPending, startBulk] = React.useTransition();
   function bulkDelete() {
@@ -262,11 +269,17 @@ export function LinksView({
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
     return links.filter((l) => {
-      if (eventFilter !== "all" && l.event_id !== eventFilter) return false;
+      if (eventFilter.size > 0 && !(l.event_id && eventFilter.has(l.event_id))) return false;
       if (query && !`${l.name} ${l.division} ${l.note} ${l.url}`.toLowerCase().includes(query)) return false;
       return true;
     });
   }, [links, q, eventFilter]);
+
+  const eventCounts = React.useMemo(() => {
+    const by: Record<string, number> = {};
+    for (const l of links) if (l.event_id) by[l.event_id] = (by[l.event_id] ?? 0) + 1;
+    return by;
+  }, [links]);
 
   // Selection follows what is on screen; ticks survive a search (see use-multi-select).
   const sel = useMultiSelect(React.useMemo(() => filtered.map((l) => l.id), [filtered]));
@@ -298,7 +311,7 @@ export function LinksView({
     });
   }, [filtered, divisions, eventMap]);
 
-  const hasFilters = q || eventFilter !== "all";
+  const hasFilters = q || eventFilter.size > 0;
 
   return (
     <div className="space-y-4">
@@ -308,23 +321,23 @@ export function LinksView({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari tautan…")} className="pl-9" />
           </div>
-          <Select value={eventFilter} onValueChange={setEventFilter}>
-            <SelectTrigger className="w-auto min-w-[200px]"><SelectValue placeholder={t("Jenis Ormawa Visit")} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("Semua Ormawa Visit")}</SelectItem>
-              {events.map((e) => (
-                <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterMultiSelect
+            label={t("Jenis Ormawa Visit")}
+            allLabel={t("Semua Ormawa Visit")}
+            unit={t("Ormawa Visit")}
+            icon={<CalendarRange className="size-3.5" />}
+            options={events.map((e) => ({ value: e.id, label: e.title, count: eventCounts[e.id] ?? 0 }))}
+            picked={eventFilter}
+            onChange={setEventFilter}
+          />
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter("all"); }}><X className="size-4" /> {t("Reset")}</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter(new Set()); }}><X className="size-4" /> {t("Reset")}</Button>
           )}
         </div>
         {canCreate && (
           <LinkFormDialog
             mode="create" events={events} divisions={divisions}
-            defaultEventId={eventFilter !== "all" ? eventFilter : defaultEventId}
+            defaultEventId={soleEvent ?? defaultEventId}
             trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
           />
         )}
@@ -348,7 +361,9 @@ export function LinksView({
         <div className="space-y-5">
           {grouped.map(({ event, divisionGroups }) => (
             <div key={event?.id ?? "no-event"} className="space-y-3">
-              {eventFilter === "all" && (
+              {/* With one edition ticked the heading is redundant; with none or
+                  several, it is the only thing separating the groups. */}
+              {!soleEvent && (
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold">{event?.title ?? t("Tanpa Ormawa Visit")}</h3>
                   {event && <Badge variant="outline">{event.cabinet}</Badge>}
@@ -376,7 +391,9 @@ export function LinksView({
                           </span>
                           <div className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{l.name}</span>
-                            {l.note && <p className="truncate text-xs text-muted-foreground">{l.note}</p>}
+                            {l.note && (
+                              <ExpandableText text={l.note} lines={1} className="text-xs text-muted-foreground" />
+                            )}
                           </div>
                           <a
                             href={l.url} target="_blank" rel="noopener noreferrer"

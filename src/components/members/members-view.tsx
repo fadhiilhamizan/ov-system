@@ -16,6 +16,7 @@ import {
 } from "./member-manage";
 import { DivisionsGrid, type DivisionStat } from "@/components/divisions/divisions-grid";
 import { SortIndicator } from "@/components/ui/sort-indicator";
+import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { visibleSelection } from "@/lib/use-multi-select";
 import { cn } from "@/lib/utils";
@@ -48,14 +49,16 @@ export function MembersView({
 }) {
   const tr = useT();
   const [q, setQ] = React.useState("");
-  const [type, setType] = React.useState<"all" | "fungsionaris" | "intern">("all");
+  // Empty = every type. Kept as a set for the same reason as every other table
+  // filter: the control is checkboxes, and "none ticked" is the neutral state.
+  const [type, setType] = React.useState<Set<string>>(new Set());
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const sort = useMultiSort<SortCol>([{ key: "name", dir: "asc" }]);
   const divMap = React.useMemo(() => new Map(divisions.map((d) => [d.key, d])), [divisions]);
 
   const filtered = React.useMemo(() => {
     const list = members.filter((m) => {
-      if (type !== "all" && m.type !== type) return false;
+      if (type.size > 0 && !type.has(m.type)) return false;
       if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
@@ -131,24 +134,18 @@ export function MembersView({
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Cari nama / NRP…")} className="pl-9" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
-              {([
-                ["all", `${tr("Semua")} ${members.length}`],
-                ["fungsionaris", `${tr("Fungsionaris")} ${fungCount}`],
-                ["intern", `${tr("Intern")} ${internCount}`],
-              ] as const).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setType(k as typeof type)}
-                  className={cn(
-                    "rounded-md px-2.5 py-1.5 font-medium transition",
-                    type === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <FilterMultiSelect
+              label={tr("Tipe")}
+              allLabel={`${tr("Semua")} (${members.length})`}
+              unit={tr("tipe")}
+              icon={<IdCard className="size-3.5" />}
+              options={[
+                { value: "fungsionaris", label: tr("Fungsionaris"), count: fungCount },
+                { value: "intern", label: tr("Intern"), count: internCount },
+              ]}
+              picked={type}
+              onChange={setType}
+            />
             {canManageMembers && (
               <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
                 <DialogTrigger asChild>

@@ -24,6 +24,9 @@ const DELETE_ORDER = [
   // to be deleted before both, for the same reason task_links does. Leaving it
   // out would mean a restore silently loses every task reference.
   "task_refs",
+  // prospect_links (0038) is the same shape again: a child of prospects
+  // (CASCADE) and of links (SET NULL), so it goes before both.
+  "prospect_links",
   "budget_items",
   "tasks",
   "members",

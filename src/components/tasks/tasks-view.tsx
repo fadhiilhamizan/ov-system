@@ -1,16 +1,10 @@
 "use client";
 import * as React from "react";
-import { Search, Plus, Table2, Columns3, GanttChartSquare, X } from "lucide-react";
+import { Search, Plus, Table2, Columns3, GanttChartSquare, X, CircleDot } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { TaskTable } from "./task-table";
 import { TaskKanban } from "./task-kanban";
 import { TaskTimeline } from "./task-timeline";
@@ -22,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { DivisionFilter } from "@/components/layout/division-filter";
 import { PicFilter } from "./pic-filter";
 import {
-  divisionKeySet, hasOrphanTasks, matchesDivision, matchesPics, picOptions, taskPicList,
+  divisionKeySet, hasOrphanTasks, matchesDivision, matchesPics, parseDivisionFocus,
+  picOptions, taskPicList,
 } from "@/lib/task-filters";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 
@@ -53,12 +48,23 @@ export function TasksView({
 }) {
   const [view, setView] = React.useState<View>("table");
   const [q, setQ] = React.useState("");
-  const [status, setStatus] = React.useState<string>("all");
+  // Empty = no filter. Several statuses at once is the point: "what is still
+  // todo OR overtime" is one question, and it used to take two passes.
+  const [status, setStatus] = React.useState<Set<string>>(new Set());
   const t = useT();
 
-  // Division follows the global "Fokus divisi" dropdown (or the locked division
-  // on a per-division board). No separate dropdown here.
-  const division = lockedDivision ?? initialDivision;
+  // Division focus. Seeded ONCE from the cookie the server read, then owned
+  // here: `setActiveDivision` is a server action, so waiting for the cookie to
+  // come back before applying the next tick loses selections (see
+  // DivisionFilter). The cookie is persistence for the next page load, not the
+  // live value.
+  const [divisionFocus, setDivisionFocus] = React.useState<Set<string>>(
+    () => parseDivisionFocus(initialDivision),
+  );
+  const division = React.useMemo(
+    () => (lockedDivision ? new Set([lockedDivision]) : divisionFocus),
+    [lockedDivision, divisionFocus],
+  );
 
   const [pics, setPics] = React.useState<Set<string>>(new Set());
 
@@ -80,7 +86,7 @@ export function TasksView({
     const query = q.toLowerCase().trim();
     return inDivision.filter((t) => {
       if (!matchesPics(t, pics)) return false;
-      if (status !== "all" && t.status !== status) return false;
+      if (status.size > 0 && !status.has(t.status)) return false;
       if (
         query &&
         !`${t.title} ${t.pic} ${t.notes} ${t.result}`.toLowerCase().includes(query)
@@ -96,7 +102,16 @@ export function TasksView({
     return by;
   }, [filtered]);
 
-  const hasFilters = q || status !== "all" || pics.size > 0;
+  // Counts in the status menu come from the division/PIC-filtered list, NOT the
+  // fully filtered one: ticking "Selesai" must not zero out every other row's
+  // number, or you can never see what else there is to tick.
+  const statusCounts = React.useMemo(() => {
+    const by: Record<string, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
+    for (const t of inDivision) if (matchesPics(t, pics)) by[t.status]++;
+    return by;
+  }, [inDivision, pics]);
+
+  const hasFilters = q || status.size > 0 || pics.size > 0;
 
   return (
     <div className="space-y-4">
@@ -118,7 +133,8 @@ export function TasksView({
           {!lockedDivision && (
             <DivisionFilter
               divisions={divisions}
-              active={division}
+              active={divisionFocus}
+              onChange={setDivisionFocus}
               showNoDivision={hasOrphanTasks(tasks, divisionKeys)}
             />
           )}
@@ -128,28 +144,31 @@ export function TasksView({
             onChange={setPics}
             hasUnassigned={someUnassigned}
           />
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-auto min-w-[130px]">
-              <SelectValue placeholder={t("Status")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("Semua Status")}</SelectItem>
-              {STATUS_ORDER.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_META[s].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterMultiSelect
+            label={t("Status")}
+            allLabel={t("Semua Status")}
+            unit={t("status")}
+            icon={<CircleDot className="size-3.5" />}
+            options={STATUS_ORDER.map((s) => ({
+              value: s,
+              label: STATUS_META[s].label,
+              count: statusCounts[s] ?? 0,
+            }))}
+            picked={status}
+            onChange={setStatus}
+          />
           {hasFilters && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 setQ("");
-                setStatus("all");
+                setStatus(new Set());
                 setPics(new Set());
               }}
+              // Note: Reset deliberately leaves the division focus alone. It is
+              // persisted across pages, so clearing it from here would surprise
+              // someone who set it on purpose.
             >
               <X className="size-4" /> {t("Reset")}
             </Button>

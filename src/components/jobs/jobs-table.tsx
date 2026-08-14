@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction, duplicateJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
@@ -171,7 +172,9 @@ function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: Jo
       <TableCell className="text-sm font-medium tabular-nums text-muted-foreground">{index + 1}</TableCell>
       <TableCell className="font-medium">{job.job}</TableCell>
       <TableCell><PicChips pic={job.pic} /></TableCell>
-      <TableCell className="text-xs text-muted-foreground">{job.notes || "-"}</TableCell>
+      <TableCell className="max-w-[280px] align-top text-xs text-muted-foreground">
+        <ExpandableText text={job.notes} />
+      </TableCell>
       {canManage && <TableCell><JobActions job={job} eventId={eventId} canDelete={canDelete} /></TableCell>}
     </tr>
   );

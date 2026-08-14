@@ -53,6 +53,22 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.35.0",
+    date: "2026-08-14",
+    title: "Filter centang, catatan bisa dibuka, dan banyak tautan per prospek",
+    changes: [
+      { kind: "ui", text: "Semua penyaring tabel sekarang memakai kotak centang, jadi beberapa nilai bisa aktif bersamaan: di Reach & Offer kamu bisa melihat tahap diterima dan ditolak sekaligus, di Work Breakdown status Belum dan Overtime sekaligus, dan fokus divisi bisa lebih dari satu divisi." },
+      { kind: "ui", text: "Tidak mencentang apa pun berarti semua data tampil, dan ada tombol Bersihkan untuk mengosongkan pilihan tanpa menutup menunya." },
+      { kind: "ui", text: "Catatan panjang di tabel Work Breakdown, Reach & Offer, Job Hari-H, dan Super Link tidak lagi berhenti di tanda titik-titik: ada tombol Selengkapnya untuk membacanya penuh di tempat, dan Tutup untuk merapikannya lagi." },
+      { kind: "fix", text: "Membaca catatan tidak perlu lagi membuka tombol Edit, jadi peran yang hanya boleh melihat pun tetap bisa membacanya." },
+      { kind: "new", text: "Satu prospek di Reach & Offer sekarang boleh punya lebih dari satu tautan (handbook, profil organisasi, proposal balasan), masing-masing dengan nama sendiri dan pilihan tampil di Super Link." },
+      { kind: "data", text: "Tautan tunggal yang sudah tersimpan pada prospek dipindahkan otomatis ke daftar tautan yang baru, termasuk entri Super Link yang dimilikinya." },
+      { kind: "new", text: "Violet kini juga paham cara kerja sistem ini, bukan hanya isinya: kolom apa saja yang disimpan tiap menu, kenapa sebuah tugas berubah jadi Overtime sendiri, beda tautan hasil dan tautan referensi, aturan arsip, dan istilah yang dipakai di sini." },
+      { kind: "new", text: "Violet mengenal semua Ormawa Visit, bukan hanya yang sedang dibuka: edisi lain bisa ditanyakan ringkasannya (jumlah tugas, divisi, prospek, total anggaran, dan daftar namanya)." },
+      { kind: "new", text: "Violet juga membaca tautan hasil tugas, tautan prospek, dan hasil Performance Measurement tiap edisi, dan datanya selalu diambil ulang tiap pertanyaan sehingga baris yang baru disimpan langsung bisa ditanyakan." },
+    ],
+  },
+  {
     version: "1.34.0",
     date: "2026-08-13",
     title: "Violet tahu data rinci, dan jawabannya konsisten",

@@ -25,9 +25,12 @@ import {
 } from "@/components/ui/select";
 import { createProspectAction, updateProspectAction } from "@/lib/actions/prospects";
 import { MemberPicker } from "@/components/members/member-picker";
+import {
+  LinkListEditor, cleanLinks, newDraft, toDraft, validateLinks, type DraftLink,
+} from "@/components/ui/link-list-editor";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
-import type { Member, Prospect } from "@/lib/types";
+import type { Member, Prospect, ProspectLink } from "@/lib/types";
 
 const CONTACT = ["none", "MENGHUBUNGI", "DIHUBUNGI"];
 const THEIRS = ["none", "DITUNGGU", "DITERIMA", "DITOLAK"];
@@ -37,6 +40,7 @@ const PROSPECT_MODE = "__unset__";
 export function ProspectFormDialog({
   mode,
   prospect,
+  prospectLinks = [],
   members,
   eventId,
   open,
@@ -45,6 +49,8 @@ export function ProspectFormDialog({
 }: {
   mode: "create" | "edit";
   prospect?: Prospect;
+  /** The prospect's existing links, in order. Empty when creating. */
+  prospectLinks?: ProspectLink[];
   members: Member[];
   eventId: string;
   open?: boolean;
@@ -68,14 +74,32 @@ export function ProspectFormDialog({
     their_response: prospect?.their_response || "none",
     our_response: prospect?.our_response || "none",
     done: prospect?.done ?? false,
-    link: prospect?.link ?? "",
-    link_label: prospect?.link_label ?? "",
     notes: prospect?.notes ?? "",
-    link_in_super_link: prospect?.link_in_super_link ?? false,
   }));
 
+  // Refilled whenever the dialog opens, same as the fields above: reopening
+  // after a save must show what was saved, not the previous draft.
+  const [links, setLinks] = useResetOn(
+    `${isOpen}:${prospect?.id ?? "new"}:${prospectLinks.map((l) => l.id).join(",")}`,
+    (): DraftLink[] =>
+      prospectLinks.length
+        ? prospectLinks.map((l, i) => toDraft(l, i))
+        : mode === "create"
+          ? [newDraft()]
+          : [],
+  );
+
+  const linkProblem = validateLinks(links);
 
   function submit() {
+    if (linkProblem === "invalid") {
+      toast.error(t("Ada tautan yang belum diawali http:// atau https://."));
+      return;
+    }
+    if (linkProblem === "duplicate") {
+      toast.error(t("Ada tautan yang sama lebih dari sekali."));
+      return;
+    }
     start(async () => {
       const { prospectMode, ...rest } = f;
       const payload = {
@@ -86,10 +110,11 @@ export function ProspectFormDialog({
         their_response: f.their_response === "none" ? "" : f.their_response,
         our_response: f.our_response === "none" ? "" : f.our_response,
       };
+      const payloadLinks = cleanLinks(links);
       const res =
         mode === "create"
-          ? await createProspectAction(payload)
-          : await updateProspectAction(prospect!.id, payload);
+          ? await createProspectAction(payload, payloadLinks)
+          : await updateProspectAction(prospect!.id, payload, payloadLinks);
       if (res.ok) {
         toast.success(mode === "create" ? t("Prospek ditambahkan") : t("Prospek diperbarui"));
         setOpen(false);
@@ -158,39 +183,20 @@ export function ProspectFormDialog({
             <FieldSelect label={t("Respons Kita")} value={f.our_response} options={OURS} onChange={(v) => setF({ ...f, our_response: v })} />
           </div>
 
-          <div className="grid gap-1.5">
-            <Label>{t("Tautan (opsional)")}</Label>
-            <Input
-              value={f.link}
-              onChange={(e) => setF({ ...f, link: e.target.value })}
-              placeholder="https://drive.google.com/..."
-              inputMode="url"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t("Misalnya handbook, profil organisasi, atau proposal dari himpunan tersebut.")}
-            </p>
-          </div>
-
-          {/* Same deal as a task result link: name it, then tick to publish. */}
-          {f.link.trim() !== "" && (
-            <div className="grid gap-2 rounded-lg border border-border bg-muted/30 p-3">
-              <div className="grid gap-1.5">
-                <Label>{t("Nama tautan")}</Label>
-                <Input
-                  value={f.link_label}
-                  onChange={(e) => setF({ ...f, link_label: e.target.value })}
-                  placeholder={f.org_name || t("Handbook himpunan")}
-                />
-              </div>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Checkbox
-                  checked={f.link_in_super_link}
-                  onCheckedChange={(v) => setF({ ...f, link_in_super_link: !!v })}
-                />
-                {t("Tampilkan juga di Super Link")}
-              </label>
-            </div>
-          )}
+          {/* Several links per prospect since v1.35.0: one himpunan routinely
+              sends a handbook AND an org profile AND the proposal back, and the
+              single field could only hold them by overwriting. */}
+          <LinkListEditor
+            links={links}
+            onChange={setLinks}
+            title={t("Tautan prospek")}
+            addLabel={t("Tambah tautan")}
+            description={t("Tautan himpunan yang dihubungi: handbook, profil organisasi, atau proposal balasan. Boleh lebih dari satu.")}
+            emptyHint={t("Belum ada tautan. Klik “Tambah tautan” untuk melampirkan handbook, profil organisasi, atau proposal.")}
+            urlPlaceholder="https://drive.google.com/..."
+            namePlaceholder={f.org_name || t("Handbook himpunan")}
+            nameHint={t("Kosongkan untuk memakai nama himpunan. Mengubah atau menghapus tautan ini juga memperbarui Super Link.")}
+          />
 
           <div className="grid gap-1.5">
             <Label>{t("Catatan (opsional)")}</Label>

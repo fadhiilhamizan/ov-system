@@ -15,6 +15,8 @@ import type {
   Member,
   OVEvent,
   Prospect,
+  ProspectLink,
+  ProspectLinkInput,
   RoleRequest,
   RundownItem,
   Task,
@@ -159,11 +161,7 @@ export function createProspect(input: Partial<Prospect>): Prospect {
     our_response: input.our_response ?? "",
     done: input.done ?? false,
     is_primary: input.is_primary ?? false,
-    link: input.link ?? "",
-    link_label: input.link_label ?? "",
     notes: input.notes ?? "",
-    link_in_super_link: input.link_in_super_link ?? false,
-    link_id: input.link_id ?? null,
     source: input.source ?? "manual",
   };
   mutate((db) => db.prospects.unshift(p));
@@ -199,48 +197,79 @@ export function unsetPrimaryProspect(prospectId: string) {
   });
 }
 export function deleteProspect(id: string) {
+  // The Super Link entries its links own go too, or they become orphans nobody
+  // can trace back to anything (mirrors repo.purgeProspectLinks).
+  for (const l of getProspectLinks(id)) if (l.link_id) deleteLink(l.link_id);
   mutate((db) => {
-    // Take the Super Link entry with it, or it becomes an orphan nobody can
-    // trace back to anything (mirrors repo.purgeProspectLink).
-    const p = db.prospects.find((x) => x.id === id);
-    if (p?.link_id) db.links = db.links.filter((l) => l.id !== p.link_id);
+    db.prospectLinks = (db.prospectLinks ?? []).filter((l) => l.prospect_id !== id);
     db.prospects = db.prospects.filter((x) => x.id !== id);
   });
 }
 
-/** Mirrors repo.syncProspectLink: publish, update, or withdraw the prospect's
- *  link in Super Link, remembering which row it owns. */
-export function syncProspectLink(id: string) {
+// ---------------- Prospect links ----------------
+const prospectLinks = () => (getDb().prospectLinks ??= []);
+
+export function getProspectLinks(prospectId: string): ProspectLink[] {
+  return prospectLinks()
+    .filter((l) => l.prospect_id === prospectId)
+    .sort((a, b) => a.order - b.order);
+}
+export function getProspectLinksByEvent(eventId: string): ProspectLink[] {
+  const ids = new Set(getProspects(eventId).map((p) => p.id));
+  return prospectLinks().filter((l) => ids.has(l.prospect_id)).sort((a, b) => a.order - b.order);
+}
+export function deleteProspectLinksFor(prospectId: string) {
   mutate((db) => {
-    const p = db.prospects.find((x) => x.id === id);
-    if (!p) return;
-    const url = (p.link ?? "").trim();
-    const wanted = !!url && !!p.link_in_super_link;
+    db.prospectLinks = (db.prospectLinks ?? []).filter((l) => l.prospect_id !== prospectId);
+  });
+}
 
-    if (!wanted) {
-      if (p.link_id) {
-        db.links = db.links.filter((l) => l.id !== p.link_id);
-        p.link_id = null;
-      }
-      return;
-    }
-
-    const row = {
-      event_id: p.event_id ?? null,
+/** Mirrors repo.syncProspectLinks: publish, update, or withdraw each link in
+ *  Super Link, remembering which row each one owns. */
+export function syncProspectLinks(prospect: Prospect, inputs: ProspectLinkInput[]) {
+  const existing = getProspectLinks(prospect.id);
+  const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
+  for (const ex of existing) {
+    if (keep.has(ex.id)) continue;
+    if (ex.link_id) deleteLink(ex.link_id);
+  }
+  mutate((db) => {
+    db.prospectLinks = (db.prospectLinks ?? []).filter(
+      (l) => l.prospect_id !== prospect.id || keep.has(l.id),
+    );
+  });
+  inputs.forEach((input, i) => {
+    const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
+    const superRow = {
+      event_id: prospect.event_id ?? null,
       division: "",
       section: "Reach & Offer",
-      name: (p.link_label ?? "").trim() || p.org_name || "Tautan prospek",
-      url,
-      note: p.org_name ?? "",
+      name: input.label?.trim() || prospect.org_name || "Tautan prospek",
+      url: input.url,
+      note: prospect.org_name ?? "",
       source: "prospect",
     };
-    const existing = p.link_id ? db.links.find((l) => l.id === p.link_id) : undefined;
-    if (existing) Object.assign(existing, row);
-    else {
-      const created: LinkItem = { id: uid("l"), ...row };
-      db.links.push(created);
-      p.link_id = created.id;
+    let linkId = ex?.link_id ?? null;
+    if (input.in_super_link) {
+      if (linkId) updateLink(linkId, superRow);
+      else linkId = createLink(superRow).id;
+    } else if (linkId) {
+      deleteLink(linkId);
+      linkId = null;
     }
+    mutate((db) => {
+      const list = (db.prospectLinks ??= []);
+      const row = {
+        url: input.url,
+        label: input.label ?? "",
+        in_super_link: input.in_super_link,
+        link_id: linkId,
+        order: i,
+      };
+      const found = ex ? list.find((l) => l.id === ex.id) : undefined;
+      if (found) Object.assign(found, row);
+      else list.push({ id: uid("pl"), prospect_id: prospect.id, ...row });
+    });
   });
 }
 
@@ -656,6 +685,10 @@ export function cloneEventData(
             ...p, id: uid("p"), event_id: targetId, no: String(i + 1), date_text: "",
             pic: "", contact_status: "", their_response: "", our_response: "",
             done: false, is_primary: false,
+            // The copy owns no Super Link row: only one prospect may claim a
+            // given entry, and the links themselves are not cloned (they would
+            // be republished as duplicates).
+            link_id: null,
           });
         });
       }

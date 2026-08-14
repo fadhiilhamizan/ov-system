@@ -12,6 +12,7 @@ do $$ begin if to_regclass('public.tasks') is not null then execute 'alter table
 do $$ begin if to_regclass('public.task_links') is not null then execute 'alter table public.task_links disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.task_refs') is not null then execute 'alter table public.task_refs disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.prospects') is not null then execute 'alter table public.prospects disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.prospect_links') is not null then execute 'alter table public.prospect_links disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.links') is not null then execute 'alter table public.links disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.budget_plans') is not null then execute 'alter table public.budget_plans disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.budget_items') is not null then execute 'alter table public.budget_items disable row level security'; end if; end $$;

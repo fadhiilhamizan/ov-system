@@ -169,19 +169,49 @@ export interface Prospect {
   /** The confirmed partner for this OV - the OV pulls its partner/campus/
    *  location/mode from this prospect. At most one per event. */
   is_primary: boolean;
-  /** A link belonging to the organisation being contacted: their handbook,
-   *  org profile, a proposal they sent back. */
-  link: string;
-  /** Name shown for that link in Super Link. Falls back to the org name. */
-  link_label: string;
   /** Free-text notes about this prospect. */
   notes: string;
-  /** Publish `link` as a Super Link entry as well. */
-  link_in_super_link: boolean;
-  /** Which Super Link row this prospect created, so editing or clearing the
-   *  link updates it instead of leaving an orphan. Mirrors task_links. */
+  // --- legacy single-link columns (0036), superseded by ProspectLink (0038) --
+  // A prospect may attach several files (handbook, org profile, the proposal
+  // they sent back), so the one-link model could only be kept by overwriting.
+  // Nothing reads these any more; migration 0038 copied them into
+  // `prospect_links` and released their Super Link ownership.
+  /** @deprecated use `prospect_links` (see ProspectLink). */
+  link?: string;
+  /** @deprecated use `prospect_links`. */
+  link_label?: string;
+  /** @deprecated use `prospect_links`. */
+  link_in_super_link?: boolean;
+  /** @deprecated use `prospect_links`. */
   link_id?: string | null;
   source: string;
+}
+
+/**
+ * One link belonging to the organisation a prospect represents: their handbook,
+ * their org profile, the proposal they sent back.
+ *
+ * Same contract as TaskLink, deliberately: when `in_super_link` is true the row
+ * owns an entry in `links` (Super Link), tracked by `link_id` so re-saving
+ * updates that entry instead of creating a duplicate, and unticking the box
+ * deletes it rather than leaving an orphan nobody can trace back.
+ */
+export interface ProspectLink {
+  id: string;
+  prospect_id: string;
+  url: string;
+  label: string;
+  in_super_link: boolean;
+  link_id?: string | null;
+  order: number;
+}
+
+/** Shape the prospect form sends back; `id` is absent for newly-added rows. */
+export interface ProspectLinkInput {
+  id?: string;
+  url: string;
+  label: string;
+  in_super_link: boolean;
 }
 
 export interface LinkItem {
@@ -308,6 +338,7 @@ export interface Database {
   taskLinks?: TaskLink[];
   taskRefs?: TaskRef[];
   prospects: Prospect[];
+  prospectLinks?: ProspectLink[];
   links: LinkItem[];
   budgetPlans: BudgetPlan[];
   rundown: RundownItem[];

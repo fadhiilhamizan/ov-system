@@ -18,6 +18,8 @@ import type {
   Member,
   OVEvent,
   Prospect,
+  ProspectLink,
+  ProspectLinkInput,
   RoleRequest,
   RundownItem,
   Task,
@@ -368,7 +370,7 @@ export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> 
     "no", "date_text", "month", "contact", "org_name", "campus",
     "location", "mode", "pic", "contact_status", "their_response", "our_response", "source",
     // 0036: rows written before these columns existed come back null.
-    "link", "link_label", "notes",
+    "notes",
   ]);
   return eventId ? list.filter((p) => !p.event_id || p.event_id === eventId) : list;
 });
@@ -401,8 +403,8 @@ export async function unsetPrimaryProspect(prospectId: string) {
   if (!USE_SUPABASE) return local.unsetPrimaryProspect(prospectId);
   await must((await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId));
 }
-/** Returns the new row's id so the caller can publish its link (see
- *  `syncProspectLink`). */
+/** Returns the new row's id so the caller can attach its links (see
+ *  `syncProspectLinks`). */
 export async function createProspect(input: Partial<Prospect>): Promise<string | null> {
   if (!USE_SUPABASE) return local.createProspect(input).id;
   const data = await must((await sb()).from("prospects").insert(stripId(input)).select("id").single());
@@ -414,68 +416,112 @@ export async function updateProspect(id: string, patch: Partial<Prospect>) {
 }
 export async function deleteProspect(id: string) {
   if (!USE_SUPABASE) return local.deleteProspect(id);
-  await purgeProspectLink(id);
+  await purgeProspectLinks(id);
   await must((await sb()).from("prospects").delete().eq("id", id));
 }
 export async function bulkDeleteProspects(ids: string[]) {
   if (!ids.length) return;
   if (!USE_SUPABASE) { for (const id of ids) local.deleteProspect(id); return; }
-  for (const id of ids) await purgeProspectLink(id);
+  for (const id of ids) await purgeProspectLinks(id);
   await must((await sb()).from("prospects").delete().in("id", ids));
 }
 
+// ---------------- Prospect links ----------------
+// A prospect's own links (handbook, org profile, the proposal they sent back).
+// One prospect, many links since 0038 - see the ProspectLink type.
+export const getProspectLinks = cache(async (prospectId: string): Promise<ProspectLink[]> => {
+  if (!USE_SUPABASE) return local.getProspectLinks(prospectId);
+  const { data } = await (await sb())
+    .from("prospect_links").select("*").eq("prospect_id", prospectId).order("order");
+  return coalesce((data ?? []) as ProspectLink[], ["url", "label"]);
+});
+
+/** Every prospect link for an edition, keyed by prospect id (one round trip). */
+export const getProspectLinksByEvent = cache(
+  async (eventId: string): Promise<Record<string, ProspectLink[]>> => {
+    const rows = USE_SUPABASE
+      ? await (async () => {
+          const client = await sb();
+          const { data: ps } = await client.from("prospects").select("id").eq("event_id", eventId);
+          const ids = (ps ?? []).map((p: { id: string }) => p.id);
+          if (!ids.length) return [] as ProspectLink[];
+          const { data } = await client
+            .from("prospect_links").select("*").in("prospect_id", ids).order("order");
+          return coalesce((data ?? []) as ProspectLink[], ["url", "label"]);
+        })()
+      : local.getProspectLinksByEvent(eventId);
+    const byProspect: Record<string, ProspectLink[]> = {};
+    for (const r of rows) (byProspect[r.prospect_id] ??= []).push(r);
+    return byProspect;
+  },
+);
+
 /**
- * Publish (or unpublish) a prospect's link in Super Link.
+ * Reconcile a prospect's links with what the form submitted, keeping the
+ * mirrored Super Link rows in step. Identical contract to `syncTaskLinks`:
+ *  - removed link  -> its Super Link row is deleted too
+ *  - "publish" off -> Super Link row deleted, link kept on the prospect
+ *  - "publish" on  -> creates the Super Link row once, then UPDATES it on later
+ *    saves (via link_id), so saving twice never duplicates it
  *
- * Same contract as `syncTaskLinks`: `prospects.link_id` remembers the row we
- * created, so a second save UPDATES it instead of adding a duplicate, and
- * clearing the URL or unticking the box deletes it instead of leaving an entry
- * nobody can trace back. Call this after every prospect write.
+ * Call it after every prospect write.
  */
-export async function syncProspectLink(id: string) {
-  if (!USE_SUPABASE) return local.syncProspectLink(id);
+export async function syncProspectLinks(prospect: Prospect, inputs: ProspectLinkInput[]) {
+  if (!USE_SUPABASE) return local.syncProspectLinks(prospect, inputs);
   const client = await sb();
-  const { data } = await client.from("prospects").select("*").eq("id", id).maybeSingle();
-  const p = data as Prospect | null;
-  if (!p) return;
+  const existing = await getProspectLinks(prospect.id);
+  const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
 
-  const url = (p.link ?? "").trim();
-  const wanted = !!url && !!p.link_in_super_link;
-
-  if (!wanted) {
-    if (p.link_id) {
-      await deleteLink(p.link_id);
-      await must(client.from("prospects").update({ link_id: null }).eq("id", id));
-    }
-    return;
+  // 1) Deletions
+  for (const ex of existing) {
+    if (keep.has(ex.id)) continue;
+    if (ex.link_id) await deleteLink(ex.link_id);
+    await must(client.from("prospect_links").delete().eq("id", ex.id));
   }
 
-  const row = {
-    event_id: p.event_id ?? null,
-    // Prospects are not division-scoped, so the entry lands under
-    // "Umum (tanpa divisi)" in the Super Link grouping.
-    division: "",
-    section: "Reach & Offer",
-    name: (p.link_label ?? "").trim() || p.org_name || "Tautan prospek",
-    url,
-    note: p.org_name ?? "",
-    source: "prospect",
-  };
+  // 2) Upserts (order follows the form)
+  for (const [i, input] of inputs.entries()) {
+    const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
+    const superRow = {
+      event_id: prospect.event_id ?? null,
+      // Prospects are not division-scoped, so the entry lands under
+      // "Umum (tanpa divisi)" in the Super Link grouping.
+      division: "",
+      section: "Reach & Offer",
+      name: input.label?.trim() || prospect.org_name || "Tautan prospek",
+      url: input.url,
+      note: prospect.org_name ?? "",
+      source: "prospect",
+    };
 
-  if (p.link_id) {
-    await updateLink(p.link_id, row);
-  } else {
-    const linkId = await createLink(row);
-    await must(client.from("prospects").update({ link_id: linkId }).eq("id", id));
+    let linkId = ex?.link_id ?? null;
+    if (input.in_super_link) {
+      if (linkId) await updateLink(linkId, superRow);
+      else linkId = await createLink(superRow);
+    } else if (linkId) {
+      await deleteLink(linkId);
+      linkId = null;
+    }
+
+    const row = {
+      url: input.url,
+      label: input.label ?? "",
+      in_super_link: input.in_super_link,
+      link_id: linkId,
+      order: i,
+    };
+    if (ex) await must(client.from("prospect_links").update(row).eq("id", ex.id));
+    else await must(client.from("prospect_links").insert({ prospect_id: prospect.id, ...row }));
   }
 }
 
-/** Remove a prospect's Super Link entry before the prospect itself goes. */
-async function purgeProspectLink(id: string) {
-  const client = await sb();
-  const { data } = await client.from("prospects").select("link_id").eq("id", id).maybeSingle();
-  const linkId = (data as { link_id?: string | null } | null)?.link_id;
-  if (linkId) await deleteLink(linkId);
+/** Remove a prospect's Super Link entries before the prospect itself goes.
+ *  The `prospect_links` rows follow via the FK cascade in Supabase; the local
+ *  store has no FKs, so it deletes them itself. */
+async function purgeProspectLinks(id: string) {
+  const links = await getProspectLinks(id);
+  for (const l of links) if (l.link_id) await deleteLink(l.link_id);
+  if (!USE_SUPABASE) local.deleteProspectLinksFor(id);
 }
 
 // ---------------- Links ----------------
@@ -974,6 +1020,9 @@ export async function cloneEventData(
         // Outreach state belongs to the edition that did the contacting, so the
         // copy starts from scratch. `is_primary` is left off entirely: exactly
         // one prospect per edition may hold it, and it is set from the UI.
+        // The prospect's LINKS are not copied either: half of them are
+        // published to Super Link, and a copy would republish them as
+        // duplicates that nobody could tell apart.
         date_text: "", pic: "", contact_status: "", their_response: "", our_response: "",
         done: false, source: p.source,
       }));

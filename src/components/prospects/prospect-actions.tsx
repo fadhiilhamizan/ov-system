@@ -23,11 +23,11 @@ import {
   deleteProspectAction, setPrimaryProspectAction, unsetPrimaryProspectAction,
 } from "@/lib/actions/prospects";
 import { useT } from "@/lib/i18n/provider";
-import type { Member, Prospect } from "@/lib/types";
+import type { Member, Prospect, ProspectLink } from "@/lib/types";
 
 export function ProspectActions({
-  prospect, members, eventId,
-}: { prospect: Prospect; members: Member[]; eventId: string }) {
+  prospect, prospectLinks, members, eventId,
+}: { prospect: Prospect; prospectLinks: ProspectLink[]; members: Member[]; eventId: string }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
@@ -63,7 +63,7 @@ export function ProspectActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProspectFormDialog mode="edit" prospect={prospect} members={members} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
+      <ProspectFormDialog mode="edit" prospect={prospect} prospectLinks={prospectLinks} members={members} eventId={eventId} open={editOpen} onOpenChange={setEditOpen} />
 
       <Dialog open={delOpen} onOpenChange={setDelOpen}>
         <DialogContent className="max-w-md">

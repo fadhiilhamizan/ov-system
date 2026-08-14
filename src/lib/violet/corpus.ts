@@ -8,16 +8,22 @@ import type { AppUser } from "@/lib/types";
 import type { Passage } from "./retrieve";
 import { guideHref, resolveHref } from "./links";
 import { livePassages } from "./live";
+import { systemPassages } from "./system";
 
 // ============================================================
 // Violet's knowledge base: THIS system and nothing else.
 //
-// Two kinds of passage:
+// Three kinds of passage:
 //   * Documentation that ships with the app (Panduan, FAQ, the access matrix,
 //     the changelog). Static, identical for everyone.
+//   * How the system is BUILT (./system.ts): the fields every entity carries
+//     and the rules that are not visible on screen, e.g. why a task turns
+//     Overtime by itself. The Panduan says which button to press; this says
+//     what the thing actually is, and its absence was most of "Violet only
+//     knows about Work Breakdown".
 //   * A row-by-row snapshot of the ACTIVE Ormawa Visit's data (./live.ts), so
 //     Violet can answer "when is the deadline for Susun konsep acara" and not
-//     only "what is a task".
+//     only "what is a task". Other editions get a summary passage each.
 //
 // PRIVACY: every read goes through the repo, which goes through the caller's
 // own Supabase session, so RLS applies. A Tamu asking about the roster gets an
@@ -146,7 +152,7 @@ async function faqPassages(): Promise<Passage[]> {
 export async function buildCorpus(user: AppUser): Promise<Passage[]> {
   const [faqs, live] = await Promise.all([faqPassages(), livePassages(user)]);
   const all = [
-    selfPassage(), ...guidePassages(), ...accessPassages(), ...faqs,
+    selfPassage(), ...guidePassages(), ...systemPassages(), ...accessPassages(), ...faqs,
     ...changelogPassages(), ...live,
   ];
 

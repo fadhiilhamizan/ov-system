@@ -18,7 +18,7 @@ begin;
 -- ------------------------------------------------------------------
 -- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
 -- and never runs 0028+, but the APP has kept adding columns since (perf
--- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037). Without them the demo's own
+-- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038). Without them the demo's own
 -- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
 -- These add-column statements are idempotent no-ops on a caught-up schema, so
 -- re-running demo-seed silently heals an out-of-date demo project.
@@ -46,6 +46,17 @@ create table if not exists task_refs (
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+-- 0038: banyak tautan per prospek, juga belum pernah ada di project demo.
+create table if not exists prospect_links (
+  id uuid primary key default gen_random_uuid(),
+  prospect_id uuid not null references prospects(id) on delete cascade,
+  url text not null,
+  label text default '',
+  in_super_link boolean not null default false,
+  link_id uuid references links(id) on delete set null,
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
 
 -- Clear this edition's data first (FK-safe order) so the seed is idempotent.
 -- task_links is guarded: it only exists once migration 0025 has been applied.
@@ -64,6 +75,7 @@ delete from rundown where event_id = 'demo-ov';
 delete from budget_items where plan_id in (select id from budget_plans where event_id = 'demo-ov');
 delete from budget_plans where event_id = 'demo-ov';
 delete from links where event_id = 'demo-ov';
+delete from prospect_links where prospect_id in (select id from prospects where event_id = 'demo-ov');
 delete from prospects where event_id = 'demo-ov';
 delete from tasks where event_id = 'demo-ov';
 delete from members where event_id = 'demo-ov';

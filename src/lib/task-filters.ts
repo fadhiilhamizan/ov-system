@@ -41,20 +41,43 @@ export function picOptions(tasks: readonly Task[]): string[] {
 }
 
 /**
- * Does this task belong to the focused division?
+ * Read the division focus out of its cookie.
  *
- * `NO_DIVISION` covers both a blank division and one pointing at a division
- * that no longer exists - otherwise those tasks are unreachable from the
- * toolbar, which is exactly what happens after a division is deleted.
+ * The value is a comma-joined list because the focus became multi-select: you
+ * can now watch LO and Event together instead of choosing between them. "all"
+ * (and an empty cookie) mean "no filter", which is stored as an EMPTY set -
+ * same convention as every other filter, see `FilterMultiSelect`.
+ */
+export function parseDivisionFocus(raw: string | null | undefined): Set<string> {
+  const parts = (raw ?? "")
+    .split(",")
+    .map((p) => p.trim())
+    .filter((p) => p && p !== "all");
+  return new Set(parts);
+}
+
+/** The cookie form of a focus set. Empty selection round-trips as "all". */
+export function serialiseDivisionFocus(focus: ReadonlySet<string>): string {
+  return focus.size ? [...focus].join(",") : "all";
+}
+
+/**
+ * Does this task belong to one of the focused divisions?
+ *
+ * An empty focus means "no filter". `NO_DIVISION` covers both a blank division
+ * and one pointing at a division that no longer exists - otherwise those tasks
+ * are unreachable from the toolbar, which is exactly what happens after a
+ * division is deleted.
  */
 export function matchesDivision(
   task: Task,
-  focus: string,
+  focus: ReadonlySet<string>,
   divisionKeys: ReadonlySet<string>,
 ): boolean {
-  if (focus === "all") return true;
-  const orphan = !task.division || !divisionKeys.has(task.division);
-  return focus === NO_DIVISION ? orphan : task.division === focus;
+  if (focus.size === 0) return true;
+  if (task.division && divisionKeys.has(task.division)) return focus.has(task.division);
+  // Orphan: no division, or one that no longer exists in this edition.
+  return focus.has(NO_DIVISION);
 }
 
 /** Does this task match the ticked PICs? An empty selection means "no filter". */

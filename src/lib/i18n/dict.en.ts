@@ -1032,4 +1032,22 @@ export const EN: Record<string, string> = {
     "Restore all sandbox data (tasks, budget, members, and so on) to the original sample. Your Demo Mode changes will be lost.",
   "Semua data Mode Demo akan dihapus dan diganti dengan contoh awal. Data asli (produksi) tidak terpengaruh.":
     "Every Demo Mode record will be deleted and replaced with the original sample. Real (production) data is not affected.",
+
+  // --- Checkbox filters + expandable notes (v1.35.0) ---
+  // Lower-cased on purpose: these are the plural nouns in a trigger label such
+  // as "3 status" / "2 divisi", not headings.
+  "status": "statuses",
+  "tahap": "stages",
+  "tipe": "types",
+  "divisi": "divisions",
+  "Belum ada pilihan": "Nothing to filter by yet",
+  "Belum ada divisi": "No divisions yet",
+  "Selengkapnya": "Show more",
+  "Tautan prospek": "Prospect links",
+  "Belum ada tautan. Klik “Tambah tautan” untuk melampirkan handbook, profil organisasi, atau proposal.":
+    "No links yet. Use “Add link” to attach a handbook, an org profile, or a proposal.",
+  "Kosongkan untuk memakai nama himpunan. Mengubah atau menghapus tautan ini juga memperbarui Super Link.":
+    "Leave blank to use the organisation's name. Editing or removing this link updates Super Link too.",
+  "Tautan himpunan yang dihubungi: handbook, profil organisasi, atau proposal balasan. Boleh lebih dari satu.":
+    "Links belonging to the organisation you contacted: handbook, org profile, or the proposal they sent back. More than one is fine.",
 };

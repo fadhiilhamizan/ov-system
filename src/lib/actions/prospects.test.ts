@@ -15,7 +15,7 @@ const repo = {
   setPrimaryProspect: vi.fn(async () => {}),
   unsetPrimaryProspect: vi.fn(async () => {}),
   syncEventFromProspect: vi.fn(async () => {}),
-  syncProspectLink: vi.fn(async () => {}),
+  syncProspectLinks: vi.fn(async () => {}),
   getEvent: vi.fn(async () => ({ id: "ov1", locked: false })),
 };
 vi.mock("@/lib/data/repo", () => repo);
@@ -33,8 +33,7 @@ const prospect = (over: Partial<Prospect> = {}): Prospect => ({
   id: "p1", event_id: "ov1", no: "1", date_text: "", month: "",
   contact: "", org_name: "HIMA X", campus: "ITS", location: "", mode: "",
   pic: "", contact_status: "", their_response: "", our_response: "",
-  done: false, is_primary: false, source: "manual",
-  link: "", link_label: "", notes: "", link_in_super_link: false, link_id: null, ...over,
+  done: false, is_primary: false, source: "manual", notes: "", ...over,
 });
 
 beforeEach(() => {
@@ -84,29 +83,59 @@ describe("updateProspectAction", () => {
     expect(repo.syncEventFromProspect).toHaveBeenCalledWith("ov1", expect.objectContaining({ is_primary: true }));
   });
 
-  it("publishes the link to Super Link after every save", async () => {
-    // syncProspectLink is what keeps the Super Link entry in step; skipping it
-    // would leave a stale or orphaned row behind.
-    await updateProspectAction("p1", { link: "https://handbook.test", link_in_super_link: true });
-    expect(repo.syncProspectLink).toHaveBeenCalledWith("p1");
+  it("reconciles the links when the form sends them", async () => {
+    // syncProspectLinks is what keeps the Super Link entries in step; skipping
+    // it would leave stale or orphaned rows behind.
+    repo.getProspects.mockResolvedValue([prospect()]);
+    await updateProspectAction("p1", { org_name: "HIMA X" }, [
+      { url: "https://handbook.test", label: "Handbook", in_super_link: true },
+    ]);
+    expect(repo.syncProspectLinks).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "p1" }),
+      [expect.objectContaining({ url: "https://handbook.test", in_super_link: true })],
+    );
+  });
+
+  it("leaves the links alone when the caller does not send any", async () => {
+    // undefined means "not editing the links" (e.g. the primary toggle). An
+    // empty ARRAY means "remove them all", and confusing the two would wipe a
+    // prospect's attachments on an unrelated save.
+    repo.getProspects.mockResolvedValue([prospect()]);
+    await updateProspectAction("p1", { org_name: "HIMA X" });
+    expect(repo.syncProspectLinks).not.toHaveBeenCalled();
+  });
+
+  it("an empty array DOES clear them", async () => {
+    repo.getProspects.mockResolvedValue([prospect()]);
+    await updateProspectAction("p1", { org_name: "HIMA X" }, []);
+    expect(repo.syncProspectLinks).toHaveBeenCalledWith(expect.objectContaining({ id: "p1" }), []);
   });
 
   it("rejects a link that is not a real http(s) URL", async () => {
-    const res = await updateProspectAction("p1", { link: "bukan-url" });
+    const res = await updateProspectAction("p1", { org_name: "HIMA X" }, [
+      { url: "bukan-url", label: "", in_super_link: false },
+    ]);
     expect(res.ok).toBe(false);
     expect(repo.updateProspect).not.toHaveBeenCalled();
   });
 
-  it("accepts an empty link (clearing it) and still syncs", async () => {
-    const res = await updateProspectAction("p1", { link: "" });
-    expect(res.ok).toBe(true);
-    expect(repo.syncProspectLink).toHaveBeenCalledWith("p1");
+  it("rejects the same URL twice on one prospect", async () => {
+    const res = await updateProspectAction("p1", { org_name: "HIMA X" }, [
+      { url: "https://a.test", label: "", in_super_link: false },
+      { url: "https://a.test/", label: "", in_super_link: true },
+    ]);
+    expect(res.ok).toBe(false);
+    expect(repo.updateProspect).not.toHaveBeenCalled();
   });
 
-  it("never lets a client set link_id (it points at a Super Link row)", async () => {
-    await updateProspectAction("p1", { link_id: "someone-elses-row" } as never);
-    const call = repo.updateProspect.mock.calls[0] as unknown[] | undefined;
-    expect(call?.[1] ?? {}).not.toHaveProperty("link_id");
+  it("never lets a client write the legacy link columns", async () => {
+    // They belong to migration 0036 and are now owned by prospect_links; a
+    // client that still sends them must not be able to re-point link_id at
+    // somebody else's Super Link row.
+    await updateProspectAction("p1", { link_id: "someone-elses-row", link: "https://x.test" } as never);
+    const patch = ((repo.updateProspect.mock.calls[0] as unknown[])?.[1] ?? {}) as object;
+    expect(patch).not.toHaveProperty("link_id");
+    expect(patch).not.toHaveProperty("link");
   });
 
   it("does NOT touch the event for a non-primary prospect", async () => {

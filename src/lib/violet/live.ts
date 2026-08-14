@@ -1,13 +1,14 @@
 import "server-only";
 import { STATUS_META } from "@/lib/constants";
 import {
-  getEvents, getDivisions, getTasks, getProspects, getLinks,
-  getRundown, getJobs, getBudgetPlans, getMembers, getTeams, getTaskRefsByEvent,
+  getEvents, getDivisions, getTasks, getProspects, getProspectLinksByEvent, getLinks,
+  getRundown, getJobs, getBudgetPlans, getMembers, getTeams,
+  getTaskLinksByEvent, getTaskRefsByEvent,
 } from "@/lib/data/repo";
 import { getActiveEvent } from "@/lib/session";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { memberDivisions, memberInDivision } from "@/lib/members";
-import type { AppUser, Division, Task } from "@/lib/types";
+import type { AppUser, Division, Member, OVEvent, Task } from "@/lib/types";
 import type { Passage } from "./retrieve";
 
 // ============================================================
@@ -76,6 +77,7 @@ function taskPassage(
   divisions: Division[],
   eventTitle: string,
   refs: string,
+  resultLinks: string,
 ): Passage {
   return {
     id: `task-${t.id}`,
@@ -92,9 +94,52 @@ function taskPassage(
       t.status === "overtime" && "Tugas ini overtime: sudah lewat deadline dan belum selesai.",
       t.notes.trim() && `Catatan tugas: ${t.notes.trim()}.`,
       t.result.trim() && `Hasil tugas: ${t.result.trim()}.`,
+      resultLinks && `Tautan hasil tugas ini: ${resultLinks}.`,
       refs && `Referensi tugas: ${refs}.`,
     ),
   };
+}
+
+/**
+ * What one edition holds, for the editions that are NOT on screen.
+ *
+ * Rows are only indexed one-by-one for the ACTIVE edition: doing it for all of
+ * them would multiply the corpus by the number of Ormawa Visits and let another
+ * edition's rows out-score the one being asked about. But "berapa tugas di
+ * Ormawa Visit 1 2025" was answered with "I do not know" even though the data
+ * was right there, so every edition gets a passage naming its contents.
+ */
+function editionDataSummary(
+  e: OVEvent,
+  parts: {
+    tasks: Task[];
+    divisions: Division[];
+    members: Member[];
+    prospects: { org_name: string }[];
+    rundownCount: number;
+    jobCount: number;
+    linkCount: number;
+    budgetTotal: number;
+    canSeeRoster: boolean;
+  },
+): string {
+  const done = parts.tasks.filter((t) => t.status === "done").length;
+  const overdue = parts.tasks.filter((t) => t.status === "overtime").length;
+  return sentence(
+    `Isi data Ormawa Visit ${e.title}:`,
+    `${parts.tasks.length} tugas (${done} selesai, ${overdue} overtime),`,
+    `${parts.divisions.length} divisi,`,
+    parts.canSeeRoster ? `${parts.members.length} anggota,` : "",
+    `${parts.prospects.length} prospek himpunan,`,
+    `${parts.rundownCount} sesi rundown,`,
+    `${parts.jobCount} job hari-H,`,
+    `${parts.linkCount} tautan Super Link,`,
+    `total anggaran ${formatRupiah(parts.budgetTotal)}.`,
+    parts.divisions.length && `Divisi: ${parts.divisions.map((d) => d.name).join(", ")}.`,
+    parts.prospects.length &&
+      `Prospek: ${parts.prospects.map((p) => p.org_name || "(tanpa nama)").join(", ")}.`,
+    parts.tasks.length && `Judul tugas: ${parts.tasks.map((t) => t.title).join("; ")}.`,
+  );
 }
 
 /** A snapshot of the Ormawa Visit currently on screen. */
@@ -102,20 +147,39 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   const event = await getActiveEvent();
   if (!event?.id) return [];
 
-  const [events, divisions, tasks, prospects, links, rundown, jobs, plans, refsByTask] =
+  // Fetched UNSCOPED and sliced per edition in JS. That is not extra work:
+  // members, prospects, links and divisions read the whole table anyway and
+  // filter in the repo, and the rest is one query each either way. What it buys
+  // is that every edition can be described, not just the one on screen.
+  const [events, allDivisions, allTasks, allProspects, allLinks, allRundown, allJobs, allPlans] =
     await Promise.all([
-      getEvents(), getDivisions(event.id), getTasks({ event_id: event.id }),
-      getProspects(event.id), getLinks(event.id), getRundown(event.id, "A"),
-      getJobs(event.id), getBudgetPlans(event.id), getTaskRefsByEvent(event.id),
+      getEvents(), getDivisions(), getTasks(), getProspects(),
+      getLinks(), getRundown(), getJobs(), getBudgetPlans(),
     ]);
+  const [refsByTask, resultLinksByTask, prospectLinksById] = await Promise.all([
+    getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
+  ]);
+
+  /** Rows belonging to one edition. Lenient like the repo: an unscoped legacy
+   *  row (no event_id) shows up everywhere rather than nowhere. */
+  const forEvent = <T extends { event_id?: string | null }>(rows: T[], id: string) =>
+    rows.filter((r) => !r.event_id || r.event_id === id);
+
+  const divisions = forEvent(allDivisions, event.id);
+  const tasks = forEvent(allTasks, event.id);
+  const prospects = forEvent(allProspects, event.id);
+  const links = forEvent(allLinks, event.id);
+  const rundown = forEvent(allRundown, event.id).filter((r) => !r.variant || r.variant === "A");
+  const jobs = forEvent(allJobs, event.id);
+  const plans = allPlans.filter((p) => p.event_id === event.id);
 
   // The roster is PII, so it is fetched only for roles that may read it. Teams
   // ride along because a division's coordinator lives there.
-  const roster = CAN_SEE_ROSTER.has(user.role)
-    ? await Promise.all([getMembers(event.id), getTeams(event.id)])
-    : null;
-  const members = roster?.[0] ?? [];
-  const teams = roster?.[1] ?? [];
+  const canSeeRoster = CAN_SEE_ROSTER.has(user.role);
+  const roster = canSeeRoster ? await Promise.all([getMembers(), getTeams()]) : null;
+  const allMembers = roster?.[0] ?? [];
+  const members = forEvent(allMembers, event.id);
+  const teams = forEvent(roster?.[1] ?? [], event.id);
 
   const out: Passage[] = [];
 
@@ -133,6 +197,11 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   });
 
   for (const e of events) {
+    const eTasks = forEvent(allTasks, e.id);
+    const measured =
+      e.attendance_hmsi != null ||
+      e.feedback_hmsi_count != null ||
+      e.feedback_partner_count != null;
     out.push({
       id: `event-${e.id}`,
       parent: "live-events",
@@ -152,7 +221,35 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
         e.locked
           ? "Edisi ini DIARSIPKAN, jadi hanya Admin yang bisa mengubah datanya."
           : "Edisi ini masih aktif dan bisa diubah.",
-        e.id === event.id && "Ini adalah Ormawa Visit yang sedang dibuka sekarang.",
+        // Performance Measurement (0029): filled in after the event, shown on
+        // the Dashboard. Spelled out so "berapa yang hadir" has a passage.
+        measured
+          ? sentence(
+              "Performance Measurement (hasil evaluasi setelah acara):",
+              e.attendance_hmsi != null && `kehadiran fungsionaris HMSI ${e.attendance_hmsi} orang;`,
+              e.feedback_hmsi_count != null &&
+                `feedback dari HMSI ${e.feedback_hmsi_count} responden${e.feedback_hmsi_rating != null ? `, rata-rata penilaian ${e.feedback_hmsi_rating} dari 5` : ""};`,
+              e.feedback_partner_count != null &&
+                `feedback dari himpunan partner ${e.feedback_partner_count} responden${e.feedback_partner_rating != null ? `, rata-rata penilaian ${e.feedback_partner_rating} dari 5` : ""};`,
+              e.report_url ? `tautan LPJ (laporan pertanggungjawaban): ${e.report_url}.` : "LPJ belum diunggah.",
+            )
+          : "Performance Measurement (kehadiran, feedback, rating, LPJ) belum diisi untuk edisi ini.",
+        editionDataSummary(e, {
+          tasks: eTasks,
+          divisions: forEvent(allDivisions, e.id),
+          members: forEvent(allMembers, e.id),
+          prospects: forEvent(allProspects, e.id),
+          rundownCount: forEvent(allRundown, e.id).length,
+          jobCount: forEvent(allJobs, e.id).length,
+          linkCount: forEvent(allLinks, e.id).length,
+          budgetTotal: allPlans
+            .filter((p) => p.event_id === e.id)
+            .reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0),
+          canSeeRoster,
+        }),
+        e.id === event.id
+          ? "Ini adalah Ormawa Visit yang sedang dibuka sekarang, jadi rinciannya per baris juga tersedia."
+          : "Edisi ini sedang tidak dibuka. Ganti Ormawa Visit aktif lewat pemilih di bagian atas untuk melihat rinciannya per baris.",
       ),
     });
   }
@@ -181,7 +278,10 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     const refs = (refsByTask[t.id] ?? [])
       .map((r) => `${r.label || r.url} (${r.url})`)
       .join(", ");
-    out.push(taskPassage(t, divisions, event.title, refs));
+    const results = (resultLinksByTask[t.id] ?? [])
+      .map((l) => `${l.label || l.url} (${l.url})${l.in_super_link ? ", juga terbit di Super Link" : ""}`)
+      .join("; ");
+    out.push(taskPassage(t, divisions, event.title, refs, results));
   }
 
   // ---- Divisions -----------------------------------------------------------
@@ -274,6 +374,9 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     });
 
     for (const p of prospects) {
+      const pLinks = (prospectLinksById[p.id] ?? [])
+        .map((l) => `${l.label || l.url} (${l.url})${l.in_super_link ? ", juga terbit di Super Link" : ""}`)
+        .join("; ");
       out.push({
         id: `prospect-${p.id}`,
         parent: "live-prospects",
@@ -290,9 +393,12 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
           `Jawaban mereka: ${val(p.their_response, "belum ada jawaban")}.`,
           `Jawaban kita: ${val(p.our_response, "belum ada jawaban")}.`,
           p.done ? "Prospek ini sudah selesai diproses." : "Prospek ini belum selesai diproses.",
+          p.notes?.trim() && `Catatan prospek: ${p.notes.trim()}.`,
           p.is_primary &&
             `Ini adalah data utama Ormawa Visit ${event.title}: himpunan partner yang dipakai edisi ini.`,
-          p.link && `Tautan terkait: ${p.link}.`,
+          pLinks
+            ? `Tautan milik himpunan ini (handbook, profil organisasi, proposal): ${pLinks}.`
+            : "Belum ada tautan yang dilampirkan pada prospek ini.",
         ),
       });
     }

@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2, ExternalLink, Share2 } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2, ExternalLink, Share2, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,13 +10,8 @@ import { useMultiSelect } from "@/lib/use-multi-select";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { SortHead } from "@/components/ui/sort-indicator";
 import { bulkDeleteProspectsAction } from "@/lib/actions/prospects";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import {
   Table,
   TableBody,
@@ -32,11 +27,40 @@ import { PIPELINE_STAGES, prospectStage } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
-import type { AppUser, Member, Prospect } from "@/lib/types";
+import type { AppUser, Member, Prospect, ProspectLink } from "@/lib/types";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
 
 type ProspectSortKey = "org_name" | "campus" | "contact" | "pic" | "stage";
+
+/**
+ * Every link attached to a prospect, one chip each.
+ *
+ * Read-only: links are edited in the prospect dialog. The share icon is the
+ * only cue that a link also lives in Super Link, same as on a task result.
+ */
+function ProspectLinkChips({ links }: { links: ProspectLink[] }) {
+  const t = useT();
+  if (!links.length) return <span className="text-sm text-muted-foreground">-</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {links.map((l, i) => (
+        <a
+          key={l.id}
+          href={l.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`${l.label || l.url}${l.in_super_link ? ` (${t("Super Link")})` : ""}`}
+          className="inline-flex max-w-[140px] items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] text-accent-foreground transition hover:brightness-95"
+        >
+          <ExternalLink className="size-2.5 shrink-0" />
+          <span className="truncate">{l.label?.trim() || `${t("Tautan")} ${i + 1}`}</span>
+          {l.in_super_link && <Share2 className="size-2.5 shrink-0 opacity-70" />}
+        </a>
+      ))}
+    </div>
+  );
+}
 
 function StageBadge({ p }: { p: Prospect }) {
   const t = useT();
@@ -54,11 +78,14 @@ function StageBadge({ p }: { p: Prospect }) {
 
 export function ProspectsView({
   prospects,
+  prospectLinks,
   members,
   user,
   activeEventId,
 }: {
   prospects: Prospect[];
+  /** Every prospect's links, keyed by prospect id (fetched once by the page). */
+  prospectLinks: Record<string, ProspectLink[]>;
   members: Member[];
   user: AppUser;
   activeEventId: string;
@@ -67,19 +94,36 @@ export function ProspectsView({
   const manage = can.manageProspects(user);
   const [view, setView] = React.useState<"table" | "board">("table");
   const [q, setQ] = React.useState("");
-  const [stage, setStage] = React.useState("all");
+  // Empty = no filter. Ticking several is the whole point of this control:
+  // "show me diterima AND ditolak" was impossible with a single-select.
+  const [stage, setStage] = React.useState<Set<string>>(new Set());
   const sort = useMultiSort<ProspectSortKey>();
   const [bulkPending, startBulk] = React.useTransition();
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
     return prospects.filter((p) => {
-      if (stage !== "all" && prospectStage(p) !== stage) return false;
-      if (query && !`${p.org_name} ${p.campus} ${p.contact} ${p.pic} ${p.notes} ${p.link_label}`.toLowerCase().includes(query))
-        return false;
-      return true;
+      if (stage.size > 0 && !stage.has(prospectStage(p))) return false;
+      if (!query) return true;
+      // Link names are searchable too: people look a prospect up by the
+      // document they remember ("handbook HMTI"), not only by the org name.
+      const linkText = (prospectLinks[p.id] ?? []).map((l) => `${l.label} ${l.url}`).join(" ");
+      return `${p.org_name} ${p.campus} ${p.contact} ${p.pic} ${p.notes} ${linkText}`
+        .toLowerCase()
+        .includes(query);
     });
-  }, [prospects, q, stage]);
+  }, [prospects, prospectLinks, q, stage]);
+
+  // Counted before the stage filter, so ticking one stage does not blank out
+  // the numbers next to the ones you have not ticked yet.
+  const stageCounts = React.useMemo(() => {
+    const by: Record<string, number> = {};
+    for (const p of prospects) {
+      const k = prospectStage(p);
+      by[k] = (by[k] ?? 0) + 1;
+    }
+    return by;
+  }, [prospects]);
 
   const stageOrder = React.useMemo(
     () => Object.fromEntries(PIPELINE_STAGES.map((s, i) => [s.key, i])),
@@ -100,7 +144,7 @@ export function ProspectsView({
 
   // Selection follows what is on screen; ticks survive a search (see use-multi-select).
   const sel = useMultiSelect(React.useMemo(() => rows.map((p) => p.id), [rows]));
-  const hasFilters = q || stage !== "all";
+  const hasFilters = q || stage.size > 0;
   const allSelected = sel.allVisibleSelected;
   function bulkDelete() {
     startBulk(async () => {
@@ -118,21 +162,22 @@ export function ProspectsView({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari himpunan, kampus, PIC…")} className="pl-9" />
           </div>
-          <Select value={stage} onValueChange={setStage}>
-            <SelectTrigger className="w-auto min-w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("Semua Tahap")}</SelectItem>
-              {PIPELINE_STAGES.map((s) => (
-                <SelectItem key={s.key} value={s.key}>
-                  {t(s.label)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterMultiSelect
+            label={t("Tahap")}
+            allLabel={t("Semua Tahap")}
+            unit={t("tahap")}
+            icon={<Filter className="size-3.5" />}
+            options={PIPELINE_STAGES.map((s) => ({
+              value: s.key,
+              label: t(s.label),
+              color: s.color,
+              count: stageCounts[s.key] ?? 0,
+            }))}
+            picked={stage}
+            onChange={setStage}
+          />
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStage("all"); }}>
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStage(new Set()); }}>
               <X className="size-4" /> {t("Reset")}
             </Button>
           )}
@@ -205,7 +250,7 @@ export function ProspectsView({
                   <SortHead sort={sort} k="contact">{t("Kontak")}</SortHead>
                   <SortHead sort={sort} k="pic">{t("PIC")}</SortHead>
                   <SortHead sort={sort} k="stage">{t("Tahap")}</SortHead>
-                  <TableHead className="w-16">{t("Tautan")}</TableHead>
+                  <TableHead className="min-w-[140px]">{t("Tautan")}</TableHead>
                   <TableHead className="min-w-[160px]">{t("Catatan")}</TableHead>
                   {manage && <TableHead className="w-10" />}
                 </TableRow>
@@ -239,29 +284,15 @@ export function ProspectsView({
                     <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
                     <TableCell className="text-sm">{p.pic || "-"}</TableCell>
                     <TableCell><StageBadge p={p} /></TableCell>
-                    <TableCell>
-                      {p.link ? (
-                        <a
-                          href={p.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={p.link_label || p.link}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                        >
-                          <ExternalLink className="size-3.5" />
-                          {/* The tick is the only cue that this also lives in Super Link. */}
-                          {p.link_in_super_link && <Share2 className="size-3 text-muted-foreground" />}
-                        </a>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
+                    <TableCell className="align-top">
+                      <ProspectLinkChips links={prospectLinks[p.id] ?? []} />
                     </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground" title={p.notes || undefined}>
-                      {p.notes || "-"}
+                    <TableCell className="max-w-[240px] align-top text-sm text-muted-foreground">
+                      <ExpandableText text={p.notes} />
                     </TableCell>
                     {manage && (
                       <TableCell>
-                        <ProspectActions prospect={p} members={members} eventId={activeEventId} />
+                        <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -288,7 +319,7 @@ export function ProspectsView({
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium">{p.org_name || "-"}</p>
-                        {manage && <ProspectActions prospect={p} members={members} eventId={activeEventId} />}
+                        {manage && <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}
                       <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
@@ -299,6 +330,11 @@ export function ProspectsView({
                           <p className="flex items-center gap-1.5"><UserRound className="size-3" /> {p.pic}</p>
                         )}
                       </div>
+                      {(prospectLinks[p.id]?.length ?? 0) > 0 && (
+                        <div className="mt-2">
+                          <ProspectLinkChips links={prospectLinks[p.id] ?? []} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -348,25 +348,45 @@ const prospectBase = z.object({
   their_response: z.string().trim().max(60).optional(),
   our_response: z.string().trim().max(60).optional(),
   done: z.boolean().optional(),
-  // A prospect's own link (handbook, org profile). Optional, but when filled it
-  // must be a real http(s) URL, same rule as Super Link entries.
-  // Empty stays an empty STRING here, not null: the whole Prospect model uses
-  // "" for "not filled in", and a stray null would have to be null-checked in
-  // every table cell that renders it.
-  link: z
-    .string()
-    .trim()
-    .nullish()
-    .transform((v) => v ?? "")
-    .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Tautan harus berupa URL http(s) yang valid."),
-  link_label: z.string().trim().max(200).optional(),
   notes: z.string().trim().max(2000).optional(),
-  link_in_super_link: z.boolean().optional(),
-  // `link_id` is deliberately absent: it points at a Super Link row and is
-  // owned by the repo. Accepting it from a client would let anyone re-point a
-  // prospect at someone else's Super Link entry and then overwrite it.
+  // The prospect's own links live in their own table since 0038 and travel as
+  // a separate argument (see prospectLinksSchema), not as a field here. The
+  // legacy `link` / `link_label` / `link_in_super_link` columns are deliberately
+  // absent so no client can write to them any more.
+  //
+  // `link_id` was always absent and stays that way: it points at a Super Link
+  // row and is owned by the repo. Accepting it from a client would let anyone
+  // re-point a prospect at someone else's Super Link entry and then overwrite it.
   source: z.string().trim().max(120).optional(),
 });
+
+/**
+ * One link on a prospect. Same rules as a task result link: `url` must be a
+ * real http(s) link, and `label` is the name used for its Super Link entry
+ * when published.
+ */
+export const prospectLinkSchema = z.object({
+  id: z.string().trim().max(128).optional(),
+  url: urlSchema,
+  label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
+  in_super_link: z.boolean().optional().transform((v) => !!v),
+});
+export const prospectLinksSchema = z
+  .array(prospectLinkSchema)
+  .max(20, "Maksimal 20 tautan per prospek.")
+  .superRefine((links, ctx) => {
+    // The same URL twice on one prospect would also publish it to Super Link
+    // twice, and the two rows would then fight over the same `link_id`.
+    const seen = new Set<string>();
+    for (const l of links) {
+      const key = l.url.trim().toLowerCase().replace(/\/+$/, "");
+      if (seen.has(key)) {
+        ctx.addIssue({ code: "custom", message: "Ada tautan yang sama lebih dari sekali." });
+        return;
+      }
+      seen.add(key);
+    }
+  });
 /** Create: require at least an org name or a contact. */
 export const prospectSchema = prospectBase.refine(
   (v) => !!(v.org_name?.trim() || v.contact?.trim()),

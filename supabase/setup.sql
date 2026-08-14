@@ -259,20 +259,39 @@ create table if not exists prospects (
 alter table prospects add column if not exists event_id text references events(id) on delete set null;
 alter table prospects add column if not exists mode text;
 alter table prospects add column if not exists is_primary boolean not null default false;
--- 0036: tautan + catatan per prospek. `link_in_super_link`/`link_id` meniru
--- task_links: kalau dicentang, tautannya juga jadi entri Super Link dan
--- `link_id` mengingat baris mana, supaya mengubah/menghapusnya di sini ikut
--- memperbarui Super Link alih-alih meninggalkan entri yatim.
+-- 0036: catatan per prospek. Kolom `link*` di bawahnya WARISAN sejak 0038 -
+-- aplikasi tidak lagi membacanya, tautan prospek pindah ke tabel
+-- prospect_links (2.8b) karena satu himpunan sering mengirim beberapa berkas.
+-- Dibiarkan ada supaya baris lama tetap terbaca.
+alter table prospects add column if not exists notes text default '';
 alter table prospects add column if not exists link text default '';
 alter table prospects add column if not exists link_label text default '';
-alter table prospects add column if not exists notes text default '';
 alter table prospects add column if not exists link_in_super_link boolean not null default false;
 alter table prospects add column if not exists link_id uuid references links(id) on delete set null;
 create index if not exists prospects_event_idx on prospects(event_id);
 -- Paling banyak satu prospek utama per Ormawa Visit.
 create unique index if not exists prospects_primary_uniq on prospects(event_id) where is_primary;
--- Satu baris Super Link hanya boleh dimiliki satu prospek.
+-- Satu baris Super Link hanya boleh dimiliki satu prospek (warisan 0036).
 create unique index if not exists prospects_link_uniq on prospects(link_id) where link_id is not null;
+
+-- 2.8b prospect_links (0038): tautan milik himpunan yang dihubungi.
+-- Bentuknya sama persis dengan task_links: `in_super_link` menerbitkan tautan
+-- ke Super Link dan `link_id` mengingat baris mana yang dimilikinya, sehingga
+-- menyimpan ulang memperbarui baris itu alih-alih menambah duplikat.
+create table if not exists prospect_links (
+  id uuid primary key default gen_random_uuid(),
+  prospect_id uuid not null references prospects(id) on delete cascade,
+  url text not null,
+  label text default '',
+  in_super_link boolean not null default false,
+  link_id uuid references links(id) on delete set null,
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists prospect_links_prospect_idx on prospect_links(prospect_id);
+create index if not exists prospect_links_link_idx on prospect_links(link_id);
+create unique index if not exists prospect_links_link_uniq
+  on prospect_links(link_id) where link_id is not null;
 
 -- 2.9 budget -------------------------------------------------------
 create table if not exists budget_plans (
@@ -594,7 +613,7 @@ do $do$
 declare t text;
 begin
   foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs',
-                           'prospects', 'links', 'budget_plans', 'budget_items', 'rundown',
+                           'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items', 'rundown',
                            'job_harih', 'faqs', 'teams', 'backups', 'role_requests']
   loop
     execute format('alter table %I enable row level security;', t);
@@ -609,7 +628,7 @@ do $do$
 declare t text;
 begin
   foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs',
-                           'prospects', 'rundown', 'job_harih', 'faqs']
+                           'prospects', 'prospect_links', 'rundown', 'job_harih', 'faqs']
   loop
     execute format('drop policy if exists "read_all" on %I;', t);
     execute format('drop policy if exists "read_public" on %I;', t);
@@ -728,6 +747,23 @@ create policy "task_refs_update" on task_refs for update to authenticated
 create policy "task_refs_delete" on task_refs for delete to authenticated
   using (has_role()
     and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
+
+-- prospect_links (0038) ikut prospek induknya, aturannya sama persis.
+drop policy if exists "prospect_links_write" on prospect_links;
+drop policy if exists "prospect_links_insert" on prospect_links;
+drop policy if exists "prospect_links_update" on prospect_links;
+drop policy if exists "prospect_links_delete" on prospect_links;
+create policy "prospect_links_insert" on prospect_links for insert to authenticated
+  with check (has_role()
+    and writable_event((select p.event_id from prospects p where p.id = prospect_links.prospect_id)));
+create policy "prospect_links_update" on prospect_links for update to authenticated
+  using (has_role()
+    and writable_event((select p.event_id from prospects p where p.id = prospect_links.prospect_id)))
+  with check (has_role()
+    and writable_event((select p.event_id from prospects p where p.id = prospect_links.prospect_id)));
+create policy "prospect_links_delete" on prospect_links for delete to authenticated
+  using (has_role()
+    and writable_event((select p.event_id from prospects p where p.id = prospect_links.prospect_id)));
 
 -- 5.3 Tulis: modul "admin saja" ------------------------------------
 do $do$

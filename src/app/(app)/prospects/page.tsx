@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
-import { getProspects, getMembers } from "@/lib/data/repo";
+import { getProspects, getProspectLinksByEvent, getMembers } from "@/lib/data/repo";
 import { prospectStage } from "@/lib/constants";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
@@ -13,7 +13,11 @@ export const metadata = { title: "Reach & Offer" };
 
 export default async function ProspectsPage() {
   const [user, event, t] = await Promise.all([getCurrentUser(), getActiveEvent(), getT()]);
-  const [prospects, members] = await Promise.all([getProspects(event.id), getMembers(event.id)]);
+  const [prospects, prospectLinks, members] = await Promise.all([
+    getProspects(event.id),
+    getProspectLinksByEvent(event.id),
+    getMembers(event.id),
+  ]);
 
   const count = (k: string) => prospects.filter((p) => prospectStage(p) === k).length;
 
@@ -32,7 +36,13 @@ export default async function ProspectsPage() {
         <StatCard label={t("Ditolak")} value={count("ditolak")} icon={<XCircle />} accent="#ef4444" />
       </div>
 
-      <ProspectsView prospects={prospects} members={members} user={user} activeEventId={event.id} />
+      <ProspectsView
+        prospects={prospects}
+        prospectLinks={prospectLinks}
+        members={members}
+        user={user}
+        activeEventId={event.id}
+      />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { TaskDetailDialog } from "./task-detail-dialog";
 import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useTaskLinks, useTaskRefs } from "./task-links-context";
 import { EmptyState } from "@/components/ui/empty";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import { SortHead } from "@/components/ui/sort-indicator";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { visibleSelection } from "@/lib/use-multi-select";
@@ -212,13 +213,18 @@ export function TaskTable({
                     </TableCell>
                   )}
                   <TableCell className="text-xs tabular-nums text-muted-foreground">{rowIndex + 1}</TableCell>
-                  <TableCell>
+                  <TableCell className="align-top">
                     <TaskDetailDialog task={t} division={div} event={evMap.get(t.event_id)} user={user}>
                       <button className="group flex flex-col text-left">
                         <span className="line-clamp-2 text-sm font-medium group-hover:text-primary">{t.title}</span>
-                        {t.notes && <span className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t.notes}</span>}
                       </button>
                     </TaskDetailDialog>
+                    {/* Outside the dialog trigger on purpose: the expand toggle
+                        is a button, and a button inside a button is a hydration
+                        error as well as an unusable control. */}
+                    {t.notes && (
+                      <ExpandableText text={t.notes} lines={1} className="mt-0.5 text-xs text-muted-foreground" />
+                    )}
                   </TableCell>
                   <TableCell>{div && <DivisionBadge division={div} />}</TableCell>
                   <TableCell className="max-w-[160px] truncate text-sm text-muted-foreground">{t.pic || "-"}</TableCell>
@@ -286,7 +292,7 @@ function ResultCell({ task }: { task: Task }) {
   return (
     <div className="space-y-1">
       {task.result && !legacyUrl && (
-        <span className="line-clamp-2 text-xs text-muted-foreground">{task.result}</span>
+        <ExpandableText text={task.result} className="text-xs text-muted-foreground" />
       )}
       {legacyUrl && (
         <a href={legacyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">

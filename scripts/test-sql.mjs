@@ -109,6 +109,9 @@ insert into rundown (id, event_id, no, activity) values
 insert into task_links (id, task_id, url) values
   ('eeeeeeee-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','https://y.test'),
   ('eeeeeeee-0000-0000-0000-000000000002','aaaaaaaa-0000-0000-0000-000000000003','https://arsip.test');
+insert into prospects (id, event_id, org_name) values
+  ('99999999-0000-0000-0000-000000000001','ov-open','HIMA Terbuka'),
+  ('99999999-0000-0000-0000-000000000002','ov-lock','HIMA Arsip');
 insert into members (event_id, name, nrp, type, year) values
   ('ov-open','Budi Santoso','5026221001','fungsionaris',2022);
 insert into teams (event_id, division, coordinator) values ('ov-open','EVENT','Budi');
@@ -746,6 +749,77 @@ console.log("\ntask_refs - rujukan tugas");
   const survived = Number((await db.query(
     `select count(*) c from task_refs where url = 'https://ref.test' and link_id is null`)).rows[0].c);
   ok("menghapus entri Super Link menyisakan rujukan (link_id jadi null)", survived === 2);
+}
+
+// ------------------------------------------------------------------
+// 0038: banyak tautan per prospek. Policy-nya menumpang pada prospek induknya
+// (tabel ini tidak punya event_id sendiri), jadi yang diuji adalah dua hal
+// yang tidak bisa dilihat dari kode aplikasi: kunci arsip tetap menular lewat
+// prospects.event_id, dan satu baris Super Link tetap hanya boleh dimiliki
+// satu tautan prospek.
+// ------------------------------------------------------------------
+console.log("\nprospect_links - banyak tautan per prospek");
+{
+  const P_OPEN = "'99999999-0000-0000-0000-000000000001'";
+  const P_LOCK = "'99999999-0000-0000-0000-000000000002'";
+  const SL = "'cccccccc-0000-0000-0000-000000000009'";
+  await db.exec(
+    `insert into links (id, name, url, event_id) values (${SL},'Handbook','https://hb.test','ov-open');`,
+  );
+
+  await check("koordinator boleh menambah tautan prospek di edisi terbuka", U.coord, false,
+    `insert into prospect_links (prospect_id, url) values (${P_OPEN}, 'https://a.test')`, "allow");
+
+  await check("boleh lebih dari satu tautan pada prospek yang sama", U.coord, false,
+    `insert into prospect_links (prospect_id, url) values (${P_OPEN}, 'https://b.test')`, "allow");
+
+  await check("staff boleh menambah tautan prospek (akses terbatas)", U.staff, false,
+    `insert into prospect_links (prospect_id, url) values (${P_OPEN}, 'https://c.test')`, "allow");
+
+  await check("koordinator DITOLAK menambah tautan pada prospek di ARSIP", U.coord, false,
+    `insert into prospect_links (prospect_id, url) values (${P_LOCK}, 'https://arsip.test')`, "deny");
+
+  await check("Tamu anonim tidak bisa menambah tautan prospek", U.anon, true,
+    `insert into prospect_links (prospect_id, url) values (${P_OPEN}, 'https://tamu.test')`, "deny");
+
+  await check("Tamu tetap boleh MEMBACA tautan prospek", U.viewer, false,
+    `select * from prospect_links`, "rows");
+
+  // One Super Link row, one owner: the same guard task_links has, and the
+  // reason re-saving a published link updates it instead of duplicating it.
+  await db.exec(
+    `insert into prospect_links (prospect_id, url, in_super_link, link_id)
+       values (${P_OPEN}, 'https://hb.test', true, ${SL});`,
+  );
+  let doubled = null;
+  try {
+    await db.exec(
+      `insert into prospect_links (prospect_id, url, in_super_link, link_id)
+         values (${P_OPEN}, 'https://hb.test', true, ${SL});`,
+    );
+  } catch (e) { doubled = e.message.split("\n")[0]; }
+  ok("satu entri Super Link hanya boleh dimiliki SATU tautan prospek", doubled !== null);
+
+  // Deleting the Super Link entry must not delete the prospect's link: the URL
+  // survives as plain text, same as a task reference.
+  await db.exec(`delete from links where id = ${SL};`);
+  const kept = Number((await db.query(
+    `select count(*) c from prospect_links where url = 'https://hb.test' and link_id is null`)).rows[0].c);
+  ok("menghapus entri Super Link menyisakan tautan prospek (link_id jadi null)", kept === 1);
+
+  // The cascade is what keeps orphans out when a prospect goes.
+  await db.exec(`delete from prospects where id = ${P_OPEN};`);
+  const orphans = Number((await db.query(
+    `select count(*) c from prospect_links where prospect_id = ${P_OPEN}`)).rows[0].c);
+  ok("menghapus prospek ikut menghapus tautannya (cascade)", orphans === 0);
+
+  // The demo project never runs the migrations, so its catch-up block in
+  // demo-seed.sql is the only thing that creates this table there.
+  const demoSeedSql = readFileSync(join(__dirname, "../supabase/demo/demo-seed.sql"), "utf8");
+  ok(
+    "demo-seed Part 0 membuat tabel prospect_links (project demo tidak pernah jalankan 0038)",
+    /create table if not exists prospect_links/.test(demoSeedSql),
+  );
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);
