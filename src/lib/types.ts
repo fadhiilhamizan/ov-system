@@ -330,6 +330,75 @@ export interface RoleRequest {
   decided_by?: string | null;
 }
 
+// ============================================================
+// Developer tooling (migration 0039). Read by exactly one route, /developer,
+// which is not registered in the nav, the access matrix, the guide, or
+// Violet's link table. See src/lib/developers.ts for why this is an email
+// layer and not a sixth Role.
+// ============================================================
+
+/** One audited write, recorded by a database trigger rather than by the app. */
+export interface ActivityEntry {
+  id: number;
+  at: string;
+  actor_id: string | null;
+  actor_email: string;
+  actor_role: string;
+  /** The table written to, e.g. "tasks". */
+  table_name: string;
+  row_id: string;
+  /** The row's title/name AS IT WAS, so the feed reads even after a delete. */
+  label: string;
+  action: 'insert' | 'update' | 'delete';
+  event_id: string | null;
+  /** Only the columns that changed: { kolom: { dari, jadi } }. Updates only. */
+  changed: Record<string, { dari: unknown; jadi: unknown }> | null;
+  /** The whole row. Inserts and deletes only (an update is already a diff). */
+  snapshot: Record<string, unknown> | null;
+}
+
+/** Per-account edit counts, aggregated in the database. */
+export interface ActorStat {
+  actor_id: string | null;
+  actor_email: string;
+  actor_role: string;
+  edits: number;
+  inserts: number;
+  updates: number;
+  deletes: number;
+  last_edit: string | null;
+}
+
+/** A heartbeat from an open tab. Readable by developers only. */
+export interface PresenceEntry {
+  user_id: string;
+  email: string;
+  name: string;
+  role: string;
+  path: string;
+  last_seen: string;
+}
+
+/** An error reported from a browser (or an error boundary). */
+export interface ErrorEntry {
+  id: number;
+  at: string;
+  kind: 'client' | 'boundary' | 'server';
+  message: string;
+  stack: string;
+  path: string;
+  user_agent: string;
+  user_id: string | null;
+  user_email: string;
+  resolved: boolean;
+}
+
+/** Row count per table, for the database health panel. */
+export interface TableCount {
+  table_name: string;
+  rows: number;
+}
+
 export interface Database {
   divisions: Division[];
   events: OVEvent[];

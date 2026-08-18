@@ -63,3 +63,6 @@ Desktop.ini
 
 # Misc
 *.pem
+
+# Daftar developer (email, tidak ikut git - repo ini publik)
+*.local.sql

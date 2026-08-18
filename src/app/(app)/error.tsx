@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertTriangle, RotateCcw, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/provider";
+import { reportErrorAction } from "@/lib/actions/developer";
 
 /**
  * Segment-level error boundary for every page under (app).
@@ -22,6 +23,15 @@ export default function AppError({
   React.useEffect(() => {
     // Surface for logging/monitoring; the message itself is never shown raw.
     console.error("App error boundary:", error);
+    // Also file it, so a crash somebody else hit shows up in the Developer
+    // menu instead of only in a console nobody was watching. Fire and forget:
+    // a failed report must not turn one error into two.
+    void reportErrorAction({
+      kind: "boundary",
+      message: error.message || "Unknown error",
+      stack: error.stack ?? "",
+      path: typeof window === "undefined" ? "" : window.location.pathname,
+    });
   }, [error]);
 
   return (

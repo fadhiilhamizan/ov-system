@@ -10,6 +10,7 @@ import { DemoBanner } from "./demo-banner";
 import { ArchiveBanner } from "./archive-banner";
 import { RoleRequestBanner } from "@/components/roles/role-request-banner";
 import { AnchorScroller } from "./anchor-scroller";
+import { SessionBeacons } from "@/components/developer/session-beacons";
 import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -28,6 +29,8 @@ export function AppShell({
   pendingRoleRequest = null,
   showRoleBanner = false,
   violetEnabled = false,
+  isDeveloper = false,
+  beaconsEnabled = false,
   children,
 }: {
   user: AppUser;
@@ -46,6 +49,12 @@ export function AppShell({
   showRoleBanner?: boolean;
   /** The chat assistant only renders when a Gemini key is configured. */
   violetEnabled?: boolean;
+  /** Adds the hidden Developer entry to the account menu, and captures this
+   *  session's console for the in-app one. Almost always false. */
+  isDeveloper?: boolean;
+  /** Presence heartbeat + uncaught-error reporting. On for every real account,
+   *  off for guests and demo mode (see SessionBeacons). */
+  beaconsEnabled?: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -123,12 +132,18 @@ export function AppShell({
           sandboxMode={sandboxMode}
           roleOptions={roleOptions}
           pendingRoleRequest={pendingRoleRequest}
+          isDeveloper={isDeveloper}
           onMenu={() => setMobileOpen(true)}
         />
         <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>
         {/* Applies the URL's #anchor after a navigation, so a shortcut lands on
             its section instead of at the top of a long page. */}
         <AnchorScroller />
+        {/* Renders nothing. Feeds the hidden Developer menu: who is online, and
+            which errors real users are hitting. */}
+        {(beaconsEnabled || isDeveloper) && (
+          <SessionBeacons isDeveloper={isDeveloper} networkEnabled={beaconsEnabled} />
+        )}
         {violetEnabled && <VioletChat />}
         <footer className="border-t border-border px-6 py-5">
           <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">

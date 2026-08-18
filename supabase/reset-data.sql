@@ -40,6 +40,13 @@
 
 begin;
 
+-- Matikan jejak audit (0039) untuk skrip ini. Tanpa ini, mengosongkan database
+-- menulis satu baris activity_log untuk SETIAP baris yang dihapus: ribuan
+-- catatan yang isinya cuma "reset", menutupi jejak yang benar-benar berguna.
+-- `set local`, bukan `set`, karena SQL Editor bicara lewat connection pooler:
+-- di luar transaksi, statement berikutnya bisa mendarat di backend lain.
+set local app.audit = 'off';
+
 do $do$
 declare
   t text;

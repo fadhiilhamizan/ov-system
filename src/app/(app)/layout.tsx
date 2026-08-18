@@ -7,6 +7,7 @@ import { getEvents, getRoleRequestsFor } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { requestableRolesFor } from "@/lib/permissions";
 import { violetConfigured } from "@/lib/violet/llm";
+import { isDeveloper } from "@/lib/developers";
 import type { RoleRequest } from "@/lib/types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // have one change roles from the user menu instead.
   const showRoleBanner = roleOptions.length > 0 && user.role === "guest";
 
+  // The Developer layer. An EMAIL allowlist rather than a role, so it never
+  // reaches the access matrix, the role-request list, or the Panduan - see
+  // src/lib/developers.ts. The beacons that feed that menu run for every real
+  // account (a presence list of one developer would be pointless), but not for
+  // guests, who share one anonymous identity, and not in demo mode, whose
+  // database does not have the tables.
+  const developer = isDeveloper(user);
+  const beaconsEnabled = USE_SUPABASE && !sandboxMode && user.role !== "guest";
+
   return (
     <AppShell
       user={user}
@@ -49,6 +59,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       pendingRoleRequest={pendingRoleRequest}
       showRoleBanner={showRoleBanner}
       violetEnabled={violetConfigured()}
+      isDeveloper={developer}
+      beaconsEnabled={beaconsEnabled}
     >
       {children}
     </AppShell>

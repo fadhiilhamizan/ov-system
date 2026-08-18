@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronsUpDown, LogOut, Loader2, UserRoundCheck, KeyRound } from "lucide-react";
+import { ChevronsUpDown, LogOut, Loader2, UserRoundCheck, KeyRound, TerminalSquare } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { exitGuestMode } from "@/lib/actions/session";
 import { ROLE_META } from "@/lib/constants";
@@ -23,10 +24,14 @@ export function UserMenu({
   user,
   roleOptions = [],
   pendingRoleRequest = null,
+  isDeveloper = false,
 }: {
   user: AppUser;
   roleOptions?: RequestableRole[];
   pendingRoleRequest?: RoleRequest | null;
+  /** Renders the one and only entry point to /developer. False for everyone
+   *  whose address is not on the allowlist, which is almost everyone. */
+  isDeveloper?: boolean;
 }) {
   const t = useT();
   const router = useRouter();
@@ -89,6 +94,19 @@ export function UserMenu({
             <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
               <KeyRound /> {t("Ubah Kata Sandi")}
             </DropdownMenuItem>
+          )}
+          {/* The only link to /developer anywhere in the app. It is not in the
+              sidebar, the search palette, the access matrix, the Panduan, or
+              Violet's route table - see src/lib/developers.ts. */}
+          {isDeveloper && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/developer">
+                  <TerminalSquare /> Developer
+                </Link>
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem destructive onSelect={(e) => { e.preventDefault(); signOut(); }}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut />} {t("Keluar")}

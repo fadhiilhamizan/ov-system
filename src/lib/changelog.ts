@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.36.0",
+    date: "2026-08-18",
+    title: "Jejak perubahan di seluruh sistem",
+    changes: [
+      { kind: "security", text: "Setiap penambahan, perubahan, dan penghapusan data kini tercatat lengkap dengan pelaku, waktu, dan kolom apa saja yang berubah. Pencatatannya dilakukan di level database, jadi tidak ada penulisan yang bisa lolos." },
+      { kind: "security", text: "Catatan itu tidak bisa disunting maupun dihapus oleh siapa pun lewat aplikasi, termasuk oleh akun yang tercatat di dalamnya." },
+      { kind: "data", text: "Menyimpan formulir tanpa mengubah apa pun tidak lagi tercatat sebagai perubahan, jadi riwayatnya hanya berisi hal yang benar-benar terjadi." },
+      // Deliberately vague about WHAT gained the tooling: the changelog is
+      // rendered in Pengaturan, which every role can open.
+      { kind: "new", text: "Halaman error kini melaporkan dirinya sendiri, sehingga masalah yang dialami pengguna bisa ditangani tanpa perlu menunggu laporan manual." },
+    ],
+  },
+  {
     version: "1.35.0",
     date: "2026-08-14",
     title: "Filter centang, catatan bisa dibuka, dan banyak tautan per prospek",

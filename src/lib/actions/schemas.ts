@@ -476,3 +476,42 @@ export function parse<T>(schema: z.ZodType<T>, input: unknown): Parsed<T> {
   const first = r.error.issues[0];
   return { ok: false, error: first?.message ?? "Input tidak valid." };
 }
+
+// ---------------- Developer tooling (0039) ----------------
+// The two beacons are called by EVERY signed-in account, so their caps matter
+// more than most: they are the only actions in the app that an ordinary user
+// triggers without meaning to, on a timer, from a tab that may be in a crash
+// loop. The database enforces a rate limit as well (20 error reports per
+// account per minute) because a schema cannot count.
+
+/** A row id that is a bigserial rather than a uuid. */
+export const idNumberSchema = z
+  .number()
+  .int("ID tidak valid.")
+  .positive("ID tidak valid.")
+  .max(Number.MAX_SAFE_INTEGER);
+
+export const presenceSchema = z.object({
+  // A path, not a URL: query strings can carry search terms people typed, and
+  // the presence table is read by a human looking at a list of names.
+  path: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((v) => (v.startsWith("/") ? v.split("?")[0] : "/")),
+});
+
+export const errorReportSchema = z.object({
+  kind: z.enum(["client", "boundary"]).optional(),
+  message: nonEmpty("Pesan error", 2000),
+  // Stacks are long and the useful part is the top. Truncating here keeps one
+  // runaway report from costing more storage than a thousand real ones.
+  stack: z.string().trim().max(8000).optional().transform((v) => v ?? ""),
+  path: z.string().trim().max(300).optional().transform((v) => v ?? ""),
+});
+
+export const pruneSchema = z.object({
+  // Never zero: "keep 0 days" is "delete the whole audit trail", which should
+  // take a deliberate SQL statement, not a mis-click in a form.
+  days: z.coerce.number().int().min(1, "Minimal 1 hari.").max(3650),
+});

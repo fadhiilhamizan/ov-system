@@ -32,6 +32,10 @@ const U = {
   intern: "44444444-4444-4444-4444-444444444444",
   viewer: "55555555-5555-5555-5555-555555555555",
   anon: "66666666-6666-6666-6666-666666666666",
+  // Developer = an EMAIL on the allowlist, layered over an ordinary role. This
+  // one is deliberately only 'staff' so the tests prove the layer grants the
+  // audit trail by itself, not by smuggling in admin rights.
+  dev: "77777777-7777-7777-7777-777777777777",
 };
 
 const db = await PGlite.create({ extensions: { pgcrypto } });
@@ -48,8 +52,9 @@ create or replace function auth.uid() returns uuid
 language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
 create or replace function auth.jwt() returns jsonb
 language sql stable as $fn$
-  select jsonb_build_object('is_anonymous',
-    coalesce(nullif(current_setting('test.anon', true), ''), 'false')::boolean) $fn$;
+  select jsonb_build_object(
+    'is_anonymous', coalesce(nullif(current_setting('test.anon', true), ''), 'false')::boolean,
+    'email', coalesce(nullif(current_setting('test.email', true), ''), null)) $fn$;
 `);
 
 let pass = 0;
@@ -83,13 +88,18 @@ grant select, insert, delete on all tables in schema public to anon, authenticat
 grant update on all tables in schema public to anon, authenticated;
 revoke update on public.profiles from authenticated, anon;
 grant update (name, avatar_color) on public.profiles to authenticated;
+-- 0039 narrows error_log the same way, so re-apply it after the blanket grant.
+revoke insert on public.error_log from authenticated, anon;
+grant insert (kind, message, stack, path, user_agent) on public.error_log to authenticated;
 grant execute on all functions in schema public to anon, authenticated;
 grant execute on all functions in schema auth to anon, authenticated;
 `);
 
 await db.exec(`
-insert into auth.users (id) values
-  ('${U.admin}'), ('${U.coord}'), ('${U.staff}'), ('${U.intern}'), ('${U.viewer}'), ('${U.anon}');
+insert into auth.users (id, email) values
+  ('${U.admin}','admin@ov.test'), ('${U.coord}','coord@ov.test'), ('${U.staff}','staff@ov.test'),
+  ('${U.intern}','intern@ov.test'), ('${U.viewer}','viewer@ov.test'), ('${U.anon}','anon@ov.test'),
+  ('${U.dev}','dev@ov.test');
 insert into events (id, code, title) values ('ov-open','OV1','Terbuka'), ('ov-lock','OV2','Terkunci');
 update profiles set role='admin'       where id='${U.admin}';
 update profiles set role='coordinator' where id='${U.coord}';
@@ -119,11 +129,16 @@ update events set locked = true where id = 'ov-lock';
 `);
 
 const profiles = await db.query(`select count(*)::int as n from profiles`);
-ok("trigger handle_new_user membuat profil tiap akun baru", profiles.rows[0].n === 6);
+ok("trigger handle_new_user membuat profil tiap akun baru", profiles.rows[0].n === 7);
 
 async function as(uid, anon, statement) {
+  // is_developer() reads the email out of the JWT, so the harness has to play
+  // the whole identity, not just the uid. Looked up here rather than passed in
+  // so every existing call site keeps working unchanged.
+  const who = await db.query(`select email from auth.users where id = '${uid}'`);
+  const email = who.rows[0]?.email ?? "";
   await db.exec(`set role authenticated;`);
-  await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}';`);
+  await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}'; set test.email = '${email}';`);
   try {
     const r = await db.query(statement);
     return { rows: r.rows.length, affected: r.affectedRows ?? 0 };
@@ -820,6 +835,149 @@ console.log("\nprospect_links - banyak tautan per prospek");
     "demo-seed Part 0 membuat tabel prospect_links (project demo tidak pernah jalankan 0038)",
     /create table if not exists prospect_links/.test(demoSeedSql),
   );
+}
+
+// ------------------------------------------------------------------
+// 0039: perkakas developer.
+//
+// Ini bagian yang paling perlu diuji dari sisi penyerang, karena tiga hal di
+// sini tidak bisa dibuktikan dari kode aplikasi sama sekali:
+//   * jejak audit dibuat oleh TRIGGER, jadi ia tetap merekam penulisan yang
+//     lewat PostgREST langsung tanpa menyentuh aplikasi;
+//   * jejak itu tidak boleh bisa ditulis atau dihapus oleh yang diaudit;
+//   * "Developer" adalah EMAIL, bukan peran, jadi harus terbukti bahwa Admin
+//     sekalipun tidak bisa membacanya, dan Staff yang terdaftar bisa.
+// ------------------------------------------------------------------
+console.log("\nperkakas developer (0039)");
+{
+  // Staff, bukan admin: membuktikan bahwa lapisan email yang memberi akses.
+  await db.exec(`
+    update profiles set role = 'staff' where id = '${U.dev}';
+    insert into developers (email, note) values ('dev@ov.test', 'uji') on conflict do nothing;
+  `);
+
+  const T = "'aaaaaaaa-0000-0000-0000-000000000002'";
+
+  // --- siapa boleh membaca ---
+  await check("developer boleh membaca jejak audit", U.dev, false,
+    `select * from activity_log limit 1`, "rows");
+  await check("ADMIN pun tidak boleh membaca jejak audit", U.admin, false,
+    `select * from activity_log`, "norows");
+  await check("staff biasa tidak boleh membaca jejak audit", U.staff, false,
+    `select * from activity_log`, "norows");
+  await check("tamu anonim tidak boleh membaca jejak audit", U.anon, true,
+    `select * from activity_log`, "norows");
+  await check("admin tidak boleh membaca daftar kehadiran", U.admin, false,
+    `select * from presence`, "norows");
+  await check("admin tidak boleh membaca catatan error", U.admin, false,
+    `select * from error_log`, "norows");
+
+  // --- daftar developer itu sendiri ---
+  await check("orang lain tidak melihat daftar developer", U.admin, false,
+    `select * from developers`, "norows");
+  await check("developer melihat dirinya di daftar", U.dev, false,
+    `select * from developers`, "rows");
+  await check("tidak ada yang bisa mengangkat dirinya jadi developer", U.admin, false,
+    `insert into developers (email) values ('admin@ov.test')`, "deny");
+  await check("developer pun tidak bisa menambah developer lewat aplikasi", U.dev, false,
+    `insert into developers (email) values ('lain@ov.test')`, "deny");
+
+  // --- trigger benar-benar merekam ---
+  await as(U.coord, false, `update tasks set title = 'Judul Baru' where id = ${T}`);
+  const upd = (await db.query(
+    `select changed, label, actor_email, action from activity_log
+      where table_name = 'tasks' and row_id = ${T} and action = 'update'
+      order by id desc limit 1`)).rows[0];
+  ok("UPDATE terekam dengan email pelakunya", upd?.actor_email === "coord@ov.test");
+  ok("UPDATE menyimpan diff kolom (dari -> jadi), bukan seluruh baris",
+    upd?.changed?.title?.dari === "Judul" && upd?.changed?.title?.jadi === "Judul Baru");
+  // updated_at berubah pada SETIAP penyimpanan. Kalau ia ikut masuk diff, dua
+  // hal rusak sekaligus: tiap baris jejak penuh derau, dan penyimpanan tanpa
+  // perubahan tetap tercatat. Trigger membuangnya sebelum membandingkan.
+  ok("kolom pembukuan (updated_at) tidak ikut ke dalam diff",
+    upd?.changed?.updated_at === undefined);
+
+  const before = Number((await db.query(`select count(*) c from activity_log`)).rows[0].c);
+  await as(U.coord, false, `update tasks set title = 'Judul Baru' where id = ${T}`);
+  const after = Number((await db.query(`select count(*) c from activity_log`)).rows[0].c);
+  ok("menyimpan tanpa mengubah apa pun TIDAK menambah catatan", after === before);
+
+  await as(U.coord, false,
+    `insert into tasks (id, event_id, division, title) values
+       ('aaaaaaaa-0000-0000-0000-0000000000ff','ov-open','EVENT','Tugas Audit')`);
+  const ins = (await db.query(
+    `select snapshot, changed, label from activity_log
+      where table_name = 'tasks' and action = 'insert' order by id desc limit 1`)).rows[0];
+  ok("INSERT menyimpan baris utuh + labelnya",
+    ins?.changed === null && ins?.snapshot?.title === "Tugas Audit" && ins?.label === "Tugas Audit");
+
+  await as(U.coord, false, `delete from tasks where id = 'aaaaaaaa-0000-0000-0000-0000000000ff'`);
+  const del = (await db.query(
+    `select snapshot, label from activity_log
+      where table_name = 'tasks' and action = 'delete' order by id desc limit 1`)).rows[0];
+  ok("DELETE menyimpan baris yang hilang, jadi isinya masih bisa dilihat",
+    del?.snapshot?.title === "Tugas Audit");
+
+  // --- jejaknya tidak bisa dirusak ---
+  await check("tidak ada yang bisa menyisipkan jejak palsu", U.dev, false,
+    `insert into activity_log (table_name, action) values ('tasks','insert')`, "deny");
+  await check("developer sekalipun tidak bisa menghapus satu baris jejak", U.dev, false,
+    `delete from activity_log where id = (select min(id) from activity_log)`, "deny");
+  await check("yang diaudit tidak bisa menghapus jejaknya sendiri", U.coord, false,
+    `delete from activity_log`, "deny");
+  await check("pemangkasan ditolak untuk non-developer", U.admin, false,
+    `select prune_activity_log(90)`, "deny");
+
+  // --- kehadiran ---
+  await check("akun menulis denyutnya sendiri", U.staff, false,
+    `insert into presence (user_id, email, path) values ('${U.staff}','staff@ov.test','/tasks')`, "allow");
+  await check("tidak bisa menulis denyut atas nama orang lain", U.staff, false,
+    `insert into presence (user_id, email, path) values ('${U.admin}','admin@ov.test','/budget')`, "deny");
+  await check("developer melihat siapa yang online", U.dev, false,
+    `select * from presence`, "rows");
+  await check("staff tidak melihat daftar kehadiran, termasuk barisnya sendiri", U.staff, false,
+    `select * from presence`, "norows");
+
+  // --- catatan error ---
+  await check("akun biasa boleh melaporkan error", U.intern, false,
+    `insert into error_log (kind, message, path) values ('client','Boom','/tasks')`, "allow");
+  const rep = (await db.query(
+    `select user_id, user_email from error_log order by id desc limit 1`)).rows[0];
+  ok("identitas pelapor diambil dari token, bukan dari payload",
+    rep?.user_id === U.intern && rep?.user_email === "intern@ov.test");
+  const forged = await as(U.intern, false,
+    `insert into error_log (kind, message, user_email) values ('client','Palsu','admin@ov.test')`);
+  ok("tidak bisa melaporkan error atas nama orang lain (grant per kolom)", !!forged.error);
+  await check("pelapor tidak bisa membaca laporannya sendiri", U.intern, false,
+    `select * from error_log`, "norows");
+  await check("developer membaca semua laporan error", U.dev, false,
+    `select * from error_log`, "rows");
+  await check("developer menandai error selesai", U.dev, false,
+    `update error_log set resolved = true where message = 'Boom'`, "allow");
+  await check("admin tidak bisa menandai error selesai", U.admin, false,
+    `update error_log set resolved = false where message = 'Boom'`, "deny");
+
+  // --- ringkasan per akun ---
+  const stats = await as(U.dev, false, `select * from activity_by_actor()`);
+  ok("ringkasan per akun terbaca oleh developer", stats.rows > 0);
+  const blocked = await as(U.staff, false, `select * from activity_by_actor()`);
+  ok("ringkasan per akun kosong untuk non-developer", blocked.rows === 0);
+  await check("jumlah baris per tabel ditolak untuk non-developer", U.staff, false,
+    `select * from table_counts()`, "deny");
+  await check("jumlah baris per tabel terbaca oleh developer", U.dev, false,
+    `select * from table_counts()`, "rows");
+
+  // --- klep untuk pemuatan massal ---
+  const beforeBulk = Number((await db.query(`select count(*) c from activity_log`)).rows[0].c);
+  await db.exec(`
+    begin;
+    set local app.audit = 'off';
+    insert into tasks (event_id, division, title) values ('ov-open','EVENT','Seed 1');
+    insert into tasks (event_id, division, title) values ('ov-open','EVENT','Seed 2');
+    commit;
+  `);
+  const afterBulk = Number((await db.query(`select count(*) c from activity_log`)).rows[0].c);
+  ok("app.audit = off membuat seed massal tidak membanjiri jejak", afterBulk === beforeBulk);
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

@@ -20,6 +20,7 @@ export function Topbar({
   sandboxMode,
   roleOptions = [],
   pendingRoleRequest = null,
+  isDeveloper = false,
   onMenu,
 }: {
   user: AppUser;
@@ -29,11 +30,17 @@ export function Topbar({
   sandboxMode: boolean;
   roleOptions?: RequestableRole[];
   pendingRoleRequest?: RoleRequest | null;
+  /** Adds the hidden Developer entry to the account menu. */
+  isDeveloper?: boolean;
   onMenu: () => void;
 }) {
   const pathname = usePathname();
   const item = navItemForPath(pathname);
   const t = useT();
+  // /developer is deliberately absent from NAV, so it has no nav item to take a
+  // title from. Naming it here rather than adding a nav entry keeps it out of
+  // the sidebar, the search palette, and the access matrix, which all read NAV.
+  const onDeveloper = pathname.startsWith("/developer");
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
@@ -43,10 +50,10 @@ export function Topbar({
 
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-base font-semibold leading-tight">
-          {item ? t(item.label) : "Ormawa Visit"}
+          {item ? t(item.label) : onDeveloper ? "Developer" : "Ormawa Visit"}
         </h1>
         <p className="hidden truncate text-xs text-muted-foreground sm:block">
-          {item ? t(item.description) : ""}
+          {item ? t(item.description) : onDeveloper ? "Perkakas internal: jejak audit, kehadiran, error, konsol" : ""}
         </p>
       </div>
 
@@ -61,7 +68,7 @@ export function Topbar({
         {demoMode || sandboxMode ? (
           <RoleSwitcher user={user} />
         ) : (
-          <UserMenu user={user} roleOptions={roleOptions} pendingRoleRequest={pendingRoleRequest} />
+          <UserMenu user={user} roleOptions={roleOptions} pendingRoleRequest={pendingRoleRequest} isDeveloper={isDeveloper} />
         )}
       </div>
     </header>
