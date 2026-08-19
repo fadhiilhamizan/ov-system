@@ -1050,4 +1050,61 @@ export const EN: Record<string, string> = {
     "Leave blank to use the organisation's name. Editing or removing this link updates Super Link too.",
   "Tautan himpunan yang dihubungi: handbook, profil organisasi, atau proposal balasan. Boleh lebih dari satu.":
     "Links belonging to the organisation you contacted: handbook, org profile, or the proposal they sent back. More than one is fine.",
+
+  // --- Menu Himpunan: FGD + Compare (v1.37.0) ---
+  "Plotting FGD antar departemen dan perbandingan himpunan yang menerima ajakan.":
+    "Department-to-department FGD plotting, and a comparison of the associations that accepted.",
+  "Focus Group Discussion": "Focus Group Discussion",
+  "Pasangkan tiap departemen HMSI ITS dengan departemen padanannya di himpunan mitra. Satu Ormawa Visit boleh punya beberapa tabel.":
+    "Pair each HMSI ITS department with its counterpart at the partner association. One Ormawa Visit may have several tables.",
+  "Tabel baru": "New table",
+  "Tabel FGD baru": "New FGD table",
+  "Tabel FGD dibuat": "FGD table created",
+  "Tabel FGD dihapus": "FGD table deleted",
+  "Hapus tabel FGD?": "Delete this FGD table?",
+  "Hapus tabel": "Delete table",
+  "Seluruh barisnya ikut terhapus dan tidak bisa dikembalikan.":
+    "Every row in it goes too, and this cannot be undone.",
+  "Belum ada tabel FGD": "No FGD table yet",
+  "Buat tabel baru untuk mulai memplot pasangan departemen. Sepuluh departemen HMSI ITS terisi otomatis.":
+    "Create a table to start pairing departments. The ten HMSI ITS departments are filled in for you.",
+  "Belum ada plotting FGD untuk Ormawa Visit ini.": "No FGD plotting for this Ormawa Visit yet.",
+  "Kolom kiri otomatis terisi 10 departemen HMSI ITS dan tetap bisa diubah.":
+    "The left column is pre-filled with the ten HMSI ITS departments and stays editable.",
+  "Nama himpunan mitra": "Partner association name",
+  "Judul tabel (opsional)": "Table title (optional)",
+  "mis. Sesi pagi": "e.g. Morning session",
+  "Plotting FGD": "FGD plotting",
+  "Departemen HMSI": "HMSI department",
+  "Departemen mitra": "Partner department",
+  "Tabel ini kosong.": "This table is empty.",
+  "Buat": "Create",
+  "(belum diisi)": "(not filled in)",
+  "(tanpa nama)": "(unnamed)",
+  "(kosong)": "(empty)",
+  "Belum ada yang bisa dibandingkan": "Nothing to compare yet",
+  "Compare terbuka setelah ada lebih dari satu himpunan dengan Respons Mereka = DITERIMA di Reach & Offer.":
+    "Compare opens once more than one association has Their Response = DITERIMA in Reach & Offer.",
+  "Baru satu himpunan yang menerima ajakan, jadi belum ada pilihan untuk ditimbang. Compare terbuka setelah ada dua atau lebih.":
+    "Only one association has accepted, so there is no choice to weigh up yet. Compare opens at two or more.",
+  "himpunan menerima ajakan pada Ormawa Visit ini.":
+    "associations accepted for this Ormawa Visit.",
+  "Catat aspek penilaian, indikator, kelebihan, dan kekurangan tiap himpunan untuk membandingkannya.":
+    "Record the assessment aspect, indicator, strengths, and weaknesses of each to compare them.",
+  "Semua himpunan": "All associations",
+  "himpunan": "associations",
+  "aspek": "aspects",
+  "Tambah aspek": "Add aspect",
+  "Hapus aspek": "Delete aspect",
+  "Belum ada penilaian.": "No assessment yet.",
+  "Belum ada penilaian. Tambah aspek untuk mulai.": "No assessment yet. Add an aspect to start.",
+  "Aspek Penilaian": "Assessment aspect",
+  "Indikator yang Dinilai": "Indicator assessed",
+  "Kelebihan": "Strengths",
+  "Kekurangan": "Weaknesses",
+  "Plus / Kelebihan": "Plus / strengths",
+  "Minus / Kekurangan": "Minus / weaknesses",
+  "Penilaian tanpa himpunan aktif": "Assessments with no active association",
+  "Himpunannya sudah tidak berstatus DITERIMA di Reach & Offer, atau prospeknya dihapus. Isinya disimpan di sini supaya tidak hilang begitu saja.":
+    "The association is no longer marked DITERIMA in Reach & Offer, or its prospect was deleted. What was written is kept here so it is not lost silently.",
 };

@@ -13,6 +13,7 @@ import {
   BookOpen,
   Settings,
   UserRoundCheck,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -78,6 +79,13 @@ export const NAV: NavGroup[] = [
   {
     group: "Relasi & Aset",
     items: [
+      {
+        key: "himpunan",
+        label: "Himpunan",
+        href: "/himpunan",
+        icon: Building2,
+        description: "Plotting FGD & perbandingan himpunan mitra",
+      },
       {
         key: "prospects",
         label: "Reach & Offer",

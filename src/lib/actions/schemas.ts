@@ -515,3 +515,42 @@ export const pruneSchema = z.object({
   // take a deliberate SQL statement, not a mis-click in a form.
   days: z.coerce.number().int().min(1, "Minimal 1 hari.").max(3650),
 });
+
+// ---------------- Menu Himpunan (0040) ----------------
+// Free-text tables, so the caps are the whole validation story: a department
+// name is short, an assessment note is a paragraph, and nothing here is an
+// enum. `event_id` is required on create because both tables are edition
+// scoped and an unscoped row would show up under every Ormawa Visit.
+
+export const fgdPlanSchema = z.object({
+  event_id: nonEmpty("Ormawa Visit", 128),
+  title: z.string().trim().max(120).optional().transform((v) => v ?? ""),
+  partner_name: z.string().trim().max(160).optional().transform((v) => v ?? ""),
+});
+export const fgdPlanUpdateSchema = z
+  .object({
+    title: z.string().trim().max(120),
+    partner_name: z.string().trim().max(160),
+  })
+  .partial();
+
+export const fgdRowUpdateSchema = z
+  .object({
+    ours: z.string().trim().max(160),
+    theirs: z.string().trim().max(160),
+  })
+  .partial();
+
+const compareBase = z.object({
+  event_id: nonEmpty("Ormawa Visit", 128),
+  // Nullable: an assessment may be written for an association that is not (or
+  // no longer) a row in Reach & Offer, and `org_name` is what actually renders.
+  prospect_id: z.string().trim().max(128).nullish().transform((v) => v || null),
+  org_name: z.string().trim().max(200).optional(),
+  aspect: z.string().trim().max(200).optional(),
+  indicator: z.string().trim().max(500).optional(),
+  plus: z.string().trim().max(2000).optional(),
+  minus: z.string().trim().max(2000).optional(),
+});
+export const compareEntrySchema = compareBase;
+export const compareUpdateSchema = compareBase.partial();

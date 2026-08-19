@@ -148,6 +148,18 @@ export const can = {
     return atLeast(user, "prospects", "full");
   },
 
+  /**
+   * Himpunan (FGD plotting + Compare) create/edit/delete.
+   *
+   * One helper rather than the usual manage/delete pair: the matrix gives
+   * admin, coordinator and staff "full" here, so there is no role that may edit
+   * but not delete, and inventing `deleteHimpunan` would just be a second name
+   * for the same check.
+   */
+  manageHimpunan(user: AppUser): boolean {
+    return atLeast(user, "himpunan", "full");
+  },
+
   // --- Work Breakdown ---
   // NOTE: task rights are NOT scoped to the user's division. An earlier cut
   // confined non-admins to `profiles.division`, which made staff/intern able to

@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { ActivityFeed } from "./activity-feed";
 import { PresencePanel } from "./presence-panel";
 import { ActorPanel } from "./actor-panel";
+import { AccessPanel } from "./access-panel";
 import { ErrorPanel } from "./error-panel";
 import { ConsolePanel } from "./console-panel";
 import { SystemPanel, type BuildInfo, type EnvFlag } from "./system-panel";
 import { ONLINE_WINDOW_MS } from "./presence-panel";
 import type {
-  ActivityEntry, ActorStat, AppUser, ErrorEntry, PresenceEntry, TableCount,
+  AccessCount, ActivityEntry, ActorStat, AppUser, ErrorEntry, PresenceEntry, TableCount,
 } from "@/lib/types";
 
 // ============================================================
@@ -27,7 +28,7 @@ import type {
 // ============================================================
 
 export function DeveloperView({
-  me, registered, activity, actors, presence, errors, counts, env, build,
+  me, registered, activity, actors, presence, errors, counts, access, env, build,
 }: {
   me: AppUser;
   /** The signed-in address is on the app allowlist AND in the developers table. */
@@ -37,6 +38,8 @@ export function DeveloperView({
   presence: PresenceEntry[];
   errors: ErrorEntry[];
   counts: TableCount[];
+  /** Daily tally of the two account-less sign-in buttons. */
+  access: AccessCount[];
   env: EnvFlag[];
   build: BuildInfo;
 }) {
@@ -124,7 +127,12 @@ export function DeveloperView({
 
         <TabsContent value="aktivitas"><ActivityFeed entries={activity} /></TabsContent>
         <TabsContent value="online"><PresencePanel entries={presence} /></TabsContent>
-        <TabsContent value="akun"><ActorPanel actors={actors} presence={presence} /></TabsContent>
+        <TabsContent value="akun">
+          <div className="space-y-4">
+            <AccessPanel counts={access} />
+            <ActorPanel actors={actors} presence={presence} />
+          </div>
+        </TabsContent>
         <TabsContent value="error"><ErrorPanel errors={errors} /></TabsContent>
         <TabsContent value="konsol"><ConsolePanel /></TabsContent>
         <TabsContent value="sistem"><SystemPanel env={env} build={build} counts={counts} /></TabsContent>

@@ -115,6 +115,24 @@ export function systemPassages(): Passage[] {
       "oleh banyak tugas sekaligus. Menghapus entri Super Link tidak menghapus referensinya, alamatnya tetap " +
       "tersimpan sebagai teks."),
 
+    p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
+      "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
+      "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +
+      "dengan departemen padanannya di himpunan mitra. Satu Ormawa Visit boleh punya beberapa tabel, " +
+      "tiap tabel menyimpan judul opsional dan nama himpunan mitra, dan barisnya bisa ditambah, diubah, " +
+      "maupun dihapus. Tabel baru otomatis terisi sepuluh departemen HMSI ITS: Executive Board, " +
+      "External Affairs, Human Resource Development, Manage, Internal Affair, Student Welfare, " +
+      "Research and Technology Application, Information Media, Social Development, dan Entrepreneurship. " +
+      "Departemen ini BUKAN divisi kepanitiaan: divisi (LO, Event, Konsumsi, dan seterusnya) adalah " +
+      "pembagian kerja di dalam External Affairs untuk satu Ormawa Visit, sedangkan departemen adalah " +
+      "struktur himpunannya. " +
+      "COMPARE: membandingkan himpunan yang MENERIMA ajakan, untuk memilih mitra. Tiap penilaian berisi " +
+      "Aspek Penilaian, Indikator yang Dinilai, Plus atau Kelebihan, dan Minus atau Kekurangan. " +
+      "Compare hanya terbuka kalau di Reach & Offer ada LEBIH DARI SATU himpunan dengan Respons Mereka " +
+      "DITERIMA, karena dengan satu himpunan saja tidak ada pilihan yang perlu ditimbang. " +
+      "Hak akses menu ini: Admin, Koordinator, dan Staff bisa membuat, mengubah, dan menghapus; " +
+      "Intern dan Tamu hanya melihat."),
+
     p("prospect", "Struktur data: prospek (Reach & Offer)", "/prospects",
       "Reach & Offer mencatat himpunan yang dihubungi untuk diajak Ormawa Visit. Satu prospek menyimpan: " +
       "nomor urut, nama ormawa atau himpunan, asal kampus, kontak, PIC dari pihak kita, lokasi, " +

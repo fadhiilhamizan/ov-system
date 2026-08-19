@@ -935,8 +935,11 @@ console.log("\nperkakas developer (0039)");
     `insert into presence (user_id, email, path) values ('${U.admin}','admin@ov.test','/budget')`, "deny");
   await check("developer melihat siapa yang online", U.dev, false,
     `select * from presence`, "rows");
-  await check("staff tidak melihat daftar kehadiran, termasuk barisnya sendiri", U.staff, false,
-    `select * from presence`, "norows");
+  // 0040 melonggarkan ini SATU baris: kamu boleh melihat denyutmu sendiri,
+  // karena tanpa itu upsert-nya ditolak dan tidak ada yang pernah tercatat.
+  // Yang penting tetap dijaga: kamu tidak melihat baris orang lain.
+  await check("staff tidak melihat denyut orang lain", U.staff, false,
+    `select * from presence where user_id <> '${U.staff}'`, "norows");
 
   // --- catatan error ---
   await check("akun biasa boleh melaporkan error", U.intern, false,
@@ -978,6 +981,99 @@ console.log("\nperkakas developer (0039)");
   `);
   const afterBulk = Number((await db.query(`select count(*) c from activity_log`)).rows[0].c);
   ok("app.audit = off membuat seed massal tidak membanjiri jejak", afterBulk === beforeBulk);
+}
+
+// ------------------------------------------------------------------
+// 0040: perbaikan kehadiran, penghitung akses, dan menu Himpunan.
+//
+// Bagian kehadiran adalah regresi yang benar-benar terjadi: daftar online cuma
+// pernah berisi developer. Penyebabnya tidak kelihatan dari kode aplikasi sama
+// sekali, dan hanya muncul kalau yang diuji adalah bentuk perintah yang
+// sesungguhnya dikirim PostgREST, bukan sekadar "boleh insert atau tidak".
+// ------------------------------------------------------------------
+console.log("\n0040 - kehadiran, penghitung akses, Himpunan");
+{
+  await db.exec(`delete from presence;`);
+
+  // Ini persis yang dihasilkan .upsert() di repo: bukan INSERT biasa.
+  const beat = (uid, email, path) =>
+    `insert into presence (user_id, email, name, role, path, last_seen)
+       values ('${uid}','${email}','X','staff','${path}', now())
+     on conflict (user_id) do update set path = excluded.path, last_seen = excluded.last_seen`;
+
+  // REGRESI: sebelum 0040 keduanya gagal dengan "new row violates row-level
+  // security policy", karena on-conflict butuh policy SELECT pada baris sasaran
+  // dan policy baca lama berbunyi is_developer().
+  await check("denyut PERTAMA akun biasa diterima", U.staff, false,
+    beat(U.staff, "staff@ov.test", "/tasks"), "allow");
+  await check("denyut BERIKUTNYA akun biasa diterima (on conflict do update)", U.staff, false,
+    beat(U.staff, "staff@ov.test", "/budget"), "allow");
+  await check("intern juga tercatat, bukan cuma developer", U.intern, false,
+    beat(U.intern, "intern@ov.test", "/rundown"), "allow");
+
+  const seen = Number((await db.query(`select count(*) c from presence`)).rows[0].c);
+  ok("daftar kehadiran berisi lebih dari satu akun", seen >= 2);
+
+  await check("akun biasa melihat barisnya SENDIRI", U.staff, false,
+    `select * from presence where user_id = '${U.staff}'`, "rows");
+  await check("akun biasa TIDAK melihat baris orang lain", U.staff, false,
+    `select * from presence where user_id <> '${U.staff}'`, "norows");
+  await check("developer melihat semuanya", U.dev, false, `select * from presence`, "rows");
+  await check("tetap tidak bisa menulis denyut atas nama orang lain", U.staff, false,
+    beat(U.admin, "admin@ov.test", "/curang"), "deny");
+
+  // --- penghitung Tamu & Mode Demo ---
+  await db.exec(`set role anon; select record_access('guest'); reset role;`);
+  await db.exec(`set role anon; select record_access('guest'); reset role;`);
+  await db.exec(`set role anon; select record_access('demo'); reset role;`);
+  await db.exec(`set role anon; select record_access('bukan-jenis'); reset role;`);
+  const counts = (await db.query(
+    `select kind, hits from access_counter order by kind`)).rows;
+  ok("masuk sebagai Tamu terhitung (2x hari ini)",
+    counts.find((c) => c.kind === "guest")?.hits === "2" || counts.find((c) => c.kind === "guest")?.hits === 2);
+  ok("masuk Mode Demo terhitung terpisah",
+    counts.find((c) => c.kind === "demo")?.hits === "1" || counts.find((c) => c.kind === "demo")?.hits === 1);
+  ok("jenis yang tidak dikenal diabaikan, bukan disimpan", counts.length === 2);
+  await check("penghitung hanya terbaca developer", U.admin, false,
+    `select * from access_counter`, "norows");
+  await check("developer membaca penghitung", U.dev, false,
+    `select * from access_counter`, "rows");
+  await check("penghitung tidak bisa ditulis langsung", U.admin, false,
+    `insert into access_counter (day, kind, hits) values (current_date, 'guest', 999)`, "deny");
+
+  // --- Himpunan: full untuk admin/koordinator/staff, sisanya lihat ---
+  const PLAN = "'aaaabbbb-0000-0000-0000-000000000001'";
+  await check("staff boleh membuat tabel FGD", U.staff, false,
+    `insert into fgd_plans (id, event_id, partner_name) values (${PLAN}, 'ov-open', 'HIMA Mitra')`, "allow");
+  await check("staff boleh menambah baris FGD", U.staff, false,
+    `insert into fgd_rows (plan_id, ours, theirs) values (${PLAN}, 'External Affairs', 'Hubungan Luar')`, "allow");
+  await check("koordinator boleh mengubah baris FGD", U.coord, false,
+    `update fgd_rows set theirs = 'Eksternal' where plan_id = ${PLAN}`, "allow");
+  await check("INTERN hanya lihat: tidak boleh menambah baris FGD", U.intern, false,
+    `insert into fgd_rows (plan_id, ours, theirs) values (${PLAN}, 'X', 'Y')`, "deny");
+  await check("intern tetap boleh MEMBACA FGD", U.intern, false,
+    `select * from fgd_rows`, "rows");
+  await check("tamu anonim tidak boleh menulis FGD", U.anon, true,
+    `insert into fgd_plans (event_id) values ('ov-open')`, "deny");
+  await check("staff DITOLAK membuat tabel FGD di edisi ARSIP", U.staff, false,
+    `insert into fgd_plans (event_id) values ('ov-lock')`, "deny");
+  await check("staff boleh menghapus tabel FGD (akses penuh)", U.staff, false,
+    `delete from fgd_plans where id = ${PLAN}`, "allow");
+  const cascaded = Number((await db.query(
+    `select count(*) c from fgd_rows where plan_id = ${PLAN}`)).rows[0].c);
+  ok("menghapus tabel FGD ikut menghapus barisnya (cascade)", cascaded === 0);
+
+  await check("staff boleh menulis penilaian Compare", U.staff, false,
+    `insert into compare_entries (event_id, org_name, aspect) values ('ov-open','HIMA A','Keaktifan')`, "allow");
+  await check("intern hanya lihat pada Compare", U.intern, false,
+    `insert into compare_entries (event_id, org_name) values ('ov-open','HIMA B')`, "deny");
+  await check("Compare ikut terkunci di edisi arsip", U.staff, false,
+    `insert into compare_entries (event_id, org_name) values ('ov-lock','HIMA C')`, "deny");
+
+  // Menu baru wajib ikut terekam jejaknya, sama seperti menu lain.
+  const audited = Number((await db.query(
+    `select count(*) c from activity_log where table_name in ('fgd_plans','fgd_rows','compare_entries')`)).rows[0].c);
+  ok("perubahan di menu Himpunan ikut masuk jejak audit", audited > 0);
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

@@ -37,11 +37,23 @@ const repo = Object.fromEntries(
 ) as Record<string, ReturnType<typeof vi.fn>>;
 vi.mock("@/lib/data/repo", () => repo);
 
+// The Himpunan menu has its own data module (0040), mocked on the same terms.
+const HIMPUNAN_FNS = [
+  "createFgdPlan", "updateFgdPlan", "deleteFgdPlan",
+  "createFgdRow", "updateFgdRow", "deleteFgdRow",
+  "createCompareEntry", "updateCompareEntry", "deleteCompareEntry",
+] as const;
+const himpunanRepo = Object.fromEntries(
+  HIMPUNAN_FNS.map((n) => [n, vi.fn(async () => undefined)]),
+) as Record<string, ReturnType<typeof vi.fn>>;
+vi.mock("@/lib/data/himpunan-repo", () => himpunanRepo);
+
 const links = await import("./links");
 const budget = await import("./budget");
 const faq = await import("./faq");
 const schedule = await import("./schedule");
 const manage = await import("./manage");
+const himpunan = await import("./himpunan");
 
 const guest: AppUser = {
   id: "g", name: "Tamu", email: "", role: "guest",
@@ -99,6 +111,16 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["teams.create", () => manage.createTeamAction({ division: "EVENT" })],
   ["teams.update", () => manage.updateTeamAction("tm1", { intern: "A" })],
   ["teams.delete", () => manage.deleteTeamAction("tm1")],
+
+  ["himpunan.createFgdPlan", () => himpunan.createFgdPlanAction({ event_id: "ov1" })],
+  ["himpunan.updateFgdPlan", () => himpunan.updateFgdPlanAction("f1", { title: "X" })],
+  ["himpunan.deleteFgdPlan", () => himpunan.deleteFgdPlanAction("f1")],
+  ["himpunan.createFgdRow", () => himpunan.createFgdRowAction("f1")],
+  ["himpunan.updateFgdRow", () => himpunan.updateFgdRowAction("r1", { ours: "X" })],
+  ["himpunan.deleteFgdRow", () => himpunan.deleteFgdRowAction("r1")],
+  ["himpunan.createCompare", () => himpunan.createCompareEntryAction({ event_id: "ov1" })],
+  ["himpunan.updateCompare", () => himpunan.updateCompareEntryAction("c1", { aspect: "X" })],
+  ["himpunan.deleteCompare", () => himpunan.deleteCompareEntryAction("c1")],
 ];
 
 beforeEach(() => {
@@ -110,7 +132,7 @@ describe("a guest cannot mutate anything", () => {
   it.each(CASES)("%s is refused and never reaches the repo", async (_label, run) => {
     const res = await run();
     expect(res.ok).toBe(false);
-    const touched = Object.entries(repo)
+    const touched = [...Object.entries(repo), ...Object.entries(himpunanRepo)]
       .filter(([, fn]) => fn.mock.calls.length > 0)
       .map(([name]) => name);
     expect(touched).toEqual([]);
@@ -119,7 +141,7 @@ describe("a guest cannot mutate anything", () => {
   it("covers every mutating action exported by these modules", () => {
     const exported = [
       ...Object.keys(links), ...Object.keys(budget), ...Object.keys(faq),
-      ...Object.keys(schedule), ...Object.keys(manage),
+      ...Object.keys(schedule), ...Object.keys(manage), ...Object.keys(himpunan),
     ].filter((k) => k.endsWith("Action"));
     // If someone adds an action without a guard case, this fails and points at it.
     expect(CASES.length).toBe(exported.length);

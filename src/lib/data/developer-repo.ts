@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "../supabase/server";
 import type {
-  ActivityEntry, ActorStat, ErrorEntry, PresenceEntry, TableCount,
+  AccessCount, ActivityEntry, ActorStat, ErrorEntry, PresenceEntry, TableCount,
 } from "../types";
 
 // ============================================================
@@ -184,3 +184,32 @@ export async function pruneErrors(days: number): Promise<number> {
   if (error) throw new Error(error.message);
   return Number(data ?? 0);
 }
+
+/**
+ * Count one use of a sign-in button that needs no account.
+ *
+ * Goes through a SECURITY DEFINER function rather than an insert, because the
+ * Demo button is pressed from the LOGIN page: the caller is the bare `anon`
+ * role with no session at all. A publicly reachable insert would be a way to
+ * fill a table; a publicly reachable counter can at worst inflate one number.
+ *
+ * Deliberately silent on failure - this runs on the way into the app, and a
+ * broken counter must never stop somebody signing in.
+ */
+export async function recordAccess(kind: "guest" | "demo") {
+  try {
+    const { error } = await (await sb()).rpc("record_access", { p_kind: kind });
+    if (error && !isMissing(error)) console.warn("[access-counter]", error.message);
+  } catch (e) {
+    console.warn("[access-counter]", e instanceof Error ? e.message : String(e));
+  }
+}
+
+/** Daily guest/demo entry counts, newest first. Developers only (RLS). */
+export const getAccessCounts = cache(async (days = 60): Promise<AccessCount[]> => {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const { data, error } = await (await sb())
+    .from("access_counter").select("*").gte("day", since).order("day", { ascending: false });
+  if (error && !isMissing(error)) console.warn("[developer] access counts:", error.message);
+  return (data ?? []).map((r) => ({ ...r, hits: Number(r.hits) })) as AccessCount[];
+});

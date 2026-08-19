@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, ChevronDown, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, Copy, Loader2, RotateCcw, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,46 @@ const KIND_LABEL: Record<string, string> = {
   server: "Server",
 };
 
+
+/**
+ * Everything currently on screen, as plain text.
+ *
+ * Text rather than JSON because of where it goes next: a chat message, an
+ * issue, or a prompt. Grouped exactly as displayed, with the occurrence count,
+ * who hit it, and the first stack - the second stack of the same error has
+ * never once been the useful one.
+ */
+function asPlainText(groups: ErrorEntry[][]): string {
+  const occurrences = groups.reduce((n, g) => n + g.length, 0);
+  const lines: string[] = [
+    "Catatan error - Ormawa Visit Management System",
+    `Disalin ${new Date().toLocaleString("id-ID")}`,
+    `${groups.length} error unik, ${occurrences} kejadian`,
+    "",
+  ];
+  groups.forEach((group, i) => {
+    const latest = group[0];
+    const people = [...new Set(group.map((e) => e.user_email).filter(Boolean))];
+    const paths = [...new Set(group.map((e) => e.path).filter(Boolean))];
+    lines.push(`${i + 1}. [${KIND_LABEL[latest.kind] ?? latest.kind}] ${latest.message}`);
+    lines.push(
+      `   ${group.length}x, terakhir ${full(latest.at)}${latest.resolved ? " (sudah ditangani)" : ""}`,
+    );
+    if (paths.length) lines.push(`   Halaman: ${paths.join(", ")}`);
+    if (people.length) lines.push(`   Akun: ${people.join(", ")}`);
+    if (latest.user_agent) lines.push(`   Browser: ${latest.user_agent}`);
+    if (latest.stack) {
+      lines.push("   Stack:");
+      // Only the first stack of the group, and only its top: the second stack
+      // of an identical error has never once been the useful one, and a full
+      // dump would push the other errors out of a chat message.
+      for (const l of latest.stack.split("\n").slice(0, 12)) lines.push(`     ${l.trim()}`);
+    }
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
 export function ErrorPanel({ errors }: { errors: ErrorEntry[] }) {
   const [kinds, setKinds] = React.useState<Set<string>>(new Set());
   const [showResolved, setShowResolved] = React.useState(false);
@@ -52,6 +92,20 @@ export function ErrorPanel({ errors }: { errors: ErrorEntry[] }) {
       (a, b) => new Date(b[0].at).getTime() - new Date(a[0].at).getTime(),
     );
   }, [visible]);
+
+  async function copyAll() {
+    if (!groups.length) return;
+    const text = asPlainText(groups);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${groups.length} error disalin (${visible.length} kejadian)`);
+    } catch {
+      // Clipboard access is refused outside a secure context and on some
+      // in-app browsers. Falling back to a selectable prompt beats a toast
+      // that says "gagal" and leaves you retyping a stack trace by hand.
+      window.prompt("Salin manual (Ctrl+C):", text);
+    }
+  }
 
   function prune() {
     if (!confirm("Hapus catatan error yang lebih tua dari 30 hari?")) return;
@@ -81,9 +135,14 @@ export function ErrorPanel({ errors }: { errors: ErrorEntry[] }) {
         >
           <Check className="size-4" /> Tampilkan yang sudah ditangani
         </Button>
-        <Button variant="outline" size="sm" className="ml-auto" onClick={prune} disabled={pending}>
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} Pangkas 30 hari
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={copyAll} disabled={!groups.length}>
+            <Copy className="size-4" /> Salin semua
+          </Button>
+          <Button variant="outline" size="sm" onClick={prune} disabled={pending}>
+            {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} Pangkas 30 hari
+          </Button>
+        </div>
       </div>
 
       {groups.length === 0 ? (

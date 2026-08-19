@@ -29,7 +29,10 @@ const CONSUMERS = {
   divisions: ["/tasks", "/calendar", "/rundown", "/members", "/divisions", "/links", "/dashboard"],
   members: ["/members", "/divisions", "/tasks", "/calendar", "/jobs", "/prospects", "/dashboard"],
   teams: ["/members", "/divisions", "/tasks", "/calendar", "/links"],
-  prospects: ["/prospects", "/dashboard", "/events"],
+  // /himpunan is here because its Compare tab is GATED on how many prospects
+  // have DITERIMA: editing a response in Reach & Offer is what opens or closes
+  // that feature, and without this the gate stays stale until a hard reload.
+  prospects: ["/prospects", "/dashboard", "/events", "/himpunan"],
   links: ["/links"],
   budget: ["/budget", "/dashboard", "/events"],
   rundown: ["/rundown"],

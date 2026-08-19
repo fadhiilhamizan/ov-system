@@ -173,6 +173,30 @@ export const GUIDE: GuideSection[] = [
     },
   },
   {
+    key: "himpunan",
+    title: { id: "Himpunan", en: "Associations" },
+    purpose: {
+      id: "Menyiapkan pertemuan dengan himpunan mitra: plotting FGD antar departemen, dan membandingkan himpunan yang menerima ajakan.",
+      en: "Preparing the meeting with a partner association: department-to-department FGD plotting, and comparing the associations that accepted.",
+    },
+    steps: [
+      { id: "Tab 'Focus Group Discussion' berisi tabel dua kolom: kiri departemen HMSI ITS, kanan departemen padanannya di himpunan mitra. Klik 'Tabel baru', isi nama himpunan mitranya, dan sepuluh departemen HMSI ITS langsung terisi di kolom kiri.", en: "The 'Focus Group Discussion' tab holds a two-column table: HMSI ITS departments on the left, their counterparts at the partner association on the right. Click 'New table', name the partner, and the ten HMSI ITS departments are filled in on the left." },
+      { id: "Isi tiap sel langsung di tabelnya, tersimpan otomatis begitu kamu pindah dari sel itu. Baris bisa ditambah lewat 'Tambah baris' dan dihapus lewat ikon tong sampah di ujung kanan baris.", en: "Type straight into the cells; each saves when you move away from it. Add rows with 'Add row' and remove one with the bin icon at the end of the row." },
+      { id: "Satu Ormawa Visit boleh punya beberapa tabel, misalnya untuk mitra berbeda atau skenario sesi yang berbeda. Judul tabel dan nama himpunan mitra juga bisa diketik langsung di kepala tabelnya.", en: "One Ormawa Visit may hold several tables, for different partners or different session plans. The table title and the partner name are editable straight in the header." },
+      { id: "Tab 'Compare' baru bisa dipakai kalau di Reach & Offer sudah ada LEBIH DARI SATU himpunan dengan Respons Mereka = DITERIMA. Dengan satu himpunan saja tidak ada yang perlu ditimbang, dan halamannya menjelaskan hal itu.", en: "The 'Compare' tab only becomes usable once MORE THAN ONE association in Reach & Offer has Their Response = DITERIMA. With a single acceptance there is nothing to weigh up, and the page says so." },
+      { id: "Di Compare, tiap himpunan yang menerima punya kartunya sendiri. Klik 'Tambah aspek' lalu isi Aspek Penilaian, Indikator yang Dinilai, Plus / Kelebihan, dan Minus / Kekurangan. Semuanya tersimpan otomatis.", en: "In Compare, each accepting association gets its own card. Click 'Add aspect', then fill in the assessment aspect, the indicator, the plus points, and the minus points. Everything saves as you go." },
+      { id: "Pemilih 'Himpunan' di atas menyaring kartu mana yang tampil, jadi dua himpunan bisa disandingkan berdampingan.", en: "The 'Associations' picker at the top filters which cards are shown, so two of them can be set side by side." },
+    ],
+    tips: [
+      { id: "Kolom kiri tabel FGD tetap bisa diubah: sepuluh departemen itu hanya titik mulai, bukan daftar yang dikunci.", en: "The left column of an FGD table stays editable: those ten departments are a starting point, not a locked list." },
+      { id: "Kalau sebuah himpunan berubah statusnya di Reach & Offer sehingga tidak lagi DITERIMA, penilaiannya tidak dihapus. Isinya pindah ke kotak 'Penilaian tanpa himpunan aktif' di bawah supaya tidak hilang diam-diam.", en: "If an association's response changes so it is no longer DITERIMA, its assessment is not deleted. It moves to the 'Assessments with no active association' box below so nothing disappears silently." },
+    ],
+    access: {
+      id: "Admin, Koordinator, dan Staff akses penuh (buat, ubah, hapus). Intern dan Tamu hanya melihat.",
+      en: "Admins, Coordinators, and Staff have full access (create, edit, delete). Interns and Guests view only.",
+    },
+  },
+  {
     key: "prospects",
     title: { id: "Reach & Offer", en: "Reach & Offer" },
     purpose: {

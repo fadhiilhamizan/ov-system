@@ -5,6 +5,7 @@ import {
   getRundown, getJobs, getBudgetPlans, getMembers, getTeams,
   getTaskLinksByEvent, getTaskRefsByEvent,
 } from "@/lib/data/repo";
+import { getCompareEntries, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
 import { getActiveEvent } from "@/lib/session";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { memberDivisions, memberInDivision } from "@/lib/members";
@@ -156,9 +157,11 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
       getEvents(), getDivisions(), getTasks(), getProspects(),
       getLinks(), getRundown(), getJobs(), getBudgetPlans(),
     ]);
-  const [refsByTask, resultLinksByTask, prospectLinksById] = await Promise.all([
-    getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
-  ]);
+  const [refsByTask, resultLinksByTask, prospectLinksById, fgdPlans, fgdRows, compareEntries] =
+    await Promise.all([
+      getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
+      getFgdPlans(event.id), getFgdRows(event.id), getCompareEntries(event.id),
+    ]);
 
   /** Rows belonging to one edition. Lenient like the repo: an unscoped legacy
    *  row (no event_id) shows up everywhere rather than nowhere. */
@@ -517,6 +520,78 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
           ),
         });
       }
+    }
+  }
+
+  // ---- Himpunan: plotting FGD + Compare -------------------------------------
+
+  if (fgdPlans.length) {
+    out.push({
+      id: "live-fgd",
+      source: "Data: Plotting FGD",
+      href: "/himpunan",
+      text: sentence(
+        `Ada ${fgdPlans.length} tabel plotting FGD pada ${event.title}:`,
+        `${fgdPlans.map((p) => `${p.title || "tanpa judul"} dengan ${p.partner_name || "mitra yang belum diisi"}`).join("; ")}.`,
+      ),
+    });
+
+    for (const plan of fgdPlans) {
+      const pairs = (fgdRows[plan.id] ?? [])
+        .filter((r) => (r.ours ?? "").trim() || (r.theirs ?? "").trim())
+        .map((r) => `${val(r.ours, "belum diisi")} dipasangkan dengan ${val(r.theirs, "belum diisi")}`)
+        .join("; ");
+      out.push({
+        id: `fgd-${plan.id}`,
+        parent: "live-fgd",
+        source: `Plotting FGD: ${plan.partner_name || plan.title || "tanpa nama"}`,
+        href: "/himpunan",
+        text: sentence(
+          `Tabel plotting Focus Group Discussion (FGD)${plan.title ? ` "${plan.title}"` : ""}`,
+          `pada Ormawa Visit ${event.title}.`,
+          `Himpunan mitranya: ${val(plan.partner_name, "belum diisi")}.`,
+          `Pasangan departemen HMSI ITS dengan departemen mereka: ${pairs || "belum ada yang diisi"}.`,
+        ),
+      });
+    }
+  }
+
+  if (compareEntries.length) {
+    const byOrg = new Map<string, typeof compareEntries>();
+    for (const e of compareEntries) {
+      const key = e.org_name || "(tanpa nama)";
+      byOrg.set(key, [...(byOrg.get(key) ?? []), e]);
+    }
+    out.push({
+      id: "live-compare",
+      source: "Data: Compare himpunan",
+      href: "/himpunan",
+      text: sentence(
+        `Perbandingan himpunan yang menerima ajakan pada ${event.title}:`,
+        `${[...byOrg.keys()].join(", ")}.`,
+        `Total ${compareEntries.length} aspek penilaian.`,
+      ),
+    });
+
+    for (const [org, rows] of byOrg) {
+      out.push({
+        id: `compare-${org.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        parent: "live-compare",
+        source: `Compare: ${org}`,
+        href: "/himpunan",
+        text: sentence(
+          `Penilaian himpunan ${org} pada Ormawa Visit ${event.title}, dipakai untuk membandingkan calon mitra.`,
+          rows
+            .map((r) =>
+              sentence(
+                `Aspek ${val(r.aspect, "tanpa nama")}${r.indicator ? `, indikator yang dinilai: ${r.indicator}` : ""}.`,
+                `Kelebihan atau plus: ${val(r.plus, "belum diisi")}.`,
+                `Kekurangan atau minus: ${val(r.minus, "belum diisi")}.`,
+              ),
+            )
+            .join(" "),
+        ),
+      });
     }
   }
 

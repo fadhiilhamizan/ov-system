@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE, USE_SUPABASE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
+import { recordAccess } from "@/lib/data/developer-repo";
 import { LANG_COOKIE } from "@/lib/i18n/config";
 import { DEMO_COOKIE, demoActive, demoConfigured } from "@/lib/demo";
 
@@ -79,6 +80,10 @@ export async function setLang(lang: "id" | "en") {
 export async function enterGuestMode() {
   const store = await cookies();
   store.set(GUEST_COOKIE, "1", COOKIE_OPTS);
+  // Counted before the redirect, since redirect() throws to unwind. Awaited
+  // rather than fired and forgotten: a server action that returns while a
+  // write is still in flight can have it cancelled with the request.
+  await recordAccess("guest");
   redirect("/dashboard");
 }
 
@@ -92,6 +97,10 @@ export async function exitGuestMode() {
 export async function enterDemoMode() {
   if (!demoConfigured()) redirect("/login");
   const store = await cookies();
+  // Counted BEFORE the cookie is set, and that order matters: once ov_demo is
+  // present every Supabase client in the process points at the demo database,
+  // so the tally would land in the throwaway project instead of the real one.
+  await recordAccess("demo");
   store.set(DEMO_COOKIE, "1", DEMO_OPTS);
   // Reset the demo identity to the default (admin) each time.
   store.delete(AUTH_COOKIE);

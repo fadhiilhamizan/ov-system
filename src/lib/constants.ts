@@ -112,6 +112,7 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   calendar: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   rundown: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
   jobs: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "view" },
+  himpunan: { admin: "full", coordinator: "full", staff: "full", intern: "view", guest: "view" },
   prospects: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   links: { admin: "full", coordinator: "full", staff: "limited", intern: "limited", guest: "none" },
   budget: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "none" },
@@ -149,3 +150,30 @@ export const DIVISION_ICON: Record<DivisionKey, string> = {
   MARKETING: "megaphone",
   OUTSOURCE: "handshake",
 };
+
+/**
+ * Departemen HMSI ITS, dipakai sebagai isi awal kolom kiri tabel plotting FGD.
+ *
+ * Konstanta, bukan baris database: ini struktur himpunan yang menjalankan
+ * sistem ini, bukan data satu Ormawa Visit. Barisnya tetap bisa diubah,
+ * ditambah, dan dihapus per tabel setelah dibuat - daftar ini hanya titik
+ * mulai supaya tidak perlu mengetik sepuluh departemen setiap kali.
+ *
+ * Jangan tertukar dengan DIVISION (LO, Event, Konsumsi, ...): itu pembagian
+ * kepanitiaan DI DALAM External Affairs untuk satu Ormawa Visit.
+ */
+export const HMSI_DEPARTMENTS = [
+  "Executive Board",
+  "External Affairs",
+  "Human Resource Development",
+  "Manage",
+  "Internal Affair",
+  "Student Welfare",
+  "Research and Technology Application",
+  "Information Media",
+  "Social Development",
+  "Entrepreneurship",
+] as const;
+
+/** Nama himpunan penyelenggara, judul kolom kiri tabel FGD. */
+export const HOME_ORG = "HMSI ITS";

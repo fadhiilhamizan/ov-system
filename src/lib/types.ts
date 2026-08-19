@@ -399,6 +399,62 @@ export interface TableCount {
   rows: number;
 }
 
+// ============================================================
+// Menu Himpunan (migration 0040).
+// ============================================================
+
+/**
+ * One FGD plotting table: HMSI departments paired with their counterparts at
+ * the partner association. An Ormawa Visit may have several.
+ */
+export interface FgdPlan {
+  id: string;
+  event_id: string;
+  /** Optional label, e.g. "Sesi pagi". */
+  title: string;
+  /** Heading of the right-hand column. Free text rather than a foreign key to
+   *  prospects: plotting is usually drafted before the partner is confirmed. */
+  partner_name: string;
+  order: number;
+}
+
+/** One department pairing inside an FgdPlan. */
+export interface FgdRow {
+  id: string;
+  plan_id: string;
+  /** The HMSI ITS department. */
+  ours: string;
+  /** Its counterpart at the partner association. */
+  theirs: string;
+  order: number;
+}
+
+/**
+ * One assessment row used to compare the associations that ACCEPTED.
+ *
+ * `org_name` is copied from the prospect rather than only referenced: the
+ * assessment must stay readable if the prospect is deleted, for the same
+ * reason ActivityEntry keeps a `label`.
+ */
+export interface CompareEntry {
+  id: string;
+  event_id: string;
+  prospect_id: string | null;
+  org_name: string;
+  aspect: string;
+  indicator: string;
+  plus: string;
+  minus: string;
+  order: number;
+}
+
+/** Daily counter for the two sign-in buttons that need no account. */
+export interface AccessCount {
+  day: string;
+  kind: "guest" | "demo";
+  hits: number;
+}
+
 export interface Database {
   divisions: Division[];
   events: OVEvent[];

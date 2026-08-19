@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.37.0",
+    date: "2026-08-18",
+    title: "Menu Himpunan: plotting FGD & perbandingan calon mitra",
+    changes: [
+      { kind: "new", text: "Menu baru Himpunan, di atas Reach & Offer. Admin, Koordinator, dan Staff bisa mengubah isinya; Intern dan Tamu hanya melihat." },
+      { kind: "new", text: "Focus Group Discussion: tabel dua kolom untuk memasangkan tiap departemen HMSI ITS dengan departemen padanannya di himpunan mitra. Tabel baru langsung terisi sepuluh departemen HMSI ITS, barisnya bisa diubah, ditambah, dan dikurangi, dan satu Ormawa Visit boleh punya beberapa tabel." },
+      { kind: "new", text: "Compare: membandingkan himpunan yang menerima ajakan lewat Aspek Penilaian, Indikator yang Dinilai, Plus / Kelebihan, dan Minus / Kekurangan. Terbuka setelah ada lebih dari satu himpunan berstatus DITERIMA di Reach & Offer." },
+      { kind: "fix", text: "Daftar siapa yang sedang online hanya pernah mencatat satu akun. Sekarang setiap akun yang membuka aplikasi ikut tercatat." },
+    ],
+  },
+  {
     version: "1.36.0",
     date: "2026-08-18",
     title: "Jejak perubahan di seluruh sistem",

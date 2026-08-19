@@ -1,7 +1,8 @@
 import { requireDeveloper } from "@/lib/guard";
 import { developerCount } from "@/lib/developers";
 import {
-  developerRegistered, getActivity, getActorStats, getErrors, getPresence, getTableCounts,
+  developerRegistered, getAccessCounts, getActivity, getActorStats, getErrors, getPresence,
+  getTableCounts,
 } from "@/lib/data/developer-repo";
 import { USE_SUPABASE } from "@/lib/auth";
 import { demoConfigured } from "@/lib/demo";
@@ -37,13 +38,14 @@ export const dynamic = "force-dynamic";
 export default async function DeveloperPage() {
   const user = await requireDeveloper();
 
-  const [registered, activity, actors, presence, errors, counts] = await Promise.all([
+  const [registered, activity, actors, presence, errors, counts, access] = await Promise.all([
     developerRegistered(),
     getActivity(),
     getActorStats(),
     getPresence(120),
     getErrors(),
     getTableCounts(),
+    getAccessCounts(),
   ]);
 
   // Which services are wired up. Presence of a key, NEVER its value: this page
@@ -79,6 +81,7 @@ export default async function DeveloperPage() {
       presence={presence}
       errors={errors}
       counts={counts}
+      access={access}
       env={env}
       build={build}
     />
