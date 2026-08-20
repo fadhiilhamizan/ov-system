@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.38.0",
+    date: "2026-08-19",
+    title: "Compare dibuat manual, tampilan sanding, dan salin data yang lebih terarah",
+    changes: [
+      { kind: "new", text: "Di Compare, perbandingan kini dibuat lewat tombol 'Buat perbandingan' dan bisa dihapus, jadi tidak lagi muncul otomatis untuk tiap himpunan yang diterima. Satu himpunan tidak bisa dibuatkan dua kali." },
+      { kind: "new", text: "Tambah tampilan 'Sanding' di Compare: dua himpunan ditaruh berdampingan, aspek demi aspek, untuk membandingkan kelebihan dan kekurangannya langsung." },
+      { kind: "data", text: "Data Compare untuk Ormawa Visit HMSI ITS x HMD Eksternal (HMTI UNS dan HMTI UB) diisi dari berkas yang disediakan." },
+      { kind: "new", text: "Salin data Ormawa Visit sekarang bisa memilih perlakuan data yang sudah ada: 'Ganti total' (hapus dulu) atau 'Tambahkan' (data lama tetap)." },
+      { kind: "new", text: "Sebelum menyalin ke edisi yang sudah ada, wajib mencentang konfirmasi yang menyebut dari dan ke Ormawa Visit mana data disalin." },
+      { kind: "new", text: "Salin data kini bisa dipersempit: Anggota & Tim dan Work Breakdown per divisi, Anggaran per rencana RAB. Super Link juga bisa ikut disalin." },
+    ],
+  },
+  {
     version: "1.37.0",
     date: "2026-08-18",
     title: "Menu Himpunan: plotting FGD & perbandingan calon mitra",

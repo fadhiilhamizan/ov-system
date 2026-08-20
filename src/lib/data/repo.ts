@@ -4,7 +4,7 @@ import * as local from "./local";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
-import { divisionFields } from "../members";
+import { divisionFields, memberInDivision } from "../members";
 import { uid } from "../utils";
 import type {
   BudgetItem,
@@ -31,6 +31,7 @@ import type {
   Team,
 } from "../types";
 import { CLONE_MODULES } from "../types";
+import type { CloneFilters } from "../types";
 
 // ------------------------------------------------------------------
 // Backend-agnostic repository. Uses Supabase when configured, otherwise
@@ -959,22 +960,45 @@ export async function setEventLocked(id: string, locked: boolean) {
 export async function cloneEventData(
   targetId: string,
   sources: CloneSources,
-  opts: { replace?: boolean } = {},
+  opts: { replace?: boolean; filters?: CloneFilters } = {},
 ) {
   if (!USE_SUPABASE) return local.cloneEventData(targetId, sources, opts);
   const client = await sb();
+  const filters = opts.filters ?? {};
+  // A filter of undefined/empty means "no narrowing": everything is copied.
+  const inSet = (value: string, allowed?: string[]) => !allowed?.length || allowed.includes(value);
 
   /** Wipe the target's rows for one menu before re-filling it. */
   async function clear(mod: CloneModule) {
     if (!opts.replace) return;
     switch (mod) {
       case "divisions": await must(client.from("divisions").delete().eq("event_id", targetId)); break;
-      case "members": await must(client.from("members").delete().eq("event_id", targetId)); break;
+      case "members": {
+        // When a division filter is set, only that division's members and teams
+        // are wiped; the rest of the target roster is left alone.
+        const divs = filters.memberDivisions;
+        if (divs?.length) {
+          const existing = await getMembers(targetId);
+          const ids = existing.filter((m) => divs.some((d) => memberInDivision(m, d))).map((m) => m.id);
+          if (ids.length) await must(client.from("members").delete().in("id", ids));
+          await must(client.from("teams").delete().eq("event_id", targetId).in("division", divs));
+        } else {
+          await must(client.from("members").delete().eq("event_id", targetId));
+          await must(client.from("teams").delete().eq("event_id", targetId));
+        }
+        break;
+      }
       case "prospects": await must(client.from("prospects").delete().eq("event_id", targetId)); break;
       // task_links go with their task via ON DELETE CASCADE (0025).
-      case "tasks": await must(client.from("tasks").delete().eq("event_id", targetId)); break;
+      case "tasks": {
+        const divs = filters.taskDivisions;
+        const q = client.from("tasks").delete().eq("event_id", targetId);
+        await must(divs?.length ? q.in("division", divs) : q);
+        break;
+      }
       case "rundown": await must(client.from("rundown").delete().eq("event_id", targetId)); break;
       case "jobs": await must(client.from("job_harih").delete().eq("event_id", targetId)); break;
+      case "links": await must(client.from("links").delete().eq("event_id", targetId)); break;
       case "budget": {
         // Items are deleted explicitly rather than trusting a cascade, because
         // an orphaned budget_item is invisible in the UI but still counted.
@@ -1002,13 +1026,24 @@ export async function cloneEventData(
     }
 
     if (mod === "members") {
-      const src = await getMembers(sourceId);
+      const divs = filters.memberDivisions;
+      const src = (await getMembers(sourceId))
+        .filter((m) => !divs?.length || divs.some((d) => memberInDivision(m, d)));
       const rows = src.map((m) => ({
         event_id: targetId, name: m.name, nickname: m.nickname, nrp: m.nrp,
         type: m.type, year: m.year,
         ...divisionFields(m.divisions, m.division),
       }));
       if (rows.length) await must(client.from("members").insert(rows));
+      // Teams (division coordinators) travel with the roster: a copied division
+      // whose coordinator was dropped would look leaderless for no reason.
+      const teams = (await getTeams(sourceId))
+        .filter((tm) => !divs?.length || divs.includes(tm.division));
+      const teamRows = teams.map((tm) => ({
+        event_id: targetId, division: tm.division, coordinator: tm.coordinator,
+        fungsionaris: tm.fungsionaris, intern: tm.intern,
+      }));
+      if (teamRows.length) await must(client.from("teams").insert(teamRows));
     }
 
     if (mod === "prospects") {
@@ -1030,7 +1065,8 @@ export async function cloneEventData(
     }
 
     if (mod === "tasks") {
-      const src = await getTasks({ event_id: sourceId });
+      const src = (await getTasks({ event_id: sourceId }))
+        .filter((t) => inSet(t.division, filters.taskDivisions));
       const noByDiv: Record<string, number> = {};
       const rows = src.map((t) => {
         noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
@@ -1059,8 +1095,22 @@ export async function cloneEventData(
       if (rows.length) await must(client.from("job_harih").insert(rows));
     }
 
+    if (mod === "links") {
+      // Super Link entries that were PUBLISHED from a task or prospect are
+      // skipped: those are owned by their source row, and a free copy would be
+      // an orphan pointing at nothing in the new edition.
+      const src = (await getLinks(sourceId)).filter((l) => l.source === "manual" || !l.source);
+      const rows = src.map((l) => ({
+        event_id: targetId, section: l.section, division: l.division,
+        name: l.name, url: l.url, note: l.note, source: "manual",
+      }));
+      if (rows.length) await must(client.from("links").insert(rows));
+    }
+
     if (mod === "budget") {
-      const plans = await getBudgetPlans(sourceId);
+      const wanted = filters.budgetPlanIds;
+      const plans = (await getBudgetPlans(sourceId))
+        .filter((p) => !wanted?.length || wanted.includes(p.id));
       for (const plan of plans) {
         const created = await must(client
           .from("budget_plans")

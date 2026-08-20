@@ -436,11 +436,34 @@ export interface FgdRow {
  * assessment must stay readable if the prospect is deleted, for the same
  * reason ActivityEntry keeps a `label`.
  */
+/**
+ * A comparison subject: one association we are weighing up, created on purpose
+ * from the button rather than derived from the accepted list. Its assessments
+ * (CompareEntry) hang off it and go with it when it is deleted.
+ */
+export interface CompareSubject {
+  id: string;
+  event_id: string;
+  /** The Reach & Offer prospect this stands for, when there is one. Imported
+   *  subjects have none. ON DELETE SET NULL keeps the assessments if the
+   *  prospect goes; `org_name` is what actually renders. */
+  prospect_id: string | null;
+  org_name: string;
+  order: number;
+}
+
 export interface CompareEntry {
   id: string;
   event_id: string;
+  /** Owner subject. Nullable only for pre-0041 rows the backfill missed. */
+  subject_id: string | null;
+  /** @deprecated read the association from the subject; kept for old rows. */
   prospect_id: string | null;
   org_name: string;
+  /** Group heading as written in the source, e.g. "A. ASPEK PELAKSANAAN...". */
+  section: string;
+  /** Row number as written in the source, so a gap like 11 -> 13 survives. */
+  no: string;
   aspect: string;
   indicator: string;
   plus: string;
@@ -497,7 +520,7 @@ export interface AppUser {
  * without importing its own caller.
  */
 export const CLONE_MODULES = [
-  "divisions", "members", "prospects", "tasks", "rundown", "jobs", "budget",
+  "divisions", "members", "prospects", "tasks", "rundown", "jobs", "links", "budget",
 ] as const;
 export type CloneModule = (typeof CLONE_MODULES)[number];
 
@@ -505,3 +528,25 @@ export type CloneModule = (typeof CLONE_MODULES)[number];
  *  empty string) is not copied at all, so divisions can come from OV A while
  *  the rundown comes from OV B. */
 export type CloneSources = Partial<Record<CloneModule, string>>;
+
+/**
+ * Optional narrowing of what gets copied, per menu.
+ *
+ * Empty / absent means "everything from the source" (the old behaviour). The
+ * arrays let a copy be scoped: only some divisions' members and tasks, only
+ * some budget plans - the whole reason someone copies from a past edition is
+ * usually to pull ONE division's work forward, not all of it.
+ */
+export interface CloneFilters {
+  /** Task copy limited to these division keys. */
+  taskDivisions?: string[];
+  /** Member (and team) copy limited to these division keys. */
+  memberDivisions?: string[];
+  /** Budget copy limited to these plan ids. */
+  budgetPlanIds?: string[];
+}
+
+/** How an existing target's data is treated when copying INTO it.
+ *  - "replace": the target's rows for a chosen menu are deleted first.
+ *  - "append":  the copy is added on top; nothing existing is removed. */
+export type CloneMode = "replace" | "append";

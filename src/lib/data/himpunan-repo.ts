@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "../supabase/server";
 import { HMSI_DEPARTMENTS } from "../constants";
-import type { CompareEntry, FgdPlan, FgdRow } from "../types";
+import type { CompareEntry, CompareSubject, FgdPlan, FgdRow } from "../types";
 
 // ============================================================
 // Data layer for the Himpunan menu (FGD plotting + Compare).
@@ -125,6 +125,42 @@ export async function deleteFgdRow(id: string) {
 }
 
 // ---------------- Compare ----------------
+// A subject is one association being weighed up (created deliberately from the
+// button); its assessments (compare_entries) hang off it via subject_id.
+
+export const getCompareSubjects = cache(async (eventId: string): Promise<CompareSubject[]> => {
+  const { data, error } = await (await sb())
+    .from("compare_subjects").select("*").eq("event_id", eventId).order("order");
+  if (error && !isMissing(error)) console.warn("[himpunan] compare subjects:", error.message);
+  return (data ?? []) as CompareSubject[];
+});
+
+/**
+ * Add a subject.
+ *
+ * The unique indexes in 0041 forbid a duplicate (same prospect, or same name)
+ * per edition, so a double-click or a stale button can't create two cards for
+ * one association - the second insert is rejected at the database.
+ */
+export async function createCompareSubject(input: {
+  event_id: string; prospect_id: string | null; org_name: string;
+}): Promise<string | null> {
+  const client = await sb();
+  const { data: rows } = await client
+    .from("compare_subjects").select("order").eq("event_id", input.event_id);
+  const nextOrder = Math.max(0, ...(rows ?? []).map((r: { order: number }) => r.order + 1));
+  const data = await must(
+    await client.from("compare_subjects")
+      .insert({ ...input, order: nextOrder }).select("id").single(),
+  ) as { id: string } | null;
+  return data?.id ?? null;
+}
+
+export async function deleteCompareSubject(id: string) {
+  // compare_entries follow via ON DELETE CASCADE.
+  const { error } = await (await sb()).from("compare_subjects").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
 
 export const getCompareEntries = cache(async (eventId: string): Promise<CompareEntry[]> => {
   const { data, error } = await (await sb())
@@ -136,7 +172,7 @@ export const getCompareEntries = cache(async (eventId: string): Promise<CompareE
 export async function createCompareEntry(input: Omit<CompareEntry, "id" | "order">) {
   const client = await sb();
   const { data: rows } = await client
-    .from("compare_entries").select("order").eq("event_id", input.event_id);
+    .from("compare_entries").select("order").eq("subject_id", input.subject_id ?? "");
   const nextOrder = Math.max(0, ...(rows ?? []).map((r: { order: number }) => r.order + 1));
   const { error } = await client.from("compare_entries").insert({ ...input, order: nextOrder });
   if (error) throw new Error(error.message);

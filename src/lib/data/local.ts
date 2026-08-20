@@ -3,7 +3,7 @@ import { getDb, mutate } from "./store";
 import { uid } from "../utils";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
-import { divisionFields } from "../members";
+import { divisionFields, memberInDivision } from "../members";
 import type {
   BudgetItem,
   CloneModule,
@@ -28,6 +28,7 @@ import type {
   Team,
 } from "../types";
 import { CLONE_MODULES } from "../types";
+import type { CloneFilters } from "../types";
 
 // ---------------- Divisions ----------------
 export function getDivisions(eventId?: string): Division[] {
@@ -649,18 +650,31 @@ export function setEventLocked(id: string, locked: boolean) {
 export function cloneEventData(
   targetId: string,
   sources: Partial<Record<CloneModule, string>>,
-  opts: { replace?: boolean } = {},
+  opts: { replace?: boolean; filters?: CloneFilters } = {},
 ) {
+  const filters = opts.filters ?? {};
+  const inSet = (value: string, allowed?: string[]) => !allowed?.length || allowed.includes(value);
   mutate((db) => {
     const wipe = (mod: CloneModule) => {
       if (!opts.replace) return;
       const notTarget = <T extends { event_id?: string | null }>(x: T) => x.event_id !== targetId;
       if (mod === "divisions") db.divisions = db.divisions.filter(notTarget);
-      if (mod === "members") db.members = db.members.filter(notTarget);
+      if (mod === "members") {
+        const divs = filters.memberDivisions;
+        db.members = db.members.filter((m) =>
+          m.event_id !== targetId || (divs?.length ? !divs.some((d) => memberInDivision(m, d)) : false));
+        db.teams = db.teams.filter((tm) =>
+          tm.event_id !== targetId || (divs?.length ? !divs.includes(tm.division) : false));
+      }
       if (mod === "prospects") db.prospects = db.prospects.filter(notTarget);
-      if (mod === "tasks") db.tasks = db.tasks.filter(notTarget);
+      if (mod === "tasks") {
+        const divs = filters.taskDivisions;
+        db.tasks = db.tasks.filter((t) =>
+          t.event_id !== targetId || (divs?.length ? !divs.includes(t.division) : false));
+      }
       if (mod === "rundown") db.rundown = db.rundown.filter(notTarget);
       if (mod === "jobs") db.jobHariH = db.jobHariH.filter(notTarget);
+      if (mod === "links") db.links = db.links.filter(notTarget);
       if (mod === "budget") db.budgetPlans = db.budgetPlans.filter(notTarget);
     };
 
@@ -675,8 +689,14 @@ export function cloneEventData(
         }
       }
       if (mod === "members") {
-        for (const m of db.members.filter((x) => x.event_id === sourceId)) {
+        const divs = filters.memberDivisions;
+        for (const m of db.members.filter((x) => x.event_id === sourceId
+              && (!divs?.length || divs.some((d) => memberInDivision(x, d))))) {
           db.members.push({ ...m, id: uid("m"), event_id: targetId });
+        }
+        for (const tm of db.teams.filter((x) => x.event_id === sourceId
+              && (!divs?.length || divs.includes(x.division)))) {
+          db.teams.push({ ...tm, id: uid("tm"), event_id: targetId });
         }
       }
       if (mod === "prospects") {
@@ -693,7 +713,7 @@ export function cloneEventData(
         });
       }
       if (mod === "tasks") {
-        const src = db.tasks.filter((t) => t.event_id === sourceId);
+        const src = db.tasks.filter((t) => t.event_id === sourceId && inSet(t.division, filters.taskDivisions));
         const noByDiv: Record<string, number> = {};
         for (const t of src) {
           noByDiv[t.division] = (noByDiv[t.division] ?? 0) + 1;
@@ -714,8 +734,14 @@ export function cloneEventData(
           db.jobHariH.push({ ...j, id: uid("j"), event_id: targetId, pic: "" });
         }
       }
+      if (mod === "links") {
+        for (const l of db.links.filter((x) => x.event_id === sourceId && (x.source === "manual" || !x.source))) {
+          db.links.push({ ...l, id: uid("l"), event_id: targetId, source: "manual" });
+        }
+      }
       if (mod === "budget") {
-        for (const plan of db.budgetPlans.filter((p) => p.event_id === sourceId)) {
+        const wanted = filters.budgetPlanIds;
+        for (const plan of db.budgetPlans.filter((p) => p.event_id === sourceId && (!wanted?.length || wanted.includes(p.id)))) {
           db.budgetPlans.push({
             id: uid("bp"), name: plan.name, event_id: targetId,
             items: plan.items.map((i) => ({ ...i, id: uid("bi") })),

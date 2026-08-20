@@ -4,12 +4,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getEvent } from "@/lib/data/repo";
 import {
-  createCompareEntry, createFgdPlan, createFgdRow, deleteCompareEntry, deleteFgdPlan,
-  deleteFgdRow, updateCompareEntry, updateFgdPlan, updateFgdRow,
+  createCompareEntry, createCompareSubject, createFgdPlan, createFgdRow, deleteCompareEntry,
+  deleteCompareSubject, deleteFgdPlan, deleteFgdRow, updateCompareEntry, updateFgdPlan, updateFgdRow,
 } from "@/lib/data/himpunan-repo";
 import type { CompareEntry, FgdPlan } from "@/lib/types";
 import {
-  compareEntrySchema, compareUpdateSchema, fgdPlanSchema, fgdPlanUpdateSchema,
+  compareEntrySchema, compareSubjectSchema, compareUpdateSchema, fgdPlanSchema, fgdPlanUpdateSchema,
   fgdRowUpdateSchema, idSchema, parse,
 } from "./schemas";
 import { archivedGuard, errMsg } from "./lock";
@@ -121,22 +121,71 @@ export async function deleteFgdRowAction(id: string): Promise<Result> {
 }
 
 // ---------------- Compare ----------------
+// A subject is one association to weigh up, created deliberately from the
+// button. Its assessments hang off it and go with it when it is deleted.
+
+export async function createCompareSubjectAction(
+  input: { event_id: string; prospect_id?: string | null; org_name: string },
+): Promise<Result> {
+  const v = parse(compareSubjectSchema, input);
+  if (!v.ok) return v;
+  const g = await guard(v.data.event_id);
+  if (!g.ok) return g;
+  if (!(await getEvent(v.data.event_id))) {
+    return { ok: false, error: "Ormawa Visit tidak ditemukan." };
+  }
+  try {
+    await createCompareSubject({
+      event_id: v.data.event_id,
+      prospect_id: v.data.prospect_id ?? null,
+      org_name: v.data.org_name,
+    });
+  } catch (e) {
+    // The unique index (0041) is the real duplicate guard; turn its raw error
+    // into copy the user can act on rather than a Postgres constraint name.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/duplicate key|unique/i.test(msg)) {
+      return { ok: false, error: "Himpunan itu sudah dibuatkan perbandingannya." };
+    }
+    return errMsg(e);
+  }
+  revalidatePath("/himpunan");
+  return { ok: true };
+}
+
+export async function deleteCompareSubjectAction(id: string): Promise<Result> {
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const g = await guard();
+  if (!g.ok) return g;
+  try {
+    await deleteCompareSubject(idv.data);
+  } catch (e) { return errMsg(e); }
+  revalidatePath("/himpunan");
+  return { ok: true };
+}
 
 export async function createCompareEntryAction(input: Partial<CompareEntry>): Promise<Result> {
   const v = parse(compareEntrySchema, input);
   if (!v.ok) return v;
   const g = await guard(v.data.event_id);
   if (!g.ok) return g;
-  // Fail early on an edition that does not exist rather than leaving an
-  // unreachable row behind a foreign key error.
+  // An assessment must belong to a subject; without one it would be an orphan
+  // that no card ever shows.
+  if (!v.data.subject_id) {
+    return { ok: false, error: "Aspek harus melekat pada satu himpunan." };
+  }
   if (!(await getEvent(v.data.event_id))) {
     return { ok: false, error: "Ormawa Visit tidak ditemukan." };
   }
   try {
     await createCompareEntry({
       event_id: v.data.event_id,
+      subject_id: v.data.subject_id,
       prospect_id: v.data.prospect_id ?? null,
       org_name: v.data.org_name ?? "",
+      section: v.data.section ?? "",
+      no: v.data.no ?? "",
       aspect: v.data.aspect ?? "",
       indicator: v.data.indicator ?? "",
       plus: v.data.plus ?? "",

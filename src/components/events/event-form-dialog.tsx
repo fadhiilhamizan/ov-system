@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, Copy, AlertTriangle } from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createEventAction, updateEventAction, applyEventTemplateAction } from "@/lib/actions/manage";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
-import type { CloneSources, OVEvent } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { CloneFilters, CloneMode, CloneSources, OVEvent } from "@/lib/types";
 import { ClonePicker } from "./clone-picker";
+import { cn } from "@/lib/utils";
 
 export function EventFormDialog({
   mode, event, events = [], open, onOpenChange, trigger,
@@ -34,6 +36,13 @@ export function EventFormDialog({
   // Template: each menu names the Ormawa Visit it is copied from, so one new
   // edition can pull its divisions from OV A and its rundown from OV B.
   const [sources, setSources] = React.useState<CloneSources>({});
+  const [filters, setFilters] = React.useState<CloneFilters>({});
+  // How an existing edition's data is treated by the copy. Only asked on edit;
+  // a brand-new edition has nothing to replace.
+  const [cloneMode, setCloneMode] = React.useState<CloneMode>("replace");
+  // The copy is destructive, so it stays disabled until the person confirms they
+  // understand which edition overwrites which.
+  const [confirmed, setConfirmed] = React.useState(false);
   // On edit the copy is destructive, so it is opt-in behind its own toggle
   // rather than sitting open next to the ordinary "Simpan".
   const [showTemplate, setShowTemplate] = React.useState(false);
@@ -87,7 +96,7 @@ export function EventFormDialog({
       const picked = Object.keys(sources).length > 0;
 
       if (mode === "create") {
-        const res = await createEventAction(payload, picked ? sources : undefined);
+        const res = await createEventAction(payload, picked ? sources : undefined, filters);
         if (res.ok) { toast.success(t("Ormawa Visit ditambahkan")); setOpen(false); }
         else toast.error(res.error);
         return;
@@ -99,7 +108,7 @@ export function EventFormDialog({
       const res = await updateEventAction(event!.id, payload);
       if (!res.ok) { toast.error(res.error); return; }
       if (picked) {
-        const cloned = await applyEventTemplateAction(event!.id, sources);
+        const cloned = await applyEventTemplateAction(event!.id, sources, cloneMode, filters);
         if (!cloned.ok) { toast.error(cloned.error); return; }
         toast.success(t("Ormawa Visit diperbarui & data disalin"));
       } else {
@@ -114,6 +123,15 @@ export function EventFormDialog({
 
   // An edition can never be its own source, so it is excluded from the picker.
   const templateOptions = events.filter((e) => e.id !== event?.id);
+
+  // Distinct source editions actually selected, by title - for the confirmation.
+  const cloneSourceTitles = React.useMemo(() => {
+    const ids = new Set(Object.values(sources).filter(Boolean));
+    return [...ids].map((id) => events.find((e) => e.id === id)?.title ?? id);
+  }, [sources, events]);
+
+  // The copy is destructive on an existing edition, so require the tick first.
+  const needsConfirm = mode === "edit" && Object.keys(sources).length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -303,18 +321,69 @@ export function EventFormDialog({
                   </button>
                 </div>
               ) : (
-                // The wipe is the whole reason this warning exists: without it,
-                // "copy" on an edition that already has data reads as "merge".
-                <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 p-2.5 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                  <span>
-                    {t("PERINGATAN: data menu yang dicentang di Ormawa Visit ini akan DIHAPUS dan diganti dengan salinan dari Ormawa Visit yang dipilih. Menu yang tidak dicentang tidak tersentuh.")}
-                  </span>
+                // On edit the copy touches an edition that already has data, so
+                // how that data is treated is a choice the person must make.
+                <div className="mb-3 space-y-2">
+                  <p className="text-[11px] font-medium text-muted-foreground">{t("Perlakuan data yang sudah ada di Ormawa Visit ini:")}</p>
+                  {([
+                    ["replace", t("Ganti total"), t("Data menu yang dicentang DIHAPUS dulu, lalu diganti dengan salinan.")],
+                    ["append", t("Tambahkan"), t("Data lama tetap; salinan ditambahkan di atasnya.")],
+                  ] as const).map(([val, title, desc]) => (
+                    <label
+                      key={val}
+                      className={cn(
+                        "flex cursor-pointer items-start gap-2 rounded-lg border p-2 text-[11px] transition",
+                        cloneMode === val ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="clone-mode"
+                        checked={cloneMode === val}
+                        onChange={() => setCloneMode(val)}
+                        className="mt-0.5 accent-primary"
+                      />
+                      <span>
+                        <span className="font-medium text-foreground">{title}</span>
+                        <span className="block text-muted-foreground">{desc}</span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
               )}
 
               {(mode === "create" || showTemplate) && (
-                <ClonePicker options={templateOptions} value={sources} onChange={setSources} />
+                <>
+                  <ClonePicker
+                    options={templateOptions}
+                    value={sources}
+                    onChange={setSources}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+
+                  {/* Confirmation: only meaningful when copying INTO an edition
+                      that already exists. It names both sides so nobody wipes the
+                      wrong Ormawa Visit. */}
+                  {mode === "edit" && cloneSourceTitles.length > 0 && (
+                    <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50/70 p-2.5 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                      <Checkbox
+                        checked={confirmed}
+                        onCheckedChange={(v) => setConfirmed(v === true)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        {t("Saya paham data yang disalin berasal dari")}{" "}
+                        <span className="font-semibold">{cloneSourceTitles.join(", ")}</span>{" "}
+                        {cloneMode === "replace"
+                          ? t("dan akan MENGHAPUS lalu mengganti data")
+                          : t("dan akan DITAMBAHKAN ke data")}{" "}
+                        <span className="font-semibold">{event?.title}</span>{" "}
+                        {t("yang sedang dibuka.")}
+                      </span>
+                    </label>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -322,7 +391,7 @@ export function EventFormDialog({
 
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-          <Button onClick={submit} disabled={pending || !f.title.trim()}>
+          <Button onClick={submit} disabled={pending || !f.title.trim() || (needsConfirm && !confirmed)}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {mode === "create" ? t("Tambah") : t("Simpan")}
           </Button>

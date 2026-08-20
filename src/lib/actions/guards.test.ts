@@ -41,6 +41,7 @@ vi.mock("@/lib/data/repo", () => repo);
 const HIMPUNAN_FNS = [
   "createFgdPlan", "updateFgdPlan", "deleteFgdPlan",
   "createFgdRow", "updateFgdRow", "deleteFgdRow",
+  "createCompareSubject", "deleteCompareSubject",
   "createCompareEntry", "updateCompareEntry", "deleteCompareEntry",
 ] as const;
 const himpunanRepo = Object.fromEntries(
@@ -118,7 +119,9 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["himpunan.createFgdRow", () => himpunan.createFgdRowAction("f1")],
   ["himpunan.updateFgdRow", () => himpunan.updateFgdRowAction("r1", { ours: "X" })],
   ["himpunan.deleteFgdRow", () => himpunan.deleteFgdRowAction("r1")],
-  ["himpunan.createCompare", () => himpunan.createCompareEntryAction({ event_id: "ov1" })],
+  ["himpunan.createCompareSubject", () => himpunan.createCompareSubjectAction({ event_id: "ov1", org_name: "X" })],
+  ["himpunan.deleteCompareSubject", () => himpunan.deleteCompareSubjectAction("s1")],
+  ["himpunan.createCompare", () => himpunan.createCompareEntryAction({ event_id: "ov1", subject_id: "s1" })],
   ["himpunan.updateCompare", () => himpunan.updateCompareEntryAction("c1", { aspect: "X" })],
   ["himpunan.deleteCompare", () => himpunan.deleteCompareEntryAction("c1")],
 ];
@@ -139,10 +142,13 @@ describe("a guest cannot mutate anything", () => {
   });
 
   it("covers every mutating action exported by these modules", () => {
+    // Read-only actions (they fetch, they don't mutate) are exempt from the
+    // guest-guard invariant.
+    const READ_ONLY = new Set(["getCloneOptionsAction"]);
     const exported = [
       ...Object.keys(links), ...Object.keys(budget), ...Object.keys(faq),
       ...Object.keys(schedule), ...Object.keys(manage), ...Object.keys(himpunan),
-    ].filter((k) => k.endsWith("Action"));
+    ].filter((k) => k.endsWith("Action") && !READ_ONLY.has(k));
     // If someone adds an action without a guard case, this fails and points at it.
     expect(CASES.length).toBe(exported.length);
   });

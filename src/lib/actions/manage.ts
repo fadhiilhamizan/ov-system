@@ -6,14 +6,15 @@ import {
   createEvent, updateEvent, deleteEvent, setEventLocked, cloneEventData, getEvent,
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
-  createTeam, updateTeam, deleteTeam, getMembers,
+  createTeam, updateTeam, deleteTeam, getMembers, getDivisions, getBudgetPlans,
 } from "@/lib/data/repo";
-import type { CloneSources, Division, Member, OVEvent, Team } from "@/lib/types";
+import type { CloneFilters, CloneMode, CloneSources, Division, Member, OVEvent, Team } from "@/lib/types";
 import { CLONE_MODULES } from "@/lib/types";
 import { uid } from "@/lib/utils";
 import { getActiveEvent } from "@/lib/session";
 import {
-  eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, idSchema, parse,
+  eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, cloneFiltersSchema,
+  cloneModeSchema, idSchema, parse,
 } from "./schemas";
 import { divisionFields, memberDivisions, withDivisionAdded } from "@/lib/members";
 import { archivedGuard } from "./lock";
@@ -36,6 +37,7 @@ const errMsg = (e: unknown): Result => ({
 export async function createEventAction(
   input: Partial<OVEvent>,
   template?: CloneSources,
+  filters?: CloneFilters,
 ): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;
   const v = parse(eventSchema, input);
@@ -47,7 +49,10 @@ export async function createEventAction(
   try {
     await createEvent({ ...v.data, id });
     // A brand-new edition has nothing to replace, so `replace` stays off.
-    if (sources) await cloneEventData(id, sources.data, { replace: false });
+    if (sources) {
+      const fv = parse(cloneFiltersSchema, filters ?? {});
+      await cloneEventData(id, sources.data, { replace: false, filters: fv.ok ? fv.data : {} });
+    }
   } catch (e) { return errMsg(e); }
   revalidateEntities("events");
   return { ok: true };
@@ -80,6 +85,8 @@ function cleanSources(
 export async function applyEventTemplateAction(
   targetId: string,
   template: CloneSources,
+  mode: CloneMode = "replace",
+  filters?: CloneFilters,
 ): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageEvents(user)) return DENY;
@@ -99,9 +106,14 @@ export async function applyEventTemplateAction(
     }
   }
   try {
-    await cloneEventData(idv.data, sources.data, { replace: true });
+    const mv = parse(cloneModeSchema, mode);
+    const fv = parse(cloneFiltersSchema, filters ?? {});
+    await cloneEventData(idv.data, sources.data, {
+      replace: (mv.ok ? mv.data : "replace") === "replace",
+      filters: fv.ok ? fv.data : {},
+    });
   } catch (e) { return errMsg(e); }
-  revalidateEntities("events", "divisions", "members", "tasks", "rundown", "jobs", "budget", "prospects");
+  revalidateEntities("events", "divisions", "members", "tasks", "rundown", "jobs", "budget", "prospects", "links");
   return { ok: true };
 }
 
@@ -341,4 +353,25 @@ export async function deleteTeamAction(id: string): Promise<Result> {
   try { await deleteTeam(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("teams");
   return { ok: true };
+}
+
+/**
+ * Divisions and budget plans of a SOURCE edition, for the copy dialog's
+ * per-menu narrowing (which divisions' work, which RAB plan).
+ *
+ * Fetched on demand rather than loaded for every edition up front: the events
+ * page lists all editions, and eagerly reading each one's divisions and plans
+ * would be a pile of queries for a dialog that is usually not even opened.
+ */
+export async function getCloneOptionsAction(
+  eventId: string,
+): Promise<{ divisions: { key: string; name: string }[]; plans: { id: string; name: string }[] }> {
+  if (!can.manageEvents(await getCurrentUser())) return { divisions: [], plans: [] };
+  const idv = parse(idSchema, eventId);
+  if (!idv.ok) return { divisions: [], plans: [] };
+  const [divisions, plans] = await Promise.all([getDivisions(idv.data), getBudgetPlans(idv.data)]);
+  return {
+    divisions: divisions.map((d) => ({ key: d.key, name: d.name })),
+    plans: plans.map((p) => ({ id: p.id, name: p.name })),
+  };
 }

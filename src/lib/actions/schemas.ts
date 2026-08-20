@@ -263,6 +263,16 @@ export const cloneSourcesSchema = z.object(
   ) as Record<CloneModule, z.ZodOptional<z.ZodString>>,
 );
 
+/** Optional narrowing of a copy: which divisions' work, which budget plans.
+ *  Every field is a capped list; an empty/absent list copies everything. */
+export const cloneFiltersSchema = z.object({
+  taskDivisions: z.array(z.string().trim().max(128)).max(50).optional(),
+  memberDivisions: z.array(z.string().trim().max(128)).max(50).optional(),
+  budgetPlanIds: z.array(z.string().trim().max(128)).max(50).optional(),
+});
+
+export const cloneModeSchema = z.enum(["replace", "append"]);
+
 // ---------------- Events ----------------
 // title is required; every other field is optional.
 export const eventSchema = z.object({
@@ -541,12 +551,25 @@ export const fgdRowUpdateSchema = z
   })
   .partial();
 
+/** Create a comparison subject: one association to weigh up. */
+export const compareSubjectSchema = z.object({
+  event_id: nonEmpty("Ormawa Visit", 128),
+  // Nullable: an imported subject has no Reach & Offer prospect behind it.
+  prospect_id: z.string().trim().max(128).nullish().transform((v) => v || null),
+  org_name: nonEmpty("Nama himpunan", 200),
+});
+
 const compareBase = z.object({
   event_id: nonEmpty("Ormawa Visit", 128),
+  // The owning subject. Required on create so an assessment can never be an
+  // orphan; the action supplies it from the subject the user clicked.
+  subject_id: z.string().trim().max(128).optional(),
   // Nullable: an assessment may be written for an association that is not (or
   // no longer) a row in Reach & Offer, and `org_name` is what actually renders.
   prospect_id: z.string().trim().max(128).nullish().transform((v) => v || null),
   org_name: z.string().trim().max(200).optional(),
+  section: z.string().trim().max(200).optional(),
+  no: z.string().trim().max(16).optional(),
   aspect: z.string().trim().max(200).optional(),
   indicator: z.string().trim().max(500).optional(),
   plus: z.string().trim().max(2000).optional(),

@@ -144,7 +144,7 @@ begin;
 -- ------------------------------------------------------------------
 -- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
 -- and never runs 0028+, but the APP has kept adding columns since (perf
--- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038). Without them the demo's own
+-- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038, menu Himpunan in 0040-0041). Without them the demo's own
 -- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
 -- These add-column statements are idempotent no-ops on a caught-up schema, so
 -- re-running demo-seed silently heals an out-of-date demo project.
@@ -183,6 +183,56 @@ create table if not exists prospect_links (
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+-- 0040 (menu Himpunan) + 0041 (subjek Compare): tabel-tabel ini tidak pernah
+-- ada di project demo lama. Dibuat tanpa RLS di sini karena demo memang berjalan
+-- dengan RLS dimatikan (demo-open-access.sql).
+create table if not exists fgd_plans (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null references events(id) on delete cascade,
+  title text default '',
+  partner_name text default '',
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists fgd_rows (
+  id uuid primary key default gen_random_uuid(),
+  plan_id uuid not null references fgd_plans(id) on delete cascade,
+  ours text default '',
+  theirs text default '',
+  "order" int not null default 0
+);
+create table if not exists compare_subjects (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null references events(id) on delete cascade,
+  prospect_id uuid references prospects(id) on delete set null,
+  org_name text not null default '',
+  "order" int not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists compare_entries (
+  id uuid primary key default gen_random_uuid(),
+  event_id text not null references events(id) on delete cascade,
+  subject_id uuid references compare_subjects(id) on delete cascade,
+  prospect_id uuid references prospects(id) on delete cascade,
+  org_name text default '',
+  section text default '',
+  "no" text default '',
+  aspect text default '',
+  indicator text default '',
+  plus text default '',
+  minus text default '',
+  "order" int not null default 0
+);
+-- If compare_entries predates 0041 in the demo, add the newer columns. Wrapped
+-- in a DO block (not bare ALTERs) so it only runs when the table is already
+-- there, and so the demo catch-up self-test does not try it in isolation.
+do $ce$ begin
+  if to_regclass('public.compare_entries') is not null then
+    alter table compare_entries add column if not exists subject_id uuid references compare_subjects(id) on delete cascade;
+    alter table compare_entries add column if not exists section text default '';
+    alter table compare_entries add column if not exists "no" text default '';
+  end if;
+end $ce$;
 
 -- Clear this edition's data first (FK-safe order) so the seed is idempotent.
 -- task_links is guarded: it only exists once migration 0025 has been applied.
@@ -201,6 +251,10 @@ delete from rundown where event_id = ${q(EV)};
 delete from budget_items where plan_id in (select id from budget_plans where event_id = ${q(EV)});
 delete from budget_plans where event_id = ${q(EV)};
 delete from links where event_id = ${q(EV)};
+delete from compare_entries where event_id = ${q(EV)};
+delete from compare_subjects where event_id = ${q(EV)};
+delete from fgd_rows where plan_id in (select id from fgd_plans where event_id = ${q(EV)});
+delete from fgd_plans where event_id = ${q(EV)};
 delete from prospect_links where prospect_id in (select id from prospects where event_id = ${q(EV)});
 delete from prospects where event_id = ${q(EV)};
 delete from tasks where event_id = ${q(EV)};
@@ -272,6 +326,7 @@ writeFileSync(join(outDir, "demo-seed.sql"), out, "utf8");
 const tablesForRls = [
   "divisions", "events", "members", "tasks", "task_links", "task_refs", "prospects", "prospect_links", "links",
   "budget_plans", "budget_items", "rundown", "job_harih", "faqs", "teams",
+  "fgd_plans", "fgd_rows", "compare_subjects", "compare_entries",
 ];
 let openSql = `-- ============================================================
 -- Demo project ONLY: the demo runs with the anon key and NO login, so the

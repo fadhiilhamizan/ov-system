@@ -547,6 +547,10 @@ create table events (id text primary key);
 create table rundown (id uuid primary key default gen_random_uuid(), event_id text, activity text);
 create table links (id uuid primary key default gen_random_uuid(), name text, url text);
 create table prospects (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
+-- compare_subjects/compare_entries exist so the catch-up's guarded ALTERs
+-- (which the extractor picks up as bare statements) have a table to target.
+create table compare_subjects (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
+create table compare_entries (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
@@ -1074,6 +1078,27 @@ console.log("\n0040 - kehadiran, penghitung akses, Himpunan");
   const audited = Number((await db.query(
     `select count(*) c from activity_log where table_name in ('fgd_plans','fgd_rows','compare_entries')`)).rows[0].c);
   ok("perubahan di menu Himpunan ikut masuk jejak audit", audited > 0);
+}
+
+// ------------------------------------------------------------------
+// 0041: subjek perbandingan eksplisit + no-duplikat.
+// ------------------------------------------------------------------
+console.log("0041 - compare_subjects");
+{
+  const S1 = "'ccccdddd-0000-0000-0000-000000000001'";
+  await check("staff membuat subjek perbandingan", U.staff, false,
+    `insert into compare_subjects (id, event_id, org_name) values (${S1}, 'ov-open', 'HIMA Bagus')`, "allow");
+  await check("nama himpunan yang sama DITOLAK (per edisi)", U.staff, false,
+    `insert into compare_subjects (event_id, org_name) values ('ov-open', 'hima bagus')`, "deny");
+  await check("intern hanya lihat: tidak boleh membuat subjek", U.intern, false,
+    `insert into compare_subjects (event_id, org_name) values ('ov-open', 'HIMA X')`, "deny");
+  await check("penilaian menempel pada subjek", U.staff, false,
+    `insert into compare_entries (event_id, subject_id, org_name, aspect) values ('ov-open', ${S1}, 'HIMA Bagus', 'Jarak')`, "allow");
+  await db.exec(`set role authenticated; set test.uid='${U.staff}'; set test.email='staff@ov.test'; delete from compare_subjects where id = ${S1}; reset role;`);
+  const left = Number((await db.query(`select count(*) c from compare_entries where subject_id = ${S1}`)).rows[0].c);
+  ok("menghapus subjek ikut menghapus penilaiannya (cascade)", left === 0);
+  await check("subjek ikut terkunci di edisi arsip", U.staff, false,
+    `insert into compare_subjects (event_id, org_name) values ('ov-lock', 'HIMA Arsip')`, "deny");
 }
 
 console.log(`\n${pass} lulus, ${fail} gagal`);

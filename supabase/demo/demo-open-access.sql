@@ -20,6 +20,10 @@ do $$ begin if to_regclass('public.rundown') is not null then execute 'alter tab
 do $$ begin if to_regclass('public.job_harih') is not null then execute 'alter table public.job_harih disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.faqs') is not null then execute 'alter table public.faqs disable row level security'; end if; end $$;
 do $$ begin if to_regclass('public.teams') is not null then execute 'alter table public.teams disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.fgd_plans') is not null then execute 'alter table public.fgd_plans disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.fgd_rows') is not null then execute 'alter table public.fgd_rows disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.compare_subjects') is not null then execute 'alter table public.compare_subjects disable row level security'; end if; end $$;
+do $$ begin if to_regclass('public.compare_entries') is not null then execute 'alter table public.compare_entries disable row level security'; end if; end $$;
 
 grant usage on schema public to anon;
 grant select, insert, update, delete on all tables in schema public to anon;

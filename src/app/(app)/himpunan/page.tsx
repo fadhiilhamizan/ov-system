@@ -2,7 +2,7 @@ import { requireModule } from "@/lib/guard";
 import { attenuate, can } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
 import { getProspects } from "@/lib/data/repo";
-import { getCompareEntries, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
+import { getCompareEntries, getCompareSubjects, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +14,10 @@ export const metadata = { title: "Himpunan" };
 export default async function HimpunanPage() {
   const user = await requireModule("himpunan");
   const [event, t] = await Promise.all([getActiveEvent(), getT()]);
-  const [plans, rows, compare, prospects] = await Promise.all([
+  const [plans, rows, subjects, compare, prospects] = await Promise.all([
     getFgdPlans(event.id),
     getFgdRows(event.id),
+    getCompareSubjects(event.id),
     getCompareEntries(event.id),
     getProspects(event.id),
   ]);
@@ -36,6 +37,7 @@ export default async function HimpunanPage() {
         eventId={event.id}
         plans={plans}
         rows={rows}
+        subjects={subjects}
         compare={compare}
         accepted={acceptedProspects(prospects)}
         canManage={can.manageHimpunan(scoped)}
