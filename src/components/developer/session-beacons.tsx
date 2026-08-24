@@ -26,6 +26,27 @@ const BEAT_MS = 60_000;
 /** Cap per page-load, so a crash loop cannot turn into a write loop. */
 const MAX_REPORTS = 8;
 
+/**
+ * React's streaming SSR completes each segment by looking up its placeholder
+ * DOM node by id and moving the real content into place. If that node is
+ * already gone by the time the completion script runs - a fast navigation
+ * away, a dropped connection mid-stream, or Firefox replaying an inline
+ * script off the bfcache - reading its `.parentNode` throws. That is
+ * React/Next racing the network, not this app: nothing under src/ touches
+ * `.parentNode` itself (grep confirms it), so a null read on that property
+ * can only be this. Matched on message text because the stack is minified
+ * and the wording differs per engine for the identical failure.
+ */
+const BENIGN_ERROR_PATTERNS = [
+  /reading ['"]parentNode['"]/i, // V8: Cannot read properties of null (reading 'parentNode')
+  /access property ["']parentNode["'][^]*is null/i, // Firefox: can't access property "parentNode", b is null
+  /null is not an object[^]*parentNode/i, // Safari/JSC: null is not an object (evaluating '...parentNode')
+];
+
+export function isKnownBenignError(message: string): boolean {
+  return BENIGN_ERROR_PATTERNS.some((re) => re.test(message));
+}
+
 export function SessionBeacons({
   isDeveloper = false,
   networkEnabled = false,
@@ -76,6 +97,7 @@ export function SessionBeacons({
     const seen = new Set<string>();
 
     const send = (message: string, stack: string) => {
+      if (isKnownBenignError(message)) return;
       const key = `${message}::${stack.slice(0, 200)}`;
       if (sent >= MAX_REPORTS || seen.has(key) || !message) return;
       seen.add(key);
