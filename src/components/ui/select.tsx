@@ -5,7 +5,6 @@ import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Select = SP.Root;
-export const SelectGroup = SP.Group;
 export const SelectValue = SP.Value;
 
 export const SelectTrigger = React.forwardRef<
@@ -70,7 +69,3 @@ export const SelectItem = React.forwardRef<
   </SP.Item>
 ));
 SelectItem.displayName = "SelectItem";
-
-export function SelectLabel({ className, ...props }: React.ComponentPropsWithoutRef<typeof SP.Label>) {
-  return <SP.Label className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)} {...props} />;
-}

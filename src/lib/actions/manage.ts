@@ -26,7 +26,7 @@ function withPrimaryDivision<T extends { divisions?: string[] }>(data: T) {
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
-/** Repo writes throw on a Supabase error (RLS denial, missing column, â€¦) â€”
+/** Repo writes throw on a Supabase error (RLS denial, missing column, ...) -
  *  surface it instead of reporting a save that never happened. */
 const errMsg = (e: unknown): Result => ({
   ok: false,
@@ -139,7 +139,7 @@ export async function updateEventAction(id: string, patch: Partial<OVEvent>): Pr
   revalidateEntities("events");
   return { ok: true };
 }
-/** Copy an Ormawa Visit's metadata into a new draft (data is not cloned â€”
+/** Copy an Ormawa Visit's metadata into a new draft (data is not cloned -
  *  use the template picker on create for that). */
 export async function duplicateEventAction(id: string): Promise<Result> {
   if (!can.manageEvents(await getCurrentUser())) return DENY;

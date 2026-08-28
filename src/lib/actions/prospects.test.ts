@@ -60,7 +60,7 @@ describe("createProspectAction", () => {
     expect(repo.createProspect).not.toHaveBeenCalled();
   });
 
-  it("writes the PARSED payload â€” trimmed, unknown keys stripped", async () => {
+  it("writes the PARSED payload - trimmed, unknown keys stripped", async () => {
     // Regression: this action used to `parse()` and then pass the RAW input,
     // so the validation did nothing.
     await createProspectAction({ org_name: "  HIMA X  ", evil: "<script>" } as never);
@@ -189,7 +189,7 @@ describe("primary prospect", () => {
 });
 
 describe("deleteProspectAction", () => {
-  it("needs full access â€” staff cannot delete", async () => {
+  it("needs full access - staff cannot delete", async () => {
     currentUser.mockResolvedValue(user({ role: "staff" }));
     expect((await deleteProspectAction("p1")).ok).toBe(false);
     expect(repo.deleteProspect).not.toHaveBeenCalled();

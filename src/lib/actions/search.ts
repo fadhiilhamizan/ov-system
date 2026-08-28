@@ -151,7 +151,7 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
   }
 
   if (allowed("rundown")) {
-    for (const r of await getRundown(event.id, "A")) {
+    for (const r of await getRundown(event.id)) {
       if (`${norm(r.activity)} ${norm(r.keterangan)} ${norm(r.mc)} ${norm(r.operator)}`.includes(q)) {
         push({
           id: `rundown-${r.id}`,

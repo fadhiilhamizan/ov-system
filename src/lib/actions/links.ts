@@ -16,7 +16,7 @@ async function guard(): Promise<Result> {
   return { ok: true };
 }
 
-/** Deleting needs FULL access â€” "limited" roles may add and edit only. */
+/** Deleting needs FULL access - "limited" roles may add and edit only. */
 async function deleteGuard(): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.deleteLink(user)) return { ok: false, error: "Kamu tidak punya akses menghapus tautan." };

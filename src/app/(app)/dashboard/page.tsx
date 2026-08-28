@@ -22,7 +22,7 @@ import {
   getDivisions,
   getMembers,
 } from "@/lib/data/repo";
-import { PIPELINE_STAGES, prospectStage, STATUS_META } from "@/lib/constants";
+import { PIPELINE_STAGES, STATUS_META } from "@/lib/constants";
 import { formatRupiah, formatDate, relativeDeadline, daysUntil } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -64,10 +64,10 @@ export default async function DashboardPage() {
     .sort((a, b) => (a.end_date! < b.end_date! ? -1 : 1))
     .slice(0, 6);
 
-  const stageCounts = PIPELINE_STAGES.map((s) => ({
-    ...s,
-    count: pstats.prospects.filter((p) => prospectStage(p) === s.key).length,
-  }));
+  // `prospectStats` already tallies this in one pass. This used to re-derive it
+  // with a filter per stage, so every prospect was classified five times over
+  // and the tally the repo had just computed was thrown away unused.
+  const stageCounts = PIPELINE_STAGES.map((s) => ({ ...s, count: pstats.stages[s.key] ?? 0 }));
   const accepted = stageCounts.find((s) => s.key === "diterima")?.count ?? 0;
 
   const donutData = (["done", "ongoing", "overtime", "todo"] as TaskStatus[])

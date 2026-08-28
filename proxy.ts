@@ -52,20 +52,24 @@ export async function proxy(request: NextRequest) {
 
   // Defense-in-depth route protection: block unauthenticated access to the
   // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts -
-  // the guest cookie is an allowed read-only bypass. Public paths (login,
-  // API routes with their own auth) are exempt. The per-page redirect in the
-  // layout stays as a second layer.
+  // the guest cookie is an allowed read-only bypass. The public paths are
+  // listed below, by name. The per-page redirect in the layout stays as a
+  // second layer.
   // /signup and /auth/* (the OAuth code exchange) must stay reachable without
   // a session - that's the whole point of signing up. The legal pages are
   // public too: you have to be able to read them BEFORE agreeing to them.
+  //
+  // There is deliberately NO blanket /api exemption. This app has no /api
+  // routes, so the entry only ever meant that the first one somebody adds
+  // would be born unauthenticated. A route that needs to be public says so
+  // here, by name.
   const path = request.nextUrl.pathname;
   const isPublic =
     path === "/login" ||
     path === "/signup" ||
     path === "/privacy" ||
     path === "/terms" ||
-    path.startsWith("/auth/") ||
-    path.startsWith("/api");
+    path.startsWith("/auth/");
   const isGuest = request.cookies.get("ov_guest")?.value === "1";
   if (!user && !isGuest && !isPublic) {
     const redirectUrl = new URL("/login", request.url);

@@ -25,10 +25,6 @@ export type GenerateResult =
 /** True when at least one provider has a key: the Violet button hangs off this. */
 export const violetConfigured = (): boolean => CHAIN.some((p) => p.configured());
 
-/** Which providers are usable right now. Shown to admins in Pengaturan. */
-export const configuredProviders = (): string[] =>
-  CHAIN.filter((p) => p.configured()).map((p) => p.label);
-
 /**
  * Ask the chain.
  *

@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 export const Popover = PP.Root;
 export const PopoverTrigger = PP.Trigger;
-export const PopoverAnchor = PP.Anchor;
 
 export const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PP.Content>,

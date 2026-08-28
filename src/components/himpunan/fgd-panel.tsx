@@ -13,7 +13,7 @@ import {
   createFgdPlanAction, createFgdRowAction, deleteFgdPlanAction, deleteFgdRowAction,
   updateFgdPlanAction, updateFgdRowAction,
 } from "@/lib/actions/himpunan";
-import { HMSI_DEPARTMENTS, HOME_ORG } from "@/lib/constants";
+import { HOME_ORG } from "@/lib/constants";
 import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
 import { cn } from "@/lib/utils";
@@ -331,6 +331,3 @@ function Cell({
     </td>
   );
 }
-
-/** Exported for the guide/tests: the seed the repo writes for a new table. */
-export const FGD_DEFAULT_ROWS = HMSI_DEPARTMENTS;

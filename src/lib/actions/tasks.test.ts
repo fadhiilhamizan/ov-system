@@ -52,7 +52,7 @@ beforeEach(() => {
   repo.getTask.mockResolvedValue(task());
 });
 
-describe("createTaskAction â€” permission gate", () => {
+describe("createTaskAction - permission gate", () => {
   it("refuses a guest before touching the repo", async () => {
     currentUser.mockResolvedValue(user({ role: "guest" }));
     const res = await createTaskAction(VALID);
@@ -60,7 +60,7 @@ describe("createTaskAction â€” permission gate", () => {
     expect(repo.createTask).not.toHaveBeenCalled();
   });
 
-  it("allows an intern â€” the matrix grants tasks:limited to staff & intern", async () => {
+  it("allows an intern - the matrix grants tasks:limited to staff & intern", async () => {
     currentUser.mockResolvedValue(user({ role: "intern" }));
     expect((await createTaskAction(VALID)).ok).toBe(true);
   });
@@ -112,7 +112,7 @@ describe("archive lock", () => {
   });
 });
 
-describe("createTaskAction â€” validation gate", () => {
+describe("createTaskAction - validation gate", () => {
   it("rejects an empty title without writing", async () => {
     const res = await createTaskAction({ ...VALID, title: "   " });
     expect(res.ok).toBe(false);
@@ -153,7 +153,7 @@ describe("createTaskAction â€” validation gate", () => {
   });
 });
 
-describe("updateTaskAction â€” progress-only lane", () => {
+describe("updateTaskAction - progress-only lane", () => {
   it("lets a staff member submit status + result on a task", async () => {
     currentUser.mockResolvedValue(user({ role: "staff" }));
     const res = await updateTaskAction("t1", { status: "done", result: "selesai" });
@@ -164,7 +164,7 @@ describe("updateTaskAction â€” progress-only lane", () => {
   // CURRENT BEHAVIOUR, pinned deliberately: `can.editTask` and
   // `can.editTaskProgress` both resolve to atLeast(user,"tasks","limited"), and
   // the matrix gives staff & intern "limited". So the `onlyProgress` branch in
-  // updateTaskAction has no effect today â€” a staff member may edit ANY field.
+  // updateTaskAction has no effect today - a staff member may edit ANY field.
   // If the intent is "staff/intern may only move progress", the matrix (or
   // editTask) has to change; this test will fail loudly when it does.
   it("currently lets a staff member rename a task (progress-only lane is a no-op)", async () => {
@@ -198,7 +198,7 @@ describe("updateTaskAction â€” progress-only lane", () => {
 });
 
 describe("deleteTaskAction", () => {
-  it("requires full access â€” a staff member cannot delete", async () => {
+  it("requires full access - a staff member cannot delete", async () => {
     currentUser.mockResolvedValue(user({ role: "staff" }));
     expect((await deleteTaskAction("t1")).ok).toBe(false);
     expect(repo.deleteTask).not.toHaveBeenCalled();

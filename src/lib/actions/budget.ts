@@ -11,7 +11,7 @@ import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, p
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses mengelola anggaran." };
-/** Repo writes throw on a Supabase error â€” surface it rather than
+/** Repo writes throw on a Supabase error - surface it rather than
  *  reporting a save that never happened. */
 const errMsg = (e: unknown): Result => ({
   ok: false,

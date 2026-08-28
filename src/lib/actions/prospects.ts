@@ -87,7 +87,7 @@ export async function updateProspectAction(
 }
 
 /** Mark a prospect as this OV's primary (confirmed partner) and copy its data
- *  onto the OV. Clears any previous primary â€” only one per OV. */
+ *  onto the OV. Clears any previous primary - only one per OV. */
 export async function setPrimaryProspectAction(id: string): Promise<Result> {
   const g = await guard();
   if (!g.ok) return g;

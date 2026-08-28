@@ -22,14 +22,6 @@ export function demoConfigured(): boolean {
   );
 }
 
-/** Is production Supabase configured? */
-export function prodConfigured(): boolean {
-  return (
-    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-}
-
 /** True when demo mode is both requested (cookie) AND actually configured. */
 export function demoActive(cookieValue: string | undefined | null): boolean {
   return cookieValue === "1" && demoConfigured();

@@ -15,7 +15,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { BackupPanel } from "@/components/settings/backup-panel";
 import { ChangelogList } from "@/components/settings/changelog-list";
 import { DemoReset } from "@/components/settings/demo-reset";
-import { ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL } from "@/lib/constants";
+import {
+  ROLE_META, ROLE_ORDER, MODULE_ACCESS_LEVEL, ACCESS_LEVEL_META, ACCESS_LEVEL_ORDER,
+} from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { NAV } from "@/components/layout/nav-config";
 import { getT } from "@/lib/i18n/server";
 
@@ -200,20 +203,19 @@ export default async function SettingsPage() {
           <CardTitle>{t("Hak Akses per Peran")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Legend: four access states */}
+          {/* Legend: four access states, rendered from the same table the
+              cells below read, so a label or a colour can only be changed in
+              one place (ACCESS_LEVEL_META in constants.ts). */}
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="size-4 text-emerald-500" /> {t("Akses penuh (kelola)")}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="size-4 text-amber-500" /> {t("Akses terbatas")}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="size-4 text-sky-500" /> {t("Hanya lihat")}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Minus className="size-4 text-muted-foreground/40" /> {t("Tidak ada akses")}
-            </span>
+            {ACCESS_LEVEL_ORDER.map((level) => {
+              const meta = ACCESS_LEVEL_META[level];
+              const Icon = level === "none" ? Minus : Check;
+              return (
+                <span key={level} className="inline-flex items-center gap-1.5">
+                  <Icon className={cn("size-4", meta.color)} /> {t(meta.label)}
+                </span>
+              );
+            })}
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             {t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.")}
@@ -236,17 +238,11 @@ export default async function SettingsPage() {
                     <td className="py-2 pr-3 font-medium">{t(m.label)}</td>
                     {ROLE_ORDER.map((r) => {
                       const level = MODULE_ACCESS_LEVEL[m.key]?.[r] ?? "none";
+                      const meta = ACCESS_LEVEL_META[level];
+                      const Icon = level === "none" ? Minus : Check;
                       return (
                         <td key={r} className="px-2 py-2 text-center">
-                          {level === "full" ? (
-                            <Check className="mx-auto size-4 text-emerald-500" aria-label={t("Akses penuh (kelola)")} />
-                          ) : level === "limited" ? (
-                            <Check className="mx-auto size-4 text-amber-500" aria-label={t("Akses terbatas")} />
-                          ) : level === "view" ? (
-                            <Check className="mx-auto size-4 text-sky-500" aria-label={t("Hanya lihat")} />
-                          ) : (
-                            <Minus className="mx-auto size-4 text-muted-foreground/40" aria-label={t("Tidak ada akses")} />
-                          )}
+                          <Icon className={cn("mx-auto size-4", meta.color)} aria-label={t(meta.label)} />
                         </td>
                       );
                     })}

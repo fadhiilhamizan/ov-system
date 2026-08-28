@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.38.4",
+    date: "2026-08-28",
+    title: "Bersih-bersih: kode dan paket yang tidak lagi dipakai dibuang",
+    changes: [
+      { kind: "fix", text: "Tidak ada yang berubah di layar. Ini pembersihan bagian dalam supaya sistem lebih ringan dan lebih mudah dirawat." },
+      { kind: "ui", text: "Tabel hak akses di Pengaturan kini membaca satu sumber yang sama untuk label dan warnanya, jadi keterangan dan isi tabelnya tidak bisa lagi berbeda." },
+      { kind: "fix", text: "Tiga paket pihak ketiga yang tidak pernah dipakai dihapus, dan sekarang ada pemeriksaan otomatis supaya paket menganggur tidak menumpuk lagi." },
+      { kind: "fix", text: "Dua puluh lima tanda hubung panjang yang rusak encoding-nya di komentar kode diperbaiki." },
+    ],
+  },
+  {
     version: "1.38.3",
     date: "2026-08-28",
     title: "Halaman divisi tidak lagi basi, dan tombol yang tidak bisa dibuka disembunyikan",

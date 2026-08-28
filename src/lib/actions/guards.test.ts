@@ -4,7 +4,7 @@ import type { AppUser } from "@/lib/types";
 // ------------------------------------------------------------------
 // One invariant, checked across every mutating action module: a read-only
 // account (guest) must never reach the data layer. This is the cheap, broad
-// half of action coverage â€” the per-module files assert the interesting
+// half of action coverage - the per-module files assert the interesting
 // validation and business rules.
 // ------------------------------------------------------------------
 const currentUser = vi.fn<() => Promise<AppUser>>();

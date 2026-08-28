@@ -17,20 +17,10 @@ import {
 } from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
 import { useAutosave } from "@/lib/use-autosave";
+import { useSynced } from "@/lib/use-synced";
 import { SaveIndicator } from "@/components/ui/save-indicator";
 import { DivisionColumnFilter } from "./division-column-filter";
 import type { Division, RundownItem } from "@/lib/types";
-
-/** Keep local input state in sync when the server value changes (no effect). */
-function useSynced(value: string): [string, React.Dispatch<React.SetStateAction<string>>] {
-  const [v, setV] = React.useState(value);
-  const [prev, setPrev] = React.useState(value);
-  if (prev !== value) {
-    setPrev(value);
-    setV(value);
-  }
-  return [v, setV];
-}
 
 /** Parse a clock string ("07.30", "07:30", "0730", "7") to minutes-of-day. */
 function parseTime(s: string): number | null {
@@ -250,8 +240,9 @@ export function RundownView({
     [allCols, focus],
   );
 
-  // Single rundown (versions were removed) - show every row, ordered by no.
-  const activeVariant = "A";
+  // Single rundown: migration 0035 merged the old A/B versions and deleted
+  // every B row, so there is nothing to choose between. The column still
+  // exists for older rows and `createRundown` defaults it.
   const list = React.useMemo(() => [...items].sort((a, b) => a.no - b.no), [items]);
 
   // Inline cell edits autosave on blur; the SaveIndicator shows "Tersimpan".
@@ -286,7 +277,7 @@ export function RundownView({
     start(async () => {
       // New activity starts where the last one ended (chain the schedule).
       const prevEnd = list.length ? list[list.length - 1].time_end : "";
-      const res = await createRundownAction({ event_id: eventId, variant: activeVariant, activity: "", time_start: prevEnd });
+      const res = await createRundownAction({ event_id: eventId, activity: "", time_start: prevEnd });
       if (!res.ok) toast.error(res.error);
     });
   }

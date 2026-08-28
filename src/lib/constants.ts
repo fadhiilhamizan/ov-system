@@ -1,4 +1,4 @@
-import type { DivisionKey, Role, TaskStatus } from "./types";
+import type { Role, TaskStatus } from "./types";
 
 export const STATUS_META: Record<
   TaskStatus,
@@ -94,14 +94,42 @@ export const ACCESS_RANK: Record<AccessLevel, number> = {
   full: 3,
 };
 
-export const ACCESS_LEVEL_META: Record<AccessLevel, { label: string; description: string }> = {
-  full: { label: "Akses penuh (kelola)", description: "Buat, ubah, isi hasil, dan hapus." },
+/** Highest to lowest. The order the Pengaturan legend reads in. */
+export const ACCESS_LEVEL_ORDER: AccessLevel[] = ["full", "limited", "view", "none"];
+
+/**
+ * How each level is named and coloured wherever it is shown.
+ *
+ * `color` lives here rather than in the page because the legend and the matrix
+ * cells have to agree: they were two hand-written copies of the same four
+ * labels and the same four Tailwind classes, once in the legend and once in
+ * every cell's aria-label. Four strings written eight times is four chances to
+ * drift, and this table was sitting right here, exported and unused.
+ */
+export const ACCESS_LEVEL_META: Record<
+  AccessLevel,
+  { label: string; description: string; color: string }
+> = {
+  full: {
+    label: "Akses penuh (kelola)",
+    description: "Buat, ubah, isi hasil, dan hapus.",
+    color: "text-emerald-500",
+  },
   limited: {
     label: "Akses terbatas",
     description: "Buat, ubah, dan isi hasil - tidak bisa menghapus.",
+    color: "text-amber-500",
   },
-  view: { label: "Hanya lihat", description: "Bisa membuka dan melihat isinya saja." },
-  none: { label: "Tidak ada akses", description: "Modul tidak bisa dibuka." },
+  view: {
+    label: "Hanya lihat",
+    description: "Bisa membuka dan melihat isinya saja.",
+    color: "text-sky-500",
+  },
+  none: {
+    label: "Tidak ada akses",
+    description: "Modul tidak bisa dibuka.",
+    color: "text-muted-foreground/40",
+  },
 };
 
 export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
@@ -136,20 +164,6 @@ export const MODULE_ACCESS: Record<string, Role[]> = Object.fromEntries(
     (Object.keys(byRole) as Role[]).filter((r) => byRole[r] !== "none"),
   ]),
 );
-
-export const DIVISION_ICON: Record<DivisionKey, string> = {
-  PIC: "crown",
-  COORDINATOR: "git-branch",
-  SECRETARY: "notebook-pen",
-  TREASURER: "wallet",
-  LO: "radio",
-  EVENT: "calendar-check",
-  CONSUMPTION: "utensils",
-  OPERATIONAL: "package",
-  CREATIVE: "palette",
-  MARKETING: "megaphone",
-  OUTSOURCE: "handshake",
-};
 
 /**
  * Departemen HMSI ITS, dipakai sebagai isi awal kolom kiri tabel plotting FGD.

@@ -55,7 +55,7 @@ function withOvertime(t: Task): Task {
 /**
  * Every WRITE must go through this.
  *
- * A Supabase error on a write means the row did NOT change â€” almost always an
+ * A Supabase error on a write means the row did NOT change - almost always an
  * RLS denial or a missing column. Swallowing it is exactly how "the button does
  * nothing" bugs are born: the optimistic UI keeps the new value, the toast says
  * saved, and the data is gone on the next load. Throw, and let the Server Action
@@ -83,7 +83,7 @@ function coalesce<T>(rows: T[], keys: string[]): T[] {
 
 // ---------------- Divisions ----------------
 // Divisions are per-Ormawa-Visit. In Supabase mode this is a STRICT match on
-// event_id (filtered in-query) so a row can never leak across OVs â€” after
+// event_id (filtered in-query) so a row can never leak across OVs - after
 // migration 0018 every division has an event_id. (The local/demo JSON store
 // keeps a lenient match so its global seed still renders without a migration.)
 export const getDivisions = cache(async (eventId?: string): Promise<Division[]> => {
@@ -133,7 +133,7 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
   if (!USE_SUPABASE) return local.getMembers(eventId);
   const { data } = await (await sb()).from("members").select("*");
-  // `divisions` is a text[] and comes back null on legacy rows â€” normalise it so
+  // `divisions` is a text[] and comes back null on legacy rows - normalise it so
   // callers never have to null-check the array (see lib/members.ts).
   const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]).map((m) => ({
     ...m,
@@ -586,7 +586,9 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
         }),
       ),
   }));
-  return eventId ? list.filter((b) => b.event_id === eventId) : list;
+  // No second filter: the plans query above is already `.eq("event_id", …)`
+  // when an edition is given, so this re-checked what it had just narrowed.
+  return list;
 });
 export async function updateBudgetItem(
   itemId: string,
@@ -607,7 +609,7 @@ export async function updateBudgetItem(
     .eq("id", itemId);
   if (error) throw new Error(error.message);
 }
-/** Recolour a whole category at once â€” the dot is a property of the category,
+/** Recolour a whole category at once - the dot is a property of the category,
  *  not of one row, so every item in that plan+category moves together. */
 export async function setCategoryColor(planId: string, category: string, color: string) {
   if (!USE_SUPABASE) return local.setCategoryColor(planId, category, color);
@@ -692,7 +694,7 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
     "variant", "time_start", "time_end", "duration", "activity", "keterangan", "mc", "operator",
     "host", "opr_link", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
   ]);
-  // division_jobs is jsonb â€” ensure it's always a plain object.
+  // division_jobs is jsonb - ensure it's always a plain object.
   return rows.map((r) => ({
     ...r,
     division_jobs: r.division_jobs && typeof r.division_jobs === "object" ? r.division_jobs : {},
@@ -801,7 +803,7 @@ export async function createRoleRequest(
 }
 
 /** Edit one's own still-pending request (fix a wrong role or a typo). The
- *  `status=pending` filter is belt-and-braces on top of RLS â€” a decided request
+ *  `status=pending` filter is belt-and-braces on top of RLS - a decided request
  *  must never be rewritten. */
 export async function updateRoleRequest(
   id: string,
@@ -820,7 +822,7 @@ export async function updateRoleRequest(
 }
 
 /** Approve (grant the role) or ignore a request. In Supabase this goes through
- *  the SECURITY DEFINER `decide_role_request` RPC â€” profiles.role is not
+ *  the SECURITY DEFINER `decide_role_request` RPC - profiles.role is not
  *  directly writable by design (see migration 0020/0023). */
 export async function decideRoleRequest(id: string, approve: boolean): Promise<void> {
   if (!USE_SUPABASE) {
@@ -938,7 +940,7 @@ export async function deleteEvent(id: string) {
   await must((await sb()).from("events").delete().eq("id", id));
 }
 
-/** Archive an Ormawa Visit (or take it back out of the archive). Admin-only â€”
+/** Archive an Ormawa Visit (or take it back out of the archive). Admin-only -
  *  enforced by the `events_write` policy and `writable_event()` in 0028. */
 export async function setEventLocked(id: string, locked: boolean) {
   if (!USE_SUPABASE) return local.setEventLocked(id, locked);
@@ -1080,7 +1082,7 @@ export async function cloneEventData(
     }
 
     if (mod === "rundown") {
-      const src = await getRundown(sourceId, "A");
+      const src = await getRundown(sourceId);
       const rows = src.map((r) => ({
         event_id: targetId, variant: r.variant, no: r.no, time_start: r.time_start, time_end: r.time_end,
         duration: r.duration, activity: r.activity, keterangan: r.keterangan, host: r.host, opr_link: r.opr_link,
@@ -1133,8 +1135,8 @@ export async function cloneEventData(
 export async function createMember(input: Partial<Member>) {
   if (!USE_SUPABASE) return local.createMember(input);
   const div = divisionFields(input.divisions, input.division);
-  // Writes THROW on a Supabase error (RLS denial, missing column, â€¦): swallowing
-  // it made a failed save look successful and wrote nothing â€” the actions turn
+  // Writes THROW on a Supabase error (RLS denial, missing column, ...): swallowing
+  // it made a failed save look successful and wrote nothing - the actions turn
   // this into a visible toast.
   const { error } = await (await sb()).from("members").insert({
     event_id: input.event_id ?? null,
