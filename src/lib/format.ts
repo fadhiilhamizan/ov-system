@@ -26,17 +26,44 @@ export function formatDate(iso: string | null | undefined, opts?: { long?: boole
   return `${d.getDate()} ${m} ${d.getFullYear()}`;
 }
 
-export function daysUntil(iso: string | null | undefined): number | null {
+/**
+ * Days from today to `iso`, counted in CALENDAR days.
+ *
+ * Both ends are reduced to a plain YYYY-MM-DD first and then compared with
+ * Date.UTC, so the answer is pure integer arithmetic on the date parts: no
+ * timezone, DST shift or hour-of-day can move it. "Today" is today in
+ * `APP_TIME_ZONE`, not on whatever clock the server happens to run - see
+ * `todayYmd`.
+ *
+ * A full timestamp is accepted as well as a date: it used to be concatenated
+ * with "T00:00:00" unconditionally, which turned one into an invalid date and
+ * silently returned null.
+ */
+export function daysUntil(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): number | null {
   if (!iso) return null;
-  const d = new Date(iso + "T00:00:00");
-  if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - now.getTime()) / 86400000);
+  const target = ymdToUtcMillis(iso.trim().slice(0, 10));
+  if (target === null) return null;
+  const today = ymdToUtcMillis(todayYmd(now));
+  if (today === null) return null;
+  return Math.round((target - today) / 86400000);
 }
 
-export function relativeDeadline(iso: string | null | undefined): string | null {
-  const d = daysUntil(iso);
+/** A YYYY-MM-DD string as a UTC timestamp, or null when it isn't one. */
+function ymdToUtcMillis(ymd: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return null;
+  const ms = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(ms) ? null : ms;
+}
+
+export function relativeDeadline(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): string | null {
+  const d = daysUntil(iso, now);
   if (d === null) return null;
   if (d === 0) return "Hari ini";
   if (d === 1) return "Besok";
@@ -49,9 +76,40 @@ export function isUrl(s: string | null | undefined) {
   return !!s && /^https?:\/\//i.test(s.trim());
 }
 
-/** Today's local date as YYYY-MM-DD (matches how task dates are stored). */
+/**
+ * The committee's timezone, and the only definition of "today" in this app.
+ *
+ * This used to read the host clock (`now.getFullYear()` and friends), which is
+ * whatever the server runs on: UTC in production, WIB on a developer's laptop.
+ * Those disagree for the first seven hours of every Indonesian day, and the
+ * disagreement was visible in two places at once - a task due today was still
+ * counted as yesterday's, so Overtime lit up about seven hours late, and the
+ * dashboard called a deadline "Besok" when it was in fact today. Deriving the
+ * date IN Asia/Jakarta makes the app agree with the people using it, wherever
+ * it is deployed.
+ */
+export const APP_TIME_ZONE = "Asia/Jakarta";
+
+// Built once: constructing an Intl formatter is comparatively expensive, and
+// `effectiveStatus` runs on every task on every read.
+const YMD_IN_APP_TZ = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Today's date in `APP_TIME_ZONE` as YYYY-MM-DD (matches how task dates are
+ * stored, so the two can be compared as plain strings).
+ *
+ * Assembled from `formatToParts` rather than a locale that happens to print
+ * ISO order, so no ICU version can change the shape underneath us.
+ */
 export function todayYmd(now: Date = new Date()): string {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const parts = YMD_IN_APP_TZ.formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 /** A task whose deadline has passed and isn't done is "overtime". Returns the

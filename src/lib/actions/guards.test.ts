@@ -27,7 +27,7 @@ const REPO_FNS = [
   "deleteBudgetPlan", "deleteDivision", "deleteEvent", "deleteFaq", "deleteJob",
   "deleteLink", "deleteMember", "deleteRundown", "deleteTeam", "getBudgetPlans", "getMembers",
   "getEvent", "getJobs", "getRundown", "reorderBudgetItems", "reorderFaqs", "reorderJobs",
-  "setEventLocked",
+  "setEventLocked", "setRundownDivisionJob",
   "updateBudgetItem", "updateDivision", "updateEvent", "updateFaq", "updateJob",
   "updateLink", "updateMember", "updateRundown", "updateTeam",
 ] as const;
@@ -84,6 +84,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
 
   ["rundown.create", () => schedule.createRundownAction({ event_id: "ov1" })],
   ["rundown.update", () => schedule.updateRundownAction("r1", { activity: "X" })],
+  ["rundown.setDivisionJob", () => schedule.setRundownDivisionJobAction("r1", "LO", "Jaga meja")],
   ["rundown.duplicate", () => schedule.duplicateRundownAction("r1")],
   ["rundown.delete", () => schedule.deleteRundownAction("r1")],
   ["jobs.create", () => schedule.createJobAction({ event_id: "ov1", job: "MC" })],

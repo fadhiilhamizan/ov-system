@@ -4,20 +4,27 @@ import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import {
-  createRundown, updateRundown, deleteRundown, getRundown,
+  createRundown, updateRundown, deleteRundown, getRundown, setRundownDivisionJob,
   createJob, updateJob, deleteJob, reorderJobs, getJobs,
 } from "@/lib/data/repo";
 import type { JobHariH, RundownItem } from "@/lib/types";
-import { rundownSchema, jobSchema, idSchema, parse } from "./schemas";
+import { rundownSchema, rundownDivisionJobSchema, jobSchema, idSchema, parse } from "./schemas";
 import { archivedGuard, errMsg } from "./lock";
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses untuk ini." };
 
 // Rundown and Hari-H are always edited in the context of the active Ormawa
-// Visit, so that is the edition whose archive flag gates these writes. The
-// authoritative check is `writable_event()` in migration 0028.
-const scopeOf = async (explicit?: string | null) => explicit ?? (await getActiveEvent()).id;
+// Visit, so that is the edition whose archive flag gates these writes, and the
+// edition new rows belong to. The authoritative check is `writable_event()` in
+// migration 0028.
+//
+// It used to accept the caller's own `event_id` and fall back to the session.
+// That fallback was the hole: a payload with no event_id made the guard check
+// nothing and the row land unscoped, visible under every edition. The session
+// is now the only source, so the edition that is GUARDED and the edition that
+// is WRITTEN are the same value by construction.
+const scopeOf = async () => (await getActiveEvent()).id;
 
 // ---------------- Rundown ----------------
 export async function createRundownAction(input: Partial<RundownItem>): Promise<Result> {
@@ -27,9 +34,12 @@ export async function createRundownAction(input: Partial<RundownItem>): Promise<
   // fill it in inline.
   const v = parse(rundownSchema, input);
   if (!v.ok) return v;
-  const blocked = await archivedGuard(user, await scopeOf(v.data.event_id));
+  const eventId = await scopeOf();
+  const blocked = await archivedGuard(user, eventId);
   if (blocked) return blocked;
-  try { await createRundown(v.data); } catch (e) { return errMsg(e); }
+  // Scope written explicitly: the schema no longer carries it, and a row
+  // inserted with event_id null shows up under every Ormawa Visit.
+  try { await createRundown({ ...v.data, event_id: eventId }); } catch (e) { return errMsg(e); }
   revalidateEntities("rundown");
   return { ok: true };
 }
@@ -40,12 +50,43 @@ export async function updateRundownAction(id: string, patch: Partial<RundownItem
   if (!idv.ok) return idv;
   const v = parse(rundownSchema, patch);
   if (!v.ok) return v;
-  const blocked = await archivedGuard(user, await scopeOf(v.data.event_id));
+  const blocked = await archivedGuard(user, await scopeOf());
   if (blocked) return blocked;
   try { await updateRundown(idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("rundown");
   return { ok: true };
 }
+/**
+ * Set ONE division's cell on a rundown row.
+ *
+ * Separate from `updateRundownAction` on purpose: that one takes a whole
+ * `division_jobs` object assembled in the browser, and two quick edits in the
+ * same row raced each other into silent data loss. Here the client names only
+ * the key it changed and the repo merges it onto the live row. Same permission
+ * and archive rules as any other rundown edit.
+ */
+export async function setRundownDivisionJobAction(
+  id: string,
+  division: string,
+  value: string,
+): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.manageRundown(user)) return DENY;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  const v = parse(rundownDivisionJobSchema, { division, value });
+  if (!v.ok) return v;
+  const row = (await getRundown()).find((r) => r.id === idv.data);
+  if (!row) return { ok: false, error: "Baris rundown tidak ditemukan." };
+  const blocked = await archivedGuard(user, row.event_id);
+  if (blocked) return blocked;
+  try {
+    await setRundownDivisionJob(idv.data, v.data.division, v.data.value);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("rundown");
+  return { ok: true };
+}
+
 export async function duplicateRundownAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageRundown(user)) return DENY;
@@ -87,9 +128,11 @@ export async function createJobAction(input: Partial<JobHariH>): Promise<Result>
   const v = parse(jobSchema, input);
   if (!v.ok) return v;
   if (!v.data.job?.trim()) return { ok: false, error: "Deskripsi tugas wajib diisi." };
-  const blocked = await archivedGuard(user, await scopeOf(v.data.event_id));
+  const eventId = await scopeOf();
+  const blocked = await archivedGuard(user, eventId);
   if (blocked) return blocked;
-  try { await createJob(v.data); } catch (e) { return errMsg(e); }
+  // Same as createRundownAction: the scope is written, not inherited from null.
+  try { await createJob({ ...v.data, event_id: eventId }); } catch (e) { return errMsg(e); }
   revalidateEntities("jobs");
   return { ok: true };
 }
@@ -100,7 +143,7 @@ export async function updateJobAction(id: string, patch: Partial<JobHariH>): Pro
   if (!idv.ok) return idv;
   const v = parse(jobSchema, patch);
   if (!v.ok) return v;
-  const blocked = await archivedGuard(user, await scopeOf(v.data.event_id));
+  const blocked = await archivedGuard(user, await scopeOf());
   if (blocked) return blocked;
   try { await updateJob(idv.data, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("jobs");

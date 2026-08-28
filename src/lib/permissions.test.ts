@@ -3,7 +3,7 @@ import {
   accessLevel, atLeast, can, canRequestRole, canToggleLock, canWriteEvent,
   isAssignedTo, requestableRolesFor,
 } from "./permissions";
-import { ROLE_ORDER } from "./constants";
+import { MODULE_ACCESS_LEVEL, ROLE_ORDER } from "./constants";
 import type { AppUser, Task } from "./types";
 
 function user(role: AppUser["role"]): AppUser {
@@ -258,6 +258,27 @@ describe("accessModule / isReadOnly", () => {
   it("links module excludes guest", () => {
     expect(can.accessModule(user("intern"), "links")).toBe(true);
     expect(can.accessModule(user("guest"), "links")).toBe(false);
+  });
+
+  it("refuses a module key that is not in the matrix, for every role", () => {
+    // Fail CLOSED. This used to return true, so a module added to the nav but
+    // forgotten in MODULE_ACCESS_LEVEL opened for everyone including Tamu.
+    for (const r of ROLE_ORDER) {
+      expect(can.accessModule(user(r), "modul-yang-belum-didaftarkan")).toBe(false);
+      expect(can.accessModule(user(r), "")).toBe(false);
+    }
+  });
+
+  it("agrees with accessLevel on whether a module is open at all", () => {
+    // The two used to disagree on an unknown key: accessLevel said "none"
+    // while accessModule said yes, so the route opened and every can.* inside
+    // it refused. Pin them together across the whole matrix plus a stray key.
+    const keys = [...Object.keys(MODULE_ACCESS_LEVEL), "tidak-ada-modul-ini"];
+    for (const key of keys) {
+      for (const r of ROLE_ORDER) {
+        expect(can.accessModule(user(r), key)).toBe(accessLevel(user(r), key) !== "none");
+      }
+    }
   });
   it("settings is readable by EVERY role, including guest", () => {
     for (const r of ROLE_ORDER) {

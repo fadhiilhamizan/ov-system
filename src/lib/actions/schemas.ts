@@ -11,6 +11,37 @@ import { CLONE_MODULES, type CloneModule } from "@/lib/types";
 //
 // Helpers below turn a schema + input into the `{ ok:false, error }` shape
 // the actions already return, so callers stay a one-liner.
+//
+// AN OPTIONAL `event_id` FROM A CLIENT IS AN ARCHIVE-LOCK BYPASS.
+//
+// Not because a client may name a DIFFERENT edition - roles are global here, so
+// anyone who can write can already write to any unlocked edition by switching
+// the topbar. The hole is OMITTING it. Six schemas took `event_id` as optional,
+// and the chain was:
+//
+//   1. payload leaves `event_id` out
+//   2. `archivedGuard(user, undefined)` returns null on `!eventId` - it reads
+//      "this write has no edition scope, nothing to check" and PASSES
+//   3. the row is inserted with event_id NULL
+//   4. every reader is lenient about null (`!r.event_id || r.event_id === id`,
+//      for legacy unscoped rows), so it now shows up under EVERY Ormawa Visit,
+//      including archived ones the guard exists to protect
+//
+// So the row lands everywhere and the lock never got a say. Members, prospects,
+// Super Link entries, rundown rows and Hari-H jobs were all reachable this way.
+// The fix is not to make the field required: the edition is not the browser's
+// to state at all, so the action reads it from the session (`getActiveEvent()`)
+// - which is also the edition the guard checks, so the two can no longer
+// disagree. `budgetPlanSchema` had this right from the start.
+//
+// A REQUIRED `event_id` (createTaskSchema, the Himpunan schemas) is not this
+// bug: it cannot be omitted, so the guard always inspects the value that is
+// actually written. Leaving those alone is deliberate.
+//
+// On UPDATE the field is simply absent, which is also correct: you do not move
+// a member or a link between editions by editing it. `updateTaskSchema` is the
+// one deliberate exception (a task CAN be moved), and `updateTaskAction` guards
+// both the source and the destination edition because of it.
 // ============================================================
 
 /** Trimmed, non-empty string with a max length. */
@@ -314,7 +345,6 @@ export const memberSchema = z.object({
     .min(1, "Pilih minimal satu divisi.")
     .max(20, "Terlalu banyak divisi."),
   division: z.string().trim().max(128).optional().nullable(),
-  event_id: z.string().trim().max(128).optional().nullable(),
   nickname: z.string().trim().max(120).refine((v) => !v.includes(","), NO_COMMA).optional(),
   nrp: z.string().trim().max(40).optional(),
   type: z.enum(["fungsionaris", "intern"]).optional(),
@@ -344,7 +374,6 @@ export const divisionSchema = z.object({
 // action can pass the *validated* data (trimmed, unknown keys stripped) to the
 // repo instead of the raw client payload (mass-assignment protection).
 const prospectBase = z.object({
-  event_id: z.string().trim().max(128).optional().nullable(),
   no: z.string().trim().max(32).optional(),
   date_text: z.string().trim().max(60).optional(),
   month: z.string().trim().max(40).optional(),
@@ -407,13 +436,16 @@ export const prospectUpdateSchema = prospectBase.partial();
 
 // ---------------- Links ----------------
 export const createLinkSchema = z.object({
-  event_id: z.string().trim().max(128).optional().nullable(),
   section: z.string().trim().max(200).optional(),
   division: z.string().trim().max(128).optional(),
   name: nonEmpty("Nama tautan", 200),
   url: urlSchema,
   note: optionalText(1000),
-  source: z.string().trim().max(120).optional(),
+  // No `source`, for the same reason as no `event_id`. It records WHO OWNS the
+  // entry: "task" and "prospect" mean a child row updates and deletes it, and
+  // `cloneEventData` skips those on purpose. A client that could set it could
+  // hand its own manual entry to a task that never claimed it, or hide an entry
+  // from the copy. `createLinkAction` writes "manual" itself.
 });
 /** Update: any subset; `url` (when present) still validated as an http(s) URL. */
 export const linkUpdateSchema = createLinkSchema.partial();
@@ -422,7 +454,6 @@ export const linkUpdateSchema = createLinkSchema.partial();
 // Empty rows are allowed (the table lets you add a blank row and fill inline),
 // so every field is optional. division_jobs is a division-key → text map.
 export const rundownSchema = z.object({
-  event_id: z.string().trim().max(128).optional(),
   variant: z.string().trim().max(40).optional(),
   no: z.number().int().min(0).optional(),
   time_start: z.string().trim().max(20).optional(),
@@ -438,9 +469,24 @@ export const rundownSchema = z.object({
   merges: z.record(z.string().max(128), z.number().int().min(1).max(200)).optional(),
 });
 
+/**
+ * ONE division's cell on a rundown row.
+ *
+ * Its own schema because `division_jobs` is a jsonb blob and the table writes
+ * it a cell at a time. Sending the whole object from the browser meant the
+ * payload was built from whatever props React had a moment ago, so editing two
+ * divisions in the same row in quick succession silently reverted the first.
+ * The caller names the key it is changing and nothing else; the repo merges it
+ * onto the value that is actually in the database. Caps mirror `rundownSchema`.
+ */
+export const rundownDivisionJobSchema = z.object({
+  division: nonEmpty("Divisi", 128),
+  value: z.string().trim().max(1000, "Teks terlalu panjang (maks. 1000 karakter).")
+    .optional().transform((v) => v ?? ""),
+});
+
 // ---------------- Jobs (Hari-H) ----------------
 export const jobSchema = z.object({
-  event_id: z.string().trim().max(128).optional(),
   no: z.string().trim().max(32).optional(),
   pic: z.string().trim().max(300).optional(),
   job: z.string().trim().max(500).optional(),
@@ -449,7 +495,6 @@ export const jobSchema = z.object({
 
 // ---------------- Teams (division structure) ----------------
 export const teamSchema = z.object({
-  event_id: z.string().trim().max(128).optional().nullable(),
   division: z.string().trim().max(128).optional(),
   coordinator: z.string().trim().max(200).optional(),
   fungsionaris: z.string().trim().max(2000).optional(),

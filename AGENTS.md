@@ -47,7 +47,11 @@ This has bitten the project twice. First in the app (`can.*` filtered by `profil
 
 **Backups are manual only.** Scheduled/cron backups were removed in v1.20.0 along with the route, `vercel.json`, and the service-role client - so **no code path in this app bypasses RLS**, and no `SUPABASE_SERVICE_ROLE_KEY` is needed. Keep it that way: an unattended job would need one, and a service-role client behind anything user-reachable erases every guarantee the policies make. `createBackup` refuses to store an empty snapshot, since "zero rows" is what an RLS-filtered read looks like. `kind: "auto"` survives in the type and the DB CHECK only so pre-1.20 rows still render.
 
-**Testing.** Vitest. `npm test` runs `*.test.ts` under `src/`. Cover pure logic (permissions, schemas, formatters, scheduling/budget math). Run `npm test` + `npx tsc --noEmit` before finishing a change.
+**Testing.** Vitest, split into TWO projects by file extension (`vitest.config.ts`). `*.test.ts` runs as project **logic** on the `node` environment: pure logic (permissions, schemas, formatters, scheduling/budget math), which is the bulk of the suite and stays fast. `*.test.tsx` runs as project **components** on `jsdom`, with `src/test/setup-dom.ts` (RTL cleanup plus the ResizeObserver / matchMedia / pointer-capture polyfills Radix needs). Run one project with `npx vitest run --project components`.
+
+The split exists because `include` used to be `*.test.ts` only, so a `.test.tsx` file was **silently not run** - no error, no skip notice. That is how ~130 components ended up with zero coverage while the suite reported 456 green tests, and how two rundown bugs shipped: a nested component definition that remounted every input on each save, and a whole-object `division_jobs` write that reverted the cell edited just before it. `rundown-view.test.tsx` pins both, and both of its regression cases fail against the pre-v1.38.1 code - keep it that way. A component test that cannot fail is worse than none.
+
+Run `npm test` + `npx tsc --noEmit` before finishing a change.
 
 **Seed.** `npm run db:seed` regenerates `supabase/seed.sql` from `src/lib/seed/seed.json`; `npm run db:demo` regenerates the demo project's seed + open-access scripts.
 

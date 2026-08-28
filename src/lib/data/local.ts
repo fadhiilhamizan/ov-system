@@ -867,6 +867,16 @@ export function updateRundown(id: string, patch: Partial<RundownItem>) {
     return r;
   });
 }
+/** Mirror of repo.setRundownDivisionJob: merge one key, keep the rest. */
+export function setRundownDivisionJob(id: string, division: string, value: string) {
+  mutate((db) => {
+    const r = db.rundown.find((x) => x.id === id);
+    if (!r) return null;
+    r.division_jobs = { ...(r.division_jobs ?? {}), [division]: value };
+    return r;
+  });
+}
+
 export function deleteRundown(id: string) {
   mutate((db) => {
     db.rundown = db.rundown.filter((r) => r.id !== id);

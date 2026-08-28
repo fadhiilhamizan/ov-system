@@ -22,20 +22,35 @@ import { revalidatePath } from "next/cache";
 // entity, add its route here.
 // ============================================================
 
+/**
+ * The one dynamic route in the app.
+ *
+ * `revalidatePath("/divisions")` busts the LIST page and nothing else: Next
+ * matches paths literally, so a division's detail page was never invalidated by
+ * any write. Editing a task from Work Breakdown left the same task stale on
+ * Papan Divisi until a hard reload. A dynamic route has to be named by its
+ * literal ROUTE PATTERN, brackets and all, plus the "page" type - passing the
+ * filled-in path ("/divisions/EVENT") matches nothing either.
+ *
+ * It reads the same entities as the list page plus the task dialog's data, so
+ * it appears everywhere "/divisions" does.
+ */
+const DIVISION_DETAIL = "/divisions/[key]";
+
 /** Routes that read each entity. */
 const CONSUMERS = {
-  tasks: ["/tasks", "/calendar", "/divisions", "/dashboard", "/events"],
-  taskLinks: ["/tasks", "/calendar", "/divisions", "/links"],
-  divisions: ["/tasks", "/calendar", "/rundown", "/members", "/divisions", "/links", "/dashboard"],
-  members: ["/members", "/divisions", "/tasks", "/calendar", "/jobs", "/prospects", "/dashboard"],
-  teams: ["/members", "/divisions", "/tasks", "/calendar", "/links"],
+  tasks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/dashboard", "/events"],
+  taskLinks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/links"],
+  divisions: ["/tasks", "/calendar", "/rundown", "/members", "/divisions", DIVISION_DETAIL, "/links", "/dashboard"],
+  members: ["/members", "/divisions", DIVISION_DETAIL, "/tasks", "/calendar", "/jobs", "/prospects", "/dashboard"],
+  teams: ["/members", "/divisions", DIVISION_DETAIL, "/tasks", "/calendar", "/links"],
   // /himpunan is here because its Compare tab is GATED on how many prospects
   // have DITERIMA: editing a response in Reach & Offer is what opens or closes
   // that feature, and without this the gate stays stale until a hard reload.
   prospects: ["/prospects", "/dashboard", "/events", "/himpunan"],
   // Not just /links: the task dialog's reference picker reads the whole Super
   // Link directory, and that dialog is mounted by all three task pages.
-  links: ["/links", "/tasks", "/calendar", "/divisions"],
+  links: ["/links", "/tasks", "/calendar", "/divisions", DIVISION_DETAIL],
   budget: ["/budget", "/dashboard", "/events"],
   rundown: ["/rundown"],
   jobs: ["/jobs"],
@@ -62,5 +77,10 @@ export function revalidateEntities(...entities: Entity[]) {
     revalidatePath("/", "layout");
     return;
   }
-  for (const p of paths) revalidatePath(p);
+  for (const p of paths) {
+    // A route pattern (brackets) needs the "page" type; a literal path does
+    // not take one. See DIVISION_DETAIL above.
+    if (p.includes("[")) revalidatePath(p, "page");
+    else revalidatePath(p);
+  }
 }

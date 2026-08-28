@@ -5,6 +5,11 @@ const currentUser = vi.fn<() => Promise<AppUser>>();
 vi.mock("@/lib/auth", () => ({ getCurrentUser: () => currentUser() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("./revalidate", () => ({ revalidateEntities: vi.fn() }));
+// The action reads the edition from the session now, not from the payload.
+vi.mock("@/lib/session", () => ({
+  getActiveEvent: async () => ({ id: "ov1", title: "OV", locked: false }),
+  getActiveDivision: async () => "all",
+}));
 
 const repo = {
   createProspect: vi.fn(async () => "p-new"),
@@ -62,6 +67,21 @@ describe("createProspectAction", () => {
     const arg = (repo.createProspect.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(arg.org_name).toBe("HIMA X");
     expect(arg.evil).toBeUndefined();
+  });
+
+  it("scopes the prospect to the SESSION edition, ignoring the payload's", async () => {
+    // An optional client `event_id` was an archive-lock bypass: omitting it made
+    // archivedGuard pass unconditionally (no scope, nothing to check) and wrote
+    // a null event_id, which every reader treats as "belongs to all editions".
+    await createProspectAction({ org_name: "HIMA Z", event_id: "ov-lain" } as never);
+    const arg = (repo.createProspect.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(arg.event_id).toBe("ov1");
+  });
+
+  it("still scopes it when the payload names no edition at all", async () => {
+    await createProspectAction({ org_name: "HIMA Z" });
+    const arg = (repo.createProspect.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(arg.event_id).toBe("ov1");
   });
 });
 

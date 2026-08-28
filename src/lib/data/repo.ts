@@ -1277,6 +1277,34 @@ export async function updateRundown(id: string, patch: Partial<RundownItem>) {
   void _d;
   await must((await sb()).from("rundown").update(rest).eq("id", id));
 }
+/**
+ * Write ONE division's cell on a rundown row, leaving the other divisions alone.
+ *
+ * `division_jobs` is a single jsonb column, so any write replaces the whole
+ * object. The table used to build that object in the BROWSER from the row it
+ * had last rendered, which meant filling in two division cells in a row faster
+ * than the revalidation round trip silently reverted the first one: the second
+ * payload was assembled from props that predated it, the toast still said
+ * saved, and the value was gone on reload.
+ *
+ * Reading the current value HERE, one statement before the update, closes that
+ * window: it composes with anything already committed, however stale the
+ * caller's copy is. Two writes landing inside the same round trip can still
+ * interleave (PostgREST cannot express a partial jsonb update, so a true fix
+ * needs an RPC doing `division_jobs || jsonb_build_object(...)`), but that
+ * window is one query wide rather than one React refresh wide.
+ */
+export async function setRundownDivisionJob(id: string, division: string, value: string) {
+  if (!USE_SUPABASE) return local.setRundownDivisionJob(id, division, value);
+  const client = await sb();
+  const { data } = await client.from("rundown").select("division_jobs").eq("id", id).maybeSingle();
+  const current =
+    data?.division_jobs && typeof data.division_jobs === "object" ? data.division_jobs : {};
+  await must(
+    client.from("rundown").update({ division_jobs: { ...current, [division]: value } }).eq("id", id),
+  );
+}
+
 export async function deleteRundown(id: string) {
   if (!USE_SUPABASE) return local.deleteRundown(id);
   await must((await sb()).from("rundown").delete().eq("id", id));

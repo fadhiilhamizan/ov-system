@@ -6,7 +6,7 @@ import {
   createTask, deleteTask, getTask, updateTask, bulkUpdateTasks, bulkDeleteTasks,
   syncTaskLinks, purgeTaskLinks, syncTaskRefs,
 } from "@/lib/data/repo";
-import type { DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
+import type { AppUser, DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
 import {
   createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema, taskRefsSchema,
   bulkTaskFieldsSchema, idSchema, parse,
@@ -90,6 +90,15 @@ export async function updateTaskAction(
   if (!allowed) return { ok: false, error: "Kamu tidak punya akses mengedit tugas ini." };
   const blocked = await archivedGuard(user, task.event_id);
   if (blocked) return blocked;
+  // Moving a task BETWEEN editions is two writes as far as the archive lock is
+  // concerned: it leaves one edition and lands in another. `updateTaskSchema`
+  // accepts `event_id`, and guarding only the edition it came FROM let a task
+  // be dropped INTO an archived one. (The `events_update` policy's WITH CHECK
+  // catches it in the database; this is the readable half.)
+  if (v.data.event_id && v.data.event_id !== task.event_id) {
+    const blockedDest = await archivedGuard(user, v.data.event_id);
+    if (blockedDest) return blockedDest;
+  }
 
   try {
     await updateTask(idv.data, v.data);
@@ -110,16 +119,34 @@ export async function setTaskStatusAction(id: string, status: TaskStatus): Promi
 
 type BulkResult = { ok: true; count: number; skipped: number } | { ok: false; error: string };
 
+/**
+ * Refuse a whole batch when any selected task belongs to an archived edition.
+ *
+ * One lookup per DISTINCT edition rather than per task: a selection is normally
+ * all inside the Ormawa Visit on screen, so this is a single call in practice.
+ *
+ * All-or-nothing on purpose. Silently writing the writable half of a selection
+ * and dropping the rest is the shape of bug this project keeps paying for: the
+ * count in the toast would look right and some rows would simply not change.
+ */
+async function archivedGuardForTasks(user: AppUser, tasks: Task[]) {
+  for (const eventId of new Set(tasks.map((t) => t.event_id))) {
+    const blocked = await archivedGuard(user, eventId);
+    if (blocked) return blocked;
+  }
+  return null;
+}
+
 export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Promise<BulkResult> {
   const sv = parse(taskStatusSchema, status);
   if (!sv.ok) return sv;
   const user = await getCurrentUser();
   // Fetch the rows so unknown ids are dropped, then apply the change in ONE
   // batched write instead of N round-trips.
-  const tasks = await Promise.all(ids.map((id) => getTask(id)));
-  const allowed = can.editTaskProgress(user)
-    ? tasks.filter((t): t is Task => !!t).map((t) => t.id)
-    : [];
+  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  const blocked = await archivedGuardForTasks(user, tasks);
+  if (blocked) return blocked;
+  const allowed = can.editTaskProgress(user) ? tasks.map((t) => t.id) : [];
   try {
     if (allowed.length) await bulkUpdateTasks(allowed, { status: sv.data });
   } catch (e) {
@@ -150,12 +177,8 @@ export async function bulkUpdateTaskFieldsAction(
   if (!can.editTask(user)) return { ok: false, error: "Kamu tidak punya akses mengedit tugas." };
 
   const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
-  // One guard per distinct edition rather than per task - the selection is
-  // normally all in the active Ormawa Visit, so this is a single lookup.
-  for (const eventId of new Set(tasks.map((t) => t.event_id))) {
-    const blocked = await archivedGuard(user, eventId);
-    if (blocked) return blocked;
-  }
+  const blocked = await archivedGuardForTasks(user, tasks);
+  if (blocked) return blocked;
 
   const allowed = tasks.map((t) => t.id);
   try {
@@ -169,10 +192,10 @@ export async function bulkUpdateTaskFieldsAction(
 
 export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> {
   const user = await getCurrentUser();
-  const tasks = await Promise.all(ids.map((id) => getTask(id)));
-  const allowed = can.deleteTask(user)
-    ? tasks.filter((t): t is Task => !!t).map((t) => t.id)
-    : [];
+  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  const blocked = await archivedGuardForTasks(user, tasks);
+  if (blocked) return blocked;
+  const allowed = can.deleteTask(user) ? tasks.map((t) => t.id) : [];
   try {
     for (const id of allowed) await purgeTaskLinks(id);
     if (allowed.length) await bulkDeleteTasks(allowed);

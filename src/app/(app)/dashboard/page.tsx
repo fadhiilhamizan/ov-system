@@ -12,6 +12,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
 import {
   taskStats,
@@ -93,9 +94,13 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* Quick access - first thing on the page, scrollable on narrow screens */}
+      {/* Quick access - first thing on the page, scrollable on narrow screens.
+          Only the modules this role can actually open: a tile that redirects
+          straight back here is worse than a missing one. */}
       <div className="mb-5">
-        <QuickAccessCarousel links={QUICK_LINKS} />
+        <QuickAccessCarousel
+          links={QUICK_LINKS.filter((l) => can.accessModule(user, l.moduleKey))}
+        />
       </div>
 
       {/* KPI row */}
@@ -317,11 +322,27 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-const QUICK_LINKS: { href: string; label: string; sub: string; color: string; icon: React.ReactNode }[] = [
-  { href: "/tasks", label: "Work Breakdown", sub: "Kelola tugas", color: "#6366f1", icon: <ListChecks /> },
-  { href: "/divisions", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
-  { href: "/prospects", label: "Reach & Offer", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
-  { href: "/budget", label: "Anggaran", sub: "RAB", color: "#0ea5e9", icon: <Wallet /> },
-  { href: "/rundown", label: "Rundown", sub: "Susunan acara", color: "#d946ef", icon: <CalendarClock /> },
-  { href: "/calendar", label: "Kalender", sub: "Timeline", color: "#f43f5e", icon: <CalendarDays /> },
+/**
+ * The quick-access strip.
+ *
+ * `moduleKey` is what makes each tile answerable to the access matrix. Without
+ * it the strip was a fixed list, so a Tamu saw "Anggaran" (budget is `none` for
+ * guest), clicked it, and `requireModule` bounced them back to this same page
+ * with no explanation - a control that looks live and does nothing. Every entry
+ * carries the key of the module it opens; the page filters before rendering.
+ */
+const QUICK_LINKS: {
+  moduleKey: string;
+  href: string;
+  label: string;
+  sub: string;
+  color: string;
+  icon: React.ReactNode;
+}[] = [
+  { moduleKey: "tasks", href: "/tasks", label: "Work Breakdown", sub: "Kelola tugas", color: "#6366f1", icon: <ListChecks /> },
+  { moduleKey: "divisions", href: "/divisions", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
+  { moduleKey: "prospects", href: "/prospects", label: "Reach & Offer", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
+  { moduleKey: "budget", href: "/budget", label: "Anggaran", sub: "RAB", color: "#0ea5e9", icon: <Wallet /> },
+  { moduleKey: "rundown", href: "/rundown", label: "Rundown", sub: "Susunan acara", color: "#d946ef", icon: <CalendarClock /> },
+  { moduleKey: "calendar", href: "/calendar", label: "Kalender", sub: "Timeline", color: "#f43f5e", icon: <CalendarDays /> },
 ];

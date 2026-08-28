@@ -1,6 +1,7 @@
 "use server";
 import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { createLink, deleteLink, updateLink, bulkDeleteLinks } from "@/lib/data/repo";
 import type { LinkItem } from "@/lib/types";
@@ -27,9 +28,18 @@ export async function createLinkAction(input: Partial<LinkItem>): Promise<Result
   if (!can.createLink(user)) return { ok: false, error: "Kamu tidak punya akses menambah tautan." };
   const v = parse(createLinkSchema, input);
   if (!v.ok) return v;
-  const blocked = await archivedGuard(user, v.data.event_id);
+  // The edition comes from the session, never the payload: an omitted event_id
+  // used to make the guard below pass unconditionally and file the entry under
+  // every Ormawa Visit at once. See the note at the top of schemas.ts.
+  const event = await getActiveEvent();
+  const blocked = await archivedGuard(user, event.id);
   if (blocked) return blocked;
-  try { await createLink(v.data); } catch (e) { return errMsg(e); }
+  // `source` is the repo's, not the caller's: "task" and "prospect" mean the
+  // entry is OWNED by a child row that will update and delete it. A manual
+  // entry created here is exactly that, and saying so keeps the clone rules
+  // (which skip published entries) honest.
+  try { await createLink({ ...v.data, event_id: event.id, source: "manual" }); }
+  catch (e) { return errMsg(e); }
   revalidateEntities("links");
   return { ok: true };
 }

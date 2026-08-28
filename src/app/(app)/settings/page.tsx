@@ -34,7 +34,15 @@ function GithubMark({ className }: { className?: string }) {
 }
 
 export default async function SettingsPage() {
-  // Guard first: only admin can open Pengaturan.
+  // Guard first. NOT admin-only: the matrix gives `settings` level "view" to
+  // every role, Tamu included, because the access matrix, the changelog, the
+  // spreadsheet archive and the version are all things anyone may read. What
+  // this guard buys is only that the route is checked server-side at all.
+  //
+  // So nothing on this page may assume the reader is an admin. Every
+  // destructive card below carries its OWN `can.manageBackups` check (Backup &
+  // Rollback, Reset Data Demo) - that is what actually keeps them shut, and
+  // this comment used to claim the opposite.
   const user = await requireModule("settings");
   const t = await getT();
   const store = await cookies();

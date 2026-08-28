@@ -5,11 +5,15 @@ import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Un
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction } from "@/lib/actions/schedule";
+import {
+  createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction,
+  setRundownDivisionJobAction,
+} from "@/lib/actions/schedule";
 import { cn } from "@/lib/utils";
 import { isUrl } from "@/lib/format";
 import {
-  MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDown, mergedDown, splitCell,
+  MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDownIn, mergedDown, splitCell,
+  type CellRole,
 } from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
 import { useAutosave } from "@/lib/use-autosave";
@@ -141,6 +145,76 @@ function NoteCell({ value, onSave, readOnly }: { value: string; onSave: (v: stri
   );
 }
 
+/**
+ * Renders one mergeable cell, or nothing when another row's run covers it.
+ * Returns `null` so the caller omits the <td> entirely - that is what makes
+ * the rowSpan above actually occupy the space.
+ *
+ * MUST stay at module scope. It used to be declared inside RundownView, which
+ * made it a BRAND NEW component type on every render: React cannot know the two
+ * are the same thing, so it unmounted and remounted every merged cell instead of
+ * updating it. Each of those cells holds an <EditCell> with its own input state,
+ * so the remount threw away the caret position and any half-typed text - and it
+ * fired constantly, because the SaveIndicator alone re-renders this component
+ * three times per save (idle -> saving -> saved -> idle).
+ */
+function MergeableCell({
+  role,
+  canGrow,
+  canManage,
+  onSplit,
+  onMerge,
+  tdClass,
+  t,
+  children,
+  className,
+}: {
+  role: CellRole;
+  canGrow: boolean;
+  canManage: boolean;
+  onSplit: () => void;
+  onMerge: () => void;
+  tdClass: string;
+  t: (s: string) => string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  if (role.kind === "covered") return null;
+  const span = role.kind === "origin" ? role.span : 1;
+  return (
+    <td
+      className={cn(tdClass, "group/cell relative", span > 1 && "bg-muted/25", className)}
+      rowSpan={span > 1 ? span : undefined}
+    >
+      {children}
+      {canManage && (span > 1 || canGrow) && (
+        <div className="absolute bottom-0.5 right-0.5 flex gap-0.5 opacity-0 transition group-hover/cell:opacity-100 focus-within:opacity-100">
+          {span > 1 && (
+            <button
+              type="button"
+              onClick={onSplit}
+              title={t("Pisahkan sel")}
+              className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+            >
+              <Unlink className="size-3" />
+            </button>
+          )}
+          {canGrow && (
+            <button
+              type="button"
+              onClick={onMerge}
+              title={t("Gabung dengan baris di bawah")}
+              className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+            >
+              <ChevronsDownUp className="size-3" />
+            </button>
+          )}
+        </div>
+      )}
+    </td>
+  );
+}
+
 export function RundownView({
   items,
   divisions,
@@ -185,6 +259,16 @@ export function RundownView({
   function save(id: string, patch: Partial<RundownItem>) {
     autosave.run(async () => {
       const res = await updateRundownAction(id, patch);
+      if (!res.ok) toast.error(res.error);
+      return res;
+    });
+  }
+  /** Save ONE division's cell. Goes through its own action so the merge onto
+   *  `division_jobs` happens server-side against the live row (see A2 note on
+   *  the cell below). */
+  function saveDivisionJob(id: string, divisionKey: string, value: string) {
+    autosave.run(async () => {
+      const res = await setRundownDivisionJobAction(id, divisionKey, value);
       if (!res.ok) toast.error(res.error);
       return res;
     });
@@ -239,59 +323,17 @@ export function RundownView({
     save(item.id, { merges: mode === "merge" ? mergedDown(item, col) : splitCell(item, col) });
   }
 
-  /**
-   * Renders one mergeable cell, or nothing when another row's run covers it.
-   * Returns `null` so the caller omits the <td> entirely - that is what makes
-   * the rowSpan above actually occupy the space.
-   */
-  function MergeableCell({
-    index,
-    col,
-    children,
-    className,
-  }: {
-    index: number;
-    col: string;
-    children: React.ReactNode;
-    className?: string;
-  }) {
-    const role = roles[col][index];
-    if (role.kind === "covered") return null;
-    const span = role.kind === "origin" ? role.span : 1;
-    const canGrow = canMergeDown(list, col, index);
-    return (
-      <td
-        className={cn(td, "group/cell relative", span > 1 && "bg-muted/25", className)}
-        rowSpan={span > 1 ? span : undefined}
-      >
-        {children}
-        {canManage && (span > 1 || canGrow) && (
-          <div className="absolute bottom-0.5 right-0.5 flex gap-0.5 opacity-0 transition group-hover/cell:opacity-100 focus-within:opacity-100">
-            {span > 1 && (
-              <button
-                type="button"
-                onClick={() => setMerge(index, col, "split")}
-                title={t("Pisahkan sel")}
-                className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
-              >
-                <Unlink className="size-3" />
-              </button>
-            )}
-            {canGrow && (
-              <button
-                type="button"
-                onClick={() => setMerge(index, col, "merge")}
-                title={t("Gabung dengan baris di bawah")}
-                className="rounded bg-card/90 p-0.5 text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
-              >
-                <ChevronsDownUp className="size-3" />
-              </button>
-            )}
-          </div>
-        )}
-      </td>
-    );
-  }
+  /** Bound once per render and handed to `MergeableCell`, which lives at module
+   *  scope - see the note on that component for why it must not be nested. */
+  const cellProps = (index: number, col: string) => ({
+    role: roles[col][index],
+    canGrow: canMergeDownIn(roles[col], index),
+    canManage,
+    onSplit: () => setMerge(index, col, "split"),
+    onMerge: () => setMerge(index, col, "merge"),
+    tdClass: td,
+    t,
+  });
 
   // Frozen (sticky) leftmost columns: No, Waktu, Durasi, Kegiatan.
   //
@@ -396,10 +438,10 @@ export function RundownView({
                   {duration || <span className="text-muted-foreground/50">–</span>}
                 </td>
                 <td className={cn(td, FZ, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
-                <MergeableCell index={rowIndex} col={MERGE_MC}>
+                <MergeableCell {...cellProps(rowIndex, MERGE_MC)}>
                   <EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline />
                 </MergeableCell>
-                <MergeableCell index={rowIndex} col={MERGE_OPERATOR}>
+                <MergeableCell {...cellProps(rowIndex, MERGE_OPERATOR)}>
                   <div className="flex items-start gap-1">
                     <EditCell value={item.operator ?? ""} onSave={(v) => save(item.id, { operator: v })} readOnly={!canManage} multiline className="flex-1" />
                     {isUrl(item.operator ?? "") && (
@@ -416,10 +458,16 @@ export function RundownView({
                   </div>
                 </MergeableCell>
                 {cols.map((d) => (
-                  <MergeableCell key={d.key} index={rowIndex} col={d.key}>
+                  <MergeableCell key={d.key} {...cellProps(rowIndex, d.key)}>
                     <EditCell
                       value={item.division_jobs?.[d.key] ?? ""}
-                      onSave={(v) => save(item.id, { division_jobs: { ...(item.division_jobs ?? {}), [d.key]: v } })}
+                      // Sends only THIS division's key. It used to send the
+                      // whole division_jobs object rebuilt from `item`, which
+                      // is the row as it was last rendered: editing a second
+                      // division before the first save came back reverted the
+                      // first one, silently. The merge happens on the server
+                      // against the live row now.
+                      onSave={(v) => saveDivisionJob(item.id, d.key, v)}
                       readOnly={!canManage}
                       multiline
                     />

@@ -7,8 +7,9 @@ import {
   getProspects, setPrimaryProspect, unsetPrimaryProspect, syncEventFromProspect, syncProspectLinks,
 } from "@/lib/data/repo";
 import type { Prospect, ProspectLinkInput } from "@/lib/types";
+import { getActiveEvent } from "@/lib/session";
 import { prospectSchema, prospectUpdateSchema, prospectLinksSchema, idSchema, parse } from "./schemas";
-import { errMsg } from "./lock";
+import { archivedGuard, errMsg } from "./lock";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -28,8 +29,14 @@ export async function createProspectAction(
   if (!v.ok) return v;
   const lv = parse(prospectLinksSchema, links ?? []);
   if (!lv.ok) return lv;
+  // Scope from the session, not the payload: the schema no longer accepts
+  // `event_id`, and a prospect written without one appears under every Ormawa
+  // Visit at once. See the note at the top of schemas.ts.
+  const event = await getActiveEvent();
+  const blocked = await archivedGuard(await getCurrentUser(), event.id);
+  if (blocked) return blocked;
   try {
-    const id = await createProspect(v.data);
+    const id = await createProspect({ ...v.data, event_id: event.id });
     // Attach the links, publishing the ticked ones to Super Link.
     if (id && lv.data.length) {
       const created = (await getProspects()).find((p) => p.id === id);
@@ -64,9 +71,18 @@ export async function updateProspectAction(
     }
   } catch (e) { return errMsg(e); }
   // Editing the primary prospect re-syncs the OV's partner/campus/location/mode.
+  // That is a write to `events`, so the bust has to include it: the topbar
+  // switcher and the dashboard's "Ringkasan Ormawa Visit" read the edition, and
+  // without it they keep showing the previous partner until a hard reload.
+  // Only when the sync actually ran - "events" maps to a full-tree revalidate,
+  // which an ordinary prospect edit has no reason to pay for.
   const updated = (await getProspects()).find((p) => p.id === idv.data);
-  if (updated?.is_primary && updated.event_id) await syncEventFromProspect(updated.event_id, updated);
-  revalidateEntities("prospects", "links");
+  if (updated?.is_primary && updated.event_id) {
+    await syncEventFromProspect(updated.event_id, updated);
+    revalidateEntities("prospects", "links", "events");
+  } else {
+    revalidateEntities("prospects", "links");
+  }
   return { ok: true };
 }
 
@@ -78,7 +94,10 @@ export async function setPrimaryProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   try { await setPrimaryProspect(idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("prospects");
+  // `setPrimaryProspect` copies the prospect's identity onto the edition
+  // (`syncEventFromProspect`), so this writes `events` too - see the same note
+  // in `updateProspectAction`.
+  revalidateEntities("prospects", "events");
   return { ok: true };
 }
 export async function unsetPrimaryProspectAction(id: string): Promise<Result> {
@@ -97,7 +116,10 @@ export async function deleteProspectAction(id: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   try { await deleteProspect(idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("prospects");
+  // `deleteProspect` purges the prospect's published Super Link rows, so /links
+  // is stale without this - the entries stayed on screen until some unrelated
+  // write happened to bust that route. Same contract as the task delete path.
+  revalidateEntities("prospects", "links");
   return { ok: true };
 }
 
@@ -107,6 +129,7 @@ export async function bulkDeleteProspectsAction(ids: string[]): Promise<Result> 
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   try { await bulkDeleteProspects(clean); } catch (e) { return errMsg(e); }
-  revalidateEntities("prospects");
+  // Purges Super Link rows for every id, so /links has to be busted too.
+  revalidateEntities("prospects", "links");
   return { ok: true };
 }

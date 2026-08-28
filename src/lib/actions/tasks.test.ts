@@ -21,8 +21,9 @@ const repo = {
   bulkDeleteTasks: vi.fn(async () => {}),
   syncTaskLinks: vi.fn(async () => {}),
   purgeTaskLinks: vi.fn(async () => {}),
-  // archivedGuard() loads the edition to see whether it is archived.
-  getEvent: vi.fn(async () => ({ id: "ov1", locked: false })),
+  // archivedGuard() loads the edition to see whether it is archived. Takes the
+  // id so a test can make ONE edition locked and leave the others open.
+  getEvent: vi.fn(async (id: string) => ({ id, locked: false })),
 };
 vi.mock("@/lib/data/repo", () => repo);
 
@@ -321,5 +322,73 @@ describe("bulk task actions", () => {
     expect(ok.ok).toBe(true);
     expect(repo.purgeTaskLinks).toHaveBeenCalledTimes(2);
     expect(repo.bulkDeleteTasks).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ------------------------------------------------------------------
+// Archive lock. `writable_event()` in migration 0028 is the real control; these
+// cover the UX half, whose whole job is to answer with a sentence a committee
+// member can act on instead of a raw "new row violates row-level security
+// policy". A missing guard is invisible until someone hits it in an archived
+// edition, which is exactly when it is least welcome.
+// ------------------------------------------------------------------
+describe("archive lock on task writes", () => {
+  const archived = (lockedId: string) =>
+    repo.getEvent.mockImplementation(async (id: string) => ({ id, locked: id === lockedId }));
+
+  beforeEach(() => {
+    currentUser.mockResolvedValue(user({ role: "coordinator" }));
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+  });
+
+  it("refuses a bulk STATUS change in an archived edition", async () => {
+    archived("ov1");
+    const res = await bulkSetStatusAction(["t1", "t2"], "done");
+    expect(res.ok).toBe(false);
+    expect(repo.bulkUpdateTasks).not.toHaveBeenCalled();
+  });
+
+  it("refuses a bulk DELETE in an archived edition", async () => {
+    archived("ov1");
+    const res = await bulkDeleteTasksAction(["t1"]);
+    expect(res.ok).toBe(false);
+    expect(repo.bulkDeleteTasks).not.toHaveBeenCalled();
+    expect(repo.purgeTaskLinks).not.toHaveBeenCalled();
+  });
+
+  it("refuses the WHOLE batch when only one row sits in the archived edition", async () => {
+    // All-or-nothing: writing the writable half and silently dropping the rest
+    // would report a count that does not match what changed.
+    archived("ov-arsip");
+    repo.getTask.mockImplementation(async (id: string) =>
+      task({ id, event_id: id === "t2" ? "ov-arsip" : "ov1" }),
+    );
+    const res = await bulkSetStatusAction(["t1", "t2"], "done");
+    expect(res.ok).toBe(false);
+    expect(repo.bulkUpdateTasks).not.toHaveBeenCalled();
+  });
+
+  it("refuses MOVING a task into an archived edition", async () => {
+    // The guard used to check only the edition the task came FROM, so a task
+    // could be dropped into a locked one.
+    archived("ov-arsip");
+    const res = await updateTaskAction("t1", { event_id: "ov-arsip" });
+    expect(res.ok).toBe(false);
+    expect(repo.updateTask).not.toHaveBeenCalled();
+  });
+
+  it("still allows moving a task between two OPEN editions", async () => {
+    archived("ov-arsip");
+    const res = await updateTaskAction("t1", { event_id: "ov2" });
+    expect(res.ok).toBe(true);
+    expect(repo.updateTask).toHaveBeenCalledWith("t1", { event_id: "ov2" });
+  });
+
+  it("lets an admin through: they can still correct an archived edition", async () => {
+    archived("ov1");
+    currentUser.mockResolvedValue(user({ role: "admin" }));
+    const res = await bulkSetStatusAction(["t1"], "done");
+    expect(res.ok).toBe(true);
+    expect(repo.bulkUpdateTasks).toHaveBeenCalledTimes(1);
   });
 });

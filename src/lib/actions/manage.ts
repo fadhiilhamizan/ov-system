@@ -164,11 +164,29 @@ export async function deleteEventAction(id: string): Promise<Result> {
 }
 
 // ---------------- Members ----------------
+//
+// NO archive guard here, and that is deliberate rather than an oversight.
+// The other edition-scoped write paths (tasks, rundown, jobs, links,
+// divisions) all call `archivedGuard`, and the ones that did not were real
+// bugs. Here it would be unreachable code: `can.manageMembers` and
+// `can.manageTeams` need level "full", which MODULE_ACCESS_LEVEL grants to
+// admin alone, and `archivedGuard` returns null for admin on its first line -
+// an admin may still correct an archived edition, which is the exception the
+// lock is built around.
+//
+// If `members` ever moves to "limited" for another role, the guard belongs
+// here AND a `writable_event()` clause belongs on the members policy: today
+// that policy is admin-only with no edition clause, so the app half alone
+// would not hold.
 export async function createMemberAction(input: Partial<Member>): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const v = parse(memberSchema, input);
   if (!v.ok) return v;
-  try { await createMember(withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
+  // The edition comes from the session: `memberSchema` no longer accepts
+  // `event_id` (see the note atop schemas.ts), and a member written without one
+  // is unscoped, which every reader renders under EVERY Ormawa Visit.
+  const event = await getActiveEvent();
+  try { await createMember({ ...withPrimaryDivision(v.data), event_id: event.id }); } catch (e) { return errMsg(e); }
   revalidateEntities("members");
   return { ok: true };
 }
@@ -252,7 +270,7 @@ export async function addMembersToDivisionAction(
     for (const m of roster) {
       const next = withDivisionAdded(m, keyv.data);
       // Skip the write when nothing actually changes.
-      if (next.join(" ") === memberDivisions(m).join(" ")) continue;
+      if (next.join("\u0000") === memberDivisions(m).join("\u0000")) continue;
       await updateMember(m.id, divisionFields(next));
     }
   } catch (e) { return errMsg(e); }
@@ -332,7 +350,9 @@ export async function createTeamAction(input: Partial<Team>): Promise<Result> {
   if (!can.manageTeams(await getCurrentUser())) return DENY;
   const v = parse(teamSchema, input);
   if (!v.ok) return v;
-  try { await createTeam(v.data); } catch (e) { return errMsg(e); }
+  // Scope from the session, same reason as createMemberAction.
+  const event = await getActiveEvent();
+  try { await createTeam({ ...v.data, event_id: event.id }); } catch (e) { return errMsg(e); }
   revalidateEntities("teams");
   return { ok: true };
 }

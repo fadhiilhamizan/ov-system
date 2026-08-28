@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { columnRoles, canMergeDown, mergedDown, splitCell, clampMerges } from "./rundown-merge";
+import {
+  columnRoles, canMergeDown, canMergeDownIn, mergedDown, splitCell, clampMerges,
+} from "./rundown-merge";
 import type { RundownItem } from "./types";
 
 const row = (over: Partial<RundownItem> = {}): RundownItem => ({
@@ -54,6 +56,31 @@ describe("columnRoles", () => {
     expect(roles[0]).toEqual({ kind: "origin", span: 3 });
     expect(roles[1].kind).toBe("covered");
     expect(roles[3].kind).toBe("normal");
+  });
+});
+
+describe("canMergeDownIn (roles resolved once, for the table)", () => {
+  // The view resolves each column once and asks per cell, instead of resolving
+  // the column again inside every cell. The two must never disagree, or the
+  // merge buttons would appear in different places than the merge rules allow.
+  const CASES: RundownItem[][] = [
+    [row(), row()],
+    [row({ merges: { mc: 2 } }), row(), row()],
+    [row({ merges: { mc: 2 } }), row(), row({ merges: { mc: 2 } }), row()],
+    [row({ merges: { mc: 3 } }), row(), row(), row()],
+    [row()],
+    [],
+  ];
+  it("agrees with canMergeDown on every row of every shape", () => {
+    for (const items of CASES) {
+      const roles = columnRoles(items, "mc");
+      for (let i = 0; i < items.length; i++) {
+        expect(canMergeDownIn(roles, i)).toBe(canMergeDown(items, "mc", i));
+      }
+    }
+  });
+  it("refuses an index that is off the end", () => {
+    expect(canMergeDownIn(columnRoles([row(), row()], "mc"), 5)).toBe(false);
   });
 });
 

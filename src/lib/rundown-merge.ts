@@ -60,9 +60,15 @@ export function columnRoles(items: RundownItem[], col: string): CellRole[] {
   return roles;
 }
 
-/** Can the cell at `index` swallow one more row below it? */
-export function canMergeDown(items: RundownItem[], col: string, index: number): boolean {
-  const roles = columnRoles(items, col);
+/**
+ * Can the cell at `index` swallow one more row below it, given roles you have
+ * already resolved for that column?
+ *
+ * The table renders every cell of every column, and each one asks this
+ * question. Resolving the column again per cell made a render O(rows^2) per
+ * column; the view resolves each column once and passes the answer down.
+ */
+export function canMergeDownIn(roles: readonly CellRole[], index: number): boolean {
   const role = roles[index];
   if (!role || role.kind === "covered") return false;
   const span = role.kind === "origin" ? role.span : 1;
@@ -70,7 +76,14 @@ export function canMergeDown(items: RundownItem[], col: string, index: number): 
   // The next row has to exist AND be entirely free - not covered by another run,
   // and not the origin of one either. Swallowing another origin would make
   // columnRoles() discard that run, silently destroying a merge the user made.
-  return next < items.length && roles[next].kind === "normal";
+  return next < roles.length && roles[next].kind === "normal";
+}
+
+/** Can the cell at `index` swallow one more row below it? */
+export function canMergeDown(items: RundownItem[], col: string, index: number): boolean {
+  // `columnRoles` returns one role per item, so roles.length === items.length
+  // and the bounds check inside is the same one.
+  return canMergeDownIn(columnRoles(items, col), index);
 }
 
 /** The merges map for `item` after growing `col` by one row. */

@@ -53,6 +53,40 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.38.3",
+    date: "2026-08-28",
+    title: "Halaman divisi tidak lagi basi, dan tombol yang tidak bisa dibuka disembunyikan",
+    changes: [
+      { kind: "fix", text: "Mengubah tugas kini langsung terlihat di halaman detail divisi. Sebelumnya halaman itu masih menampilkan data lama sampai dimuat ulang." },
+      { kind: "ui", text: "Pintasan di Dashboard sekarang hanya menampilkan menu yang memang bisa dibuka oleh peranmu. Tamu tidak lagi melihat tombol Anggaran yang kalau diklik hanya kembali ke Dashboard." },
+      { kind: "fix", text: "Mengubah status atau menghapus banyak tugas sekaligus di Ormawa Visit yang diarsipkan kini memberi pesan yang jelas, bukan pesan teknis dari database." },
+      { kind: "fix", text: "Tugas tidak bisa lagi dipindahkan ke Ormawa Visit yang sudah diarsipkan." },
+      { kind: "security", text: "Anggota, prospek, tautan Super Link, baris rundown, dan tugas Hari-H kini selalu tercatat pada Ormawa Visit yang sedang dibuka. Sebelumnya data bisa tersimpan tanpa edisi dan muncul di semua Ormawa Visit sekaligus, melewati kunci arsip." },
+      { kind: "security", text: "Menu yang belum terdaftar di matriks hak akses kini tertutup untuk semua peran, bukan terbuka untuk semua peran." },
+    ],
+  },
+  {
+    version: "1.38.2",
+    date: "2026-08-28",
+    title: "Tes komponen akhirnya benar-benar dijalankan",
+    changes: [
+      { kind: "fix", text: "Berkas tes untuk komponen tampilan dulu tidak pernah dijalankan sama sekali, tanpa peringatan apa pun. Sekarang dijalankan, jadi bug tampilan bisa ketahuan sebelum sampai ke pengguna." },
+      { kind: "fix", text: "Dua bug Rundown yang diperbaiki di versi sebelumnya kini dijaga oleh tes yang gagal kalau bugnya kembali." },
+    ],
+  },
+  {
+    version: "1.38.1",
+    date: "2026-08-28",
+    title: "Perbaikan diam-diam: rundown, tanggal, dan Super Link yang tertinggal",
+    changes: [
+      { kind: "fix", text: "Di Rundown, mengisi dua kolom divisi berurutan pada baris yang sama tidak lagi menghapus isian yang pertama. Sebelumnya isian itu hilang tanpa pesan apa pun dan baru ketahuan setelah halaman dimuat ulang." },
+      { kind: "fix", text: "Sel Rundown tidak lagi kehilangan kursor dan teks yang sedang diketik setiap kali indikator 'Tersimpan' muncul." },
+      { kind: "fix", text: "Status Overtime dan tulisan 'Hari ini' atau 'Besok' kini mengikuti tanggal Waktu Indonesia Barat, bukan jam server. Sebelumnya keduanya meleset tujuh jam setiap pagi." },
+      { kind: "fix", text: "Menghapus prospek di Reach & Offer kini langsung membersihkan tautannya dari Super Link. Sebelumnya tautan itu masih terlihat sampai ada perubahan lain." },
+      { kind: "fix", text: "Menandai prospek sebagai partner utama kini langsung memperbarui nama partner di kepala halaman dan di Dashboard." },
+    ],
+  },
+  {
     version: "1.38.0",
     date: "2026-08-19",
     title: "Compare dibuat manual, tampilan sanding, dan salin data yang lebih terarah",

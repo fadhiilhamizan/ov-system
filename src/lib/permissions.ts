@@ -181,9 +181,24 @@ export const can = {
   },
 
   // --- helpers ---
+  /**
+   * May this account OPEN this module?
+   *
+   * An unknown key is refused, not allowed. It used to return `true`, which
+   * meant a module added to the nav (or named in `requireModule`) but forgotten
+   * in `MODULE_ACCESS_LEVEL` opened for EVERY role, Tamu included, with nothing
+   * anywhere to say so. That is the opposite default from `accessLevel()` five
+   * lines up, which already answers "none" for a key it does not know, so the
+   * same missing row produced two contradictory answers in the same file:
+   * the route opened and every `can.*` inside it said no.
+   *
+   * Failing closed makes the omission loud instead: the menu entry disappears
+   * and the page redirects, which is a bug you find in a minute. Add the row to
+   * the matrix - that is the single source of truth, see constants.ts.
+   */
   accessModule(user: AppUser, moduleKey: string): boolean {
     const roles = MODULE_ACCESS[moduleKey];
-    return roles ? roles.includes(user.role) : true;
+    return roles ? roles.includes(user.role) : false;
   },
   isReadOnly(user: AppUser): boolean {
     return user.role === "guest";

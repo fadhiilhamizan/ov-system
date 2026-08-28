@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct, angkatanFromNrp, effectiveStatus } from "./format";
+import { formatRupiah, formatRupiahShort, formatDate, daysUntil, isUrl, pct, angkatanFromNrp, effectiveStatus, relativeDeadline, todayYmd } from "./format";
+
+// An instant that is a DIFFERENT calendar date in UTC and in Jakarta:
+// 18:00 UTC on the 15th is 01:00 WIB on the 16th. Every date helper must
+// answer "16", because that is the date the committee is living in. Reading
+// the host clock instead is what made Overtime fire seven hours late and the
+// dashboard say "Besok" about something due today.
+const MIDNIGHT_GAP = new Date("2026-06-15T18:00:00Z");
 
 describe("formatRupiah", () => {
   it("formats Indonesian thousands", () => {
@@ -38,16 +45,40 @@ describe("formatDate", () => {
   });
 });
 
+describe("todayYmd (Asia/Jakarta, not the host clock)", () => {
+  it("uses the Jakarta date across the UTC midnight gap", () => {
+    expect(todayYmd(MIDNIGHT_GAP)).toBe("2026-06-16");
+  });
+  it("agrees with itself whatever the machine timezone is", () => {
+    expect(todayYmd()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
 describe("daysUntil", () => {
   it("is 0 for today", () => {
-    // Use the LOCAL date (daysUntil works in local time; toISOString is UTC and
-    // would drift across the midnight-UTC boundary).
-    const d = new Date();
-    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    expect(daysUntil(today)).toBe(0);
+    // Self-consistent by construction, so the test cannot drift with the clock.
+    expect(daysUntil(todayYmd())).toBe(0);
   });
-  it("returns null for nullish", () => {
+  it("counts calendar days from the Jakarta date", () => {
+    expect(daysUntil("2026-06-16", MIDNIGHT_GAP)).toBe(0);
+    expect(daysUntil("2026-06-17", MIDNIGHT_GAP)).toBe(1);
+    expect(daysUntil("2026-06-15", MIDNIGHT_GAP)).toBe(-1);
+  });
+  it("accepts a full timestamp, not only a date", () => {
+    // Used to be concatenated with "T00:00:00" and silently return null.
+    expect(daysUntil("2026-06-16T23:30:00Z", MIDNIGHT_GAP)).toBe(0);
+  });
+  it("returns null for nullish or malformed input", () => {
     expect(daysUntil(null)).toBeNull();
+    expect(daysUntil("not-a-date")).toBeNull();
+  });
+});
+
+describe("relativeDeadline", () => {
+  it("says Hari ini for something due on the Jakarta date", () => {
+    expect(relativeDeadline("2026-06-16", MIDNIGHT_GAP)).toBe("Hari ini");
+    expect(relativeDeadline("2026-06-17", MIDNIGHT_GAP)).toBe("Besok");
+    expect(relativeDeadline("2026-06-15", MIDNIGHT_GAP)).toBe("Kemarin");
   });
 });
 
@@ -74,7 +105,15 @@ describe("pct", () => {
 });
 
 describe("effectiveStatus (auto overtime)", () => {
-  const NOW = new Date("2026-06-15T09:00:00");
+  // Pinned to an explicit offset: a bare "2026-06-15T09:00:00" is parsed in the
+  // MACHINE's timezone, so these assertions used to depend on where they ran.
+  const NOW = new Date("2026-06-15T09:00:00+07:00");
+  it("flips at Jakarta midnight, not the host's", () => {
+    // 01:00 WIB on the 16th: the 15th is over for the committee, so a task due
+    // on the 15th is late. On a UTC server the old code still said "todo".
+    expect(effectiveStatus("todo", "2026-06-15", MIDNIGHT_GAP)).toBe("overtime");
+    expect(effectiveStatus("todo", "2026-06-16", MIDNIGHT_GAP)).toBe("todo");
+  });
   it("promotes an overdue todo/ongoing task to overtime", () => {
     expect(effectiveStatus("todo", "2026-06-14", NOW)).toBe("overtime");
     expect(effectiveStatus("ongoing", "2026-01-01", NOW)).toBe("overtime");
