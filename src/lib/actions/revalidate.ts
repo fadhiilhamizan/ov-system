@@ -33,7 +33,9 @@ const CONSUMERS = {
   // have DITERIMA: editing a response in Reach & Offer is what opens or closes
   // that feature, and without this the gate stays stale until a hard reload.
   prospects: ["/prospects", "/dashboard", "/events", "/himpunan"],
-  links: ["/links"],
+  // Not just /links: the task dialog's reference picker reads the whole Super
+  // Link directory, and that dialog is mounted by all three task pages.
+  links: ["/links", "/tasks", "/calendar", "/divisions"],
   budget: ["/budget", "/dashboard", "/events"],
   rundown: ["/rundown"],
   jobs: ["/jobs"],

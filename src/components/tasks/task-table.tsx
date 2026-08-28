@@ -257,7 +257,7 @@ export function TaskTable({
  */
 function RefsCell({ task }: { task: Task }) {
   const tr = useT();
-  const refs = useTaskRefs(task.id);
+  const refs = useTaskRefs(task.id) ?? [];
   if (!refs.length) return <span className="text-sm text-muted-foreground">-</span>;
   return (
     <div className="flex flex-wrap gap-1">

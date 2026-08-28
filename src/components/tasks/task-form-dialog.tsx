@@ -71,8 +71,12 @@ export function TaskFormDialog({
   const progressOnly = mode === "edit" && task ? !can.editTask(user) : false;
 
   const existingLinks = useTaskLinks(task?.id);
-  const existingRefs = useTaskRefs(task?.id);
   const superLinks = useSuperLinks();
+  // undefined = this page never fetched references. Then the editor is hidden
+  // and the payload leaves refs OUT entirely, so the server keeps whatever the
+  // task already has instead of reading an empty form as "delete them all".
+  const existingRefs = useTaskRefs(task?.id);
+  const refsKnown = existingRefs !== undefined;
 
   // Refill the form whenever the dialog opens (or targets a different task).
   // Done during render rather than in an effect - see lib/use-synced.ts.
@@ -91,7 +95,7 @@ export function TaskFormDialog({
   const [links, setLinks] = useResetOn<DraftLink[]>(formKey, () => existingLinks.map(toDraft));
   // Always keep one blank row so adding a reference needs no extra click.
   const [refs, setRefs] = useResetOn<DraftRef[]>(formKey, () =>
-    existingRefs.length ? existingRefs.map(toRefDraft) : [newRefDraft()]);
+    existingRefs?.length ? existingRefs.map(toRefDraft) : [newRefDraft()]);
 
   // PIC picker: only this division's members, grouped by role (coordinator from
   // the division's team, else the member's fungsionaris/intern type).
@@ -144,6 +148,10 @@ export function TaskFormDialog({
     const payloadLinks = links
       .filter((l) => l.url.trim())
       .map(({ id, url, label, in_super_link }) => ({ id, url: url.trim(), label, in_super_link }));
+    // `undefined` (not []) when the page gave us no reference data: an empty
+    // array is an explicit "these are all the references now", which is how the
+    // server is told to clear the ones it has.
+    const payloadRefs = refsKnown ? cleanRefs(refs) : undefined;
 
     start(async () => {
       const status = markDone ? ("done" as const) : form.status;
@@ -158,12 +166,12 @@ export function TaskFormDialog({
       // permission lane - sending every field would require full edit rights.
       const res =
         mode === "create"
-          ? await createTaskAction(fullPayload, payloadLinks, cleanRefs(refs))
+          ? await createTaskAction(fullPayload, payloadLinks, payloadRefs)
           : await updateTaskAction(
               task!.id,
               progressOnly ? { status, result: form.result } : fullPayload,
               payloadLinks,
-              cleanRefs(refs),
+              payloadRefs,
             );
       if (res.ok) {
         toast.success(
@@ -327,7 +335,10 @@ export function TaskFormDialog({
           </div>
 
           <ResultLinksEditor links={links} onChange={setLinks} />
-          <RefsEditor refs={refs} onChange={setRefs} links={superLinks} />
+          {/* No editor at all when the page has no reference data: an editor
+              that cannot show what is already saved would look empty and
+              invite the user to "re-add" links that are not actually gone. */}
+          {refsKnown && <RefsEditor refs={refs} onChange={setRefs} links={superLinks} />}
         </div>
 
         <DialogFooter>

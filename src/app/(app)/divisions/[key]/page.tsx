@@ -4,7 +4,7 @@ import { ArrowLeft, Users2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
-import { getDivision, getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
+import { getDivision, getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { MembersProvider } from "@/components/members/members-context";
@@ -23,13 +23,19 @@ export default async function DivisionDetailPage({
   const division = await getDivision(event.id, key);
   if (!division) notFound();
 
-  const [tasks, divisions, events, teams, members, taskLinks] = await Promise.all([
+  // taskRefs & superLinks feed the same task dialog as Work Breakdown does. A
+  // page that mounts the dialog has to fetch BOTH, or the reference editor
+  // opens blank: no Super Link picker, and the task's saved references
+  // invisible. See TaskLinksProvider.
+  const [tasks, divisions, events, teams, members, taskLinks, taskRefs, superLinks] = await Promise.all([
     getTasks({ event_id: event.id, division: division.key }),
     getDivisions(event.id),
     getEvents(),
     getTeams(event.id),
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
+    getTaskRefsByEvent(event.id),
+    getLinks(),
   ]);
   const team = teams.find((t) => t.division === division.key);
   const t = await getT();
@@ -68,7 +74,7 @@ export default async function DivisionDetailPage({
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
 
-      <TaskLinksProvider value={taskLinks}>
+      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
         <MembersProvider members={members} teams={teams}>
         <TasksView
           tasks={tasks}

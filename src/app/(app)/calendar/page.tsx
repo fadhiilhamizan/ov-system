@@ -1,7 +1,7 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
-import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTeams } from "@/lib/data/repo";
+import { getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
@@ -13,12 +13,17 @@ export const metadata = { title: "Kalender" };
 
 export default async function CalendarPage() {
   const [event, user, t] = await Promise.all([getActiveEvent(), getCurrentUser(), getT()]);
-  const [tasks, divisions, events, members, taskLinks, teams] = await Promise.all([
+  // Clicking a date opens the same task dialog as Work Breakdown, so this page
+  // needs the reference data too: without it the editor has no Super Link
+  // picker and cannot show what the task already references.
+  const [tasks, divisions, events, members, taskLinks, taskRefs, superLinks, teams] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
+    getTaskRefsByEvent(event.id),
+    getLinks(),
     getTeams(event.id),
   ]);
 
@@ -35,7 +40,7 @@ export default async function CalendarPage() {
         description={t("Deadline tugas & hari pelaksanaan dalam satu tampilan. Klik tanggal untuk detail atau menambah tugas.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <TaskLinksProvider value={taskLinks}>
+      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
         <MembersProvider members={members} teams={teams}>
         <CalendarView
           tasks={tasks}
