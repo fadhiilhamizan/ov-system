@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.39.0",
+    date: "2026-08-28",
+    title: "Pemulihan backup kini sekali jalan: berhasil semua atau tidak sama sekali",
+    changes: [
+      { kind: "security", text: "Memulihkan backup sekarang berjalan sebagai satu langkah utuh. Kalau ada yang gagal di tengah, tidak ada satu pun data yang berubah. Sebelumnya kegagalan di tengah bisa meninggalkan sebagian data terhapus dan sebagian terisi, tanpa cara otomatis untuk kembali." },
+      { kind: "fix", text: "Backup lama yang dibuat sebelum sebuah kolom ditambahkan kini tetap bisa dipulihkan: kolom yang tidak ada di berkas memakai nilai bawaannya." },
+      { kind: "fix", text: "Berkas backup yang isinya janggal atau terlalu besar ditolak lebih awal dengan penjelasan, bukan diteruskan ke database." },
+      { kind: "fix", text: "Membuat backup jadi lebih cepat karena semua tabel dibaca bersamaan, bukan satu per satu." },
+    ],
+  },
+  {
     version: "1.38.4",
     date: "2026-08-28",
     title: "Bersih-bersih: kode dan paket yang tidak lagi dipakai dibuang",

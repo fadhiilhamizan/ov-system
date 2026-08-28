@@ -1101,5 +1101,85 @@ console.log("0041 - compare_subjects");
     `insert into compare_subjects (event_id, org_name) values ('ov-lock', 'HIMA Arsip')`, "deny");
 }
 
+// ------------------------------------------------------------------
+// 0043: restore_snapshot() - satu transaksi.
+//
+// HARUS PALING AKHIR: berhasil atau gagal, blok ini menghapus seluruh data uji,
+// jadi tidak ada tes lain yang boleh berjalan setelahnya.
+//
+// Yang dibuktikan bukan "restore bisa jalan" - itu mudah. Yang dibuktikan
+// adalah restore yang GAGAL DI TENGAH tidak meninggalkan apa pun: dulu 16
+// DELETE dan 16 INSERT dikirim satu per satu dari aplikasi, jadi kegagalan di
+// perintah ke-sembilan berarti setengah tabel sudah kosong dan tidak ada jalan
+// kembali.
+// ------------------------------------------------------------------
+console.log("0043 - restore_snapshot (transaksional)");
+{
+  const callAs = async (uid, anon, payload) => {
+    await db.exec(`set role authenticated;`);
+    await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}'; set test.email = 'x@ov.test';`);
+    try {
+      const r = await db.query(`select restore_snapshot($1) as report`, [JSON.stringify(payload)]);
+      return { report: r.rows[0].report };
+    } catch (e) {
+      return { error: e.message.split("\n")[0] };
+    } finally {
+      await db.exec(`reset role;`);
+    }
+  };
+  const count = async (t) => Number((await db.query(`select count(*) c from ${t}`)).rows[0].c);
+
+  const auditCount = async () =>
+    Number((await db.query(
+      `select count(*) c from activity_log where table_name in ('events','tasks','divisions')`
+    )).rows[0].c);
+  const before = {
+    events: await count("events"),
+    tasks: await count("tasks"),
+    audit: await auditCount(),
+  };
+
+  const denied = await callAs(U.staff, false, { events: [] });
+  ok("staff DITOLAK memanggil restore", !!denied.error);
+  const deniedAnon = await callAs(U.anon, true, { events: [] });
+  ok("sesi anonim DITOLAK memanggil restore", !!deniedAnon.error);
+  ok("penolakan tidak menghapus apa pun", (await count("tasks")) === before.tasks);
+
+  // Gagal di tengah: events valid, lalu satu task menunjuk edisi yang tidak
+  // ada. Insert berjalan induk-dulu, jadi events sudah masuk saat FK tasks
+  // meledak - persis bentuk kegagalan yang dulu merusak database.
+  const halfway = await callAs(U.admin, false, {
+    events: [{ id: "ov-restored", code: "R1", title: "Hasil restore" }],
+    tasks: [{ id: "aaaaaaaa-0000-0000-0000-00000000dead", event_id: "edisi-yang-tidak-ada", division: "EVENT", title: "Yatim" }],
+  });
+  ok("restore yang gagal di tengah melempar error", !!halfway.error);
+  ok("...dan events LAMA masih utuh (rollback)", (await count("events")) === before.events);
+  ok("...dan tasks LAMA masih utuh (rollback)", (await count("tasks")) === before.tasks);
+  const survivors = await db.query(`select count(*) c from events where id = 'ov-restored'`);
+  ok("...dan baris dari berkas gagal itu tidak tertinggal", Number(survivors.rows[0].c) === 0);
+
+  // Jalur bahagia, sekaligus membuktikan kunci tak dikenal dibuang oleh
+  // jsonb_populate_recordset, bukan oleh pemeriksaan di JavaScript.
+  const good = await callAs(U.admin, false, {
+    events: [{ id: "ov-restored", code: "R1", title: "Hasil restore", kolom_asing: "diabaikan" }],
+    divisions: [{ event_id: "ov-restored", key: "EVENT", name: "Event", short: "EVE", color: "#111" }],
+    tasks: [{ event_id: "ov-restored", division: "EVENT", title: "Tugas hasil restore" }],
+  });
+  ok("admin boleh restore", !good.error && !!good.report);
+  // A restore failure is a wall of constraint text; print it or the next
+  // person debugging this spends ten minutes getting back to it.
+  if (good.error) console.log(`      -> ${good.error}`);
+  ok("data lama tergantikan sepenuhnya", (await count("events")) === 1 && (await count("tasks")) === 1);
+  const restored = await db.query(`select title from events where id = 'ov-restored'`);
+  ok("isi snapshot benar-benar masuk", restored.rows[0]?.title === "Hasil restore");
+  ok("laporan menyebut jumlah per tabel", !!good.report?.events && good.report.events.inserted === 1);
+
+  // Restore mematikan audit per baris supaya ribuan hapus/tulis miliknya
+  // sendiri tidak mengubur riwayat asli.
+  // Diukur sebagai PERTAMBAHAN, bukan jumlah mutlak: 200-an asersi di atas
+  // sudah meninggalkan jejak auditnya sendiri di tabel yang sama.
+  ok("restore tidak membanjiri jejak audit", (await auditCount()) === before.audit);
+}
+
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

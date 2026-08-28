@@ -140,7 +140,7 @@ function ImportBackupButton({ onDone }: { onDone: () => void }) {
             <DialogDescription>
               {t("Seluruh data saat ini akan diganti total dengan isi file")} <b>{file?.name}</b>
               {" "}({file?.tables} {t("tabel")}, {file?.rows} {t("baris")}).{" "}
-              {t("Sebuah backup pengaman otomatis akan dibuat sebelum pemulihan, tapi tindakan ini tetap berisiko tinggi.")}
+              {t("Backup pengaman otomatis dibuat lebih dulu, dan pemulihan berjalan sekaligus: kalau ada yang gagal di tengah, tidak ada satu pun data yang berubah.")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">
@@ -215,7 +215,7 @@ function BackupRow({ backup, onDone }: { backup: BackupMeta; onDone: () => void 
             </DialogTitle>
             <DialogDescription>
               {t("Seluruh data saat ini (tugas, anggaran, anggota, dll) akan diganti total dengan isi backup")}
-              {" "}{formatTimestamp(backup.created_at)}. {t("Sebuah backup pengaman otomatis akan dibuat sebelum pemulihan, tapi tindakan ini tetap berisiko tinggi.")}
+              {" "}{formatTimestamp(backup.created_at)}. {t("Backup pengaman otomatis dibuat lebih dulu, dan pemulihan berjalan sekaligus: kalau ada yang gagal di tengah, tidak ada satu pun data yang berubah.")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">

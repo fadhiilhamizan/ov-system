@@ -543,7 +543,7 @@ export const EN: Record<string, string> = {
   "Hapus backup": "Delete backup",
   "Pulihkan data ke titik ini?": "Restore data to this point?",
   "Seluruh data saat ini (tugas, anggaran, anggota, dll) akan diganti total dengan isi backup": "All current data (tasks, budget, members, etc.) will be fully replaced with the contents of the backup",
-  "Sebuah backup pengaman otomatis akan dibuat sebelum pemulihan, tapi tindakan ini tetap berisiko tinggi.": "A safety backup will be created automatically before restoring, but this action is still high-risk.",
+  "Backup pengaman otomatis dibuat lebih dulu, dan pemulihan berjalan sekaligus: kalau ada yang gagal di tengah, tidak ada satu pun data yang berubah.": "A safety backup is taken first, and the restore runs as one step: if anything fails partway, nothing changes at all.",
   "Ketik PULIHKAN untuk konfirmasi": "Type PULIHKAN to confirm",
   "Data dipulihkan": "Data restored",
   "Pulihkan Sekarang": "Restore Now",

@@ -41,10 +41,25 @@ const DELETE_ORDER = [
   "events",
 ] as const;
 
-/** Same tables, in FK-safe INSERT order (parents before children). */
-const INSERT_ORDER = [...DELETE_ORDER].reverse();
+// No INSERT_ORDER here any more: the restore happens inside
+// `restore_snapshot()` (migration 0043), which walks its own copy of this list
+// backwards. `backup.test.ts` asserts the two lists are identical - if they
+// drift, a restore inserts a child before its parent and fails on a foreign
+// key, which is exactly the mid-restore failure the RPC exists to prevent.
 
 export type BackupData = Record<(typeof DELETE_ORDER)[number], Record<string, unknown>[]>;
+
+/**
+ * Ceiling on how many rows an uploaded file may claim to hold.
+ *
+ * A real edition is hundreds of rows; the whole database across every edition
+ * is thousands. There was no limit at all, so an uploaded file could ask the
+ * server to parse and then ship an arbitrarily large JSON blob to Postgres in
+ * one statement. This is a sanity bound on an admin-only path, not a security
+ * boundary - it exists so a corrupt or absurd file is refused with a sentence
+ * instead of being sent onward.
+ */
+const MAX_ROWS = 200_000;
 
 /**
  * `auto` is retired: scheduled backups were removed in v1.20.0 and nothing
@@ -70,18 +85,23 @@ function isMissingTable(error: { code?: string; message?: string }): boolean {
  */
 export async function captureSnapshot(): Promise<BackupData> {
   const client = await createClient();
-  const snapshot = {} as BackupData;
-  for (const table of DELETE_ORDER) {
-    const { data, error } = await client.from(table).select("*");
-    if (error) {
-      if (isMissingTable(error)) {
-        snapshot[table] = [];
-        continue;
+  // Fifteen independent reads: they were awaited one after another, so a backup
+  // cost fifteen sequential round trips for no reason. Nothing here depends on
+  // anything else here.
+  const results = await Promise.all(
+    DELETE_ORDER.map(async (table) => {
+      const { data, error } = await client.from(table).select("*");
+      if (error) {
+        // A table the schema does not have (the demo project trails production)
+        // is an empty section, not a failure.
+        if (isMissingTable(error)) return { table, rows: [] as Record<string, unknown>[] };
+        throw new Error(`Gagal membaca tabel ${table}: ${error.message}`);
       }
-      throw new Error(`Gagal membaca tabel ${table}: ${error.message}`);
-    }
-    snapshot[table] = data ?? [];
-  }
+      return { table, rows: (data ?? []) as Record<string, unknown>[] };
+    }),
+  );
+  const snapshot = {} as BackupData;
+  for (const { table, rows } of results) snapshot[table] = rows;
   return snapshot;
 }
 
@@ -134,13 +154,6 @@ export async function deleteBackup(id: string): Promise<void> {
 }
 
 /**
- * Replace all current data with a snapshot's contents. Deletes every row in
- * the affected tables (children first) then reinserts the snapshot's rows
- * (parents first), preserving original IDs so foreign keys stay valid.
- * Not wrapped in a single DB transaction - callers should take a
- * `pre_restore` backup first so a partial failure is always recoverable.
- */
-/**
  * Turn an untrusted parsed-JSON blob into a BackupData, or explain why not.
  *
  * This is the ONLY thing standing between an uploaded file and a full-database
@@ -185,27 +198,47 @@ export function parseSnapshot(
     }
     data[tbl] = value as Record<string, unknown>[];
     if (value.length) { tables++; rows += value.length; }
+    if (rows > MAX_ROWS) {
+      return {
+        ok: false,
+        error: `File terlalu besar: lebih dari ${MAX_ROWS.toLocaleString("id-ID")} baris. Ini jauh di atas ukuran wajar satu backup Ormawa Visit.`,
+      };
+    }
   }
   return { ok: true, data, tables, rows };
 }
 
-export async function restoreSnapshot(data: BackupData): Promise<void> {
+/**
+ * Replace all current data with a snapshot's contents, ATOMICALLY.
+ *
+ * One RPC call, one transaction. This used to be thirty statements sent from
+ * here - fifteen deletes then fifteen inserts, each its own transaction - so a
+ * failure on the ninth left the database half restored: some tables emptied,
+ * some refilled, and no way back except the `pre_restore` snapshot and a
+ * careful manual retry. `restore_snapshot()` (migration 0043) does the same
+ * work inside a plpgsql body, so any failure rolls the whole thing back and the
+ * old data is still there.
+ *
+ * It is SECURITY INVOKER, so RLS still applies exactly as it did: nothing in
+ * this app bypasses the policies. The function also refuses a non-admin caller
+ * outright, which is why a failure here reads as a sentence rather than as
+ * fifteen partial successes.
+ *
+ * Returns what it did, per table, so the caller can report it.
+ */
+export type RestoreReport = Record<string, { deleted: number; inserted: number }>;
+
+export async function restoreSnapshot(data: BackupData): Promise<RestoreReport> {
   const client = await createClient();
-  for (const table of DELETE_ORDER) {
-    // Match-everything delete: id is a uuid/text primary key on every table.
-    const { error } = await client.from(table).delete().not("id", "is", null);
-    if (error) {
-      if (isMissingTable(error)) continue;
-      throw new Error(`Gagal menghapus data lama di ${table}: ${error.message}`);
-    }
+  const { data: report, error } = await client.rpc("restore_snapshot", { payload: data });
+  if (error) {
+    // 42501 is the function's own admin check; anything else is a constraint
+    // or a column the snapshot cannot satisfy. Either way NOTHING changed.
+    throw new Error(
+      error.code === "42501"
+        ? "Hanya admin yang bisa memulihkan backup."
+        : `Gagal memulihkan backup: ${error.message}. Tidak ada data yang berubah.`,
+    );
   }
-  for (const table of INSERT_ORDER) {
-    const rows = data[table];
-    if (!rows?.length) continue;
-    const { error } = await client.from(table).insert(rows);
-    if (error) {
-      if (isMissingTable(error)) continue;
-      throw new Error(`Gagal memulihkan data ${table}: ${error.message}`);
-    }
-  }
+  return (report ?? {}) as RestoreReport;
 }

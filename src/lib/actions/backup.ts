@@ -60,9 +60,16 @@ export async function deleteBackupAction(id: string): Promise<Result> {
  * Restore from a JSON file the user previously downloaded.
  *
  * The payload arrives as already-parsed JSON from the browser, so it is
- * untrusted: `parseSnapshot` whitelists it down to the known tables before any
- * of it reaches the database. As with a stored-backup restore, a `pre_restore`
- * snapshot is taken first so a bad import is always recoverable.
+ * untrusted, and it passes two independent filters: `parseSnapshot` whitelists
+ * it down to the known TABLES here (so a hand-edited file cannot name
+ * `profiles` and hand back an admin role that was removed on purpose), and
+ * `restore_snapshot()` drops unknown COLUMNS and type-checks the values in the
+ * database.
+ *
+ * The `pre_restore` snapshot is still taken first. Not because a failure could
+ * leave a mess any more - the restore is one transaction now - but because a
+ * SUCCESSFUL restore of the wrong file is still a thing people do, and that is
+ * the only way back from it.
  */
 export async function importBackupAction(raw: unknown): Promise<Result> {
   const user = await getCurrentUser();
@@ -96,7 +103,9 @@ export async function restoreBackupAction(id: string): Promise<Result> {
   if (!can.manageBackups(user)) return DENY;
   if (!USE_SUPABASE) return NO_SUPABASE;
   try {
-    // Safety net: snapshot current state before overwriting anything.
+    // Taken BEFORE reading the target, so an unknown id costs a harmless extra
+    // snapshot rather than leaving the user without one. The restore itself is
+    // atomic; this exists to undo a restore that succeeded and was wrong.
     await createBackup("pre_restore", user.id);
     const data = await getBackupData(id);
     if (!data) return { ok: false, error: "Backup tidak ditemukan." };

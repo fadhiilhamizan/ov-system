@@ -542,6 +542,88 @@ end; $fn$;
 revoke all on function decide_role_request(uuid, boolean) from public, anon;
 grant execute on function decide_role_request(uuid, boolean) to authenticated;
 
+-- Restore backup, dalam SATU transaksi (0043).
+--
+-- Dulu aplikasi mengirim 16 DELETE lalu 16 INSERT lewat PostgREST, masing-
+-- masing transaksinya sendiri, jadi kegagalan di tengah meninggalkan database
+-- setengah dipulihkan tanpa jalan kembali. Badan fungsi plpgsql berjalan dalam
+-- satu transaksi: gagal di mana pun membatalkan seluruhnya.
+--
+-- SECURITY INVOKER, bukan definer: RLS tetap berlaku, tidak ada jalur yang
+-- melewatinya. Admin tetap bisa menyentuh edisi terkunci semata karena
+-- `writable_event()` memang selalu true untuk admin.
+drop function if exists restore_snapshot(jsonb);
+create or replace function restore_snapshot(payload jsonb)
+returns jsonb
+language plpgsql security invoker set search_path = public as $fn$
+declare
+  tbl       text;
+  i         int;
+  deleted   bigint;
+  inserted  bigint;
+  cols      text;
+  report    jsonb := '{}'::jsonb;
+  -- Urutan HAPUS: anak dulu. INSERT menyusuri terbalik. Kembar dengan
+  -- DELETE_ORDER di src/lib/backup.ts.
+  del_order constant text[] := array[
+    'task_links', 'task_refs', 'prospect_links', 'budget_items',
+    'tasks', 'members', 'teams', 'rundown', 'job_harih',
+    'prospects', 'links', 'budget_plans', 'faqs', 'divisions', 'events'
+  ];
+begin
+  if auth_role() <> 'admin' or is_anon() then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  if payload is null or jsonb_typeof(payload) <> 'object' then
+    raise exception 'snapshot payload must be a json object' using errcode = '22023';
+  end if;
+
+  -- Ribuan baris hapus dan tulis: mencatat tiap barisnya akan mengubur riwayat
+  -- asli. Jejaknya tetap ada lewat baris pre_restore di tabel backups.
+  perform set_config('app.audit', 'off', true);
+
+  foreach tbl in array del_order loop
+    execute format('delete from public.%I', tbl);
+    get diagnostics deleted = row_count;
+    report := jsonb_set(report, array[tbl],
+      jsonb_build_object('deleted', deleted, 'inserted', 0), true);
+  end loop;
+
+  for i in reverse array_length(del_order, 1) .. 1 loop
+    tbl := del_order[i];
+    if payload ? tbl and jsonb_typeof(payload -> tbl) = 'array' then
+      -- Kolom yang BENAR-BENAR disebut berkas dan memang ada di tabel.
+      -- Kunci asing hilang di sini (bukan di JavaScript), dan yang lebih
+      -- penting: kolom yang tidak disebut sama sekali TIDAK ikut di-insert,
+      -- jadi nilainya jatuh ke DEFAULT kolom. Versi pertama memakai
+      -- `select *`, yang menulis NULL untuk kolom yang tidak ada di berkas
+      -- dan menimpa default - satu snapshot lama yang dibuat sebelum sebuah
+      -- kolom NOT NULL ditambahkan akan menggagalkan seluruh restore.
+      select string_agg(quote_ident(c.column_name), ', ' order by c.ordinal_position)
+        into cols
+        from information_schema.columns c
+       where c.table_schema = 'public'
+         and c.table_name = tbl
+         and exists (
+           select 1 from jsonb_array_elements(payload -> tbl) e where e ? c.column_name
+         );
+
+      if cols is not null then
+        execute format(
+          'insert into public.%I (%s) select %s from jsonb_populate_recordset(null::public.%I, $1)',
+          tbl, cols, cols, tbl
+        ) using payload -> tbl;
+        get diagnostics inserted = row_count;
+        report := jsonb_set(report, array[tbl, 'inserted'], to_jsonb(inserted), true);
+      end if;
+    end if;
+  end loop;
+
+  return report;
+end; $fn$;
+revoke all on function restore_snapshot(jsonb) from public, anon;
+grant execute on function restore_snapshot(jsonb) to authenticated;
+
 -- Penomoran otomatis. Advisory lock membuat dua insert bersamaan dalam lingkup
 -- yang sama tidak bisa menghasilkan nomor kembar.
 create or replace function assign_task_no() returns trigger
