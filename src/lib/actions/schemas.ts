@@ -212,6 +212,25 @@ export const taskRefsSchema = z
     }
   });
 
+// ---------------- Global search ----------------
+/**
+ * What the command palette may send.
+ *
+ * `searchAction` was the one action with no schema at all, which is easy to
+ * miss because it only reads. It still deserves one: it fires on a debounce
+ * while somebody types, so it is the most-called action here, and the string
+ * goes straight into `String.includes` against every row of ten tables. A cap
+ * keeps a pathological payload from being scanned across the whole dataset.
+ * Too-long queries are trimmed to the cap rather than rejected - a search box
+ * that answers "your query is invalid" instead of just searching is worse than
+ * one that searches the first 200 characters.
+ */
+export const searchQuerySchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .transform((s) => s.slice(0, 200));
+
 // ---------------- Violet (chatbot) ----------------
 /**
  * What the chat box may send. Caps exist because every field is forwarded to a

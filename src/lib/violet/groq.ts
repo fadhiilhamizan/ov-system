@@ -31,7 +31,12 @@ const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 const configured = () => !!process.env.GROQ_API_KEY;
 
-async function generate(system: string, history: Turn[], question: string): Promise<LlmResult> {
+async function generate(
+  system: string,
+  history: Turn[],
+  question: string,
+  timeoutMs: number = PROVIDER_TIMEOUT_MS,
+): Promise<LlmResult> {
   const key = process.env.GROQ_API_KEY;
   if (!key) return { ok: false, error: { code: "not_configured" } };
   const model = process.env.GROQ_MODEL || DEFAULT_MODEL;
@@ -58,7 +63,7 @@ async function generate(system: string, history: Turn[], question: string): Prom
         temperature: 0,
         max_tokens: 900,
       }),
-      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
     return { ok: false, error: classifyThrow(e) };

@@ -53,6 +53,31 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.40.0",
+    date: "2026-08-29",
+    title: "Menyeret urutan, memilih banyak baris, dan membuka halaman jadi lebih ringan",
+    changes: [
+      { kind: "fix", text: "Menyeret satu baris untuk mengurutkan ulang RAB, FAQ, atau Hari-H kini satu perintah saja. Sebelumnya satu seretan mengirim satu perintah per baris, jadi daftar panjang bisa tersimpan setengah-setengah kalau ada yang gagal." },
+      { kind: "fix", text: "Mencentang banyak tugas lalu mengubah status atau menghapusnya tidak lagi membaca satu per satu ke database." },
+      { kind: "fix", text: "Halaman Work Breakdown, Kalender, Papan Divisi, dan Reach & Offer memuat tautannya dengan lebih sedikit permintaan." },
+      { kind: "fix", text: "Menyimpan tugas atau prospek dengan banyak tautan jadi jauh lebih cepat." },
+      { kind: "fix", text: "Menambah FAQ, divisi, item RAB, atau Ormawa Visit baru bersamaan dengan orang lain tidak lagi bisa menghasilkan nomor urut kembar." },
+      { kind: "fix", text: "Berpindah halaman tidak lagi menanyakan sesi ke server dua kali." },
+    ],
+  },
+  {
+    version: "1.39.1",
+    date: "2026-08-28",
+    title: "Pencarian lebih cepat, Violet tidak lagi menggantung lama",
+    changes: [
+      { kind: "fix", text: "Pencarian global jadi jauh lebih responsif: semua menu dibaca sekaligus, bukan satu per satu, dan pencarian berhenti begitu tiap kelompok sudah penuh." },
+      { kind: "security", text: "Pencarian kini memvalidasi kata kunci yang dikirim, seperti seluruh aksi lain di sistem ini." },
+      { kind: "fix", text: "Kalau penyedia Violet yang pertama menggantung, giliran penyedia cadangan sekarang dibatasi sisa waktu yang ada. Sebelumnya satu pertanyaan bisa memutar loading sampai satu menit." },
+      { kind: "new", text: "Pengaturan menampilkan status penyedia Violet: mana yang utama, mana yang cadangan, dan apakah kuncinya sudah dipasang. Berguna saat Violet tiba-tiba tidak menjawab." },
+      { kind: "fix", text: "Violet mengambil semua data yang dibutuhkannya dalam satu gelombang, bukan tiga, jadi jawabannya mulai lebih cepat." },
+    ],
+  },
+  {
     version: "1.39.0",
     date: "2026-08-28",
     title: "Pemulihan backup kini sekali jalan: berhasil semua atau tidak sama sekali",

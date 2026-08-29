@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createTask, deleteTask, getTask, updateTask, bulkUpdateTasks, bulkDeleteTasks,
-  syncTaskLinks, purgeTaskLinks, syncTaskRefs,
+  syncTaskLinks, purgeTaskLinks, syncTaskRefs, getTasksByIds,
 } from "@/lib/data/repo";
 import type { AppUser, DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
 import {
@@ -141,9 +141,10 @@ export async function bulkSetStatusAction(ids: string[], status: TaskStatus): Pr
   const sv = parse(taskStatusSchema, status);
   if (!sv.ok) return sv;
   const user = await getCurrentUser();
-  // Fetch the rows so unknown ids are dropped, then apply the change in ONE
-  // batched write instead of N round-trips.
-  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  // One query in, one query out. Reading the rows first is what drops unknown
+  // ids and gives the archive guard something to check; it used to be one round
+  // trip PER selected id, which the already-batched write below disguised.
+  const tasks = await getTasksByIds(ids);
   const blocked = await archivedGuardForTasks(user, tasks);
   if (blocked) return blocked;
   const allowed = can.editTaskProgress(user) ? tasks.map((t) => t.id) : [];
@@ -176,7 +177,7 @@ export async function bulkUpdateTaskFieldsAction(
   const user = await getCurrentUser();
   if (!can.editTask(user)) return { ok: false, error: "Kamu tidak punya akses mengedit tugas." };
 
-  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  const tasks = await getTasksByIds(ids);
   const blocked = await archivedGuardForTasks(user, tasks);
   if (blocked) return blocked;
 
@@ -192,7 +193,7 @@ export async function bulkUpdateTaskFieldsAction(
 
 export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> {
   const user = await getCurrentUser();
-  const tasks = (await Promise.all(ids.map((id) => getTask(id)))).filter((t): t is Task => !!t);
+  const tasks = await getTasksByIds(ids);
   const blocked = await archivedGuardForTasks(user, tasks);
   if (blocked) return blocked;
   const allowed = can.deleteTask(user) ? tasks.map((t) => t.id) : [];

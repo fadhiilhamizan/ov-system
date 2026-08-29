@@ -5,6 +5,12 @@
 export const EN: Record<string, string> = {
   // Nav groups
   "Utama": "Main",
+  "Cadangan": "Fallback",
+  "Asisten Violet": "Violet assistant",
+  "Kunci terpasang": "Key configured",
+  "Belum diatur": "Not configured",
+  "Violet mencoba penyedia sesuai urutan di bawah dan memakai jawaban pertama yang berhasil. Kalau kuota harian penyedia utama habis, penyedia cadangan yang menjawab.": "Violet tries the providers in the order below and uses the first answer that works. When the main provider's daily quota runs out, the fallback answers instead.",
+  "Belum ada penyedia yang diatur, jadi tombol Violet tidak muncul untuk siapa pun. Isi GEMINI_API_KEY atau GROQ_API_KEY di environment server.": "No provider is configured, so the Violet button does not appear for anyone. Set GEMINI_API_KEY or GROQ_API_KEY in the server environment.",
   "Operasional": "Operational",
   "Relasi & Aset": "Relations & Assets",
   "Organisasi": "Organization",

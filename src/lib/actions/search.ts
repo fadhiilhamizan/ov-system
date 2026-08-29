@@ -8,6 +8,7 @@ import {
 } from "@/lib/data/repo";
 import { STATUS_META } from "@/lib/constants";
 import { memberDivisions } from "@/lib/members";
+import { searchQuerySchema, parse } from "./schemas";
 
 /** One row in the palette. `href` is where Enter takes you. */
 export interface SearchHit {
@@ -37,25 +38,52 @@ function norm(s: unknown): string {
  * budget or Super Link hits back even as raw JSON.
  */
 export async function searchAction(query: string): Promise<SearchHit[]> {
-  const q = query.trim().toLowerCase();
+  // The palette calls this on a 220ms debounce while somebody types, so it is
+  // the highest-frequency action in the app. Validate like any other: it is
+  // client input, and an unbounded string has no business reaching the loops
+  // below.
+  const v = parse(searchQuerySchema, query);
+  if (!v.ok) return [];
+  const q = v.data.toLowerCase();
   if (q.length < 2) return [];
 
   const user = await getCurrentUser();
   const event = await getActiveEvent();
   const allowed = (moduleKey: string) => can.accessModule(user, moduleKey);
+
   const hits: SearchHit[] = [];
+  // Counted, not re-scanned. `push` used to filter the whole `hits` array on
+  // every call to find out how full a group was.
+  const perGroup = new Map<string, number>();
+  const full = (group: string) => (perGroup.get(group) ?? 0) >= MAX_PER_GROUP;
   const push = (h: SearchHit) => {
-    if (hits.filter((x) => x.group === h.group).length < MAX_PER_GROUP) hits.push(h);
+    if (full(h.group)) return;
+    perGroup.set(h.group, (perGroup.get(h.group) ?? 0) + 1);
+    hits.push(h);
   };
 
-  const [tasks, divisions, members, events] = await Promise.all([
+  // ONE wave, not two. Everything below is independent, but the six modules
+  // after this batch used to be awaited one after another inside their own
+  // `if (allowed(...))` blocks, so a search cost four parallel round trips plus
+  // six sequential ones. On a debounced keystroke that is the whole latency.
+  const [
+    tasks, divisions, members, events,
+    prospects, links, plans, rundown, jobs, faqs,
+  ] = await Promise.all([
     allowed("tasks") ? getTasks({ event_id: event.id }) : [],
     allowed("divisions") ? getDivisions(event.id) : [],
     allowed("members") ? getMembers(event.id) : [],
     allowed("events") ? getEvents() : [],
+    allowed("prospects") ? getProspects(event.id) : [],
+    allowed("links") ? getLinks(event.id) : [],
+    allowed("budget") ? getBudgetPlans(event.id) : [],
+    allowed("rundown") ? getRundown(event.id) : [],
+    allowed("jobs") ? getJobs(event.id) : [],
+    allowed("faq") ? getFaqs() : [],
   ]);
 
   for (const t of tasks) {
+    if (full("tasks")) break;
     if (`${norm(t.title)} ${norm(t.pic)} ${norm(t.notes)} ${norm(t.result)} ${norm(t.no)}`.includes(q)) {
       push({
         id: `task-${t.id}`,
@@ -68,6 +96,7 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
   }
 
   for (const d of divisions) {
+    if (full("divisions")) break;
     if (`${norm(d.name)} ${norm(d.key)} ${norm(d.short)}`.includes(q)) {
       push({
         id: `div-${d.key}`,
@@ -80,6 +109,7 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
   }
 
   for (const m of members) {
+    if (full("members")) break;
     if (`${norm(m.name)} ${norm(m.nickname)} ${norm(m.nrp)}`.includes(q)) {
       push({
         id: `member-${m.id}`,
@@ -92,6 +122,7 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
   }
 
   for (const e of events) {
+    if (full("events")) break;
     if (`${norm(e.title)} ${norm(e.code)} ${norm(e.partner)} ${norm(e.campus)} ${norm(e.cabinet)}`.includes(q)) {
       push({
         id: `event-${e.id}`,
@@ -103,80 +134,74 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
     }
   }
 
-  if (allowed("prospects")) {
-    for (const p of await getProspects(event.id)) {
-      if (`${norm(p.org_name)} ${norm(p.campus)} ${norm(p.pic)} ${norm(p.contact)}`.includes(q)) {
+  for (const p of prospects) {
+    if (full("prospects")) break;
+    if (`${norm(p.org_name)} ${norm(p.campus)} ${norm(p.pic)} ${norm(p.contact)}`.includes(q)) {
+      push({
+        id: `prospect-${p.id}`,
+        group: "prospects",
+        title: p.org_name || "(tanpa nama)",
+        subtitle: [p.campus, p.pic].filter(Boolean).join(" · "),
+        href: "/prospects",
+      });
+    }
+  }
+
+  for (const l of links) {
+    if (full("links")) break;
+    if (`${norm(l.name)} ${norm(l.section)} ${norm(l.note)} ${norm(l.division)}`.includes(q)) {
+      push({
+        id: `link-${l.id}`,
+        group: "links",
+        title: l.name,
+        subtitle: [l.section, l.division].filter(Boolean).join(" · "),
+        href: "/links",
+      });
+    }
+  }
+
+  for (const plan of plans) {
+    if (full("budget")) break;
+    if (norm(plan.name).includes(q)) {
+      push({ id: `plan-${plan.id}`, group: "budget", title: plan.name, subtitle: "Rencana anggaran", href: "/budget" });
+    }
+    for (const item of plan.items) {
+      if (`${norm(item.name)} ${norm(item.category)}`.includes(q)) {
         push({
-          id: `prospect-${p.id}`,
-          group: "prospects",
-          title: p.org_name || "(tanpa nama)",
-          subtitle: [p.campus, p.pic].filter(Boolean).join(" · "),
-          href: "/prospects",
+          id: `item-${item.id}`,
+          group: "budget",
+          title: item.name,
+          subtitle: `${item.category} · ${plan.name}`,
+          href: "/budget",
         });
       }
     }
   }
 
-  if (allowed("links")) {
-    for (const l of await getLinks(event.id)) {
-      if (`${norm(l.name)} ${norm(l.section)} ${norm(l.note)} ${norm(l.division)}`.includes(q)) {
-        push({
-          id: `link-${l.id}`,
-          group: "links",
-          title: l.name,
-          subtitle: [l.section, l.division].filter(Boolean).join(" · "),
-          href: "/links",
-        });
-      }
+  for (const r of rundown) {
+    if (full("rundown")) break;
+    if (`${norm(r.activity)} ${norm(r.keterangan)} ${norm(r.mc)} ${norm(r.operator)}`.includes(q)) {
+      push({
+        id: `rundown-${r.id}`,
+        group: "rundown",
+        title: r.activity || "(kegiatan kosong)",
+        subtitle: [r.time_start && r.time_end ? `${r.time_start}–${r.time_end}` : null, r.mc].filter(Boolean).join(" · "),
+        href: "/rundown",
+      });
     }
   }
 
-  if (allowed("budget")) {
-    for (const plan of await getBudgetPlans(event.id)) {
-      if (norm(plan.name).includes(q)) {
-        push({ id: `plan-${plan.id}`, group: "budget", title: plan.name, subtitle: "Rencana anggaran", href: "/budget" });
-      }
-      for (const item of plan.items) {
-        if (`${norm(item.name)} ${norm(item.category)}`.includes(q)) {
-          push({
-            id: `item-${item.id}`,
-            group: "budget",
-            title: item.name,
-            subtitle: `${item.category} · ${plan.name}`,
-            href: "/budget",
-          });
-        }
-      }
+  for (const j of jobs) {
+    if (full("jobs")) break;
+    if (`${norm(j.job)} ${norm(j.pic)} ${norm(j.notes)}`.includes(q)) {
+      push({ id: `job-${j.id}`, group: "jobs", title: j.job, subtitle: j.pic || "Hari-H", href: "/jobs" });
     }
   }
 
-  if (allowed("rundown")) {
-    for (const r of await getRundown(event.id)) {
-      if (`${norm(r.activity)} ${norm(r.keterangan)} ${norm(r.mc)} ${norm(r.operator)}`.includes(q)) {
-        push({
-          id: `rundown-${r.id}`,
-          group: "rundown",
-          title: r.activity || "(kegiatan kosong)",
-          subtitle: [r.time_start && r.time_end ? `${r.time_start}–${r.time_end}` : null, r.mc].filter(Boolean).join(" · "),
-          href: "/rundown",
-        });
-      }
-    }
-  }
-
-  if (allowed("jobs")) {
-    for (const j of await getJobs(event.id)) {
-      if (`${norm(j.job)} ${norm(j.pic)} ${norm(j.notes)}`.includes(q)) {
-        push({ id: `job-${j.id}`, group: "jobs", title: j.job, subtitle: j.pic || "Hari-H", href: "/jobs" });
-      }
-    }
-  }
-
-  if (allowed("faq")) {
-    for (const f of await getFaqs()) {
-      if (`${norm(f.question)} ${norm(f.answer)}`.includes(q)) {
-        push({ id: `faq-${f.id}`, group: "faq", title: f.question, subtitle: "FAQ", href: "/faq" });
-      }
+  for (const f of faqs) {
+    if (full("faq")) break;
+    if (`${norm(f.question)} ${norm(f.answer)}`.includes(q)) {
+      push({ id: `faq-${f.id}`, group: "faq", title: f.question, subtitle: "FAQ", href: "/faq" });
     }
   }
 

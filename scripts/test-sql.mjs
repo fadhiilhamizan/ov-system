@@ -1113,6 +1113,65 @@ console.log("0041 - compare_subjects");
 // perintah ke-sembilan berarti setengah tabel sudah kosong dan tidak ada jalan
 // kembali.
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// 0044: reorder_rows() + sequence untuk kolom "order".
+//
+// Ditaruh SEBELUM blok restore, karena restore menghapus seluruh data uji.
+// ------------------------------------------------------------------
+console.log("0044 - reorder_rows + sequence urutan");
+{
+  const callAs = async (uid, anon, kind, ids) => {
+    await db.exec(`set role authenticated;`);
+    await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}'; set test.email = 'x@ov.test';`);
+    try {
+      const r = await db.query(`select reorder_rows($1, $2::uuid[]) as n`, [kind, ids]);
+      return { n: Number(r.rows[0].n) };
+    } catch (e) {
+      return { error: e.message.split("\n")[0] };
+    } finally {
+      await db.exec(`reset role;`);
+    }
+  };
+
+  // Three FAQs, deliberately inserted without an "order" so the sequence
+  // assigns it - that is the create path the app now uses.
+  await db.exec(`
+    set role authenticated; set test.uid='${U.admin}'; set test.anon='false'; set test.email='admin@ov.test';
+    insert into faqs (id, question, answer) values
+      ('f0000000-0000-0000-0000-000000000001','A','a'),
+      ('f0000000-0000-0000-0000-000000000002','B','b'),
+      ('f0000000-0000-0000-0000-000000000003','C','c');
+    reset role;`);
+
+  /** Full ids, in stored order. */
+  const faqOrder = async () =>
+    (await db.query(`select id from faqs order by "order"`)).rows.map((r) => r.id);
+
+  const seeded = (await db.query(`select count(distinct "order") c, count(*) t from faqs`)).rows[0];
+  ok("sequence memberi nomor urut yang BERBEDA tanpa max()+1",
+    Number(seeded.c) === Number(seeded.t));
+
+  const before = await faqOrder();
+  const reversed = [...before].reverse();
+
+  const r = await callAs(U.admin, false, "faqs", reversed);
+  ok("admin boleh mengurutkan ulang", !r.error && r.n === 3);
+  if (r.error) console.log(`      -> ${r.error}`);
+  const after = await faqOrder();
+  ok("urutannya benar-benar terbalik", after.join(",") === reversed.join(","));
+
+  const denied = await callAs(U.intern, false, "faqs", reversed);
+  ok("intern DITOLAK mengurutkan FAQ (faqs admin-only)", !denied.error && denied.n === 0);
+
+  const bogus = await callAs(U.admin, false, "tabel_karangan", reversed);
+  ok("jenis daftar yang tidak dikenal ditolak", !!bogus.error);
+
+  const empty = await callAs(U.admin, false, "faqs", []);
+  ok("daftar kosong tidak melakukan apa-apa", !empty.error && empty.n === 0);
+
+  await db.exec(`set role authenticated; set test.uid='${U.admin}'; set test.email='admin@ov.test'; delete from faqs; reset role;`);
+}
+
 console.log("0043 - restore_snapshot (transaksional)");
 {
   const callAs = async (uid, anon, payload) => {

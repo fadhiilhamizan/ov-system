@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Check, Minus, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink, Code2 } from "lucide-react";
+import { Check, Minus, Sparkles, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink, Code2 } from "lucide-react";
 import { ARCHIVE_SHEETS } from "@/lib/archives";
 import { USE_SUPABASE } from "@/lib/auth";
 import { requireModule } from "@/lib/guard";
@@ -8,6 +8,7 @@ import { listBackupsAction } from "@/lib/actions/backup";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { APP_VERSION } from "@/lib/version";
 import { CHANGELOG } from "@/lib/changelog";
+import { providerStatus } from "@/lib/violet/llm";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export default async function SettingsPage() {
   // Backup only makes sense against the real (production) DB - in the demo
   // sandbox we offer a "reset to initial data" instead.
   const backupsResult = canBackup && !isDemo ? await listBackupsAction() : null;
+  const violetProviders = providerStatus();
 
   return (
     <div className="space-y-5">
@@ -194,6 +196,37 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
         )
+      )}
+
+      {/* Violet. Admin-only: which provider answers is operational detail, and
+          "no key configured" is the answer to "why is Violet not replying". */}
+      {canBackup && (
+        <Card id="violet">
+          <CardHeader className="flex-row items-center gap-2">
+            <Sparkles className="size-4 text-primary" />
+            <CardTitle>{t("Asisten Violet")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {violetProviders.some((p) => p.configured)
+                ? t("Violet mencoba penyedia sesuai urutan di bawah dan memakai jawaban pertama yang berhasil. Kalau kuota harian penyedia utama habis, penyedia cadangan yang menjawab.")
+                : t("Belum ada penyedia yang diatur, jadi tombol Violet tidak muncul untuk siapa pun. Isi GEMINI_API_KEY atau GROQ_API_KEY di environment server.")}
+            </p>
+            <div className="divide-y divide-border rounded-lg border border-border">
+              {violetProviders.map((p) => (
+                <div key={p.name} className="flex items-center gap-3 px-3 py-2.5">
+                  <Badge variant="outline" className="shrink-0 tabular-nums">
+                    {p.order === 0 ? t("Utama") : t("Cadangan")}
+                  </Badge>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.label}</span>
+                  <Badge variant={p.configured ? "success" : "warning"} className="shrink-0">
+                    {p.configured ? t("Kunci terpasang") : t("Belum diatur")}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Roles matrix */}

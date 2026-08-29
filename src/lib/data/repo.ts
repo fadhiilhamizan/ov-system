@@ -77,6 +77,17 @@ function coalesce<T>(rows: T[], keys: string[]): T[] {
   });
 }
 
+/** Drop the embedded parent PostgREST returns alongside an `!inner` filter.
+ *  The join is only there to narrow the query; the extra key would otherwise
+ *  travel to the client on every row and change the shape callers expect. */
+function dropEmbed<T>(rows: T[], key: string): T[] {
+  return rows.map((r) => {
+    const o = { ...(r as Record<string, unknown>) };
+    delete o[key];
+    return o as T;
+  });
+}
+
 // NOTE: read getters are wrapped in React cache() so repeated calls within a
 // single request (e.g. layout + page both need events/divisions) hit Supabase
 // only once. Cache is keyed by primitive args.
@@ -123,10 +134,22 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
   const events = await getEvents();
   const active = events.find((e) => e.status === "active");
   if (active) return active;
-  const { data } = await (await sb()).from("tasks").select("event_id");
-  const withTasks = new Set((data ?? []).map((r: { event_id: string }) => r.event_id));
-  const list = events.filter((e) => withTasks.has(e.id));
-  return list[list.length - 1] ?? events[events.length - 1] ?? events[0] ?? EMPTY_EVENT;
+
+  // Newest edition that actually has work in it. Asked one edition at a time,
+  // newest first, stopping at the first hit: in practice that is a single query
+  // returning a single row.
+  //
+  // It used to `select event_id` from the WHOLE tasks table and build a Set out
+  // of it - every task row in the database, across every edition, shipped to
+  // the server to answer a question about five ids. The worst case here (no
+  // edition has any task) is one small query per edition, which only happens on
+  // a fresh install where there are almost none.
+  const client = await sb();
+  for (let i = events.length - 1; i >= 0; i--) {
+    const { data } = await client.from("tasks").select("id").eq("event_id", events[i].id).limit(1);
+    if (data?.length) return events[i];
+  }
+  return events[events.length - 1] ?? events[0] ?? EMPTY_EVENT;
 });
 
 // ---------------- Members ----------------
@@ -160,6 +183,30 @@ export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> =
   ]);
   return rows.map(withOvertime);
 });
+/**
+ * Several tasks by id, in ONE query.
+ *
+ * The bulk actions used to do `Promise.all(ids.map(getTask))`, which is one
+ * round trip per selected row: ticking a hundred tasks and pressing Delete
+ * opened a hundred connections to read what a single `in` clause answers. The
+ * write beneath it was already batched, which is what made the read easy to
+ * miss.
+ *
+ * Unknown ids are simply absent from the result, exactly as the per-id version
+ * returned null for them, so callers keep filtering the same way.
+ */
+export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[]> => {
+  if (!ids.length) return [];
+  if (!USE_SUPABASE) {
+    return ids.map((id) => local.getTask(id)).filter((t): t is Task => !!t);
+  }
+  const { data } = await (await sb()).from("tasks").select("*").in("id", [...ids]);
+  const rows = coalesce((data ?? []) as Task[], [
+    "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
+  ]);
+  return rows.map(withOvertime);
+});
+
 export const getTask = cache(async (id: string): Promise<Task | null> => {
   if (!USE_SUPABASE) return local.getTask(id);
   const { data } = await (await sb()).from("tasks").select("*").eq("id", id).maybeSingle();
@@ -225,12 +272,16 @@ export const getTaskLinks = cache(async (taskId: string): Promise<TaskLink[]> =>
 export const getTaskLinksByEvent = cache(async (eventId: string): Promise<Record<string, TaskLink[]>> => {
   const rows = USE_SUPABASE
     ? await (async () => {
-        const client = await sb();
-        const { data: tasks } = await client.from("tasks").select("id").eq("event_id", eventId);
-        const ids = (tasks ?? []).map((t: { id: string }) => t.id);
-        if (!ids.length) return [] as TaskLink[];
-        const { data } = await client.from("task_links").select("*").in("task_id", ids).order("order");
-        return coalesce((data ?? []) as TaskLink[], ["url", "label"]);
+  // ONE query. This used to fetch the edition's ids first and then feed them
+  // back as an `in` list, so every task page paid two round trips per child
+  // table and sent every id over the wire twice. `!inner` makes the embedded
+  // parent a join rather than a left join, so the filter actually narrows.
+        const { data } = await (await sb())
+          .from("task_links")
+          .select("*, tasks!inner(event_id)")
+          .eq("tasks.event_id", eventId)
+          .order("order");
+        return coalesce(dropEmbed((data ?? []) as TaskLink[], "tasks"), ["url", "label"]);
       })()
     : local.getTaskLinksByEvent(eventId);
   const map: Record<string, TaskLink[]> = {};
@@ -252,15 +303,24 @@ export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
   const existing = await getTaskLinks(task.id);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
 
-  // 1) Deletions
-  for (const ex of existing) {
-    if (keep.has(ex.id)) continue;
-    if (ex.link_id) await deleteLink(ex.link_id);
-    await must(client.from("task_links").delete().eq("id", ex.id));
-  }
+  // 1) Deletions. Independent of each other, so they go together: this was one
+  // round trip per removed link, and with the Super Link row that is two.
+  await Promise.all(
+    existing
+      .filter((ex) => !keep.has(ex.id))
+      .map(async (ex) => {
+        // Within ONE link the order still matters - the Super Link row is the
+        // child's `link_id` target, so it goes first.
+        if (ex.link_id) await deleteLink(ex.link_id);
+        await must(client.from("task_links").delete().eq("id", ex.id));
+      }),
+  );
 
-  // 2) Upserts (order follows the form)
-  for (const [i, input] of inputs.entries()) {
+  // 2) Upserts. Also independent per link (each writes its own row, and `order`
+  // is its position in the submitted array, not a running counter), so the
+  // whole form saves in a couple of waves instead of three round trips per
+  // link. `taskLinksSchema` caps this at 20, so the fan-out is bounded.
+  await Promise.all(inputs.map(async (input, i) => {
     const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
     const superRow = {
       event_id: task.event_id,
@@ -290,7 +350,7 @@ export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
     };
     if (ex) await must(client.from("task_links").update(row).eq("id", ex.id));
     else await must(client.from("task_links").insert({ task_id: task.id, ...row }));
-  }
+  }));
 }
 
 /** Remove a task's Super Link rows before the task (and its task_links) go. */
@@ -318,12 +378,16 @@ export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
 export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<string, TaskRef[]>> => {
   const rows = USE_SUPABASE
     ? await (async () => {
-        const client = await sb();
-        const { data: tasks } = await client.from("tasks").select("id").eq("event_id", eventId);
-        const ids = (tasks ?? []).map((t: { id: string }) => t.id);
-        if (!ids.length) return [] as TaskRef[];
-        const { data } = await client.from("task_refs").select("*").in("task_id", ids).order("order");
-        return coalesce((data ?? []) as TaskRef[], ["url", "label"]);
+  // ONE query. This used to fetch the edition's ids first and then feed them
+  // back as an `in` list, so every task page paid two round trips per child
+  // table and sent every id over the wire twice. `!inner` makes the embedded
+  // parent a join rather than a left join, so the filter actually narrows.
+        const { data } = await (await sb())
+          .from("task_refs")
+          .select("*, tasks!inner(event_id)")
+          .eq("tasks.event_id", eventId)
+          .order("order");
+        return coalesce(dropEmbed((data ?? []) as TaskRef[], "tasks"), ["url", "label"]);
       })()
     : local.getTaskRefsByEvent(eventId);
   const byTask: Record<string, TaskRef[]> = {};
@@ -442,13 +506,16 @@ export const getProspectLinksByEvent = cache(
   async (eventId: string): Promise<Record<string, ProspectLink[]>> => {
     const rows = USE_SUPABASE
       ? await (async () => {
-          const client = await sb();
-          const { data: ps } = await client.from("prospects").select("id").eq("event_id", eventId);
-          const ids = (ps ?? []).map((p: { id: string }) => p.id);
-          if (!ids.length) return [] as ProspectLink[];
-          const { data } = await client
-            .from("prospect_links").select("*").in("prospect_id", ids).order("order");
-          return coalesce((data ?? []) as ProspectLink[], ["url", "label"]);
+    // ONE query. This used to fetch the edition's ids first and then feed them
+    // back as an `in` list, so every prospect page paid two round trips per child
+    // table and sent every id over the wire twice. `!inner` makes the embedded
+    // parent a join rather than a left join, so the filter actually narrows.
+          const { data } = await (await sb())
+            .from("prospect_links")
+            .select("*, prospects!inner(event_id)")
+            .eq("prospects.event_id", eventId)
+            .order("order");
+          return coalesce(dropEmbed((data ?? []) as ProspectLink[], "prospects"), ["url", "label"]);
         })()
       : local.getProspectLinksByEvent(eventId);
     const byProspect: Record<string, ProspectLink[]> = {};
@@ -473,15 +540,18 @@ export async function syncProspectLinks(prospect: Prospect, inputs: ProspectLink
   const existing = await getProspectLinks(prospect.id);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
 
-  // 1) Deletions
-  for (const ex of existing) {
-    if (keep.has(ex.id)) continue;
-    if (ex.link_id) await deleteLink(ex.link_id);
-    await must(client.from("prospect_links").delete().eq("id", ex.id));
-  }
+  // 1) Deletions, together. Same reasoning as syncTaskLinks.
+  await Promise.all(
+    existing
+      .filter((ex) => !keep.has(ex.id))
+      .map(async (ex) => {
+        if (ex.link_id) await deleteLink(ex.link_id);
+        await must(client.from("prospect_links").delete().eq("id", ex.id));
+      }),
+  );
 
-  // 2) Upserts (order follows the form)
-  for (const [i, input] of inputs.entries()) {
+  // 2) Upserts, together. Capped at 20 by prospectLinksSchema.
+  await Promise.all(inputs.map(async (input, i) => {
     const ex = input.id ? existing.find((e) => e.id === input.id) : undefined;
     const superRow = {
       event_id: prospect.event_id ?? null,
@@ -513,7 +583,7 @@ export async function syncProspectLinks(prospect: Prospect, inputs: ProspectLink
     };
     if (ex) await must(client.from("prospect_links").update(row).eq("id", ex.id));
     else await must(client.from("prospect_links").insert({ prospect_id: prospect.id, ...row }));
-  }
+  }));
 }
 
 /** Remove a prospect's Super Link entries before the prospect itself goes.
@@ -629,13 +699,9 @@ export async function createBudgetItem(
 ) {
   if (!USE_SUPABASE) return local.createBudgetItem(planId, input);
   const client = await sb();
-  const { data: maxRow } = await client
-    .from("budget_items")
-    .select("order")
-    .eq("plan_id", planId)
-    .order("order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // "order" comes from a sequence default (migration 0044) rather than a
+  // max()+1 read: two people adding at the same moment used to read the same
+  // number and write it twice. Gaps do not matter, the column is only sorted on.
   const total = Math.round((input.qty ?? 0) * (input.unit_price ?? 0));
   const { error } = await client.from("budget_items").insert({
     plan_id: planId,
@@ -646,7 +712,6 @@ export async function createBudgetItem(
     unit_price: input.unit_price ?? null,
     total,
     category_color: input.category_color ?? null,
-    order: (maxRow?.order ?? 0) + 1,
   });
   if (error) throw new Error(error.message);
 }
@@ -666,13 +731,29 @@ export async function bulkDeleteBudgetItems(ids: string[]) {
  * pair: category grouping in the UI is derived from this order, so a partial
  * rewrite would leave the untouched items interleaved at stale positions.
  */
+/**
+ * Rewrite an ordering column for a whole list, in ONE statement.
+ *
+ * Dragging one row submits the complete new sequence, and this used to be sent
+ * as one UPDATE per row: an eighty-item RAB meant eighty parallel HTTP requests
+ * for a single drag, any of which could fail on its own and leave the list
+ * half-renumbered. `reorder_rows()` (migration 0044) does it with a single
+ * `update ... from unnest(ids) with ordinality`, so it is also atomic.
+ *
+ * `kind` names a BEHAVIOUR, not a table: the function has a branch per list and
+ * no caller-supplied identifier ever reaches SQL. Each branch owns its own
+ * numbering (budget items are 0-based, FAQs 1-based, Hari-H writes text into
+ * `no`), which is why the offsets are not a parameter.
+ */
+async function reorderVia(kind: "budget_items" | "faqs" | "job_harih", orderedIds: string[]) {
+  const { error } = await (await sb()).rpc("reorder_rows", { kind, ids: orderedIds });
+  if (error) throw new Error(error.message);
+}
+
 export async function reorderBudgetItems(orderedIds: string[]) {
   if (!orderedIds.length) return;
   if (!USE_SUPABASE) return local.reorderBudgetItems(orderedIds);
-  const client = await sb();
-  await Promise.all(
-    orderedIds.map((id, i) => must(client.from("budget_items").update({ order: i }).eq("id", id))),
-  );
+  await reorderVia("budget_items", orderedIds);
 }
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
   if (!USE_SUPABASE) return local.createBudgetPlan(input);
@@ -720,17 +801,13 @@ export const getFaqs = cache(async (): Promise<Faq[]> => {
 });
 export async function createFaq(input: { question: string; answer: string }) {
   if (!USE_SUPABASE) return local.createFaq(input);
-  const client = await sb();
-  const { data: maxRow } = await client
-    .from("faqs")
-    .select("order")
-    .order("order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  await must(client.from("faqs").insert({
+  // No max("order") lookup: the column defaults to a sequence (migration 0044).
+  // Two people adding a FAQ at the same moment used to read the same max and
+  // write the same number; the sequence hands out distinct increasing values
+  // atomically. Gaps are fine - the column is only ever sorted on.
+  await must((await sb()).from("faqs").insert({
     question: input.question,
     answer: input.answer,
-    order: (maxRow?.order ?? 0) + 1,
   }));
 }
 export async function updateFaq(id: string, patch: { question?: string; answer?: string }) {
@@ -745,10 +822,7 @@ export async function deleteFaq(id: string) {
 export async function reorderFaqs(orderedIds: string[]) {
   if (!orderedIds.length) return;
   if (!USE_SUPABASE) return local.reorderFaqs(orderedIds);
-  const client = await sb();
-  await Promise.all(
-    orderedIds.map((id, i) => must(client.from("faqs").update({ order: i + 1 }).eq("id", id))),
-  );
+  await reorderVia("faqs", orderedIds);
 }
 
 // ---------------- Teams ----------------
@@ -898,13 +972,6 @@ export async function createEvent(input: Partial<OVEvent>) {
   if (!USE_SUPABASE) return local.createEvent(input);
   const client = await sb();
   const id = input.id ?? uid("ov");
-  const { data: maxRow } = await client
-    .from("events")
-    .select("order")
-    .order("order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const order = input.order ?? (maxRow?.order ?? 0) + 1;
   await must(client.from("events").insert({
     id,
     code: input.code ?? "",
@@ -926,7 +993,9 @@ export async function createEvent(input: Partial<OVEvent>) {
     feedback_partner_count: input.feedback_partner_count ?? null,
     feedback_partner_rating: input.feedback_partner_rating ?? null,
     report_url: input.report_url ?? null,
-    order,
+    // Only when the caller states one - cloning an edition copies the source
+    // order deliberately. Otherwise the sequence default assigns it.
+    ...(input.order != null ? { order: input.order } : {}),
   }));
 }
 export async function updateEvent(id: string, patch: Partial<OVEvent>) {
@@ -1186,17 +1255,20 @@ export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
 export async function createDivision(input: Partial<Division>) {
   if (!USE_SUPABASE) return local.createDivision(input);
   const client = await sb();
-  // Order is per-event so each Ormawa Visit numbers its own divisions from 1.
-  let mq = client.from("divisions").select("order").order("order", { ascending: false }).limit(1);
-  if (input.event_id) mq = mq.eq("event_id", input.event_id);
-  const { data: maxRow } = await mq.maybeSingle();
+  // "order" comes from a sequence default (migration 0044) rather than a
+  // max()+1 read: two people adding at the same moment used to read the same
+  // number and write it twice. Gaps do not matter, the column is only sorted on.
+  //
+  // The numbering is no longer per-event, and does not need to be: divisions
+  // are only ever SORTED by it inside one edition, so a shared sequence keeps
+  // the relative order right while dropping the per-event max() lookup.
   await must(client.from("divisions").insert({
     event_id: input.event_id ?? null,
     key: input.key ?? uid("DIV").toUpperCase(),
     name: input.name ?? "",
     short: input.short ?? "",
     color: input.color ?? "#6366f1",
-    order: input.order ?? (maxRow?.order ?? 0) + 1,
+    ...(input.order != null ? { order: input.order } : {}),
     exclude_from_rundown: input.exclude_from_rundown ?? false,
   }));
 }
@@ -1339,8 +1411,5 @@ export async function deleteJob(id: string) {
 export async function reorderJobs(orderedIds: string[]) {
   if (!orderedIds.length) return;
   if (!USE_SUPABASE) return local.reorderJobs(orderedIds);
-  const client = await sb();
-  await Promise.all(
-    orderedIds.map((id, i) => must(client.from("job_harih").update({ no: String(i + 1) }).eq("id", id))),
-  );
+  await reorderVia("job_harih", orderedIds);
 }

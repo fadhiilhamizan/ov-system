@@ -108,6 +108,49 @@ do $ce$ begin
   end if;
 end $ce$;
 
+-- 0044: mengurutkan ulang lewat satu perintah, dan sequence untuk nomor urut.
+-- Wajib ada di sini: FAQ, Hari-H dan RAB semuanya bisa dibuka dan diseret di
+-- mode demo, jadi tanpa fungsi ini menyeret satu baris gagal dengan
+-- "Could not find the function public.reorder_rows".
+create or replace function reorder_rows(kind text, ids uuid[])
+returns integer
+language plpgsql security invoker set search_path = public as $rr$
+declare touched integer := 0;
+begin
+  if ids is null or array_length(ids, 1) is null then return 0; end if;
+  if kind = 'budget_items' then
+    update budget_items b set "order" = i.pos - 1
+      from unnest(ids) with ordinality as i(id, pos) where b.id = i.id;
+  elsif kind = 'faqs' then
+    update faqs f set "order" = i.pos
+      from unnest(ids) with ordinality as i(id, pos) where f.id = i.id;
+  elsif kind = 'job_harih' then
+    update job_harih j set no = i.pos::text
+      from unnest(ids) with ordinality as i(id, pos) where j.id = i.id;
+  else
+    raise exception 'unknown reorder kind: %', kind using errcode = '22023';
+  end if;
+  get diagnostics touched = row_count;
+  return touched;
+end; $rr$;
+grant execute on function reorder_rows(text, uuid[]) to authenticated, anon;
+
+-- The create paths stopped sending "order" once it came from a sequence, so the
+-- demo needs the same defaults or new rows all land on 0.
+do $seq$
+declare t text; seq text; hi bigint;
+begin
+  foreach t in array array['faqs', 'events', 'divisions', 'budget_items']
+  loop
+    seq := t || '_order_seq';
+    execute format('create sequence if not exists %I', seq);
+    execute format('alter table %I alter column "order" set default nextval(%L)', t, seq);
+    execute format('select coalesce(max("order"), 0) from %I', t) into hi;
+    execute format('select setval(%L, greatest(%s, (select last_value from %I)) + 1, false)', seq, hi, seq);
+    execute format('grant usage, select on sequence %I to authenticated, anon', seq);
+  end loop;
+end $seq$;
+
 -- Clear this edition's data first (FK-safe order) so the seed is idempotent.
 -- task_links is guarded: it only exists once migration 0025 has been applied.
 -- NOTE: the body below is dollar-quoted, and dollar-quoting is LEXICAL - a

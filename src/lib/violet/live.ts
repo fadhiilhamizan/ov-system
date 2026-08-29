@@ -148,20 +148,37 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   const event = await getActiveEvent();
   if (!event?.id) return [];
 
-  // Fetched UNSCOPED and sliced per edition in JS. That is not extra work:
-  // members, prospects, links and divisions read the whole table anyway and
-  // filter in the repo, and the rest is one query each either way. What it buys
-  // is that every edition can be described, not just the one on screen.
-  const [events, allDivisions, allTasks, allProspects, allLinks, allRundown, allJobs, allPlans] =
-    await Promise.all([
-      getEvents(), getDivisions(), getTasks(), getProspects(),
-      getLinks(), getRundown(), getJobs(), getBudgetPlans(),
-    ]);
-  const [refsByTask, resultLinksByTask, prospectLinksById, fgdPlans, fgdRows, compareEntries] =
-    await Promise.all([
-      getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
-      getFgdPlans(event.id), getFgdRows(event.id), getCompareEntries(event.id),
-    ]);
+  // The roster is PII, so it is read only for roles allowed to see it. Teams
+  // ride along because a division's coordinator lives there.
+  const canSeeRoster = CAN_SEE_ROSTER.has(user.role);
+
+  // ONE wave. These were three: eight unscoped reads, then six scoped ones,
+  // then the roster on its own - so every question paid three round trips of
+  // latency end to end where one would do. Nothing here depends on anything
+  // else here.
+  //
+  // The unscoped reads are NOT an oversight, and scoping them would break the
+  // corpus: `editionDataSummary` emits a passage per edition listing that
+  // edition's task titles, division names and prospect names, so "what is in
+  // OV 2025" is answerable while a different edition is open. Only the ACTIVE
+  // edition gets row-level passages; the rest get that one summary each.
+  //
+  // What this does cost is real and worth knowing: the volume grows with every
+  // edition ever created, on every question. If that becomes the bottleneck the
+  // fix is to summarise old editions from counts rather than full titles, which
+  // is a change to what Violet can answer, not a refactor.
+  const [
+    events, allDivisions, allTasks, allProspects, allLinks, allRundown, allJobs, allPlans,
+    refsByTask, resultLinksByTask, prospectLinksById, fgdPlans, fgdRows, compareEntries,
+    allMembers, allTeams,
+  ] = await Promise.all([
+    getEvents(), getDivisions(), getTasks(), getProspects(),
+    getLinks(), getRundown(), getJobs(), getBudgetPlans(),
+    getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
+    getFgdPlans(event.id), getFgdRows(event.id), getCompareEntries(event.id),
+    canSeeRoster ? getMembers() : [],
+    canSeeRoster ? getTeams() : [],
+  ]);
 
   /** Rows belonging to one edition. Lenient like the repo: an unscoped legacy
    *  row (no event_id) shows up everywhere rather than nowhere. */
@@ -176,13 +193,8 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   const jobs = forEvent(allJobs, event.id);
   const plans = allPlans.filter((p) => p.event_id === event.id);
 
-  // The roster is PII, so it is fetched only for roles that may read it. Teams
-  // ride along because a division's coordinator lives there.
-  const canSeeRoster = CAN_SEE_ROSTER.has(user.role);
-  const roster = canSeeRoster ? await Promise.all([getMembers(), getTeams()]) : null;
-  const allMembers = roster?.[0] ?? [];
   const members = forEvent(allMembers, event.id);
-  const teams = forEvent(roster?.[1] ?? [], event.id);
+  const teams = forEvent(allTeams, event.id);
 
   const out: Passage[] = [];
 

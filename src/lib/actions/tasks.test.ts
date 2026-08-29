@@ -17,6 +17,13 @@ const repo = {
   updateTask: vi.fn(async () => {}),
   deleteTask: vi.fn(async () => {}),
   getTask: vi.fn(async (id: string): Promise<Task | null> => (id ? null : null)),
+  // The bulk actions read their rows in ONE query now. The stub delegates to
+  // `getTask` so every existing per-id setup below still describes the data,
+  // and drops misses exactly as the real batched read does.
+  getTasksByIds: vi.fn(async (ids: readonly string[]): Promise<Task[]> => {
+    const rows = await Promise.all(ids.map((id) => repo.getTask(id)));
+    return rows.filter((t): t is Task => !!t);
+  }),
   bulkUpdateTasks: vi.fn(async () => {}),
   bulkDeleteTasks: vi.fn(async () => {}),
   syncTaskLinks: vi.fn(async () => {}),

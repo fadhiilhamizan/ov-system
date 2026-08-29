@@ -45,16 +45,32 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Touch the session so it stays fresh (also tells us if the user is signed in).
+  // Touch the session so it stays fresh, and find out whether one exists.
+  //
+  // `getSession()`, NOT `getUser()`. The difference is a network call: getUser
+  // asks the auth server to validate the token on EVERY request, and the app
+  // layout then calls getUser again a moment later, so each navigation paid two
+  // round trips to Supabase to answer the same question. getSession reads the
+  // signed cookie locally and only goes to the network when the token actually
+  // needs refreshing, which is rare.
+  //
+  // The trade-off is that a session read this way is not server-validated, so a
+  // forged cookie could get past THIS check. That is fine, and deliberate: what
+  // happens next is `getCurrentUser()` in the app layout calling `getUser()` for
+  // real, which rejects it and redirects to /login one hop later. And RLS, which
+  // is the boundary that actually matters here, never sees a valid identity
+  // either way. This gate is a fast pre-filter; it was never the thing keeping
+  // anyone out.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   // Defense-in-depth route protection: block unauthenticated access to the
   // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts -
   // the guest cookie is an allowed read-only bypass. The public paths are
-  // listed below, by name. The per-page redirect in the layout stays as a
-  // second layer.
+  // listed below, by name. The per-page redirect in the layout is the
+  // authoritative one.
   // /signup and /auth/* (the OAuth code exchange) must stay reachable without
   // a session - that's the whole point of signing up. The legal pages are
   // public too: you have to be able to read them BEFORE agreeing to them.
