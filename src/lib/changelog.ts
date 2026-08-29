@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.40.1",
+    date: "2026-08-29",
+    title: "Angka pecahan di RAB, dan halaman yang lebih ringan dibuka",
+    changes: [
+      { kind: "fix", text: "Jumlah dan harga di RAB sekarang bisa diisi angka pecahan seperti 2,5. Sebelumnya titik desimalnya hilang begitu diketik." },
+      { kind: "fix", text: "Mengosongkan kolom jumlah lalu berpindah tidak lagi diam-diam menyimpan angka nol. Kolomnya kembali ke nilai yang tersimpan." },
+      { kind: "fix", text: "Kalau satu baris RAB gagal disimpan, hanya baris itu yang dikembalikan. Sebelumnya seluruh tabel ikut dikembalikan, termasuk baris lain yang sudah berhasil tersimpan." },
+      { kind: "fix", text: "Asisten Violet baru dimuat ketika dibutuhkan, jadi setiap halaman lain terbuka lebih ringan." },
+      { kind: "fix", text: "Halaman Pengaturan hanya mengirim riwayat versi terbaru; versi lama dimuat saat tombolnya ditekan." },
+      { kind: "fix", text: "Daftar hasil pencarian dan daftar pengajuan peran tidak lagi dibangun ulang dari nol setiap kali layar berubah." },
+    ],
+  },
+  {
     version: "1.40.0",
     date: "2026-08-29",
     title: "Menyeret urutan, memilih banyak baris, dan membuka halaman jadi lebih ringan",

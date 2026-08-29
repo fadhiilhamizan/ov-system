@@ -29,9 +29,24 @@ export interface ConsoleLine {
 
 /** Bounded, because a render loop logging every frame must not exhaust memory. */
 const MAX_LINES = 400;
+/** How far past the cap the buffer may grow before one splice cuts it back.
+ *  Trimming on every line would put the O(n) cost straight back. */
+const TRIM_SLACK = 100;
 
 let lines: ConsoleLine[] = [];
 let nextId = 1;
+// `version` is bumped on every write; `getConsoleLines` rebuilds its snapshot
+// only when it moves. That keeps useSyncExternalStore happy - it compares
+// snapshots by identity, so handing back a mutated array would never re-render
+// - while making the copy happen per READ instead of per write.
+//
+// The payoff is biggest when the Developer panel is CLOSED: nothing is
+// subscribed, `emit()` reaches nobody, `getConsoleLines` is never called, and a
+// logging loop costs nothing at all. Before, every line copied 400 entries
+// whether anyone was looking or not.
+let version = 0;
+let snapshot: ConsoleLine[] = [];
+let snapshotVersion = -1;
 let installed = false;
 const listeners = new Set<() => void>();
 
@@ -68,8 +83,23 @@ function replacer() {
   };
 }
 
+/**
+ * Append one line.
+ *
+ * The buffer is MUTATED here and copied lazily in `getConsoleLines` instead.
+ * It used to rebuild the whole array on every call (`[...lines.slice(-399),
+ * line]`), which meant a component logging inside a render loop paid a
+ * 400-element copy per log - the capture costing more than the thing it was
+ * capturing. Writes happen per console call; reads happen per render, and there
+ * are far fewer of those.
+ *
+ * Trimming is amortised: the array is allowed to grow past the cap and is cut
+ * back in one splice, so this is not quietly O(n) again via `shift()`.
+ */
 export function pushLine(level: ConsoleLevel, text: string) {
-  lines = [...lines.slice(-(MAX_LINES - 1)), { id: nextId++, at: Date.now(), level, text }];
+  lines.push({ id: nextId++, at: Date.now(), level, text });
+  if (lines.length > MAX_LINES + TRIM_SLACK) lines.splice(0, lines.length - MAX_LINES);
+  version++;
   emit();
 }
 
@@ -116,10 +146,17 @@ export function installConsoleCapture(): () => void {
   };
 }
 
-export const getConsoleLines = (): ConsoleLine[] => lines;
+export const getConsoleLines = (): ConsoleLine[] => {
+  if (snapshotVersion !== version) {
+    snapshot = lines.slice();
+    snapshotVersion = version;
+  }
+  return snapshot;
+};
 
 export function clearConsoleLines() {
   lines = [];
+  version++;
   emit();
 }
 

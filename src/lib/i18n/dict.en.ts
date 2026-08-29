@@ -6,6 +6,7 @@ export const EN: Record<string, string> = {
   // Nav groups
   "Utama": "Main",
   "Cadangan": "Fallback",
+  "Memuat…": "Loading…",
   "Asisten Violet": "Violet assistant",
   "Kunci terpasang": "Key configured",
   "Belum diatur": "Not configured",

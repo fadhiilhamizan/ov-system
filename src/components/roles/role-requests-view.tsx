@@ -19,6 +19,74 @@ const STATUS_VARIANT = {
   ignored: "outline",
 } as const;
 
+/**
+ * One role request.
+ *
+ * Module scope, NOT nested inside RoleRequestsView. Declared inside it, the
+ * function is a new component TYPE on every render, so approving one request
+ * tore down and rebuilt every card in both lists rather than updating the one
+ * that changed - and the spinner on the button being pressed is exactly the
+ * state that gets thrown away.
+ */
+function Row({
+  req,
+  busy,
+  t,
+  onDecide,
+}: {
+  req: RoleRequest;
+  busy: boolean;
+  t: (s: string) => string;
+  onDecide: (req: RoleRequest, approve: boolean) => void;
+}) {
+  const isPending = req.status === "pending";
+
+  return (
+    <Card className={cn(!isPending && "opacity-70")}>
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        <Avatar name={req.name} size={40} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold">{req.name}</p>
+            <Badge variant="primary">{t(ROLE_META[req.requested_role].label)}</Badge>
+            <Badge variant={STATUS_VARIANT[req.status]}>
+              {t(
+                req.status === "pending"
+                  ? "Menunggu"
+                  : req.status === "approved"
+                    ? "Disetujui"
+                    : "Diabaikan",
+              )}
+            </Badge>
+          </div>
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+            <Mail className="size-3 shrink-0" /> {req.email || "-"}
+          </p>
+          {req.message && (
+            <p className="mt-1.5 whitespace-pre-line text-sm text-muted-foreground">{req.message}</p>
+          )}
+          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Clock className="size-3 shrink-0" />
+            {t("Diajukan")} {formatDate(req.created_at.slice(0, 10), { long: true })}
+          </p>
+        </div>
+
+        {isPending && (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button size="sm" disabled={busy} onClick={() => onDecide(req, true)}>
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+              {t("Setujui")}
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => onDecide(req, false)}>
+              <X className="size-4" /> {t("Abaikan")}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RoleRequestsView({ requests }: { requests: RoleRequest[] }) {
   const t = useT();
   const [pendingId, setPendingId] = React.useState<string | null>(null);
@@ -44,56 +112,6 @@ export function RoleRequestsView({ requests }: { requests: RoleRequest[] }) {
     });
   }
 
-  function Row({ req }: { req: RoleRequest }) {
-    const busy = pendingId === req.id;
-    const isPending = req.status === "pending";
-
-    return (
-      <Card className={cn(!isPending && "opacity-70")}>
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <Avatar name={req.name} size={40} />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-semibold">{req.name}</p>
-              <Badge variant="primary">{t(ROLE_META[req.requested_role].label)}</Badge>
-              <Badge variant={STATUS_VARIANT[req.status]}>
-                {t(
-                  req.status === "pending"
-                    ? "Menunggu"
-                    : req.status === "approved"
-                      ? "Disetujui"
-                      : "Diabaikan",
-                )}
-              </Badge>
-            </div>
-            <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
-              <Mail className="size-3 shrink-0" /> {req.email || "-"}
-            </p>
-            {req.message && (
-              <p className="mt-1.5 whitespace-pre-line text-sm text-muted-foreground">{req.message}</p>
-            )}
-            <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Clock className="size-3 shrink-0" />
-              {t("Diajukan")} {formatDate(req.created_at.slice(0, 10), { long: true })}
-            </p>
-          </div>
-
-          {isPending && (
-            <div className="flex shrink-0 items-center gap-2">
-              <Button size="sm" disabled={busy} onClick={() => decide(req, true)}>
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-                {t("Setujui")}
-              </Button>
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => decide(req, false)}>
-                <X className="size-4" /> {t("Abaikan")}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-5">
       <section className="space-y-2.5">
@@ -106,7 +124,7 @@ export function RoleRequestsView({ requests }: { requests: RoleRequest[] }) {
             {t("Tidak ada permintaan yang menunggu.")}
           </p>
         ) : (
-          pending.map((r) => <Row key={r.id} req={r} />)
+          pending.map((r) => <Row key={r.id} req={r} busy={pendingId === r.id} t={t} onDecide={decide} />)
         )}
       </section>
 
@@ -116,7 +134,7 @@ export function RoleRequestsView({ requests }: { requests: RoleRequest[] }) {
             {t("Riwayat")} <span className="text-muted-foreground">({decided.length})</span>
           </h2>
           {decided.map((r) => (
-            <Row key={r.id} req={r} />
+            <Row key={r.id} req={r} busy={pendingId === r.id} t={t} onDecide={decide} />
           ))}
         </section>
       )}

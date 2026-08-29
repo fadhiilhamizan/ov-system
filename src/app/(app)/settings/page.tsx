@@ -25,6 +25,10 @@ import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Pengaturan" };
 
+/** Releases sent with the page. The archive (about 38KB serialised) loads as
+ *  its own chunk only when somebody asks for it - see ChangelogList. */
+const RECENT_RELEASES = 12;
+
 const WHATSAPP_URL = "https://wa.me/6281311598126";
 const GITHUB_URL = "https://github.com/fadhiilhamizan/ov-system";
 
@@ -302,7 +306,7 @@ export default async function SettingsPage() {
           <CardTitle>Changelog</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChangelogList entries={CHANGELOG} />
+          <ChangelogList entries={CHANGELOG.slice(0, RECENT_RELEASES)} total={CHANGELOG.length} />
         </CardContent>
       </Card>
 

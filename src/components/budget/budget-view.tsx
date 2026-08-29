@@ -375,6 +375,14 @@ export function BudgetView({
   }
 
   function edit(itemId: string, patch: { qty?: number; unit_price?: number }) {
+    // Remember just THIS row, so a failure can put it back without touching
+    // anything else. The rollback used to be `setState(plans)` - a jump all
+    // the way back to the props the page was rendered with, which also undid
+    // every OTHER edit made since, including ones that had already saved
+    // successfully. Those rows then showed a stale value that did not match
+    // the database until the next reload.
+    const before = state.flatMap((p) => p.items).find((i) => i.id === itemId);
+
     setState((prev) =>
       prev.map((p) => ({
         ...p,
@@ -390,7 +398,14 @@ export function BudgetView({
       const r = await updateBudgetItemAction(itemId, patch);
       if (!r.ok) {
         toast.error(r.error);
-        setState(plans);
+        if (before) {
+          setState((prev) =>
+            prev.map((p) => ({
+              ...p,
+              items: p.items.map((it) => (it.id === itemId ? before : it)),
+            })),
+          );
+        }
       }
       return r;
     });
@@ -406,10 +421,15 @@ export function BudgetView({
     const to = plan.items.findIndex((i) => i.id === overId);
     if (from < 0 || to < 0 || from === to) return;
     const nextItems = arrayMove(plan.items, from, to);
+    // Same reasoning as `edit`: put back only the plan that was dragged.
+    const beforeItems = plan.items;
     setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: nextItems } : p)));
     autosave.run(async () => {
       const r = await reorderBudgetItemsAction(nextItems.map((i) => i.id));
-      if (!r.ok) { toast.error(r.error); setState(plans); }
+      if (!r.ok) {
+        toast.error(r.error);
+        setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: beforeItems } : p)));
+      }
       return r;
     });
   }
@@ -669,17 +689,42 @@ function NumCell({
   onCommit: (v: number) => void;
   width: string;
 }) {
-  const [v, setV] = useSynced(value ?? 0);
+  // The TEXT being typed, not a number.
+  //
+  // `qty` and `unit_price` are `numeric` in the database and the Zod schema
+  // takes decimals, but this field made them impossible to enter: it did
+  // `Number(e.target.value) || 0` and pushed the result back as the value, so
+  // the moment you typed "0." the state became 0, React rewrote the input, and
+  // the decimal point vanished under your cursor. Keeping the raw string means
+  // half-typed input survives until it parses.
+  const [text, setText] = useSynced(value == null ? "" : String(value));
   // The saved value, so a commit from any path (blur / Enter / spinner) knows
   // whether there is anything left to write.
   const savedRef = React.useRef(value ?? 0);
   React.useEffect(() => { savedRef.current = value ?? 0; }, [value]);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * What the typed text means as a number, or null for "nothing to save".
+   *
+   * An EMPTY field is null, not zero. It used to coerce to 0 (`Number("") || 0`),
+   * so clearing a cell and clicking away silently wrote zero into the budget.
+   * Emptying a field is how people start retyping, not how they say "none" -
+   * and the blur handler below puts the stored value back on screen, so the
+   * two now agree instead of showing one number and saving another.
+   */
+  const parse = (s: string) => {
+    if (s.trim() === "") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? Math.max(0, n) : null;
+  };
+
   const commit = React.useCallback(
-    (next: number) => {
+    (raw: string) => {
       if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-      if (next !== savedRef.current) onCommit(next);
+      const next = parse(raw);
+      if (next === null || next === savedRef.current) return;
+      onCommit(next);
     },
     [onCommit],
   );
@@ -693,25 +738,38 @@ function NumCell({
     <input
       type="number"
       min={0}
-      value={v}
+      step="any"
+      value={text}
       onChange={(e) => {
-        const next = Math.max(0, Number(e.target.value) || 0);
-        setV(next);
+        // `badInput` is the browser saying "what is in here is not a number
+        // yet" - which is exactly what "0." or "1e" is on the way to being one.
+        // Leaving the state untouched means React's value prop does not change,
+        // so it does not rewrite the field and the half-typed text survives.
+        // This is why the input can stay type=number (and keep its spinners)
+        // instead of becoming a text box.
+        if (e.target.validity.badInput) return;
+        const raw = e.target.value;
+        setText(raw);
         if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => commit(next), 600);
+        timer.current = setTimeout(() => commit(raw), 600);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          commit(v);
+          commit(text);
           e.currentTarget.blur();
         } else if (e.key === "Escape") {
           if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-          setV(savedRef.current);
+          setText(String(savedRef.current));
           e.currentTarget.blur();
         }
       }}
-      onBlur={() => commit(v)}
+      onBlur={() => {
+        commit(text);
+        // Leaving a field mid-edit ("0.", "", "1e") saved nothing, so the cell
+        // must not keep showing it: snap back to what is actually stored.
+        if (parse(text) === null) setText(String(savedRef.current));
+      }}
       className={cn(
         "rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-right tabular-nums transition hover:border-border focus:border-ring focus:bg-card focus:outline-none",
         width,

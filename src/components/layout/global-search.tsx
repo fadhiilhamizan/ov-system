@@ -44,6 +44,49 @@ function isTypingTarget(el: EventTarget | null): boolean {
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
 }
 
+/**
+ * One result row - shared by the search results and the recent list.
+ *
+ * Module scope, NOT nested inside GlobalSearch. Declared inside the component
+ * it would be a new component TYPE on every render, so React would tear down
+ * and rebuild every row on each keystroke instead of updating it - in a list
+ * that re-renders on literally every character typed.
+ */
+function Row({
+  hit,
+  index,
+  active,
+  onHover,
+  onPick,
+}: {
+  hit: SearchHit;
+  index: number;
+  active: boolean;
+  onHover: (index: number) => void;
+  onPick: (hit: SearchHit) => void;
+}) {
+  const Icon = NAV_BY_KEY.get(hit.group)?.icon ?? Search;
+  return (
+    <button
+      onMouseEnter={() => onHover(index)}
+      onClick={() => onPick(hit)}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition",
+        active ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
+      )}
+    >
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{hit.title}</span>
+        {hit.subtitle && (
+          <span className="block truncate text-[11px] text-muted-foreground">{hit.subtitle}</span>
+        )}
+      </span>
+      {active && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
+    </button>
+  );
+}
+
 export function GlobalSearch() {
   const t = useT();
   const router = useRouter();
@@ -154,30 +197,6 @@ export function GlobalSearch() {
     }
   }
 
-  /** One result row - shared by the search results and the recent list. */
-  function Row({ hit, index }: { hit: SearchHit; index: number }) {
-    const Icon = NAV_BY_KEY.get(hit.group)?.icon ?? Search;
-    return (
-      <button
-        onMouseEnter={() => setActive(index)}
-        onClick={() => go(hit)}
-        className={cn(
-          "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition",
-          index === active ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
-        )}
-      >
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{hit.title}</span>
-          {hit.subtitle && (
-            <span className="block truncate text-[11px] text-muted-foreground">{hit.subtitle}</span>
-          )}
-        </span>
-        {index === active && <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" />}
-      </button>
-    );
-  }
-
   // The palette is portalled to <body>. It has to be: the topbar carries
   // `backdrop-blur`, and a backdrop-filter makes that element the containing
   // block for `position: fixed` descendants - so `fixed inset-0` rendered in
@@ -263,7 +282,14 @@ export function GlobalSearch() {
                       </button>
                     </div>
                     {recent.map((hit, i) => (
-                      <Row key={hit.id} hit={hit} index={i} />
+                      <Row
+                        key={hit.id}
+                        hit={hit}
+                        index={i}
+                        active={i === active}
+                        onHover={setActive}
+                        onPick={go}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -282,7 +308,14 @@ export function GlobalSearch() {
                       {t(groupLabel(group))}
                     </p>
                     {items.map((hit) => (
-                      <Row key={hit.id} hit={hit} index={flat.indexOf(hit)} />
+                      <Row
+                        key={hit.id}
+                        hit={hit}
+                        index={flat.indexOf(hit)}
+                        active={flat.indexOf(hit) === active}
+                        onHover={setActive}
+                        onPick={go}
+                      />
                     ))}
                   </div>
                 ))

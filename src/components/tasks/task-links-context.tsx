@@ -25,12 +25,23 @@ interface TaskLinkCtx {
   superLink: LinkItem[];
 }
 
-const Ctx = React.createContext<TaskLinkCtx>({ links: {}, superLink: [] });
+/**
+ * Shared empty array for the default parameter.
+ *
+ * `superLink = []` in the signature builds a NEW array on every render, so the
+ * memo below always saw a changed dependency and rebuilt the context value.
+ * A fresh context value re-renders every consumer - which on the task pages is
+ * the whole table - so the one prop a page is allowed to omit was quietly
+ * costing the most.
+ */
+const NO_LINKS: LinkItem[] = [];
+
+const Ctx = React.createContext<TaskLinkCtx>({ links: {}, superLink: NO_LINKS });
 
 export function TaskLinksProvider({
   value,
   refs,
-  superLink = [],
+  superLink = NO_LINKS,
   children,
 }: {
   value: Record<string, TaskLink[]>;

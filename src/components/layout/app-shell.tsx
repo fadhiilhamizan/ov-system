@@ -4,7 +4,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
-import { VioletChat } from "@/components/violet/violet-chat";
+import dynamic from "next/dynamic";
 import { Logo } from "./logo";
 import { DemoBanner } from "./demo-banner";
 import { ArchiveBanner } from "./archive-banner";
@@ -16,6 +16,22 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { APP_VERSION } from "@/lib/version";
 import { SIDEBAR_COOKIE, SIDEBAR_COLLAPSED, SIDEBAR_EXPANDED } from "@/lib/ui-prefs";
+
+/**
+ * Loaded on demand, not with the shell.
+ *
+ * Violet drags its markdown parser, its link registry and the whole chat panel
+ * into whatever bundle imports it. Statically imported here, that rode along
+ * with the app shell on EVERY page - including for the many visitors who never
+ * open it, and including when `violetEnabled` is false and the button does not
+ * even render. `ssr: false` because the panel is pure client state (it has no
+ * server-rendered content to match) and skipping it avoids a hydration pass for
+ * something usually closed.
+ */
+const VioletChat = dynamic(
+  () => import("@/components/violet/violet-chat").then((m) => m.VioletChat),
+  { ssr: false },
+);
 
 export function AppShell({
   user,

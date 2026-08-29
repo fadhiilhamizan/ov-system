@@ -11,17 +11,47 @@ import { CHANGE_KIND, CHANGE_KINDS, type ChangeKind, type ChangelogEntry } from 
 const VISIBLE = 5;
 
 /**
- * The changelog grows by a release every change, so showing all of it buried the
- * cards below it. Only the newest few are rendered until asked; the rest stay in
- * the payload (it is plain data, already sent) and just aren't drawn.
+ * The changelog grows by a release every change, and it is not small: all 49
+ * entries serialise to about 38KB, which used to travel to EVERY visitor of
+ * Pengaturan whether or not they scrolled past the newest five. That is the
+ * same weight the EN dictionary is carefully kept away from Indonesian
+ * visitors, sent unconditionally.
+ *
+ * So the server now hands over only the newest releases, and the rest are
+ * fetched as their own JS chunk the first time somebody asks for them. Nothing
+ * is lost from the feature; the default page just stops paying for the archive.
  *
  * Every line carries a category, which doubles as a filter: "what got fixed
  * lately" is the question people actually arrive with.
  */
-export function ChangelogList({ entries }: { entries: ChangelogEntry[] }) {
+export function ChangelogList({
+  entries,
+  total,
+}: {
+  entries: ChangelogEntry[];
+  /** How many releases exist in all, so the button can say what it will load. */
+  total?: number;
+}) {
   const t = useT();
   const [showAll, setShowAll] = React.useState(false);
   const [kinds, setKinds] = React.useState<Set<ChangeKind>>(new Set());
+  // Starts as what the server sent; replaced by the full list on demand.
+  const [all, setAll] = React.useState<ChangelogEntry[]>(entries);
+  const [loading, setLoading] = React.useState(false);
+  const complete = all.length >= (total ?? entries.length);
+
+  async function loadOlder() {
+    if (complete || loading) return;
+    setLoading(true);
+    try {
+      // Its own chunk, pulled only when someone actually wants the archive.
+      const mod = await import("@/lib/changelog");
+      setAll(mod.CHANGELOG);
+      setShowAll(true);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function toggleKind(k: ChangeKind) {
     setKinds((prev) => {
@@ -34,11 +64,11 @@ export function ChangelogList({ entries }: { entries: ChangelogEntry[] }) {
   // Filtering drops the LINES, then any release left with nothing to say. That
   // keeps "show me only fixes" from listing empty version headers.
   const filtered = React.useMemo(() => {
-    if (kinds.size === 0) return entries;
-    return entries
+    if (kinds.size === 0) return all;
+    return all
       .map((e) => ({ ...e, changes: e.changes.filter((c) => kinds.has(c.kind)) }))
       .filter((e) => e.changes.length > 0);
-  }, [entries, kinds]);
+  }, [all, kinds]);
 
   const hidden = Math.max(0, filtered.length - VISIBLE);
   const shown = showAll ? filtered : filtered.slice(0, VISIBLE);
@@ -47,9 +77,9 @@ export function ChangelogList({ entries }: { entries: ChangelogEntry[] }) {
   const counts = React.useMemo(() => {
     const c = {} as Record<ChangeKind, number>;
     for (const k of CHANGE_KINDS) c[k] = 0;
-    for (const e of entries) for (const ch of e.changes) c[ch.kind]++;
+    for (const e of all) for (const ch of e.changes) c[ch.kind]++;
     return c;
-  }, [entries]);
+  }, [all]);
 
   return (
     <div className="space-y-4">
@@ -114,20 +144,26 @@ export function ChangelogList({ entries }: { entries: ChangelogEntry[] }) {
         )}
       </div>
 
-      {hidden > 0 && (
+      {(hidden > 0 || !complete) && (
         <button
           type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          disabled={loading}
+          onClick={() => (complete ? setShowAll((v) => !v) : loadOlder())}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-60"
         >
-          {showAll ? (
+          {loading ? (
+            <>{t("Memuat…")}</>
+          ) : showAll && complete ? (
             <>{t("Tampilkan lebih sedikit")}</>
           ) : (
             <>
-              {t("Lihat semua versi")} ({hidden} {t("versi lama")})
+              {t("Lihat semua versi")} (
+              {complete ? hidden : (total ?? 0) - entries.length + hidden} {t("versi lama")})
             </>
           )}
-          <ChevronDown className={showAll ? "size-3.5 rotate-180 transition" : "size-3.5 transition"} />
+          <ChevronDown
+            className={showAll && complete ? "size-3.5 rotate-180 transition" : "size-3.5 transition"}
+          />
         </button>
       )}
     </div>
