@@ -13,6 +13,7 @@ import { AnchorScroller } from "./anchor-scroller";
 import { SessionBeacons } from "@/components/developer/session-beacons";
 import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useModalLayer } from "@/lib/use-modal-layer";
 import { useT } from "@/lib/i18n/provider";
 import { APP_VERSION } from "@/lib/version";
 import { SIDEBAR_COOKIE, SIDEBAR_COLLAPSED, SIDEBAR_EXPANDED } from "@/lib/ui-prefs";
@@ -74,6 +75,8 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const closeDrawer = React.useCallback(() => setMobileOpen(false), []);
+  const drawerRef = useModalLayer<HTMLElement>(mobileOpen, closeDrawer);
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   // While collapsed, pointing at the rail expands it temporarily (overlaying
   // the content) without changing the persisted state.
@@ -119,7 +122,17 @@ export function AppShell({
             className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm animate-[overlay-in_0.2s_ease]"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-72 border-r border-sidebar-border shadow-2xl animate-[fade-in_0.2s_ease]">
+          <aside
+            ref={drawerRef}
+            // It behaves as a modal - the overlay swallows every click behind
+            // it - so it has to say so, and then actually do it: trap Tab, close
+            // on Escape, stop the page scrolling underneath, and hand focus back
+            // to the hamburger on the way out. See lib/use-modal-layer.ts.
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("Menu navigasi")}
+            className="absolute inset-y-0 left-0 w-72 border-r border-sidebar-border shadow-2xl animate-[fade-in_0.2s_ease]"
+          >
             <button
               className="absolute right-3 top-4 z-10 rounded-lg p-1.5 text-sidebar-muted hover:bg-sidebar-accent"
               onClick={() => setMobileOpen(false)}

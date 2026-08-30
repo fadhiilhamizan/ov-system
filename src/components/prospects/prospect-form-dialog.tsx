@@ -162,7 +162,7 @@ export function ProspectFormDialog({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>{t("Lokasi")}</Label>
-              <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder="Gedung / kota…" />
+              <Input value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} placeholder={t("Gedung / kota…")} />
             </div>
             <div className="grid gap-1.5">
               <Label>{t("Mode")}</Label>

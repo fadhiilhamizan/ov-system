@@ -146,6 +146,7 @@ function PicChips({ pic }: { pic: string }) {
 }
 
 function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: JobHariH; index: number; eventId: string; canManage: boolean; canDelete: boolean }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id, disabled: !canManage });
   const style = { transform: CSS.Transform.toString(transform), transition };
   return (
@@ -163,7 +164,7 @@ function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: Jo
             {...attributes}
             {...listeners}
             className="flex cursor-grab touch-none items-center justify-center rounded p-1 text-muted-foreground/60 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
-            aria-label="Geser untuk mengurutkan"
+            aria-label={t("Geser untuk mengurutkan")}
           >
             <GripVertical className="size-4" />
           </button>

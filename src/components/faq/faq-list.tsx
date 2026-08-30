@@ -61,6 +61,7 @@ function FaqCard({
 /** Sortable variant. `useSortable` needs a DndContext above it, so this is only
  *  ever rendered inside the manage branch below. */
 function SortableFaq({ faq, index, defaultOpen }: { faq: Faq; index: number; defaultOpen: boolean }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: faq.id });
   return (
     <FaqCard
@@ -79,7 +80,7 @@ function SortableFaq({ faq, index, defaultOpen }: { faq: Faq; index: number; def
           {...listeners}
           onClick={(e) => e.preventDefault()}
           className="flex shrink-0 cursor-grab touch-none items-center justify-center rounded p-1 text-muted-foreground/60 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
-          aria-label="Geser untuk mengurutkan"
+          aria-label={t("Geser untuk mengurutkan")}
         >
           <GripVertical className="size-4" />
         </button>

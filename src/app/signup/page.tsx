@@ -124,7 +124,7 @@ export default function SignUpPage() {
                     autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nama kamu"
+                    placeholder={t("Nama kamu")}
                   />
                 </div>
                 <div className="grid gap-1.5">

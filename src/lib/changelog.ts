@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.41.2",
+    date: "2026-08-30",
+    title: "Pencarian dan menu samping kini benar-benar bisa dipakai lewat keyboard",
+    changes: [
+      { kind: "fix", text: "Tombol Tab di dalam kotak pencarian cepat dan laci menu tidak lagi lolos ke halaman di belakangnya." },
+      { kind: "fix", text: "Escape sekarang menutup kotak pencarian dari mana pun, bukan hanya saat kursor ada di kolom ketiknya. Laci menu di layar kecil juga bisa ditutup dengan Escape." },
+      { kind: "fix", text: "Halaman di belakang berhenti ikut ter-scroll saat kotak pencarian atau laci menu terbuka." },
+      { kind: "fix", text: "Setelah keduanya ditutup, kursor kembali ke tombol yang membukanya." },
+      { kind: "fix", text: "Pembaca layar kini menyuarakan hasil pencarian yang sedang disorot saat panah atas-bawah ditekan. Sebelumnya tidak ada yang terbaca sama sekali." },
+      { kind: "fix", text: "Enam teks bantu yang selama ini hanya berbahasa Indonesia kini ikut berganti bahasa, dan tombol ganti bahasa tidak lagi punya label yang terkunci di bahasa Inggris." },
+    ],
+  },
+  {
     version: "1.41.1",
     date: "2026-08-30",
     title: "Kunci arsip ditulis lengkap di lapisan database",

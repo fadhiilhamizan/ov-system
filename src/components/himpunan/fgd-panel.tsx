@@ -265,6 +265,7 @@ function PartnerHeading({ plan, canManage }: { plan: FgdPlan; canManage: boolean
 }
 
 function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
+  const t = useT();
   const [pending, start] = React.useTransition();
   return (
     <tr className="group">
@@ -280,7 +281,7 @@ function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
               if (!res.ok) toast.error(res.error);
             })}
             className="rounded p-1 text-muted-foreground/50 opacity-0 transition hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus:opacity-100"
-            title="Hapus baris"
+            title={t("Hapus baris")}
           >
             {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
           </button>

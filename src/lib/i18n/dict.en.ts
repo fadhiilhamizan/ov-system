@@ -1156,4 +1156,14 @@ export const EN: Record<string, string> = {
   "himpunan dibandingkan.": "associations compared.",
   "rencana dipilih": "plans selected",
   "yang sedang dibuka.": "currently open.",
+
+  // v1.41.2 - teks yang selama ini luput karena tidak dibungkus t() sama sekali
+  // (aria-label, title, placeholder yang berisi instruksi), plus dua label
+  // pembaca layar baru untuk palet pencarian dan laci menu.
+  "Hapus baris": "Delete row",
+  "Warna khusus": "Custom colour",
+  "Nama kamu": "Your name",
+  "Gedung / kota…": "Building / city…",
+  "Hasil pencarian": "Search results",
+  "Menu navigasi": "Navigation menu",
 };

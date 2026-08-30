@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 // ============================================================
@@ -47,6 +48,7 @@ export function ColorPicker({
   size?: "sm" | "md";
   className?: string;
 }) {
+  const t = useT();
   const dot = size === "sm" ? "size-6" : "size-7";
   const swatch = (c: string) => (
     <button
@@ -69,7 +71,7 @@ export function ColorPicker({
       <div className="flex flex-wrap items-center gap-2">{COLOR_PRESET_LIGHT.map(swatch)}</div>
       <input
         type="color"
-        aria-label="Warna khusus"
+        aria-label={t("Warna khusus")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn("cursor-pointer rounded", size === "sm" ? "size-7" : "size-8")}

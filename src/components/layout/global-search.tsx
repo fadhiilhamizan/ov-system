@@ -7,6 +7,7 @@ import { searchAction, type SearchHit } from "@/lib/actions/search";
 import { ALL_NAV_ITEMS } from "./nav-config";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
+import { useModalLayer } from "@/lib/use-modal-layer";
 import { cn } from "@/lib/utils";
 
 /** Icon + heading per result group, reusing the nav definitions. */
@@ -52,6 +53,9 @@ function isTypingTarget(el: EventTarget | null): boolean {
  * and rebuild every row on each keystroke instead of updating it - in a list
  * that re-renders on literally every character typed.
  */
+/** Stable per-position id, so aria-activedescendant has something to point at. */
+const optionId = (index: number) => `global-search-option-${index}`;
+
 function Row({
   hit,
   index,
@@ -68,6 +72,14 @@ function Row({
   const Icon = NAV_BY_KEY.get(hit.group)?.icon ?? Search;
   return (
     <button
+      // The arrow keys move a highlight while focus stays in the input, so
+      // without role="option" + aria-selected a screen reader announces nothing
+      // at all as the selection moves - the list is invisible to it.
+      id={optionId(index)}
+      role="option"
+      aria-selected={active}
+      // Focus never lands here: the input keeps it, and Enter is handled there.
+      tabIndex={-1}
       onMouseEnter={() => onHover(index)}
       onClick={() => onPick(hit)}
       className={cn(
@@ -191,10 +203,10 @@ export function GlobalSearch() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       go(flat[active]);
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      setOpen(false);
     }
+    // Escape is handled by useModalLayer, at the layer rather than at the
+    // input: it used to work only while the caret sat here, so arrowing down to
+    // a result and pressing Escape did nothing.
   }
 
   // The palette is portalled to <body>. It has to be: the topbar carries
@@ -206,6 +218,10 @@ export function GlobalSearch() {
     () => true,
     () => false,
   );
+
+  // Focus trap, Escape, body scroll lock, and focus restored to the trigger.
+  const close = React.useCallback(() => setOpen(false), []);
+  const dialogRef = useModalLayer<HTMLDivElement>(open && mounted, close);
 
   return (
     <>
@@ -231,6 +247,7 @@ export function GlobalSearch() {
           }}
         >
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={t("Pencarian global")}
@@ -246,6 +263,14 @@ export function GlobalSearch() {
                 // The input mounts fresh each time the palette opens, so
                 // autoFocus is enough - no focus effect needed.
                 autoFocus
+                // The combobox pattern: focus stays here while the arrow keys
+                // move through the list, and aria-activedescendant is what tells
+                // a screen reader which row is currently picked.
+                role="combobox"
+                aria-expanded
+                aria-controls="global-search-results"
+                aria-activedescendant={flat.length ? optionId(active) : undefined}
+                aria-label={t("Cari tugas, anggota, divisi, anggaran, tautan…")}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
@@ -265,7 +290,12 @@ export function GlobalSearch() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+            <div
+              id="global-search-results"
+              role="listbox"
+              aria-label={t("Hasil pencarian")}
+              className="min-h-0 flex-1 overflow-y-auto p-1.5"
+            >
               {!searching ? (
                 recent.length ? (
                   <div className="mb-1">
