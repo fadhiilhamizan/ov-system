@@ -53,6 +53,15 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.41.1",
+    date: "2026-08-30",
+    title: "Kunci arsip ditulis lengkap di lapisan database",
+    changes: [
+      { kind: "security", text: "Aturan tulis untuk Divisi, Anggota, Tim, Reach & Offer, dan Anggaran sekarang menyebut kunci arsip secara eksplisit di database. Perilakunya tidak berubah hari ini, tapi kuncinya tidak akan ikut hilang kalau salah satu menu itu suatu saat dibuka untuk peran lain." },
+      { kind: "security", text: "Ada pemeriksaan otomatis baru yang gagal kalau sebuah tabel berlingkup Ormawa Visit punya aturan tulis tanpa kunci arsip, atau kalau tabel baru ditambahkan tanpa memutuskan hal itu." },
+    ],
+  },
+  {
     version: "1.41.0",
     date: "2026-08-30",
     title: "Halaman tidak lagi diam-diam menampilkan data kosong",

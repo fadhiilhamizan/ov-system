@@ -923,20 +923,89 @@ create policy "prospect_links_delete" on prospect_links for delete to authentica
     and writable_event((select p.event_id from prospects p where p.id = prospect_links.prospect_id)));
 
 -- 5.3 Tulis: modul "admin saja" ------------------------------------
+-- Klausa writable_event() ada di sini juga (0046). Bagi admin nilainya selalu
+-- true, jadi hari ini ia tidak mengubah apa pun; gunanya adalah supaya kunci
+-- arsip tidak menghilang ketika salah satu modul ini suatu saat naik dari
+-- "admin saja" ke "limited" dan daftar perannya ditulis ulang. events tidak
+-- ikut: kolom `locked` ada DI tabel itu.
+-- ---------- (A) lima tabel yang punya event_id sendiri -----------------------
 do $do$
 declare t text;
 begin
-  foreach t in array array['divisions', 'events', 'members', 'teams', 'prospects',
-                           'budget_plans', 'budget_items', 'faqs']
+  foreach t in array array['divisions', 'members', 'teams', 'prospects', 'budget_plans']
+  loop
+    -- DROP berdasarkan NAMA. Policy permissive di-OR-kan, jadi satu policy lama
+    -- yang longgar dan dibiarkan hidup akan selalu menang atas yang baru - itu
+    -- persis bagaimana task_links yang diarsipkan tetap bisa ditulis sampai
+    -- 0034 (lihat AGENTS.md).
+    execute format('drop policy if exists "%s_write" on %I;', t, t);
+    execute format('drop policy if exists "%s_admin_write" on %I;', t, t);
+    execute format('drop policy if exists "%s_insert" on %I;', t, t);
+    execute format('drop policy if exists "%s_update" on %I;', t, t);
+    execute format('drop policy if exists "%s_delete" on %I;', t, t);
+
+    execute format($p$create policy "%s_insert" on %I for insert to authenticated
+      with check (auth_role() = 'admin' and not is_anon()
+                  and writable_event(event_id));$p$, t, t);
+
+    -- WITH CHECK wajib ada di samping USING: USING memilih baris mana yang boleh
+    -- disasar, WITH CHECK memeriksa bentuk baris SESUDAHNYA. Tanpa itu satu
+    -- baris bisa dipindahkan ke Ormawa Visit terkunci dalam satu perintah.
+    execute format($p$create policy "%s_update" on %I for update to authenticated
+      using (auth_role() = 'admin' and not is_anon()
+             and writable_event(event_id))
+      with check (auth_role() = 'admin' and not is_anon()
+                  and writable_event(event_id));$p$, t, t);
+
+    execute format($p$create policy "%s_delete" on %I for delete to authenticated
+      using (auth_role() = 'admin' and not is_anon()
+             and writable_event(event_id));$p$, t, t);
+  end loop;
+end $do$;
+
+-- ---------- (B) budget_items: ikut rencana induknya ---------------------------
+drop policy if exists "budget_items_write" on budget_items;
+drop policy if exists "budget_items_admin_write" on budget_items;
+drop policy if exists "budget_items_insert" on budget_items;
+drop policy if exists "budget_items_update" on budget_items;
+drop policy if exists "budget_items_delete" on budget_items;
+
+create policy "budget_items_insert" on budget_items for insert to authenticated
+  with check (auth_role() = 'admin' and not is_anon()
+    and writable_event((select b.event_id from budget_plans b where b.id = budget_items.plan_id)));
+
+create policy "budget_items_update" on budget_items for update to authenticated
+  using (auth_role() = 'admin' and not is_anon()
+    and writable_event((select b.event_id from budget_plans b where b.id = budget_items.plan_id)))
+  with check (auth_role() = 'admin' and not is_anon()
+    and writable_event((select b.event_id from budget_plans b where b.id = budget_items.plan_id)));
+
+create policy "budget_items_delete" on budget_items for delete to authenticated
+  using (auth_role() = 'admin' and not is_anon()
+    and writable_event((select b.event_id from budget_plans b where b.id = budget_items.plan_id)));
+
+-- ---------- (C) events dan faqs: hanya membereskan bentuknya ------------------
+-- Tidak ada edisi untuk dikunci di sini (lihat kepala berkas). Aturannya tetap
+-- persis sama, hanya dipisah menjadi insert/update/delete supaya seluruh berkas
+-- memakai satu bentuk.
+do $do$
+declare t text;
+begin
+  foreach t in array array['events', 'faqs']
   loop
     execute format('drop policy if exists "%s_write" on %I;', t, t);
     execute format('drop policy if exists "%s_admin_write" on %I;', t, t);
     execute format('drop policy if exists "%s_insert" on %I;', t, t);
     execute format('drop policy if exists "%s_update" on %I;', t, t);
     execute format('drop policy if exists "%s_delete" on %I;', t, t);
-    execute format($p$create policy "%s_write" on %I for all to authenticated
+
+    execute format($p$create policy "%s_insert" on %I for insert to authenticated
+      with check (auth_role() = 'admin' and not is_anon());$p$, t, t);
+    execute format($p$create policy "%s_update" on %I for update to authenticated
       using (auth_role() = 'admin' and not is_anon())
       with check (auth_role() = 'admin' and not is_anon());$p$, t, t);
+    execute format($p$create policy "%s_delete" on %I for delete to authenticated
+      using (auth_role() = 'admin' and not is_anon());$p$, t, t);
   end loop;
 end $do$;
 

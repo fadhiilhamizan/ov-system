@@ -1309,5 +1309,133 @@ console.log("0043 - restore_snapshot (transaksional)");
   ok("restore tidak membanjiri jejak audit", (await auditCount()) === before.audit);
 }
 
+// ------------------------------------------------------------------
+// 0046: kunci arsip HARUS ada di setiap policy tulis yang menyentuh data
+// berlingkup edisi.
+//
+// Ini pemeriksaan STRUKTURAL, bukan perilaku, dan itu disengaja. Tidak ada satu
+// pun peran yang bisa membuktikan klausa ini dari kursi penyerang hari ini:
+// writable_event() berbunyi "admin, ATAU tidak terkunci", jadi bagi admin - satu
+// satunya peran yang lolos policy tabel-tabel ini - nilainya selalu true. Yang
+// menghapus kunci arsip bukan penyerang, melainkan satu baris di
+// MODULE_ACCESS_LEVEL yang menaikkan sebuah modul dari "admin saja" ke
+// "limited". Saat itu terjadi, policy-nya ditulis ulang dengan daftar peran
+// baru, dan klausa yang tidak pernah ada di sana tidak akan diingat siapa pun.
+//
+// Jadi yang dijaga di sini adalah bentuknya: setiap tabel berlingkup edisi
+// wajib menyebut writable_event di SEMUA policy tulisnya, dan tabel yang TIDAK
+// menyebutnya harus terdaftar sebagai pengecualian beserta alasannya. Tabel
+// baru yang tidak ada di kedua daftar juga gagal, supaya keputusan itu tidak
+// bisa dilewati diam-diam.
+// ------------------------------------------------------------------
+console.log("0046 - kunci arsip di setiap policy tulis");
+{
+  /** Tabel yang barisnya milik satu Ormawa Visit, langsung atau lewat induk. */
+  const SCOPED = [
+    "divisions", "members", "teams", "prospects", "budget_plans", "budget_items",
+    "tasks", "task_links", "task_refs", "prospect_links", "links",
+    "rundown", "job_harih",
+    "fgd_plans", "fgd_rows", "compare_subjects", "compare_entries",
+  ];
+
+  /** Pengecualian yang DISENGAJA, beserta alasannya. */
+  const EXEMPT = {
+    events: "kolom `locked` ada di tabel ini; inilah tempat admin membuka kuncinya",
+    faqs: "tidak punya event_id, FAQ berlaku untuk seluruh sistem",
+    profiles: "akun, bukan data satu edisi",
+    role_requests: "pengajuan peran bersifat global (event_id sudah usang, lihat 0024)",
+    backups: "berkas snapshot, bukan baris milik satu edisi",
+    presence: "kehadiran satu tab",
+    error_log: "laporan error",
+    activity_log: "jejak audit, tidak punya policy tulis sama sekali",
+    developers: "daftar allowlist developer",
+  };
+
+  // Hanya policy PERMISSIVE. Yang restrictive (keluarga "%_no_anon_%" di 5.6)
+  // di-AND-kan, jadi ia hanya bisa mempersempit; menuntut writable_event di sana
+  // tidak menambah jaminan apa pun, dan justru menyembunyikan tabel yang policy
+  // permissive-nya memang kehilangan klausa itu di balik keributan.
+  const rows = (await db.query(`
+    select tablename, policyname, cmd, permissive,
+           coalesce(qual, '') || ' ' || coalesce(with_check, '') as body
+      from pg_policies
+     where schemaname = 'public' and cmd <> 'SELECT'
+     order by tablename, policyname`)).rows;
+  const permissive = rows.filter((r) => r.permissive === 'PERMISSIVE');
+
+  // Keluarga itu ADALAH restrictive, dan harus tetap begitu: satu saja yang
+  // dibuat permissive akan berubah dari "sesi anonim tidak boleh menulis"
+  // menjadi "siapa pun yang bukan anonim boleh menulis", yaitu kebalikannya.
+  const anonPolicies = rows.filter((r) => /_no_anon_/.test(r.policyname));
+  ok("policy penghalang sesi anonim semuanya masih RESTRICTIVE",
+    anonPolicies.length > 0 && anonPolicies.every((r) => r.permissive === 'RESTRICTIVE'));
+
+  const tables = [...new Set(permissive.map((r) => r.tablename))];
+  const unclassified = tables.filter((t) => !SCOPED.includes(t) && !(t in EXEMPT));
+  ok("setiap tabel dengan policy tulis sudah diputuskan berlingkup edisi atau tidak",
+    unclassified.length === 0);
+  if (unclassified.length) console.log(`      -> belum terdaftar: ${unclassified.join(", ")}`);
+
+  const missing = permissive
+    .filter((r) => SCOPED.includes(r.tablename) && !/writable_event/.test(r.body))
+    .map((r) => `${r.tablename}.${r.policyname} (${r.cmd})`);
+  ok("setiap policy tulis pada tabel berlingkup edisi menyebut writable_event",
+    missing.length === 0);
+  if (missing.length) console.log(`      -> tanpa kunci arsip: ${missing.join(", ")}`);
+
+  // Tiap tabel berlingkup edisi harus benar-benar PUNYA policy tulis. Tanpa ini
+  // pemeriksaan di atas lulus dengan sempurna untuk tabel yang policy-nya
+  // hilang seluruhnya.
+  const withPolicies = new Set(permissive.map((r) => r.tablename));
+  const bare = SCOPED.filter((t) => !withPolicies.has(t));
+  ok("tidak ada tabel berlingkup edisi yang kehilangan policy tulisnya", bare.length === 0);
+  if (bare.length) console.log(`      -> tanpa policy tulis: ${bare.join(", ")}`);
+
+  // Alasan pengecualian wajib ditulis, bukan string kosong.
+  ok("setiap pengecualian punya alasan tertulis",
+    Object.values(EXEMPT).every((why) => typeof why === "string" && why.trim().length > 10));
+
+  // budget_items adalah satu-satunya tabel di sini yang mencari kuncinya lewat
+  // INDUK (tidak punya event_id sendiri), jadi jalur itu benar-benar dijalankan,
+  // bukan cuma dibaca. Kalau subquery-nya salah, seluruh menu Anggaran diam-diam
+  // berhenti bisa ditulis.
+  await db.exec(`insert into events (id, code, title, locked) values ('rab-open','RAB1','RAB terbuka', false)
+    on conflict (id) do nothing;`);
+  await db.exec(`set role authenticated; set test.uid='${U.admin}'; set test.anon='false'; set test.email='admin@ov.test';
+    insert into budget_plans (id, event_id, name) values ('bbbbbbbb-0000-0000-0000-00000000b001','rab-open','RAB Uji');
+    reset role;`);
+
+  const NL = String.fromCharCode(10);
+  const asRole = async (uid, sql) => {
+    await db.exec(`set role authenticated;`);
+    await db.exec(`set test.uid = '${uid}'; set test.anon = 'false'; set test.email = 'x@ov.test';`);
+    try { await db.exec(sql); return {}; } catch (e) { return { error: String(e.message).split(NL)[0] }; }
+    finally { await db.exec(`reset role;`); }
+  };
+  const items = async () => Number((await db.query(
+    `select count(*) c from budget_items where plan_id = 'bbbbbbbb-0000-0000-0000-00000000b001'`)).rows[0].c);
+
+  const ins = await asRole(U.admin, `insert into budget_items (plan_id, name, qty) values
+    ('bbbbbbbb-0000-0000-0000-00000000b001','Snack',10);`);
+  ok("admin boleh menulis item RAB lewat pencarian rencana induknya", !ins.error && (await items()) === 1);
+  if (ins.error) console.log(`      -> ${ins.error}`);
+
+  const coord = await asRole(U.coord, `insert into budget_items (plan_id, name, qty) values
+    ('bbbbbbbb-0000-0000-0000-00000000b001','Selundupan',1);`);
+  ok("koordinator tetap DITOLAK (Anggaran masih admin saja)", !!coord.error);
+
+  // Kunci arsip dinyalakan di INDUKNYA. Admin memang dikecualikan - itu
+  // definisi writable_event - jadi yang dibuktikan di sini adalah subquery-nya
+  // benar-benar membaca induk, bukan sekadar selalu true.
+  await db.exec(`update events set locked = true where id = 'rab-open';`);
+  const lockedAdmin = await asRole(U.admin, `insert into budget_items (plan_id, name, qty) values
+    ('bbbbbbbb-0000-0000-0000-00000000b001','Tambahan',2);`);
+  ok("admin tetap bisa menulis di edisi terkunci, lewat induk yang sama", !lockedAdmin.error);
+
+  await db.exec(`delete from budget_items where plan_id = 'bbbbbbbb-0000-0000-0000-00000000b001';
+    delete from budget_plans where id = 'bbbbbbbb-0000-0000-0000-00000000b001';
+    delete from events where id = 'rab-open';`);
+}
+
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);
