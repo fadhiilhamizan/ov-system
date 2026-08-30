@@ -13,7 +13,13 @@ import type { AppUser } from "@/lib/types";
 // ============================================================
 
 const currentUser = vi.fn<() => Promise<AppUser | null>>();
-vi.mock("@/lib/auth", () => ({ getCurrentUser: () => currentUser() }));
+// The beacons read identity through `getOptionalUser`, which returns null where
+// `getCurrentUser` would redirect. Both are pointed at the same fake so a test
+// can drive either one; the difference that matters is that neither throws.
+vi.mock("@/lib/auth", () => ({
+  getCurrentUser: () => currentUser(),
+  getOptionalUser: () => currentUser(),
+}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({
   headers: async () => new Map([["user-agent", "TestAgent/1.0"]]),
@@ -135,6 +141,41 @@ describe("heartbeat", () => {
   it("never throws, whatever the repo does", async () => {
     repo.touchPresence.mockRejectedValueOnce(new Error("db down"));
     await expect(heartbeatAction("/tasks")).resolves.toBeUndefined();
+  });
+
+  it("does not throw when the session has expired", async () => {
+    // REGRESSION: the identity read sat OUTSIDE the try, and on an expired
+    // session `getCurrentUser` answers with a redirect - which is a throw. A
+    // timer in a forgotten tab threw its way out of this action once a minute,
+    // and each throw was filed as an error report that threw the same way.
+    currentUser.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
+    await expect(heartbeatAction("/tasks")).resolves.toBeUndefined();
+    expect(repo.touchPresence).not.toHaveBeenCalled();
+  });
+
+  it("does nothing at all when nobody is signed in", async () => {
+    currentUser.mockResolvedValue(null);
+    await expect(heartbeatAction("/tasks")).resolves.toBeUndefined();
+    expect(repo.touchPresence).not.toHaveBeenCalled();
+  });
+});
+
+describe("error report", () => {
+  it("files a report from an ordinary account", async () => {
+    currentUser.mockResolvedValue(user({ email: "staff@ormawavisit.id", role: "staff" }));
+    await reportErrorAction({ message: "boom", stack: "at x", path: "/tasks" });
+    expect(repo.reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "boom", userAgent: "TestAgent/1.0" }),
+    );
+  });
+
+  it("does not throw when the session has expired", async () => {
+    // This is the one that mattered most: this action is what the
+    // unhandled-rejection listener calls, so a throw here turned every
+    // rejection into a second one.
+    currentUser.mockRejectedValueOnce(new Error("NEXT_REDIRECT"));
+    await expect(reportErrorAction({ message: "boom" })).resolves.toBeUndefined();
+    expect(repo.reportError).not.toHaveBeenCalled();
   });
 });
 

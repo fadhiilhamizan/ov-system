@@ -26,12 +26,12 @@ export default function AppError({
     // Also file it, so a crash somebody else hit shows up in the Developer
     // menu instead of only in a console nobody was watching. Fire and forget:
     // a failed report must not turn one error into two.
-    void reportErrorAction({
+    reportErrorAction({
       kind: "boundary",
       message: error.message || "Unknown error",
       stack: error.stack ?? "",
       path: typeof window === "undefined" ? "" : window.location.pathname,
-    });
+    }).catch(() => {});
   }, [error]);
 
   return (

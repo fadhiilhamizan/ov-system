@@ -135,6 +135,30 @@ begin
 end; $rr$;
 grant execute on function reorder_rows(text, uuid[]) to authenticated, anon;
 
+-- 0045: membuat tabel plotting FGD dalam satu transaksi. Menu Himpunan hidup di
+-- mode demo (tabelnya dibuat di atas), jadi tanpa fungsi ini tombol "Tambah
+-- tabel" gagal dengan "Could not find the function public.create_fgd_plan".
+create or replace function create_fgd_plan(
+  p_event_id text, p_title text default '', p_partner text default '',
+  p_rows text[] default '{}'
+) returns uuid
+language plpgsql security invoker set search_path = public as $cfp$
+declare new_id uuid; next_order int;
+begin
+  select coalesce(max("order") + 1, 0) into next_order
+    from fgd_plans where event_id = p_event_id;
+  insert into fgd_plans (event_id, title, partner_name, "order")
+  values (p_event_id, coalesce(p_title, ''), coalesce(p_partner, ''), next_order)
+  returning id into new_id;
+  if p_rows is not null and array_length(p_rows, 1) is not null then
+    insert into fgd_rows (plan_id, ours, theirs, "order")
+    select new_id, d.name, '', d.pos - 1
+      from unnest(p_rows) with ordinality as d(name, pos);
+  end if;
+  return new_id;
+end; $cfp$;
+grant execute on function create_fgd_plan(text, text, text, text[]) to authenticated, anon;
+
 -- The create paths stopped sending "order" once it came from a sequence, so the
 -- demo needs the same defaults or new rows all land on 0.
 do $seq$

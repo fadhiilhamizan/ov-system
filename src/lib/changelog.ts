@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.41.0",
+    date: "2026-08-30",
+    title: "Halaman tidak lagi diam-diam menampilkan data kosong",
+    changes: [
+      { kind: "fix", text: "Kalau sebuah daftar gagal diambil dari database, halamannya sekarang bilang gagal dan menawarkan muat ulang. Sebelumnya daftarnya tampil kosong, jadi tidak ada bedanya dengan data yang memang belum ada." },
+      { kind: "data", text: "Mengisi satu kolom Job di Rundown tidak bisa lagi menimpa kolom divisi lain di baris yang sama ketika pembacaannya gagal." },
+      { kind: "fix", text: "Membuat tabel plotting FGD sekarang satu langkah utuh. Kalau gagal di tengah, tidak ada lagi kartu FGD kosong yang tertinggal." },
+      { kind: "fix", text: "Menu Himpunan tidak lagi menampilkan halaman kosong ketika sambungan ke database bermasalah." },
+      { kind: "fix", text: "Sesi yang kedaluwarsa tidak lagi melempar kamu ke halaman masuk dari proses latar belakang yang berjalan tiap menit." },
+      { kind: "fix", text: "Berpindah-pindah tab tidak lagi mengirim satu penanda kehadiran setiap kali berpindah." },
+    ],
+  },
+  {
     version: "1.40.1",
     date: "2026-08-29",
     title: "Angka pecahan di RAB, dan halaman yang lebih ringan dibuka",

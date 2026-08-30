@@ -1,7 +1,7 @@
 "use server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getOptionalUser } from "@/lib/auth";
 import { isDeveloper } from "@/lib/developers";
 import {
   deleteError, pruneActivity, pruneErrors, reportError, setErrorResolved, touchPresence,
@@ -37,13 +37,18 @@ async function guard(): Promise<Result> {
  * and a toast saying "presence failed" would be noise about a feature they
  * cannot see. Guests are skipped - the anonymous identity is shared, so every
  * Tamu in the world would collapse into one row that means nothing.
+ *
+ * "Silent" includes the identity read, which is why this is `getOptionalUser`
+ * and why it sits INSIDE the try. `getCurrentUser` answers an expired session
+ * with a redirect to /login, and a redirect is a throw: a timer in a forgotten
+ * tab would have thrown its way out of this action every sixty seconds.
  */
 export async function heartbeatAction(path: string): Promise<void> {
-  const user = await getCurrentUser();
-  if (!user || user.role === "guest" || !user.email) return;
-  const v = parse(presenceSchema, { path });
-  if (!v.ok) return;
   try {
+    const user = await getOptionalUser();
+    if (!user || user.role === "guest" || !user.email) return;
+    const v = parse(presenceSchema, { path });
+    if (!v.ok) return;
     await touchPresence(
       { id: user.id, email: user.email, name: user.name, role: user.role },
       v.data.path,
@@ -59,6 +64,11 @@ export async function heartbeatAction(path: string): Promise<void> {
  * Open to every signed-in account on purpose, because the errors worth knowing
  * about are the ones OTHER people hit. The database caps it at 20 per account
  * per minute so an open tab in a crash loop cannot fill the table.
+ *
+ * Same shape as the heartbeat, and for a sharper reason: this one is what the
+ * unhandled-rejection listener calls. If filing a report could itself reject,
+ * every rejection produced a second one, and the very failure most worth
+ * recording (an expired session) was the one that could not be recorded.
  */
 export async function reportErrorAction(input: {
   kind?: "client" | "boundary";
@@ -66,11 +76,11 @@ export async function reportErrorAction(input: {
   stack?: string;
   path?: string;
 }): Promise<void> {
-  const user = await getCurrentUser();
-  if (!user || user.role === "guest") return;
-  const v = parse(errorReportSchema, input);
-  if (!v.ok) return;
   try {
+    const user = await getOptionalUser();
+    if (!user || user.role === "guest") return;
+    const v = parse(errorReportSchema, input);
+    if (!v.ok) return;
     const h = await headers();
     await reportError({
       kind: v.data.kind ?? "client",

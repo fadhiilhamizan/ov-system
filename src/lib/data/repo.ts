@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import * as local from "./local";
+import { readRows } from "./read";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
@@ -67,6 +68,19 @@ async function must<T>(op: PromiseLike<{ data: T; error: { message: string } | n
   return data;
 }
 
+/**
+ * Every READ goes through `readRows` (data/read.ts).
+ *
+ * The same reasoning as `must()`, one step earlier. A getter that destructures
+ * `data` alone hands back an empty list for a lost connection, a revoked grant
+ * or an expired token, and nothing downstream can tell that apart from an
+ * edition that genuinely has nothing in it: the roster page said the roster was
+ * empty, and Violet grounded an answer on it. `readRows` degrades ONLY for a
+ * table this database has not migrated yet (the demo project is pinned below
+ * 0040 on purpose) and throws for everything else, which the segment error
+ * boundary turns into "this page failed to load, try again".
+ */
+
 /** Supabase returns NULL for empty text columns; coerce to "" so the UI
  *  (which calls .trim()/.toLowerCase()/.split()) never crashes. */
 function coalesce<T>(rows: T[], keys: string[]): T[] {
@@ -101,8 +115,7 @@ export const getDivisions = cache(async (eventId?: string): Promise<Division[]> 
   if (!USE_SUPABASE) return local.getDivisions(eventId);
   let q = (await sb()).from("divisions").select("*").order("order");
   if (eventId) q = q.eq("event_id", eventId);
-  const { data } = await q;
-  return (data ?? []) as Division[];
+  return readRows<Division[]>("divisions", q, []);
 });
 export const getDivision = cache(async (eventId: string, key: string): Promise<Division | null> => {
   if (!USE_SUPABASE) return local.getDivision(eventId, key);
@@ -113,13 +126,15 @@ export const getDivision = cache(async (eventId: string, key: string): Promise<D
 // ---------------- Events ----------------
 export const getEvents = cache(async (): Promise<OVEvent[]> => {
   if (!USE_SUPABASE) return local.getEvents();
-  const { data } = await (await sb()).from("events").select("*").order("order");
-  return (data ?? []) as OVEvent[];
+  return readRows<OVEvent[]>("events", (await sb()).from("events").select("*").order("order"), []);
 });
 export const getEvent = cache(async (id: string): Promise<OVEvent | null> => {
   if (!USE_SUPABASE) return local.getEvent(id);
-  const { data } = await (await sb()).from("events").select("*").eq("id", id).maybeSingle();
-  return (data as OVEvent) ?? null;
+  return readRows<OVEvent | null>(
+    "event",
+    (await sb()).from("events").select("*").eq("id", id).maybeSingle(),
+    null,
+  );
 });
 /** Placeholder so a genuinely empty (or RLS-blocked) events table degrades to
  *  an empty-state UI instead of crashing on `event.id`. */
@@ -146,8 +161,12 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
   // a fresh install where there are almost none.
   const client = await sb();
   for (let i = events.length - 1; i >= 0; i--) {
-    const { data } = await client.from("tasks").select("id").eq("event_id", events[i].id).limit(1);
-    if (data?.length) return events[i];
+    const probe = await readRows<{ id: string }[]>(
+      "active-event probe",
+      client.from("tasks").select("id").eq("event_id", events[i].id).limit(1),
+      [],
+    );
+    if (probe.length) return events[i];
   }
   return events[events.length - 1] ?? events[0] ?? EMPTY_EVENT;
 });
@@ -155,10 +174,10 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 // ---------------- Members ----------------
 export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
   if (!USE_SUPABASE) return local.getMembers(eventId);
-  const { data } = await (await sb()).from("members").select("*");
+  const data = await readRows<Member[]>("members", (await sb()).from("members").select("*"), []);
   // `divisions` is a text[] and comes back null on legacy rows - normalise it so
   // callers never have to null-check the array (see lib/members.ts).
-  const list = coalesce((data ?? []) as Member[], ["name", "nickname", "nrp"]).map((m) => ({
+  const list = coalesce(data, ["name", "nickname", "nrp"]).map((m) => ({
     ...m,
     divisions: m.divisions ?? (m.division ? [m.division] : []),
   }));
@@ -177,8 +196,7 @@ export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> =
   if (filter.event_id) q = q.eq("event_id", filter.event_id);
   if (filter.division) q = q.eq("division", filter.division);
   if (filter.status) q = q.eq("status", filter.status);
-  const { data } = await q;
-  const rows = coalesce((data ?? []) as Task[], [
+  const rows = coalesce(await readRows<Task[]>("tasks", q, []), [
     "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
   ]);
   return rows.map(withOvertime);
@@ -200,8 +218,9 @@ export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[
   if (!USE_SUPABASE) {
     return ids.map((id) => local.getTask(id)).filter((t): t is Task => !!t);
   }
-  const { data } = await (await sb()).from("tasks").select("*").in("id", [...ids]);
-  const rows = coalesce((data ?? []) as Task[], [
+  const rows = coalesce(
+    await readRows<Task[]>("tasks by id", (await sb()).from("tasks").select("*").in("id", [...ids]), []),
+    [
     "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
   ]);
   return rows.map(withOvertime);
@@ -209,8 +228,12 @@ export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[
 
 export const getTask = cache(async (id: string): Promise<Task | null> => {
   if (!USE_SUPABASE) return local.getTask(id);
-  const { data } = await (await sb()).from("tasks").select("*").eq("id", id).maybeSingle();
-  return data ? withOvertime(data as Task) : null;
+  const data = await readRows<Task | null>(
+    "task",
+    (await sb()).from("tasks").select("*").eq("id", id).maybeSingle(),
+    null,
+  );
+  return data ? withOvertime(data) : null;
 });
 export async function createTask(
   input: Partial<Task> & { event_id: string; division: Task["division"]; title: string },
@@ -264,8 +287,12 @@ export async function bulkDeleteTasks(ids: string[]) {
 // ---------------- Task result links ----------------
 export const getTaskLinks = cache(async (taskId: string): Promise<TaskLink[]> => {
   if (!USE_SUPABASE) return local.getTaskLinks(taskId);
-  const { data } = await (await sb()).from("task_links").select("*").eq("task_id", taskId).order("order");
-  return coalesce((data ?? []) as TaskLink[], ["url", "label"]);
+  const data = await readRows<TaskLink[]>(
+    "task links",
+    (await sb()).from("task_links").select("*").eq("task_id", taskId).order("order"),
+    [],
+  );
+  return coalesce(data, ["url", "label"]);
 });
 
 /** All result links for an event's tasks, keyed by task id (one round trip). */
@@ -276,12 +303,16 @@ export const getTaskLinksByEvent = cache(async (eventId: string): Promise<Record
   // back as an `in` list, so every task page paid two round trips per child
   // table and sent every id over the wire twice. `!inner` makes the embedded
   // parent a join rather than a left join, so the filter actually narrows.
-        const { data } = await (await sb())
-          .from("task_links")
-          .select("*, tasks!inner(event_id)")
-          .eq("tasks.event_id", eventId)
-          .order("order");
-        return coalesce(dropEmbed((data ?? []) as TaskLink[], "tasks"), ["url", "label"]);
+        const data = await readRows<TaskLink[]>(
+          "task links by edition",
+          (await sb())
+            .from("task_links")
+            .select("*, tasks!inner(event_id)")
+            .eq("tasks.event_id", eventId)
+            .order("order"),
+          [],
+        );
+        return coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
       })()
     : local.getTaskLinksByEvent(eventId);
   const map: Record<string, TaskLink[]> = {};
@@ -370,8 +401,12 @@ export async function purgeTaskLinks(taskId: string) {
 // referenced by many tasks.
 export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
   if (!USE_SUPABASE) return local.getTaskRefs(taskId);
-  const { data } = await (await sb()).from("task_refs").select("*").eq("task_id", taskId).order("order");
-  return coalesce((data ?? []) as TaskRef[], ["url", "label"]);
+  const data = await readRows<TaskRef[]>(
+    "task refs",
+    (await sb()).from("task_refs").select("*").eq("task_id", taskId).order("order"),
+    [],
+  );
+  return coalesce(data, ["url", "label"]);
 });
 
 /** All references for an event's tasks, keyed by task id (one round trip). */
@@ -382,12 +417,16 @@ export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<
   // back as an `in` list, so every task page paid two round trips per child
   // table and sent every id over the wire twice. `!inner` makes the embedded
   // parent a join rather than a left join, so the filter actually narrows.
-        const { data } = await (await sb())
-          .from("task_refs")
-          .select("*, tasks!inner(event_id)")
-          .eq("tasks.event_id", eventId)
-          .order("order");
-        return coalesce(dropEmbed((data ?? []) as TaskRef[], "tasks"), ["url", "label"]);
+        const data = await readRows<TaskRef[]>(
+          "task refs by edition",
+          (await sb())
+            .from("task_refs")
+            .select("*, tasks!inner(event_id)")
+            .eq("tasks.event_id", eventId)
+            .order("order"),
+          [],
+        );
+        return coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
       })()
     : local.getTaskRefsByEvent(eventId);
   const byTask: Record<string, TaskRef[]> = {};
@@ -430,8 +469,8 @@ export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
 // ---------------- Prospects ----------------
 export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> => {
   if (!USE_SUPABASE) return local.getProspects(eventId);
-  const { data } = await (await sb()).from("prospects").select("*");
-  const list = coalesce((data ?? []) as Prospect[], [
+  const data = await readRows<Prospect[]>("prospects", (await sb()).from("prospects").select("*"), []);
+  const list = coalesce(data, [
     "no", "date_text", "month", "contact", "org_name", "campus",
     "location", "mode", "pic", "contact_status", "their_response", "our_response", "source",
     // 0036: rows written before these columns existed come back null.
@@ -496,9 +535,12 @@ export async function bulkDeleteProspects(ids: string[]) {
 // One prospect, many links since 0038 - see the ProspectLink type.
 export const getProspectLinks = cache(async (prospectId: string): Promise<ProspectLink[]> => {
   if (!USE_SUPABASE) return local.getProspectLinks(prospectId);
-  const { data } = await (await sb())
-    .from("prospect_links").select("*").eq("prospect_id", prospectId).order("order");
-  return coalesce((data ?? []) as ProspectLink[], ["url", "label"]);
+  const data = await readRows<ProspectLink[]>(
+    "prospect links",
+    (await sb()).from("prospect_links").select("*").eq("prospect_id", prospectId).order("order"),
+    [],
+  );
+  return coalesce(data, ["url", "label"]);
 });
 
 /** Every prospect link for an edition, keyed by prospect id (one round trip). */
@@ -510,12 +552,16 @@ export const getProspectLinksByEvent = cache(
     // back as an `in` list, so every prospect page paid two round trips per child
     // table and sent every id over the wire twice. `!inner` makes the embedded
     // parent a join rather than a left join, so the filter actually narrows.
-          const { data } = await (await sb())
-            .from("prospect_links")
-            .select("*, prospects!inner(event_id)")
-            .eq("prospects.event_id", eventId)
-            .order("order");
-          return coalesce(dropEmbed((data ?? []) as ProspectLink[], "prospects"), ["url", "label"]);
+          const data = await readRows<ProspectLink[]>(
+            "prospect links by edition",
+            (await sb())
+              .from("prospect_links")
+              .select("*, prospects!inner(event_id)")
+              .eq("prospects.event_id", eventId)
+              .order("order"),
+            [],
+          );
+          return coalesce(dropEmbed(data, "prospects"), ["url", "label"]);
         })()
       : local.getProspectLinksByEvent(eventId);
     const byProspect: Record<string, ProspectLink[]> = {};
@@ -598,8 +644,8 @@ async function purgeProspectLinks(id: string) {
 // ---------------- Links ----------------
 export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
   if (!USE_SUPABASE) return local.getLinks(eventId);
-  const { data } = await (await sb()).from("links").select("*");
-  const list = coalesce((data ?? []) as LinkItem[], ["section", "division", "name", "url", "note", "source"]);
+  const data = await readRows<LinkItem[]>("links", (await sb()).from("links").select("*"), []);
+  const list = coalesce(data, ["section", "division", "name", "url", "note", "source"]);
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 });
 /** Returns the new row's id so a task link can remember which Super Link row
@@ -770,8 +816,7 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
   let q = (await sb()).from("rundown").select("*").order("no");
   if (eventId) q = q.eq("event_id", eventId);
   if (variant) q = q.eq("variant", variant);
-  const { data } = await q;
-  const rows = coalesce((data ?? []) as RundownItem[], [
+  const rows = coalesce(await readRows<RundownItem[]>("rundown", q, []), [
     "variant", "time_start", "time_end", "duration", "activity", "keterangan", "mc", "operator",
     "host", "opr_link", "job_lo", "job_event", "job_consump", "job_creative", "job_opr",
   ]);
@@ -789,15 +834,13 @@ export const getJobs = cache(async (eventId?: string): Promise<JobHariH[]> => {
   if (!USE_SUPABASE) return local.getJobs(eventId);
   let q = (await sb()).from("job_harih").select("*");
   if (eventId) q = q.eq("event_id", eventId);
-  const { data } = await q;
-  return coalesce((data ?? []) as JobHariH[], ["no", "pic", "job", "notes"]);
+  return coalesce(await readRows<JobHariH[]>("jobs", q, []), ["no", "pic", "job", "notes"]);
 });
 
 // ---------------- FAQ ----------------
 export const getFaqs = cache(async (): Promise<Faq[]> => {
   if (!USE_SUPABASE) return local.getFaqs();
-  const { data } = await (await sb()).from("faqs").select("*").order("order");
-  return (data ?? []) as Faq[];
+  return readRows<Faq[]>("faqs", (await sb()).from("faqs").select("*").order("order"), []);
 });
 export async function createFaq(input: { question: string; answer: string }) {
   if (!USE_SUPABASE) return local.createFaq(input);
@@ -830,8 +873,8 @@ export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
   if (!USE_SUPABASE) return local.getTeams(eventId);
   let q = (await sb()).from("teams").select("*");
   if (eventId) q = q.eq("event_id", eventId);
-  const { data } = await q;
-  return coalesce((data ?? []) as Team[], ["division", "coordinator", "fungsionaris", "intern"]);
+  return coalesce(await readRows<Team[]>("teams", q, []),
+    ["division", "coordinator", "fungsionaris", "intern"]);
 });
 
 // ---------------- Role requests ----------------
@@ -839,21 +882,26 @@ export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
 // list is safe to expose; `getRoleRequestsFor` is the explicit self-lookup.
 export const getRoleRequests = cache(async (): Promise<RoleRequest[]> => {
   if (!USE_SUPABASE) return local.getRoleRequests();
-  const { data } = await (await sb())
-    .from("role_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
-  return coalesce((data ?? []) as RoleRequest[], ["name", "email", "message"]);
+  const data = await readRows<RoleRequest[]>(
+    "role requests",
+    (await sb()).from("role_requests").select("*").order("created_at", { ascending: false }),
+    [],
+  );
+  return coalesce(data, ["name", "email", "message"]);
 });
 
 export const getRoleRequestsFor = cache(async (userId: string): Promise<RoleRequest[]> => {
   if (!USE_SUPABASE) return local.getRoleRequestsFor(userId);
-  const { data } = await (await sb())
-    .from("role_requests")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-  return coalesce((data ?? []) as RoleRequest[], ["name", "email", "message"]);
+  const data = await readRows<RoleRequest[]>(
+    "my role requests",
+    (await sb())
+      .from("role_requests")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    [],
+  );
+  return coalesce(data, ["name", "email", "message"]);
 });
 
 export async function createRoleRequest(
@@ -1371,7 +1419,14 @@ export async function updateRundown(id: string, patch: Partial<RundownItem>) {
 export async function setRundownDivisionJob(id: string, division: string, value: string) {
   if (!USE_SUPABASE) return local.setRundownDivisionJob(id, division, value);
   const client = await sb();
-  const { data } = await client.from("rundown").select("division_jobs").eq("id", id).maybeSingle();
+  // This read FEEDS the write below, so a swallowed error here does not show an
+  // empty cell, it erases one: `current` would fall back to {} and the update
+  // would replace every other division's job on this row with nothing.
+  const data = await readRows<{ division_jobs: unknown } | null>(
+    "rundown division jobs",
+    client.from("rundown").select("division_jobs").eq("id", id).maybeSingle(),
+    null,
+  );
   const current =
     data?.division_jobs && typeof data.division_jobs === "object" ? data.division_jobs : {};
   await must(

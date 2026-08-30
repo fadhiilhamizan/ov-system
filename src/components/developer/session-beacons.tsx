@@ -23,6 +23,15 @@ import { installConsoleCapture } from "@/lib/dev-console";
 
 /** How often a tab says it is still there. */
 const BEAT_MS = 60_000;
+/**
+ * Floor between two beats, whatever asked for them.
+ *
+ * The timer alone respects BEAT_MS, but every visibilitychange fires one too,
+ * and alt-tabbing is not a rare thing to do: each switch back was a server
+ * action POST, an auth round trip and an upsert, for a presence row whose
+ * whole job is to say "still here in the last minute or so".
+ */
+const MIN_GAP_MS = 15_000;
 /** Cap per page-load, so a crash loop cannot turn into a write loop. */
 const MAX_REPORTS = 8;
 
@@ -70,11 +79,19 @@ export function SessionBeacons({
   React.useEffect(() => {
     if (!networkEnabled) return;
     let cancelled = false;
+    let lastBeat = 0;
     const beat = () => {
       // A background tab is not "online" in any sense worth reporting, and
       // skipping it keeps a forgotten tab from holding someone online for days.
       if (document.visibilityState !== "visible") return;
-      void heartbeatAction(pathRef.current);
+      const now = Date.now();
+      if (now - lastBeat < MIN_GAP_MS) return;
+      lastBeat = now;
+      // `.catch`, not `void`. A server action can reject before its own body
+      // runs at all - the POST itself fails, the app is mid-deploy - and an
+      // unhandled rejection from invisible plumbing would be filed as an error
+      // report by the listener below, which is noise about nothing.
+      heartbeatAction(pathRef.current).catch(() => {});
     };
     beat();
     const timer = setInterval(() => {
@@ -102,12 +119,12 @@ export function SessionBeacons({
       if (sent >= MAX_REPORTS || seen.has(key) || !message) return;
       seen.add(key);
       sent++;
-      void reportErrorAction({
+      reportErrorAction({
         kind: "client",
         message: message.slice(0, 2000),
         stack,
         path: window.location.pathname,
-      });
+      }).catch(() => {});
     };
 
     const onError = (e: ErrorEvent) => {

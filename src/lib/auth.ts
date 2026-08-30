@@ -31,8 +31,35 @@ function normalizeRole(r: string | null | undefined): Role {
  * Returns the current user. In Supabase mode this reads the auth session +
  * profile, allows a guest bypass (cookie), or redirects to /login. In demo
  * mode it returns the cookie-selected demo identity.
+ *
+ * Anything that must NOT redirect - a background beacon, say - calls
+ * `getOptionalUser` below instead.
  */
-export const getCurrentUser = cache(async (): Promise<AppUser> => {
+export const getCurrentUser = async (): Promise<AppUser> => {
+  const user = await readUser();
+  // No session and no guest cookie: this is a page load by somebody who is not
+  // signed in. `redirect` throws, so nothing below runs.
+  if (!user) redirect("/login");
+  return user;
+};
+
+/**
+ * The same identity read, but it returns null instead of redirecting.
+ *
+ * For the background beacons (presence, error reports), which run on a timer in
+ * everybody's tab and are meant to be completely silent. `getCurrentUser` ends
+ * an expired session by throwing a redirect, and a beacon that does that yanks
+ * the person off the page they were working on - once a minute - over a feature
+ * they cannot even see. Worse, the throw escaped the action as a rejected
+ * promise, and the unhandled-rejection listener in the same component filed it
+ * as an error report, which took the same path and rejected again.
+ */
+export const getOptionalUser = async (): Promise<AppUser | null> => readUser();
+
+/** Shared body, and the one that carries the per-request cache, so calling both
+ *  wrappers in one request is still a single auth round trip. Returns null
+ *  where a page would be sent to /login. */
+const readUser = cache(async (): Promise<AppUser | null> => {
   const store = await cookies();
 
   // Demo mode: a separate database, entered without an account. Identity comes
@@ -51,7 +78,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser> => {
 
     if (!user) {
       if (store.get(GUEST_COOKIE)?.value === "1") return GUEST_USER;
-      redirect("/login");
+      return null;
     }
 
     // Guest mode signs in anonymously (so reads pass RLS without exposing the

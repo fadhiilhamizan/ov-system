@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "../supabase/server";
+import { readRows } from "./read";
 import { HMSI_DEPARTMENTS } from "../constants";
 import type { CompareEntry, CompareSubject, FgdPlan, FgdRow } from "../types";
 
@@ -10,24 +11,17 @@ import type { CompareEntry, CompareSubject, FgdPlan, FgdRow } from "../types";
 // Its own module rather than more lines in repo.ts, same reasoning as
 // developer-repo.ts: repo.ts is already 1000+ lines carrying the whole product,
 // and these tables arrive with migration 0040 so they have no local-JSON
-// counterpart. Reads degrade to an empty list when the migration has not been
-// applied, which is what keeps the page rendering instead of throwing.
+// counterpart. Reads go through `readRows` (data/read.ts), which degrades to an
+// empty list when the migration has not been applied - the demo project is
+// pinned well below 0040 - and throws for anything else. It used to swallow
+// EVERY error, so a lost connection and an edition with no plotting yet looked
+// exactly alike on screen.
 //
 // Every write goes through `must()`-style error surfacing: a silent write
 // failure is the single most expensive bug this project has had.
 // ============================================================
 
 const sb = () => createClient();
-
-/** The table does not exist yet: 0040 has not been run. */
-function isMissing(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false;
-  return (
-    error.code === "42P01" ||
-    error.code === "PGRST205" ||
-    /does not exist|schema cache/i.test(error.message ?? "")
-  );
-}
 
 function must<T>(result: { data: T; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
@@ -37,23 +31,30 @@ function must<T>(result: { data: T; error: { message: string } | null }): T {
 // ---------------- FGD ----------------
 
 export const getFgdPlans = cache(async (eventId: string): Promise<FgdPlan[]> => {
-  const { data, error } = await (await sb())
-    .from("fgd_plans").select("*").eq("event_id", eventId).order("order");
-  if (error && !isMissing(error)) console.warn("[himpunan] fgd plans:", error.message);
-  return (data ?? []) as FgdPlan[];
+  return readRows<FgdPlan[]>(
+    "fgd plans",
+    (await sb()).from("fgd_plans").select("*").eq("event_id", eventId).order("order"),
+    [],
+  );
 });
 
 /** Every row for an edition's plans, keyed by plan id (one round trip). */
 export const getFgdRows = cache(async (eventId: string): Promise<Record<string, FgdRow[]>> => {
   const client = await sb();
-  const { data: plans } = await client.from("fgd_plans").select("id").eq("event_id", eventId);
-  const ids = (plans ?? []).map((p: { id: string }) => p.id);
+  const plans = await readRows<{ id: string }[]>(
+    "fgd plan ids",
+    client.from("fgd_plans").select("id").eq("event_id", eventId),
+    [],
+  );
+  const ids = plans.map((p) => p.id);
   if (!ids.length) return {};
-  const { data, error } = await client
-    .from("fgd_rows").select("*").in("plan_id", ids).order("order");
-  if (error && !isMissing(error)) console.warn("[himpunan] fgd rows:", error.message);
+  const rows = await readRows<FgdRow[]>(
+    "fgd rows",
+    client.from("fgd_rows").select("*").in("plan_id", ids).order("order"),
+    [],
+  );
   const byPlan: Record<string, FgdRow[]> = {};
-  for (const r of (data ?? []) as FgdRow[]) (byPlan[r.plan_id] ??= []).push(r);
+  for (const r of rows) (byPlan[r.plan_id] ??= []).push(r);
   return byPlan;
 });
 
@@ -68,28 +69,22 @@ export async function createFgdPlan(input: {
   event_id: string; title?: string; partner_name?: string;
 }): Promise<string | null> {
   const client = await sb();
-  const { data: existing } = await client
-    .from("fgd_plans").select("order").eq("event_id", input.event_id);
-  const nextOrder = Math.max(0, ...(existing ?? []).map((p: { order: number }) => p.order + 1));
-
-  const plan = must(
-    await client.from("fgd_plans").insert({
-      event_id: input.event_id,
-      title: input.title ?? "",
-      partner_name: input.partner_name ?? "",
-      order: nextOrder,
-    }).select("id").single(),
-  ) as { id: string } | null;
-  if (!plan) return null;
-
-  must(
-    await client.from("fgd_rows").insert(
-      HMSI_DEPARTMENTS.map((dept, i) => ({
-        plan_id: plan.id, ours: dept, theirs: "", order: i,
-      })),
-    ).select("id"),
-  );
-  return plan.id;
+  // ONE transaction, in the database (migration 0045). It used to be two round
+  // trips - insert the plan, then insert its ten rows - each its own
+  // transaction, so a failure on the second left an empty FGD card behind with
+  // nothing to roll it back. Same reasoning as restore_snapshot in 0043.
+  //
+  // The department names travel as an argument rather than living in the SQL,
+  // so HMSI_DEPARTMENTS stays the only place they are written down.
+  const id = must(
+    await client.rpc("create_fgd_plan", {
+      p_event_id: input.event_id,
+      p_title: input.title ?? "",
+      p_partner: input.partner_name ?? "",
+      p_rows: HMSI_DEPARTMENTS,
+    }),
+  ) as string | null;
+  return id ?? null;
 }
 
 export async function updateFgdPlan(id: string, patch: Partial<FgdPlan>) {
@@ -107,8 +102,12 @@ export async function deleteFgdPlan(id: string) {
 
 export async function createFgdRow(planId: string) {
   const client = await sb();
-  const { data: rows } = await client.from("fgd_rows").select("order").eq("plan_id", planId);
-  const nextOrder = Math.max(0, ...(rows ?? []).map((r: { order: number }) => r.order + 1));
+  const rows = await readRows<{ order: number }[]>(
+    "fgd row order",
+    client.from("fgd_rows").select("order").eq("plan_id", planId),
+    [],
+  );
+  const nextOrder = Math.max(0, ...rows.map((r) => r.order + 1));
   const { error } = await client
     .from("fgd_rows").insert({ plan_id: planId, ours: "", theirs: "", order: nextOrder });
   if (error) throw new Error(error.message);
@@ -129,10 +128,11 @@ export async function deleteFgdRow(id: string) {
 // button); its assessments (compare_entries) hang off it via subject_id.
 
 export const getCompareSubjects = cache(async (eventId: string): Promise<CompareSubject[]> => {
-  const { data, error } = await (await sb())
-    .from("compare_subjects").select("*").eq("event_id", eventId).order("order");
-  if (error && !isMissing(error)) console.warn("[himpunan] compare subjects:", error.message);
-  return (data ?? []) as CompareSubject[];
+  return readRows<CompareSubject[]>(
+    "compare subjects",
+    (await sb()).from("compare_subjects").select("*").eq("event_id", eventId).order("order"),
+    [],
+  );
 });
 
 /**
@@ -146,9 +146,12 @@ export async function createCompareSubject(input: {
   event_id: string; prospect_id: string | null; org_name: string;
 }): Promise<string | null> {
   const client = await sb();
-  const { data: rows } = await client
-    .from("compare_subjects").select("order").eq("event_id", input.event_id);
-  const nextOrder = Math.max(0, ...(rows ?? []).map((r: { order: number }) => r.order + 1));
+  const rows = await readRows<{ order: number }[]>(
+    "compare subject order",
+    client.from("compare_subjects").select("order").eq("event_id", input.event_id),
+    [],
+  );
+  const nextOrder = Math.max(0, ...rows.map((r) => r.order + 1));
   const data = await must(
     await client.from("compare_subjects")
       .insert({ ...input, order: nextOrder }).select("id").single(),
@@ -163,17 +166,33 @@ export async function deleteCompareSubject(id: string) {
 }
 
 export const getCompareEntries = cache(async (eventId: string): Promise<CompareEntry[]> => {
-  const { data, error } = await (await sb())
-    .from("compare_entries").select("*").eq("event_id", eventId).order("order");
-  if (error && !isMissing(error)) console.warn("[himpunan] compare:", error.message);
-  return (data ?? []) as CompareEntry[];
+  return readRows<CompareEntry[]>(
+    "compare entries",
+    (await sb()).from("compare_entries").select("*").eq("event_id", eventId).order("order"),
+    [],
+  );
 });
 
-export async function createCompareEntry(input: Omit<CompareEntry, "id" | "order">) {
+/**
+ * Add an assessment to a subject.
+ *
+ * `subject_id` is required in the signature, not merely non-null in practice.
+ * It used to be `Omit<CompareEntry, ...>`, whose `subject_id` is nullable for
+ * pre-0041 rows, and the query defended itself with `?? ""` - an empty string
+ * compared against a uuid column, which Postgres rejects outright. The error
+ * was dropped along with the rest of the result, so the ordering read came back
+ * empty and every assessment quietly landed at position zero.
+ */
+export async function createCompareEntry(
+  input: Omit<CompareEntry, "id" | "order"> & { subject_id: string },
+) {
   const client = await sb();
-  const { data: rows } = await client
-    .from("compare_entries").select("order").eq("subject_id", input.subject_id ?? "");
-  const nextOrder = Math.max(0, ...(rows ?? []).map((r: { order: number }) => r.order + 1));
+  const rows = await readRows<{ order: number }[]>(
+    "compare entry order",
+    client.from("compare_entries").select("order").eq("subject_id", input.subject_id),
+    [],
+  );
+  const nextOrder = Math.max(0, ...rows.map((r) => r.order + 1));
   const { error } = await client.from("compare_entries").insert({ ...input, order: nextOrder });
   if (error) throw new Error(error.message);
 }

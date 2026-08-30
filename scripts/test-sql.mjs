@@ -1172,6 +1172,75 @@ console.log("0044 - reorder_rows + sequence urutan");
   await db.exec(`set role authenticated; set test.uid='${U.admin}'; set test.email='admin@ov.test'; delete from faqs; reset role;`);
 }
 
+// ------------------------------------------------------------------
+// 0045: create_fgd_plan() - satu tabel plotting FGD + baris awalnya dalam SATU
+// transaksi. Yang dibuktikan di sini adalah bagian yang tidak bisa dilihat dari
+// aplikasi: kalau insert barisnya gagal, plan-nya TIDAK ikut tertinggal.
+// ------------------------------------------------------------------
+console.log("0045 - create_fgd_plan (transaksional)");
+{
+  const DEPTS = ["PSDM", "RISTEK", "MEDFO", "KWU"];
+
+  const callAs = async (uid, anon, eventId, rows = DEPTS) => {
+    await db.exec(`set role authenticated;`);
+    await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}'; set test.email = 'x@ov.test';`);
+    try {
+      const r = await db.query(
+        `select create_fgd_plan($1, $2, $3, $4::text[]) as id`,
+        [eventId, "Sesi pagi", "HIMA Mitra", rows],
+      );
+      return { id: r.rows[0].id };
+    } catch (e) {
+      return { error: e.message.split("\n")[0] };
+    } finally {
+      await db.exec(`reset role;`);
+    }
+  };
+  const plans = async () => Number((await db.query(`select count(*) c from fgd_plans`)).rows[0].c);
+  const rowsOf = async (id) =>
+    (await db.query(`select ours from fgd_rows where plan_id = $1 order by "order"`, [id]))
+      .rows.map((r) => r.ours);
+
+  await db.exec(`insert into events (id, code, title, locked) values
+    ('fgd-open','FGD1','FGD terbuka', false),
+    ('fgd-lock','FGD2','FGD terkunci', true)
+    on conflict (id) do nothing;`);
+
+  const first = await callAs(U.admin, false, "fgd-open");
+  ok("admin boleh membuat tabel FGD", !first.error && !!first.id);
+  if (first.error) console.log(`      -> ${first.error}`);
+  ok("...beserta baris departemennya, urut", (await rowsOf(first.id)).join(",") === DEPTS.join(","));
+
+  const second = await callAs(U.staff, false, "fgd-open");
+  ok("staff juga boleh (menu Himpunan = full untuk admin/koordinator/staff)", !second.error);
+  const orders = (await db.query(
+    `select "order" from fgd_plans where event_id='fgd-open' order by "order"`)).rows.map((r) => Number(r.order));
+  ok("tabel kedua mendarat di AKHIR daftar", orders.join(",") === "0,1");
+
+  const denied = await callAs(U.intern, false, "fgd-open");
+  ok("intern DITOLAK membuat tabel FGD", !!denied.error);
+  const deniedAnon = await callAs(U.anon, true, "fgd-open");
+  ok("sesi anonim DITOLAK", !!deniedAnon.error);
+
+  const locked = await callAs(U.staff, false, "fgd-lock");
+  ok("edisi terkunci menolak staff (kunci arsip tetap berlaku di dalam RPC)", !!locked.error);
+  const lockedAdmin = await callAs(U.admin, false, "fgd-lock");
+  ok("...tapi admin tetap boleh, seperti di tempat lain", !lockedAdmin.error);
+
+  // Kegagalan di tengah. Constraint sementara membuat insert BARIS meledak
+  // setelah plan-nya masuk - persis bentuk kegagalan yang dulu meninggalkan
+  // kartu FGD kosong ketika ini masih dua perintah terpisah.
+  const before = await plans();
+  await db.exec(`alter table fgd_rows add constraint fgd_rows_boom check (ours <> 'MELEDAK');`);
+  const halfway = await callAs(U.admin, false, "fgd-open", ["PSDM", "MELEDAK"]);
+  await db.exec(`alter table fgd_rows drop constraint fgd_rows_boom;`);
+  ok("baris yang ditolak membuat seluruh pemanggilan gagal", !!halfway.error);
+  ok("...dan TIDAK meninggalkan tabel FGD kosong (rollback)", (await plans()) === before);
+
+  await db.exec(`delete from fgd_plans where event_id in ('fgd-open','fgd-lock');
+    delete from events where id in ('fgd-open','fgd-lock');`);
+}
+
 console.log("0043 - restore_snapshot (transaksional)");
 {
   const callAs = async (uid, anon, payload) => {
