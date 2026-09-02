@@ -24,6 +24,7 @@ const actions = vi.hoisted(() => ({
   deleteBudgetPlanAction: vi.fn(async () => ({ ok: true as const })),
   setCategoryColorAction: vi.fn(async () => ({ ok: true as const })),
   reorderBudgetItemsAction: vi.fn(async () => ({ ok: true as const })),
+  moveBudgetItemAction: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("@/lib/actions/budget", () => actions);
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
@@ -50,6 +51,12 @@ function plan(): BudgetPlan {
 /** The qty / unit-price cells, in render order: [qty i1, price i1, qty i2, price i2]. */
 const numCells = () =>
   [...document.querySelectorAll<HTMLInputElement>('input[type="number"]')];
+
+/** The inline text cells, matched by their accessible name. */
+const textCells = (label: string) =>
+  screen.getAllByLabelText(label) as HTMLInputElement[];
+const nameCell = (i: number) => textCells("Nama item")[i];
+const unitCell = (i: number) => textCells("Satuan")[i];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -132,6 +139,54 @@ describe("optimistic rollback", () => {
     expect(numCells()[2].value).toBe("4");   // the failed row went back
     expect(numCells()[0].value).toBe("99");  // the saved row was left alone
     vi.useRealTimers();
+  });
+});
+
+describe("inline name and unit", () => {
+  it("saves a renamed item on blur", () => {
+    render(<BudgetView plans={[plan()]} events={[event]} canManage />);
+    const name = nameCell(0);
+    fireEvent.change(name, { target: { value: "Snack Sore" } });
+    fireEvent.blur(name);
+    expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { name: "Snack Sore" });
+  });
+
+  it("saves a changed unit on Enter", () => {
+    render(<BudgetView plans={[plan()]} events={[event]} canManage />);
+    const unit = unitCell(0);
+    fireEvent.change(unit, { target: { value: "porsi" } });
+    fireEvent.keyDown(unit, { key: "Enter" });
+    expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { unit: "porsi" });
+  });
+
+  it("refuses to save an emptied NAME, and puts the stored one back", () => {
+    // The schema requires a name, so an empty one would come back as a toast
+    // rather than a save. Snapping back keeps the cell honest about what is
+    // stored, the same rule NumCell follows for an abandoned number.
+    render(<BudgetView plans={[plan()]} events={[event]} canManage />);
+    const name = nameCell(0);
+    fireEvent.change(name, { target: { value: "  " } });
+    fireEvent.blur(name);
+    expect(actions.updateBudgetItemAction).not.toHaveBeenCalled();
+    expect(nameCell(0).value).toBe("Snack");
+  });
+
+  it("DOES save an emptied UNIT, because a line may have none", () => {
+    render(<BudgetView plans={[plan()]} events={[event]} canManage />);
+    const unit = unitCell(0);
+    fireEvent.change(unit, { target: { value: "" } });
+    fireEvent.blur(unit);
+    expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { unit: "" });
+  });
+
+  it("Escape abandons the edit without saving", () => {
+    render(<BudgetView plans={[plan()]} events={[event]} canManage />);
+    const name = nameCell(0);
+    fireEvent.change(name, { target: { value: "Salah ketik" } });
+    fireEvent.keyDown(name, { key: "Escape" });
+    fireEvent.blur(name);
+    expect(actions.updateBudgetItemAction).not.toHaveBeenCalled();
+    expect(nameCell(0).value).toBe("Snack");
   });
 });
 

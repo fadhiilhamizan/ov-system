@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LEGAL_DOCS, LEGAL_UPDATED, PRIVACY, TERMS } from "./legal";
+import { LEGAL_CONTACTS, LEGAL_DOCS, LEGAL_UPDATED, PRIVACY, TERMS } from "./legal";
 import { pick, type Bi } from "./guide";
 
 /** Every translatable string in a document, flattened. */
@@ -42,6 +42,23 @@ describe.each([
 });
 
 describe("legal metadata", () => {
+  it("every published contact is a real address, labelled in both languages", () => {
+    // These are printed on a PUBLIC page that calls itself binding, and they are
+    // rendered as mailto links. An empty string used to be the normal state
+    // here (a TODO waiting on the department), and an empty or unlabelled entry
+    // renders as a link to nowhere next to a promise that someone will answer.
+    // Two addresses is deliberate: one belongs to the cabinet and changes with
+    // it, one to the maintainer, and a reader needs to know which is which.
+    expect(LEGAL_CONTACTS.length).toBeGreaterThan(0);
+    for (const c of LEGAL_CONTACTS) {
+      expect(c.address, "alamat kosong").toMatch(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
+      expect(c.role.id.trim(), `peran ID kosong untuk ${c.address}`).not.toBe("");
+      expect(c.role.en.trim(), `peran EN kosong untuk ${c.address}`).not.toBe("");
+    }
+    const unique = new Set(LEGAL_CONTACTS.map((c) => c.address));
+    expect(unique.size).toBe(LEGAL_CONTACTS.length);
+  });
+
   it("LEGAL_UPDATED is a parseable ISO date", () => {
     expect(LEGAL_UPDATED).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(Number.isNaN(new Date(LEGAL_UPDATED).getTime())).toBe(false);

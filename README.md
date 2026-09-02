@@ -87,7 +87,9 @@ npm run dev
 # buka http://localhost:3000
 ```
 
-Tanpa konfigurasi Supabase, aplikasi berjalan penuh dalam mode demo lokal: data awal berasal dari `src/lib/seed/seed.json` dan tersimpan di `.data/db.json`. Semua operasi CRUD berfungsi dan persisten. Berganti peran untuk menguji hak akses tersedia di menu kanan atas.
+Aplikasi ini **wajib** terhubung ke sebuah proyek Supabase; tidak ada sumber data lain. Isi `.env.local` lebih dulu (lihat bagian berikutnya), atau setiap halaman akan berhenti dengan pesan yang menyebutkan variabel mana yang belum diisi.
+
+Sampai v1.41.2 ada mode kedua: tanpa konfigurasi apa pun, aplikasi berjalan di atas berkas JSON lokal. Mode itu dihapus di v1.42.0 karena ia adalah implementasi kedua seluruh produk (959 baris, 82 fungsi, tanpa tes) yang harus disinkronkan manual tiap kali skema berubah, dan sudah mulai berbeda perilakunya. Untuk mencoba sistem tanpa data asli, pakai **Mode Demo** di bawah: itu proyek Supabase terpisah, dan sudah menjawab kebutuhan yang sama.
 
 Perintah lain:
 
@@ -107,7 +109,7 @@ npm run db:demo    # regenerasi seed & skrip akses untuk project Supabase demo
 4. Buat user pertama (Authentication > Users), kemudian set `role = 'admin'` pada tabel `profiles`.
 5. `npm run dev` - `proxy.ts` menyegarkan sesi dan RLS menegakkan hak akses di level database.
 
-Selama variabel Supabase kosong, aplikasi tetap berjalan penuh dalam mode demo lokal.
+Selama variabel Supabase kosong, aplikasi tidak bisa berjalan: `supabase/server.ts` berhenti dengan pesan yang menyebut variabel mana yang kurang, bukan error dari dalam library.
 
 ## Mode Demo (database terpisah)
 

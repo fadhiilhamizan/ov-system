@@ -61,7 +61,11 @@ export default async function DashboardPage() {
 
   const upcoming = stats.tasks
     .filter((t) => t.end_date && t.status !== "done")
-    .sort((a, b) => (a.end_date! < b.end_date! ? -1 : 1))
+    // localeCompare, not `a < b ? -1 : 1`. That shape never returns 0, so two
+    // tasks sharing a deadline compare as "a after b" AND "b after a"; the sort
+    // is then free to order them differently on different engines, and the
+    // dashboard's top six could reshuffle between renders for no visible reason.
+    .sort((a, b) => (a.end_date ?? "").localeCompare(b.end_date ?? ""))
     .slice(0, 6);
 
   // `prospectStats` already tallies this in one pass. This used to re-derive it

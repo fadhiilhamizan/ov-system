@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import * as local from "./local";
 import { readRows } from "./read";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
@@ -35,14 +34,16 @@ import { CLONE_MODULES } from "../types";
 import type { CloneFilters } from "../types";
 
 // ------------------------------------------------------------------
-// Backend-agnostic repository. Uses Supabase when configured, otherwise
-// the local JSON store (demo mode). All functions are async.
+// The repository. Everything here goes to Supabase.
+//
+// It used to be backend-agnostic: almost every function carried a guard that
+// diverted to a parallel JSON implementation (data/local.ts, 959 lines, 82
+// functions) whenever the environment was completely empty. That mode was
+// removed in v1.42.0 - see AGENTS.md for why, and data/single-backend.test.ts
+// for the guard that keeps it removed. Demo mode is a SEPARATE Supabase project
+// and is unaffected; the per-request client (supabase/server.ts) routes to it.
 // ------------------------------------------------------------------
 
-// Supabase-backed when EITHER production or a demo project is configured. The
-// per-request client (supabase/server.ts) then routes to demo vs production.
-const USE_SUPABASE =
-  !!process.env.NEXT_PUBLIC_SUPABASE_URL || !!process.env.NEXT_PUBLIC_SUPABASE_DEMO_URL;
 const sb = () => createClient();
 
 /** A task past its deadline and not yet done is automatically "overtime".
@@ -112,24 +113,20 @@ function dropEmbed<T>(rows: T[], key: string): T[] {
 // migration 0018 every division has an event_id. (The local/demo JSON store
 // keeps a lenient match so its global seed still renders without a migration.)
 export const getDivisions = cache(async (eventId?: string): Promise<Division[]> => {
-  if (!USE_SUPABASE) return local.getDivisions(eventId);
   let q = (await sb()).from("divisions").select("*").order("order");
   if (eventId) q = q.eq("event_id", eventId);
   return readRows<Division[]>("divisions", q, []);
 });
 export const getDivision = cache(async (eventId: string, key: string): Promise<Division | null> => {
-  if (!USE_SUPABASE) return local.getDivision(eventId, key);
   const list = await getDivisions(eventId);
   return list.find((d) => d.key === key) ?? null;
 });
 
 // ---------------- Events ----------------
 export const getEvents = cache(async (): Promise<OVEvent[]> => {
-  if (!USE_SUPABASE) return local.getEvents();
   return readRows<OVEvent[]>("events", (await sb()).from("events").select("*").order("order"), []);
 });
 export const getEvent = cache(async (id: string): Promise<OVEvent | null> => {
-  if (!USE_SUPABASE) return local.getEvent(id);
   return readRows<OVEvent | null>(
     "event",
     (await sb()).from("events").select("*").eq("id", id).maybeSingle(),
@@ -145,7 +142,6 @@ const EMPTY_EVENT: OVEvent = {
 };
 
 export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
-  if (!USE_SUPABASE) return local.getDefaultEvent() ?? EMPTY_EVENT;
   const events = await getEvents();
   const active = events.find((e) => e.status === "active");
   if (active) return active;
@@ -173,7 +169,6 @@ export const getDefaultEvent = cache(async (): Promise<OVEvent> => {
 
 // ---------------- Members ----------------
 export const getMembers = cache(async (eventId?: string): Promise<Member[]> => {
-  if (!USE_SUPABASE) return local.getMembers(eventId);
   const data = await readRows<Member[]>("members", (await sb()).from("members").select("*"), []);
   // `divisions` is a text[] and comes back null on legacy rows - normalise it so
   // callers never have to null-check the array (see lib/members.ts).
@@ -191,7 +186,6 @@ export interface TaskFilter {
   status?: TaskStatus;
 }
 export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> => {
-  if (!USE_SUPABASE) return local.getTasks(filter);
   let q = (await sb()).from("tasks").select("*").order("created_at", { ascending: true });
   if (filter.event_id) q = q.eq("event_id", filter.event_id);
   if (filter.division) q = q.eq("division", filter.division);
@@ -215,9 +209,6 @@ export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> =
  */
 export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[]> => {
   if (!ids.length) return [];
-  if (!USE_SUPABASE) {
-    return ids.map((id) => local.getTask(id)).filter((t): t is Task => !!t);
-  }
   const rows = coalesce(
     await readRows<Task[]>("tasks by id", (await sb()).from("tasks").select("*").in("id", [...ids]), []),
     [
@@ -227,7 +218,6 @@ export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[
 });
 
 export const getTask = cache(async (id: string): Promise<Task | null> => {
-  if (!USE_SUPABASE) return local.getTask(id);
   const data = await readRows<Task | null>(
     "task",
     (await sb()).from("tasks").select("*").eq("id", id).maybeSingle(),
@@ -238,7 +228,6 @@ export const getTask = cache(async (id: string): Promise<Task | null> => {
 export async function createTask(
   input: Partial<Task> & { event_id: string; division: Task["division"]; title: string },
 ): Promise<string | null> {
-  if (!USE_SUPABASE) return local.createTask(input).id;
   const client = await sb();
   // Auto-number: `no` is assigned atomically by the assign_task_no() BEFORE-INSERT
   // trigger (advisory-locked per event+division) when left null, so concurrent
@@ -260,33 +249,22 @@ export async function createTask(
   return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateTask(id: string, patch: Partial<Task>) {
-  if (!USE_SUPABASE) return local.updateTask(id, patch);
   await must((await sb()).from("tasks").update(patch).eq("id", id));
 }
 export async function deleteTask(id: string) {
-  if (!USE_SUPABASE) return local.deleteTask(id);
   await must((await sb()).from("tasks").delete().eq("id", id));
 }
 export async function bulkUpdateTasks(ids: string[], patch: Partial<Task>) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) {
-    for (const id of ids) local.updateTask(id, patch);
-    return;
-  }
   await must((await sb()).from("tasks").update(patch).in("id", ids));
 }
 export async function bulkDeleteTasks(ids: string[]) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) {
-    for (const id of ids) local.deleteTask(id);
-    return;
-  }
   await must((await sb()).from("tasks").delete().in("id", ids));
 }
 
 // ---------------- Task result links ----------------
 export const getTaskLinks = cache(async (taskId: string): Promise<TaskLink[]> => {
-  if (!USE_SUPABASE) return local.getTaskLinks(taskId);
   const data = await readRows<TaskLink[]>(
     "task links",
     (await sb()).from("task_links").select("*").eq("task_id", taskId).order("order"),
@@ -297,24 +275,20 @@ export const getTaskLinks = cache(async (taskId: string): Promise<TaskLink[]> =>
 
 /** All result links for an event's tasks, keyed by task id (one round trip). */
 export const getTaskLinksByEvent = cache(async (eventId: string): Promise<Record<string, TaskLink[]>> => {
-  const rows = USE_SUPABASE
-    ? await (async () => {
   // ONE query. This used to fetch the edition's ids first and then feed them
   // back as an `in` list, so every task page paid two round trips per child
   // table and sent every id over the wire twice. `!inner` makes the embedded
   // parent a join rather than a left join, so the filter actually narrows.
-        const data = await readRows<TaskLink[]>(
-          "task links by edition",
-          (await sb())
-            .from("task_links")
-            .select("*, tasks!inner(event_id)")
-            .eq("tasks.event_id", eventId)
-            .order("order"),
-          [],
-        );
-        return coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
-      })()
-    : local.getTaskLinksByEvent(eventId);
+  const data = await readRows<TaskLink[]>(
+    "task links by edition",
+    (await sb())
+      .from("task_links")
+      .select("*, tasks!inner(event_id)")
+      .eq("tasks.event_id", eventId)
+      .order("order"),
+    [],
+  );
+  const rows = coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
   const map: Record<string, TaskLink[]> = {};
   for (const r of rows) (map[r.task_id] ??= []).push(r);
   return map;
@@ -329,7 +303,6 @@ export const getTaskLinksByEvent = cache(async (eventId: string): Promise<Record
  *    saves (via link_id), so saving twice never duplicates it
  */
 export async function syncTaskLinks(task: Task, inputs: TaskLinkInput[]) {
-  if (!USE_SUPABASE) return local.syncTaskLinks(task, inputs);
   const client = await sb();
   const existing = await getTaskLinks(task.id);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
@@ -391,7 +364,6 @@ export async function purgeTaskLinks(taskId: string) {
   // References go too, but nothing is deleted from Super Link for them: a
   // reference only POINTS at an entry that other tasks may also use.
   // In Supabase the FK cascade handles it; the local store has no FKs.
-  if (!USE_SUPABASE) { local.deleteTaskRefsFor(taskId); return local.deleteTaskLinksFor(taskId); }
   await must((await sb()).from("task_links").delete().eq("task_id", taskId));
 }
 
@@ -400,7 +372,6 @@ export async function purgeTaskLinks(taskId: string) {
 // not the same thing as task_links, and why one Super Link entry may be
 // referenced by many tasks.
 export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
-  if (!USE_SUPABASE) return local.getTaskRefs(taskId);
   const data = await readRows<TaskRef[]>(
     "task refs",
     (await sb()).from("task_refs").select("*").eq("task_id", taskId).order("order"),
@@ -411,24 +382,20 @@ export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
 
 /** All references for an event's tasks, keyed by task id (one round trip). */
 export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<string, TaskRef[]>> => {
-  const rows = USE_SUPABASE
-    ? await (async () => {
   // ONE query. This used to fetch the edition's ids first and then feed them
   // back as an `in` list, so every task page paid two round trips per child
   // table and sent every id over the wire twice. `!inner` makes the embedded
   // parent a join rather than a left join, so the filter actually narrows.
-        const data = await readRows<TaskRef[]>(
-          "task refs by edition",
-          (await sb())
-            .from("task_refs")
-            .select("*, tasks!inner(event_id)")
-            .eq("tasks.event_id", eventId)
-            .order("order"),
-          [],
-        );
-        return coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
-      })()
-    : local.getTaskRefsByEvent(eventId);
+  const data = await readRows<TaskRef[]>(
+    "task refs by edition",
+    (await sb())
+      .from("task_refs")
+      .select("*, tasks!inner(event_id)")
+      .eq("tasks.event_id", eventId)
+      .order("order"),
+    [],
+  );
+  const rows = coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
   const byTask: Record<string, TaskRef[]> = {};
   for (const r of rows) (byTask[r.task_id] ??= []).push(r);
   return byTask;
@@ -443,7 +410,6 @@ export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<
  * deleted (the FK is ON DELETE SET NULL, so the URL text survives).
  */
 export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
-  if (!USE_SUPABASE) return local.syncTaskRefs(taskId, inputs);
   const client = await sb();
   const existing = await getTaskRefs(taskId);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
@@ -468,7 +434,6 @@ export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
 
 // ---------------- Prospects ----------------
 export const getProspects = cache(async (eventId?: string): Promise<Prospect[]> => {
-  if (!USE_SUPABASE) return local.getProspects(eventId);
   const data = await readRows<Prospect[]>("prospects", (await sb()).from("prospects").select("*"), []);
   const list = coalesce(data, [
     "no", "date_text", "month", "contact", "org_name", "campus",
@@ -492,7 +457,6 @@ export async function syncEventFromProspect(eventId: string, p: Prospect) {
 
 /** Make one prospect the event's primary (clearing any other), then sync the OV. */
 export async function setPrimaryProspect(prospectId: string) {
-  if (!USE_SUPABASE) return local.setPrimaryProspect(prospectId);
   const client = await sb();
   const { data: p } = await client.from("prospects").select("*").eq("id", prospectId).maybeSingle();
   if (!p || !p.event_id) return;
@@ -504,28 +468,23 @@ export async function setPrimaryProspect(prospectId: string) {
 
 /** Clear the primary flag on a prospect (leaves the OV data as-is). */
 export async function unsetPrimaryProspect(prospectId: string) {
-  if (!USE_SUPABASE) return local.unsetPrimaryProspect(prospectId);
   await must((await sb()).from("prospects").update({ is_primary: false }).eq("id", prospectId));
 }
 /** Returns the new row's id so the caller can attach its links (see
  *  `syncProspectLinks`). */
 export async function createProspect(input: Partial<Prospect>): Promise<string | null> {
-  if (!USE_SUPABASE) return local.createProspect(input).id;
   const data = await must((await sb()).from("prospects").insert(stripId(input)).select("id").single());
   return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateProspect(id: string, patch: Partial<Prospect>) {
-  if (!USE_SUPABASE) return local.updateProspect(id, patch);
   await must((await sb()).from("prospects").update(stripId(patch)).eq("id", id));
 }
 export async function deleteProspect(id: string) {
-  if (!USE_SUPABASE) return local.deleteProspect(id);
   await purgeProspectLinks(id);
   await must((await sb()).from("prospects").delete().eq("id", id));
 }
 export async function bulkDeleteProspects(ids: string[]) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) { for (const id of ids) local.deleteProspect(id); return; }
   for (const id of ids) await purgeProspectLinks(id);
   await must((await sb()).from("prospects").delete().in("id", ids));
 }
@@ -534,7 +493,6 @@ export async function bulkDeleteProspects(ids: string[]) {
 // A prospect's own links (handbook, org profile, the proposal they sent back).
 // One prospect, many links since 0038 - see the ProspectLink type.
 export const getProspectLinks = cache(async (prospectId: string): Promise<ProspectLink[]> => {
-  if (!USE_SUPABASE) return local.getProspectLinks(prospectId);
   const data = await readRows<ProspectLink[]>(
     "prospect links",
     (await sb()).from("prospect_links").select("*").eq("prospect_id", prospectId).order("order"),
@@ -546,24 +504,20 @@ export const getProspectLinks = cache(async (prospectId: string): Promise<Prospe
 /** Every prospect link for an edition, keyed by prospect id (one round trip). */
 export const getProspectLinksByEvent = cache(
   async (eventId: string): Promise<Record<string, ProspectLink[]>> => {
-    const rows = USE_SUPABASE
-      ? await (async () => {
     // ONE query. This used to fetch the edition's ids first and then feed them
     // back as an `in` list, so every prospect page paid two round trips per child
     // table and sent every id over the wire twice. `!inner` makes the embedded
     // parent a join rather than a left join, so the filter actually narrows.
-          const data = await readRows<ProspectLink[]>(
-            "prospect links by edition",
-            (await sb())
-              .from("prospect_links")
-              .select("*, prospects!inner(event_id)")
-              .eq("prospects.event_id", eventId)
-              .order("order"),
-            [],
-          );
-          return coalesce(dropEmbed(data, "prospects"), ["url", "label"]);
-        })()
-      : local.getProspectLinksByEvent(eventId);
+    const data = await readRows<ProspectLink[]>(
+      "prospect links by edition",
+      (await sb())
+        .from("prospect_links")
+        .select("*, prospects!inner(event_id)")
+        .eq("prospects.event_id", eventId)
+        .order("order"),
+      [],
+    );
+    const rows = coalesce(dropEmbed(data, "prospects"), ["url", "label"]);
     const byProspect: Record<string, ProspectLink[]> = {};
     for (const r of rows) (byProspect[r.prospect_id] ??= []).push(r);
     return byProspect;
@@ -581,7 +535,6 @@ export const getProspectLinksByEvent = cache(
  * Call it after every prospect write.
  */
 export async function syncProspectLinks(prospect: Prospect, inputs: ProspectLinkInput[]) {
-  if (!USE_SUPABASE) return local.syncProspectLinks(prospect, inputs);
   const client = await sb();
   const existing = await getProspectLinks(prospect.id);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
@@ -638,12 +591,10 @@ export async function syncProspectLinks(prospect: Prospect, inputs: ProspectLink
 async function purgeProspectLinks(id: string) {
   const links = await getProspectLinks(id);
   for (const l of links) if (l.link_id) await deleteLink(l.link_id);
-  if (!USE_SUPABASE) local.deleteProspectLinksFor(id);
 }
 
 // ---------------- Links ----------------
 export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
-  if (!USE_SUPABASE) return local.getLinks(eventId);
   const data = await readRows<LinkItem[]>("links", (await sb()).from("links").select("*"), []);
   const list = coalesce(data, ["section", "division", "name", "url", "note", "source"]);
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
@@ -651,27 +602,22 @@ export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
 /** Returns the new row's id so a task link can remember which Super Link row
  *  it owns (see syncTaskLinks). */
 export async function createLink(input: Partial<LinkItem>): Promise<string | null> {
-  if (!USE_SUPABASE) return local.createLink(input).id;
   const data = await must((await sb()).from("links").insert(stripId(input)).select("id").single());
   return (data as { id: string } | null)?.id ?? null;
 }
 export async function updateLink(id: string, patch: Partial<LinkItem>) {
-  if (!USE_SUPABASE) return local.updateLink(id, patch);
   await must((await sb()).from("links").update(stripId(patch)).eq("id", id));
 }
 export async function deleteLink(id: string) {
-  if (!USE_SUPABASE) return local.deleteLink(id);
   await must((await sb()).from("links").delete().eq("id", id));
 }
 export async function bulkDeleteLinks(ids: string[]) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) { for (const id of ids) local.deleteLink(id); return; }
   await must((await sb()).from("links").delete().in("id", ids));
 }
 
 // ---------------- Budget ----------------
 export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan[]> => {
-  if (!USE_SUPABASE) return local.getBudgetPlans(eventId);
   const client = await sb();
   // Filter plans at the DB (not in JS) so a single-event lookup doesn't scan
   // every event's budget, then fetch only those plans' items.
@@ -713,7 +659,6 @@ export async function updateBudgetItem(
     unit?: string; category_color?: string | null;
   },
 ) {
-  if (!USE_SUPABASE) return local.updateBudgetItem(itemId, patch);
   const client = await sb();
   const { data: item } = await client.from("budget_items").select("*").eq("id", itemId).maybeSingle();
   if (!item) return;
@@ -728,7 +673,6 @@ export async function updateBudgetItem(
 /** Recolour a whole category at once - the dot is a property of the category,
  *  not of one row, so every item in that plan+category moves together. */
 export async function setCategoryColor(planId: string, category: string, color: string) {
-  if (!USE_SUPABASE) return local.setCategoryColor(planId, category, color);
   const { error } = await (await sb())
     .from("budget_items")
     .update({ category_color: color })
@@ -743,7 +687,6 @@ export async function createBudgetItem(
     unit_price?: number | null; category_color?: string | null;
   },
 ) {
-  if (!USE_SUPABASE) return local.createBudgetItem(planId, input);
   const client = await sb();
   // "order" comes from a sequence default (migration 0044) rather than a
   // max()+1 read: two people adding at the same moment used to read the same
@@ -762,12 +705,10 @@ export async function createBudgetItem(
   if (error) throw new Error(error.message);
 }
 export async function deleteBudgetItem(itemId: string) {
-  if (!USE_SUPABASE) return local.deleteBudgetItem(itemId);
   await must((await sb()).from("budget_items").delete().eq("id", itemId));
 }
 export async function bulkDeleteBudgetItems(ids: string[]) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) { for (const id of ids) local.deleteBudgetItem(id); return; }
   await must((await sb()).from("budget_items").delete().in("id", ids));
 }
 /**
@@ -791,28 +732,45 @@ export async function bulkDeleteBudgetItems(ids: string[]) {
  * numbering (budget items are 0-based, FAQs 1-based, Hari-H writes text into
  * `no`), which is why the offsets are not a parameter.
  */
-async function reorderVia(kind: "budget_items" | "faqs" | "job_harih", orderedIds: string[]) {
+export type ReorderKind = "budget_items" | "faqs" | "job_harih" | "fgd_rows";
+
+export async function reorderVia(kind: ReorderKind, orderedIds: string[]) {
   const { error } = await (await sb()).rpc("reorder_rows", { kind, ids: orderedIds });
   if (error) throw new Error(error.message);
 }
 
 export async function reorderBudgetItems(orderedIds: string[]) {
   if (!orderedIds.length) return;
-  if (!USE_SUPABASE) return local.reorderBudgetItems(orderedIds);
   await reorderVia("budget_items", orderedIds);
 }
+
+/**
+ * Move one item into another category, and renumber the whole plan with it.
+ *
+ * Both halves in ONE transaction (`move_budget_item`, migration 0047). The
+ * category headings in the RAB table are DERIVED from item order, so a failure
+ * between the two writes would leave the item wearing the new category name
+ * while still sitting among the old one's rows, and the table would print that
+ * category twice. The dot colour is settled in the same statement for the same
+ * reason: it belongs to the category, not to the row that just arrived.
+ */
+export async function moveBudgetItem(itemId: string, category: string, orderedIds: string[]) {
+  const { error } = await (await sb()).rpc("move_budget_item", {
+    p_item_id: itemId,
+    p_category: category,
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(error.message);
+}
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
-  if (!USE_SUPABASE) return local.createBudgetPlan(input);
   await must((await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id }));
 }
 export async function deleteBudgetPlan(id: string) {
-  if (!USE_SUPABASE) return local.deleteBudgetPlan(id);
   await must((await sb()).from("budget_plans").delete().eq("id", id));
 }
 
 // ---------------- Rundown ----------------
 export const getRundown = cache(async (eventId?: string, variant?: string): Promise<RundownItem[]> => {
-  if (!USE_SUPABASE) return local.getRundown(eventId, variant);
   let q = (await sb()).from("rundown").select("*").order("no");
   if (eventId) q = q.eq("event_id", eventId);
   if (variant) q = q.eq("variant", variant);
@@ -831,7 +789,6 @@ export const getRundown = cache(async (eventId?: string, variant?: string): Prom
 
 // ---------------- Jobs ----------------
 export const getJobs = cache(async (eventId?: string): Promise<JobHariH[]> => {
-  if (!USE_SUPABASE) return local.getJobs(eventId);
   let q = (await sb()).from("job_harih").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   return coalesce(await readRows<JobHariH[]>("jobs", q, []), ["no", "pic", "job", "notes"]);
@@ -839,11 +796,9 @@ export const getJobs = cache(async (eventId?: string): Promise<JobHariH[]> => {
 
 // ---------------- FAQ ----------------
 export const getFaqs = cache(async (): Promise<Faq[]> => {
-  if (!USE_SUPABASE) return local.getFaqs();
   return readRows<Faq[]>("faqs", (await sb()).from("faqs").select("*").order("order"), []);
 });
 export async function createFaq(input: { question: string; answer: string }) {
-  if (!USE_SUPABASE) return local.createFaq(input);
   // No max("order") lookup: the column defaults to a sequence (migration 0044).
   // Two people adding a FAQ at the same moment used to read the same max and
   // write the same number; the sequence hands out distinct increasing values
@@ -854,23 +809,19 @@ export async function createFaq(input: { question: string; answer: string }) {
   }));
 }
 export async function updateFaq(id: string, patch: { question?: string; answer?: string }) {
-  if (!USE_SUPABASE) return local.updateFaq(id, patch);
   await must((await sb()).from("faqs").update(patch).eq("id", id));
 }
 export async function deleteFaq(id: string) {
-  if (!USE_SUPABASE) return local.deleteFaq(id);
   await must((await sb()).from("faqs").delete().eq("id", id));
 }
 /** Rewrite `order` to match the given sequence (same shape as reorderJobs). */
 export async function reorderFaqs(orderedIds: string[]) {
   if (!orderedIds.length) return;
-  if (!USE_SUPABASE) return local.reorderFaqs(orderedIds);
   await reorderVia("faqs", orderedIds);
 }
 
 // ---------------- Teams ----------------
 export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
-  if (!USE_SUPABASE) return local.getTeams(eventId);
   let q = (await sb()).from("teams").select("*");
   if (eventId) q = q.eq("event_id", eventId);
   return coalesce(await readRows<Team[]>("teams", q, []),
@@ -881,7 +832,6 @@ export const getTeams = cache(async (eventId?: string): Promise<Team[]> => {
 // RLS already narrows SELECT to "mine, or everything if admin", so the plain
 // list is safe to expose; `getRoleRequestsFor` is the explicit self-lookup.
 export const getRoleRequests = cache(async (): Promise<RoleRequest[]> => {
-  if (!USE_SUPABASE) return local.getRoleRequests();
   const data = await readRows<RoleRequest[]>(
     "role requests",
     (await sb()).from("role_requests").select("*").order("created_at", { ascending: false }),
@@ -891,7 +841,6 @@ export const getRoleRequests = cache(async (): Promise<RoleRequest[]> => {
 });
 
 export const getRoleRequestsFor = cache(async (userId: string): Promise<RoleRequest[]> => {
-  if (!USE_SUPABASE) return local.getRoleRequestsFor(userId);
   const data = await readRows<RoleRequest[]>(
     "my role requests",
     (await sb())
@@ -907,10 +856,6 @@ export const getRoleRequestsFor = cache(async (userId: string): Promise<RoleRequ
 export async function createRoleRequest(
   input: Omit<RoleRequest, "id" | "status" | "created_at">,
 ): Promise<void> {
-  if (!USE_SUPABASE) {
-    local.createRoleRequest(input);
-    return;
-  }
   const { error } = await (await sb()).from("role_requests").insert({
     user_id: input.user_id,
     name: input.name,
@@ -931,10 +876,6 @@ export async function updateRoleRequest(
   id: string,
   patch: { requested_role?: RoleRequest["requested_role"]; message?: string },
 ): Promise<void> {
-  if (!USE_SUPABASE) {
-    local.updateRoleRequest(id, patch);
-    return;
-  }
   const { error } = await (await sb())
     .from("role_requests")
     .update(patch)
@@ -947,10 +888,6 @@ export async function updateRoleRequest(
  *  the SECURITY DEFINER `decide_role_request` RPC - profiles.role is not
  *  directly writable by design (see migration 0020/0023). */
 export async function decideRoleRequest(id: string, approve: boolean): Promise<void> {
-  if (!USE_SUPABASE) {
-    local.decideRoleRequest(id, approve);
-    return;
-  }
   const { error } = await (await sb()).rpc("decide_role_request", {
     request_id: id,
     approve,
@@ -1017,7 +954,6 @@ function stripId<T extends { id?: string }>(obj: T) {
 
 // ================= CRUD: events / members / divisions / teams =================
 export async function createEvent(input: Partial<OVEvent>) {
-  if (!USE_SUPABASE) return local.createEvent(input);
   const client = await sb();
   const id = input.id ?? uid("ov");
   await must(client.from("events").insert({
@@ -1047,20 +983,17 @@ export async function createEvent(input: Partial<OVEvent>) {
   }));
 }
 export async function updateEvent(id: string, patch: Partial<OVEvent>) {
-  if (!USE_SUPABASE) return local.updateEvent(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
   await must((await sb()).from("events").update(rest).eq("id", id));
 }
 export async function deleteEvent(id: string) {
-  if (!USE_SUPABASE) return local.deleteEvent(id);
   await must((await sb()).from("events").delete().eq("id", id));
 }
 
 /** Archive an Ormawa Visit (or take it back out of the archive). Admin-only -
  *  enforced by the `events_write` policy and `writable_event()` in 0028. */
 export async function setEventLocked(id: string, locked: boolean) {
-  if (!USE_SUPABASE) return local.setEventLocked(id, locked);
   await must((await sb()).from("events").update({ locked }).eq("id", id));
 }
 
@@ -1081,7 +1014,6 @@ export async function cloneEventData(
   sources: CloneSources,
   opts: { replace?: boolean; filters?: CloneFilters } = {},
 ) {
-  if (!USE_SUPABASE) return local.cloneEventData(targetId, sources, opts);
   const client = await sb();
   const filters = opts.filters ?? {};
   // A filter of undefined/empty means "no narrowing": everything is copied.
@@ -1250,7 +1182,6 @@ export async function cloneEventData(
 }
 
 export async function createMember(input: Partial<Member>) {
-  if (!USE_SUPABASE) return local.createMember(input);
   const div = divisionFields(input.divisions, input.division);
   // Writes THROW on a Supabase error (RLS denial, missing column, ...): swallowing
   // it made a failed save look successful and wrote nothing - the actions turn
@@ -1268,32 +1199,22 @@ export async function createMember(input: Partial<Member>) {
   if (error) throw new Error(error.message);
 }
 export async function updateMember(id: string, patch: Partial<Member>) {
-  if (!USE_SUPABASE) return local.updateMember(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
   const { error } = await (await sb()).from("members").update(rest).eq("id", id);
   if (error) throw new Error(error.message);
 }
 export async function deleteMember(id: string) {
-  if (!USE_SUPABASE) return local.deleteMember(id);
   const { error } = await (await sb()).from("members").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 export async function bulkDeleteMembers(ids: string[]) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) {
-    for (const id of ids) local.deleteMember(id);
-    return;
-  }
   const { error } = await (await sb()).from("members").delete().in("id", ids);
   if (error) throw new Error(error.message);
 }
 export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
   if (!ids.length) return;
-  if (!USE_SUPABASE) {
-    for (const id of ids) local.updateMember(id, patch);
-    return;
-  }
   const { id: _drop, ...rest } = patch;
   void _drop;
   const { error } = await (await sb()).from("members").update(rest).in("id", ids);
@@ -1301,7 +1222,6 @@ export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
 }
 
 export async function createDivision(input: Partial<Division>) {
-  if (!USE_SUPABASE) return local.createDivision(input);
   const client = await sb();
   // "order" comes from a sequence default (migration 0044) rather than a
   // max()+1 read: two people adding at the same moment used to read the same
@@ -1321,30 +1241,25 @@ export async function createDivision(input: Partial<Division>) {
   }));
 }
 export async function updateDivision(eventId: string, key: string, patch: Partial<Division>) {
-  if (!USE_SUPABASE) return local.updateDivision(eventId, key, patch);
   const { id: _i, event_id: _e, ...rest } = patch;
   void _i; void _e;
   await must((await sb()).from("divisions").update(rest).eq("event_id", eventId).eq("key", key));
 }
 export async function deleteDivision(eventId: string, key: string) {
-  if (!USE_SUPABASE) return local.deleteDivision(eventId, key);
   await must((await sb()).from("divisions").delete().eq("event_id", eventId).eq("key", key));
 }
 export async function bulkDeleteDivisions(eventId: string, keys: string[]) {
   if (!keys.length) return;
-  if (!USE_SUPABASE) { for (const k of keys) local.deleteDivision(eventId, k); return; }
   await must((await sb()).from("divisions").delete().eq("event_id", eventId).in("key", keys));
 }
 export async function bulkUpdateDivisions(eventId: string, keys: string[], patch: Partial<Division>) {
   if (!keys.length) return;
-  if (!USE_SUPABASE) { for (const k of keys) local.updateDivision(eventId, k, patch); return; }
   const { id: _i, event_id: _e, ...rest } = patch;
   void _i; void _e;
   await must((await sb()).from("divisions").update(rest).eq("event_id", eventId).in("key", keys));
 }
 
 export async function createTeam(input: Partial<Team>) {
-  if (!USE_SUPABASE) return local.createTeam(input);
   const { error } = await (await sb()).from("teams").insert({
     event_id: input.event_id ?? null,
     division: input.division ?? "EVENT",
@@ -1355,20 +1270,17 @@ export async function createTeam(input: Partial<Team>) {
   if (error) throw new Error(error.message);
 }
 export async function updateTeam(id: string, patch: Partial<Team>) {
-  if (!USE_SUPABASE) return local.updateTeam(id, patch);
   const { id: _drop, ...rest } = patch;
   void _drop;
   const { error } = await (await sb()).from("teams").update(rest).eq("id", id);
   if (error) throw new Error(error.message);
 }
 export async function deleteTeam(id: string) {
-  if (!USE_SUPABASE) return local.deleteTeam(id);
   await must((await sb()).from("teams").delete().eq("id", id));
 }
 
 // ================= CRUD: rundown / jobs =================
 export async function createRundown(input: Partial<RundownItem>) {
-  if (!USE_SUPABASE) return local.createRundown(input);
   const client = await sb();
   const { data: maxRow } = await client
     .from("rundown")
@@ -1394,7 +1306,6 @@ export async function createRundown(input: Partial<RundownItem>) {
   }));
 }
 export async function updateRundown(id: string, patch: Partial<RundownItem>) {
-  if (!USE_SUPABASE) return local.updateRundown(id, patch);
   const { id: _d, ...rest } = patch;
   void _d;
   await must((await sb()).from("rundown").update(rest).eq("id", id));
@@ -1417,7 +1328,6 @@ export async function updateRundown(id: string, patch: Partial<RundownItem>) {
  * window is one query wide rather than one React refresh wide.
  */
 export async function setRundownDivisionJob(id: string, division: string, value: string) {
-  if (!USE_SUPABASE) return local.setRundownDivisionJob(id, division, value);
   const client = await sb();
   // This read FEEDS the write below, so a swallowed error here does not show an
   // empty cell, it erases one: `current` would fall back to {} and the update
@@ -1435,12 +1345,10 @@ export async function setRundownDivisionJob(id: string, division: string, value:
 }
 
 export async function deleteRundown(id: string) {
-  if (!USE_SUPABASE) return local.deleteRundown(id);
   await must((await sb()).from("rundown").delete().eq("id", id));
 }
 
 export async function createJob(input: Partial<JobHariH>) {
-  if (!USE_SUPABASE) return local.createJob(input);
   const client = await sb();
   // `no` assigned atomically by the assign_job_no() BEFORE-INSERT trigger
   // (advisory-locked per event) when null; an explicit `no` is preserved.
@@ -1453,18 +1361,15 @@ export async function createJob(input: Partial<JobHariH>) {
   }));
 }
 export async function updateJob(id: string, patch: Partial<JobHariH>) {
-  if (!USE_SUPABASE) return local.updateJob(id, patch);
   const { id: _d, ...rest } = patch;
   void _d;
   await must((await sb()).from("job_harih").update(rest).eq("id", id));
 }
 export async function deleteJob(id: string) {
-  if (!USE_SUPABASE) return local.deleteJob(id);
   await must((await sb()).from("job_harih").delete().eq("id", id));
 }
 /** Persist a new order for Hari-H jobs: each id gets its 1-based `no`. */
 export async function reorderJobs(orderedIds: string[]) {
   if (!orderedIds.length) return;
-  if (!USE_SUPABASE) return local.reorderJobs(orderedIds);
   await reorderVia("job_harih", orderedIds);
 }

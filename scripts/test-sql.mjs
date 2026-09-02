@@ -1241,6 +1241,112 @@ console.log("0045 - create_fgd_plan (transaksional)");
     delete from events where id in ('fgd-open','fgd-lock');`);
 }
 
+console.log("0047 - pindah kategori RAB + urutkan baris FGD");
+{
+  const asRole = async (uid, anon, sql, params = []) => {
+    await db.exec(`set role authenticated;`);
+    await db.exec(`set test.uid = '${uid}'; set test.anon = '${anon}'; set test.email = 'x@ov.test';`);
+    try {
+      return { rows: (await db.query(sql, params)).rows };
+    } catch (e) {
+      return { error: e.message.split("\n")[0] };
+    } finally {
+      await db.exec(`reset role;`);
+    }
+  };
+
+  await db.exec(`insert into events (id, code, title, locked) values
+    ('mv-open','MV1','Pindah terbuka', false),
+    ('mv-lock','MV2','Pindah terkunci', true)
+    on conflict (id) do nothing;
+    insert into budget_plans (id, event_id, name) values
+      ('cccccccc-1111-1111-1111-111111111111','mv-open','RAB Uji'),
+      ('cccccccc-2222-2222-2222-222222222222','mv-lock','RAB Terkunci')
+    on conflict (id) do nothing;`);
+
+  // Dua kategori, tiga item. KONSUMSI sudah punya warna; item yang pindah ke
+  // sana harus mengambil warna itu, bukan membawa warnanya sendiri.
+  const seedItems = async () => {
+    await db.exec(`delete from budget_items where plan_id = 'cccccccc-1111-1111-1111-111111111111';
+      insert into budget_items (id, plan_id, category, name, qty, unit, unit_price, total, category_color, "order") values
+        ('aaaaaaaa-0000-0000-0000-000000000001','cccccccc-1111-1111-1111-111111111111','KONSUMSI','Nasi kotak',10,'kotak',15000,150000,'#f97316',0),
+        ('aaaaaaaa-0000-0000-0000-000000000002','cccccccc-1111-1111-1111-111111111111','KONSUMSI','Air mineral',2,'dus',30000,60000,'#f97316',1),
+        ('aaaaaaaa-0000-0000-0000-000000000003','cccccccc-1111-1111-1111-111111111111','LAIN-LAIN','Cetak banner',1,'lembar',80000,80000,'#64748b',2);`);
+  };
+  const layout = async () =>
+    (await db.query(
+      `select category, name, category_color from budget_items
+        where plan_id = 'cccccccc-1111-1111-1111-111111111111' order by "order"`)).rows;
+
+  await seedItems();
+  // Pindahkan "Cetak banner" ke KONSUMSI dan taruh di posisi kedua.
+  const moved = await asRole(U.admin, false,
+    `select move_budget_item($1::uuid, $2, $3::uuid[]) as n`,
+    ["aaaaaaaa-0000-0000-0000-000000000003", "KONSUMSI", [
+      "aaaaaaaa-0000-0000-0000-000000000001",
+      "aaaaaaaa-0000-0000-0000-000000000003",
+      "aaaaaaaa-0000-0000-0000-000000000002",
+    ]]);
+  ok("admin boleh memindahkan item RAB antar kategori", !moved.error);
+  if (moved.error) console.log(`      -> ${moved.error}`);
+  const after = await layout();
+  ok("kategorinya benar-benar berubah",
+    after.map((r) => r.name).join(",") === "Nasi kotak,Cetak banner,Air mineral"
+    && after.every((r) => r.category === "KONSUMSI"));
+  ok("...dan warnanya ikut kategori tujuan, bukan kategori asal",
+    after.every((r) => r.category_color === "#f97316"));
+
+  // Item yang tidak ada: gagal utuh, bukan diam-diam tidak melakukan apa-apa.
+  const ghost = await asRole(U.admin, false,
+    `select move_budget_item($1::uuid, $2, $3::uuid[]) as n`,
+    ["aaaaaaaa-0000-0000-0000-00000000dead", "KONSUMSI", []]);
+  ok("item yang tidak ada ditolak, bukan no-op senyap", !!ghost.error);
+
+  // Anggaran = admin saja (MODULE_ACCESS_LEVEL), dan policy-nya yang menegakkan.
+  await seedItems();
+  const byCoord = await asRole(U.coord, false,
+    `select move_budget_item($1::uuid, $2, $3::uuid[]) as n`,
+    ["aaaaaaaa-0000-0000-0000-000000000003", "KONSUMSI", []]);
+  const stillLain = (await layout()).find((r) => r.name === "Cetak banner").category === "LAIN-LAIN";
+  ok("koordinator tidak bisa memindahkan item (Anggaran admin saja)", byCoord.error || stillLain);
+
+  // Kunci arsip: RLS di dalam RPC, sama seperti create_fgd_plan.
+  await db.exec(`insert into budget_items (id, plan_id, category, name, "order") values
+    ('bbbbbbbb-0000-0000-0000-000000000001','cccccccc-2222-2222-2222-222222222222','KONSUMSI','Terkunci',0)
+    on conflict (id) do nothing;`);
+  const lockedMove = await asRole(U.coord, false,
+    `select move_budget_item($1::uuid, $2, $3::uuid[]) as n`,
+    ["bbbbbbbb-0000-0000-0000-000000000001", "LAIN-LAIN", []]);
+  const lockedCat = (await db.query(
+    `select category from budget_items where id = 'bbbbbbbb-0000-0000-0000-000000000001'`)).rows[0].category;
+  ok("edisi terkunci menolak pemindahan", lockedMove.error || lockedCat === "KONSUMSI");
+
+  // reorder_rows kenal fgd_rows sekarang.
+  const plan = await asRole(U.admin, false,
+    `select create_fgd_plan('mv-open', '', 'Mitra', $1::text[]) as id`, [["A", "B", "C"]]);
+  ok("tabel FGD uji terbuat", !plan.error);
+  const ids = (await db.query(
+    `select id from fgd_rows where plan_id = $1 order by "order"`, [plan.rows[0].id])).rows.map((r) => r.id);
+  const flipped = await asRole(U.staff, false,
+    `select reorder_rows('fgd_rows', $1::uuid[]) as n`, [[ids[2], ids[1], ids[0]]]);
+  ok("staff boleh mengurutkan ulang baris FGD", !flipped.error);
+  if (flipped.error) console.log(`      -> ${flipped.error}`);
+  const seq = (await db.query(
+    `select ours from fgd_rows where plan_id = $1 order by "order"`, [plan.rows[0].id])).rows.map((r) => r.ours);
+  ok("urutan baris FGD benar-benar terbalik", seq.join(",") === "C,B,A");
+  const internDrag = await asRole(U.intern, false,
+    `select reorder_rows('fgd_rows', $1::uuid[]) as n`, [[ids[0], ids[1], ids[2]]]);
+  const stillFlipped = (await db.query(
+    `select ours from fgd_rows where plan_id = $1 order by "order"`, [plan.rows[0].id]))
+    .rows.map((r) => r.ours).join(",") === "C,B,A";
+  ok("intern DITOLAK mengurutkan baris FGD", internDrag.error || stillFlipped);
+
+  await db.exec(`delete from fgd_plans where event_id = 'mv-open';
+    delete from budget_items where plan_id in ('cccccccc-1111-1111-1111-111111111111','cccccccc-2222-2222-2222-222222222222');
+    delete from budget_plans where id in ('cccccccc-1111-1111-1111-111111111111','cccccccc-2222-2222-2222-222222222222');
+    delete from events where id in ('mv-open','mv-lock');`);
+}
+
 console.log("0043 - restore_snapshot (transaksional)");
 {
   const callAs = async (uid, anon, payload) => {

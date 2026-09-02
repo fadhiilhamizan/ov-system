@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { AppShell } from "@/components/layout/app-shell";
 import { SIDEBAR_COOKIE, SIDEBAR_COLLAPSED } from "@/lib/ui-prefs";
-import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
 import { getEvents, getRoleRequestsFor } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
@@ -44,14 +44,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // guests, who share one anonymous identity, and not in demo mode, whose
   // database does not have the tables.
   const developer = isDeveloper(user);
-  const beaconsEnabled = USE_SUPABASE && !sandboxMode && user.role !== "guest";
+  const beaconsEnabled = !sandboxMode && user.role !== "guest";
 
   return (
     <AppShell
       user={user}
       events={events}
       activeEventId={activeEvent.id}
-      demoMode={!USE_SUPABASE}
       sandboxMode={sandboxMode}
       activeEventLocked={!!activeEvent.locked}
       defaultCollapsed={sidebarCollapsed}

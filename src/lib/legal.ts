@@ -12,17 +12,38 @@ import type { Bi } from "./guide";
 //    same change - an inaccurate privacy policy is worse than none.
 //  - Bump LEGAL_UPDATED whenever the wording changes materially.
 //  - NOT LEGAL ADVICE: this was drafted from the codebase, not by a lawyer.
-//    Have the department review it (and fill in LEGAL_CONTACT_EMAIL) before
-//    treating it as binding.
+//    Have the department review it before treating it as binding.
 // ============================================================
 
 /** Shown as "last updated" on both documents (ISO date). */
-export const LEGAL_UPDATED = "2026-08-13";
+export const LEGAL_UPDATED = "2026-08-30";
 
 /** Public contact already published in-app (Settings + README). */
 export const LEGAL_CONTACT_WA = "https://wa.me/6281311598126";
-/** TODO(dept): replace with an official departmental address. */
-export const LEGAL_CONTACT_EMAIL = "";
+
+/**
+ * Email addresses printed on the public Privacy Policy and Terms.
+ *
+ * TWO of them, and the split is the point. The first belongs to the CABINET and
+ * changes when the cabinet does; the second is the person who maintains this
+ * system, so a request does not fall into a mailbox nobody is reading during a
+ * handover. Label each one, or a reader has no way to tell which is which.
+ *
+ * WHEN THE CABINET CHANGES: replace the `cabinet` address and bump
+ * LEGAL_UPDATED. An address on a published privacy policy that nobody answers
+ * is worse than no address, because it is a promise on a page that says it is
+ * binding.
+ */
+export const LEGAL_CONTACTS: { address: string; role: Bi }[] = [
+  {
+    address: "ea.pilaraksi@gmail.com",
+    role: { id: "External Affairs HMSI ITS", en: "External Affairs HMSI ITS" },
+  },
+  {
+    address: "fadhiilhamizan2004@gmail.com",
+    role: { id: "Pengelola sistem", en: "System maintainer" },
+  },
+];
 
 export interface LegalSection {
   heading: Bi;

@@ -253,6 +253,9 @@ begin
   elsif kind = 'job_harih' then
     update job_harih j set no = i.pos::text
       from unnest(ids) with ordinality as i(id, pos) where j.id = i.id;
+  elsif kind = 'fgd_rows' then
+    update fgd_rows r set "order" = i.pos - 1
+      from unnest(ids) with ordinality as i(id, pos) where r.id = i.id;
   else
     raise exception 'unknown reorder kind: %', kind using errcode = '22023';
   end if;
@@ -260,6 +263,35 @@ begin
   return touched;
 end; $rr$;
 grant execute on function reorder_rows(text, uuid[]) to authenticated, anon;
+
+-- 0047: memindahkan item RAB ke kategori lain sekaligus menulis ulang urutan
+-- rencananya. Anggaran bisa diseret di mode demo, jadi tanpa fungsi ini
+-- menyeret item ke kategori lain gagal dengan
+-- "Could not find the function public.move_budget_item".
+create or replace function move_budget_item(
+  p_item_id uuid, p_category text, p_ids uuid[] default '{}'
+) returns integer
+language plpgsql security invoker set search_path = public as $mbi$
+declare v_plan uuid; v_colour text; touched integer := 0;
+begin
+  select plan_id into v_plan from budget_items where id = p_item_id;
+  if v_plan is null then
+    raise exception 'item anggaran tidak ditemukan' using errcode = '22023';
+  end if;
+  select b.category_color into v_colour from budget_items b
+   where b.plan_id = v_plan and b.category = p_category
+     and b.id <> p_item_id and b.category_color is not null limit 1;
+  update budget_items set category = p_category, category_color = v_colour
+   where id = p_item_id;
+  if p_ids is not null and array_length(p_ids, 1) is not null then
+    update budget_items b set "order" = i.pos - 1
+      from unnest(p_ids) with ordinality as i(id, pos)
+     where b.id = i.id and b.plan_id = v_plan;
+    get diagnostics touched = row_count;
+  end if;
+  return touched;
+end; $mbi$;
+grant execute on function move_budget_item(uuid, text, uuid[]) to authenticated, anon;
 
 -- 0045: membuat tabel plotting FGD dalam satu transaksi. Menu Himpunan hidup di
 -- mode demo (tabelnya dibuat di atas), jadi tanpa fungsi ini tombol "Tambah

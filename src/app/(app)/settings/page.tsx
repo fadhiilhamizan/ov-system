@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { Check, Minus, Sparkles, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink, Code2 } from "lucide-react";
 import { ARCHIVE_SHEETS } from "@/lib/archives";
-import { USE_SUPABASE } from "@/lib/auth";
 import { requireModule } from "@/lib/guard";
 import { can } from "@/lib/permissions";
 import { listBackupsAction } from "@/lib/actions/backup";
@@ -124,14 +123,10 @@ export default async function SettingsPage() {
             <div>
               <p className="text-sm font-medium">{t("Sumber data")}</p>
               <p className="text-xs text-muted-foreground">
-                {USE_SUPABASE
-                  ? t("Supabase (cloud) - akun & real-time aktif")
-                  : t("Mode demo lokal - data tersimpan di .data/db.json")}
+                {t("Supabase (cloud) - akun & real-time aktif")}
               </p>
             </div>
-            <Badge variant={USE_SUPABASE ? "success" : "warning"}>
-              {USE_SUPABASE ? "Supabase" : t("Demo Lokal")}
-            </Badge>
+            <Badge variant="success">Supabase</Badge>
           </div>
         </CardContent>
       </Card>
@@ -188,11 +183,7 @@ export default async function SettingsPage() {
               <CardTitle>{t("Backup & Rollback")}</CardTitle>
             </CardHeader>
             <CardContent>
-              {!USE_SUPABASE ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).")}
-                </p>
-              ) : backupsResult && backupsResult.ok ? (
+              {backupsResult && backupsResult.ok ? (
                 <BackupPanel initialBackups={backupsResult.backups} />
               ) : (
                 <p className="text-sm text-danger">{backupsResult && !backupsResult.ok ? backupsResult.error : t("Gagal memuat backup.")}</p>

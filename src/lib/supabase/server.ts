@@ -14,7 +14,18 @@ export async function createClient() {
   const cookieStore = await cookies();
   const demo = demoActive(cookieStore.get(DEMO_COOKIE)?.value);
   const { url, key } = supabaseCreds(demo);
-  return createServerClient(url!, key!, {
+  // Fail with a sentence somebody can act on. The library's own message
+  // ("supabaseUrl is required") arrives from inside node_modules on whatever
+  // page happened to read data first, and says nothing about which of the four
+  // variables is missing or where they go.
+  if (!url || !key) {
+    throw new Error(
+      demo
+        ? "Mode demo aktif tapi NEXT_PUBLIC_SUPABASE_DEMO_URL / _ANON_KEY belum diisi. Lihat .env.example."
+        : "NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY belum diisi. Salin .env.example ke .env.local dan isi keduanya.",
+    );
+  }
+  return createServerClient(url, key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

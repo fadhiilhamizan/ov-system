@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
   createBudgetPlan, deleteBudgetPlan, getBudgetPlans, setCategoryColor, reorderBudgetItems,
+  moveBudgetItem,
 } from "@/lib/data/repo";
 import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
 
@@ -125,6 +126,31 @@ export async function reorderBudgetItemsAction(orderedIds: string[]): Promise<Re
   const clean: string[] = [];
   for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   try { await reorderBudgetItems(clean); } catch (e) { return errMsg(e); }
+  revalidateEntities("budget");
+  return { ok: true };
+}
+
+/**
+ * Move an item into another category, and renumber its plan in the same breath.
+ *
+ * Separate from `reorderBudgetItemsAction` because a cross-category drop is two
+ * writes, and doing them as two actions would let the category land without the
+ * order (or the reverse), which prints one category twice in the table. The
+ * repo runs both inside `move_budget_item` (0047).
+ */
+export async function moveBudgetItemAction(
+  itemId: string,
+  category: string,
+  orderedIds: string[],
+): Promise<Result> {
+  if (!can.manageBudget(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, itemId);
+  if (!idv.ok) return idv;
+  const cat = parse(budgetItemSchema.shape.category, category);
+  if (!cat.ok) return cat;
+  const clean: string[] = [];
+  for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  try { await moveBudgetItem(idv.data, cat.data, clean); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }

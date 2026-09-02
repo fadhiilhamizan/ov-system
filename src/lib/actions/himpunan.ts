@@ -5,7 +5,8 @@ import { can } from "@/lib/permissions";
 import { getEvent } from "@/lib/data/repo";
 import {
   createCompareEntry, createCompareSubject, createFgdPlan, createFgdRow, deleteCompareEntry,
-  deleteCompareSubject, deleteFgdPlan, deleteFgdRow, updateCompareEntry, updateFgdPlan, updateFgdRow,
+  deleteCompareSubject, deleteFgdPlan, deleteFgdRow, reorderFgdRows, updateCompareEntry,
+  updateFgdPlan, updateFgdRow,
 } from "@/lib/data/himpunan-repo";
 import type { CompareEntry, FgdPlan } from "@/lib/types";
 import {
@@ -115,6 +116,26 @@ export async function deleteFgdRowAction(id: string): Promise<Result> {
   if (!g.ok) return g;
   try {
     await deleteFgdRow(idv.data);
+  } catch (e) { return errMsg(e); }
+  revalidatePath("/himpunan");
+  return { ok: true };
+}
+
+/**
+ * Persist a drag-and-drop reorder of one table's rows.
+ *
+ * Takes the table's WHOLE sequence, not the pair that swapped: the RPC rewrites
+ * `order` from the array position, so a partial list would renumber a few rows
+ * against a scale the rest are not on. Same contract as
+ * `reorderBudgetItemsAction`.
+ */
+export async function reorderFgdRowsAction(orderedIds: string[]): Promise<Result> {
+  const clean: string[] = [];
+  for (const id of orderedIds) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
+  const g = await guard();
+  if (!g.ok) return g;
+  try {
+    await reorderFgdRows(clean);
   } catch (e) { return errMsg(e); }
   revalidatePath("/himpunan");
   return { ok: true };

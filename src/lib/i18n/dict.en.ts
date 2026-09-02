@@ -264,10 +264,7 @@ export const EN: Record<string, string> = {
   "Status Backend": "Backend Status",
   "Sumber data": "Data source",
   "Supabase (cloud) - akun & real-time aktif": "Supabase (cloud) - accounts & real-time active",
-  "Mode demo lokal - data tersimpan di .data/db.json": "Local demo mode - data stored in .data/db.json",
-  "Demo Lokal": "Local Demo",
   "Backup & Rollback": "Backup & Rollback",
-  "Backup hanya tersedia saat sistem terhubung ke Supabase (mode cloud).": "Backups are only available when the system is connected to Supabase (cloud mode).",
   "Gagal memuat backup.": "Failed to load backups.",
   "Hak Akses per Peran": "Access by Role",
   "Akses penuh (kelola)": "Full access (manage)",
@@ -845,6 +842,9 @@ export const EN: Record<string, string> = {
   "Geser untuk mengurutkan": "Drag to reorder",
   "Seret ikon untuk mengurutkan item di dalam kategorinya.":
     "Drag the handle to reorder items within their category.",
+  "Seret ikon untuk mengurutkan item, atau jatuhkan ke baris kategori lain untuk memindahkannya.":
+    "Drag the handle to reorder items, or drop one on another category row to move it there.",
+  "Seret ikon untuk mengurutkan baris.": "Drag the handle to reorder the rows.",
   "Seret ikon untuk mengurutkan pertanyaan; nomor tersusun otomatis.":
     "Drag the handle to reorder the questions; numbering updates automatically.",
   // Ormawa Visit copy template (v1.28.0)

@@ -32,6 +32,33 @@ export async function archivedGuard(
 }
 
 /**
+ * Explain the two database errors a committee member can actually act on.
+ *
+ * Both arrive as raw Postgres/PostgREST prose that reads like a crash, and both
+ * have a specific cause and a specific fix:
+ *
+ *   - an RLS denial means the row was NOT written. Usually the archive lock, or
+ *     a role that may not write here; but when it fires for every button on a
+ *     menu it is almost always a database that has not had the latest access
+ *     script applied (this is exactly how the whole Himpunan menu failed in Mode
+ *     Demo, where four tables still had RLS switched on).
+ *   - a missing function or column means this database is behind the app.
+ *
+ * The raw sentence is KEPT on the end, never swallowed: the whole point of
+ * `must()` throwing is that a failed write is visible, and whoever has to fix
+ * the database needs the exact wording.
+ */
+function explain(raw: string): string {
+  if (/row-level security|violates row-level/i.test(raw)) {
+    return "Perubahan ditolak database. Kalau Ormawa Visit ini tidak diarsipkan dan perananmu seharusnya boleh mengubahnya, artinya database belum dijalankan skrip aksesnya yang terbaru (supabase/setup.sql, atau demo-open-access.sql untuk Mode Demo). Detail: " + raw;
+  }
+  if (/Could not find the (function|column|table)|does not exist|schema cache/i.test(raw)) {
+    return "Database ini belum punya bagian yang dibutuhkan fitur tersebut. Jalankan supabase/setup.sql (atau demo-seed.sql untuk Mode Demo) lebih dulu. Detail: " + raw;
+  }
+  return `Gagal menyimpan: ${raw}`;
+}
+
+/**
  * Turn a thrown repo error into a Result the UI can toast.
  *
  * Repo writes throw on any Supabase error (see `must()` in data/repo.ts), which
@@ -40,6 +67,6 @@ export async function archivedGuard(
 export function errMsg(e: unknown, fallback = "Gagal menyimpan data."): Fail {
   return {
     ok: false,
-    error: e instanceof Error ? `Gagal menyimpan: ${e.message}` : fallback,
+    error: e instanceof Error ? explain(e.message) : fallback,
   };
 }

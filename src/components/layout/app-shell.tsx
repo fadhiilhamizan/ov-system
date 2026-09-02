@@ -38,7 +38,6 @@ export function AppShell({
   user,
   events,
   activeEventId,
-  demoMode,
   sandboxMode,
   activeEventLocked = false,
   defaultCollapsed = false,
@@ -53,7 +52,6 @@ export function AppShell({
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
-  demoMode: boolean;
   sandboxMode: boolean;
   /** The active Ormawa Visit is archived - read-only for everyone but admin. */
   activeEventLocked?: boolean;
@@ -157,7 +155,6 @@ export function AppShell({
           user={user}
           events={events}
           activeEventId={activeEventId}
-          demoMode={demoMode}
           sandboxMode={sandboxMode}
           roleOptions={roleOptions}
           pendingRoleRequest={pendingRoleRequest}

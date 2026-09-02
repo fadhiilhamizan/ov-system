@@ -4,7 +4,6 @@ import {
   developerRegistered, getAccessCounts, getActivity, getActorStats, getErrors, getPresence,
   getTableCounts,
 } from "@/lib/data/developer-repo";
-import { USE_SUPABASE } from "@/lib/auth";
 import { demoConfigured } from "@/lib/demo";
 import { violetConfigured } from "@/lib/violet/llm";
 import { APP_VERSION } from "@/lib/version";
@@ -57,7 +56,6 @@ export default async function DeveloperPage() {
     { key: "Gemini (Violet)", set: !!process.env.GEMINI_API_KEY },
     { key: "Groq (Violet cadangan)", set: !!process.env.GROQ_API_KEY },
     { key: "Violet aktif", set: violetConfigured() },
-    { key: "Mode data", set: USE_SUPABASE, note: USE_SUPABASE ? "Supabase" : "JSON lokal" },
   ];
 
   const build = {

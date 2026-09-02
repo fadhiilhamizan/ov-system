@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE, USE_SUPABASE } from "@/lib/auth";
+import { AUTH_COOKIE, DEMO_USERS, GUEST_COOKIE } from "@/lib/auth";
 import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
 import { recordAccess } from "@/lib/data/developer-repo";
 import { LANG_COOKIE } from "@/lib/i18n/config";
@@ -38,16 +38,15 @@ const DEMO_OPTS = { ...COOKIE_OPTS, httpOnly: false };
  * by accident of control flow, not by a check. One reordering in auth.ts and it
  * would have become privilege escalation.
  *
- * It must mirror exactly the two cases where `getCurrentUser()` returns a
- * DEMO_USERS identity: the demo sandbox (`ov_demo` cookie + demo project
- * configured), and local development with no Supabase configured at all.
- * An earlier cut checked only the first, which silently broke the switcher in
- * local mode - the menu rendered, the click did nothing.
+ * It must mirror exactly the case where `getCurrentUser()` returns a DEMO_USERS
+ * identity, which since v1.42.0 is only one: the demo sandbox (`ov_demo` cookie
+ * plus a demo project configured). There used to be a second, local development
+ * with no Supabase at all, and an earlier cut of this check covered only the
+ * first - the switcher menu rendered and the click did nothing.
  */
 export async function setRole(userId: string) {
   const store = await cookies();
-  const demoIdentities = demoActive(store.get(DEMO_COOKIE)?.value) || !USE_SUPABASE;
-  if (!demoIdentities) return;
+  if (!demoActive(store.get(DEMO_COOKIE)?.value)) return;
   if (!DEMO_USERS.some((u) => u.id === userId)) return;
   store.set(AUTH_COOKIE, userId, COOKIE_OPTS);
   revalidatePath("/", "layout");

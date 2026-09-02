@@ -3,7 +3,7 @@ import { ArrowLeft, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { Card } from "@/components/ui/card";
 import { pick } from "@/lib/guide";
-import { LEGAL_CONTACT_EMAIL, LEGAL_CONTACT_WA, LEGAL_UPDATED, type LegalDoc } from "@/lib/legal";
+import { LEGAL_CONTACTS, LEGAL_CONTACT_WA, LEGAL_UPDATED, type LegalDoc } from "@/lib/legal";
 import { formatDate } from "@/lib/format";
 import type { Lang } from "@/lib/i18n/config";
 
@@ -78,9 +78,16 @@ export function LegalDocument({ doc, lang }: { doc: LegalDoc; lang: Lang }) {
             <p className="font-medium">
               {lang === "en" ? "Questions about this document?" : "Ada pertanyaan soal dokumen ini?"}
             </p>
-            {LEGAL_CONTACT_EMAIL && (
-              <p className="text-muted-foreground">{LEGAL_CONTACT_EMAIL}</p>
-            )}
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {LEGAL_CONTACTS.map((c) => (
+                <li key={c.address}>
+                  <a href={`mailto:${c.address}`} className="underline underline-offset-2 hover:text-foreground">
+                    {c.address}
+                  </a>
+                  <span className="ml-1.5 text-xs">({lang === "en" ? c.role.en : c.role.id})</span>
+                </li>
+              ))}
+            </ul>
           </div>
           <a
             href={LEGAL_CONTACT_WA}

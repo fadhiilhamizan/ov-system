@@ -658,6 +658,11 @@ begin
        set no = i.pos::text                    -- `no` is text on this table
       from unnest(ids) with ordinality as i(id, pos)
      where j.id = i.id;
+  elsif kind = 'fgd_rows' then                 -- 0047: baris plotting FGD
+    update fgd_rows r
+       set "order" = i.pos - 1                 -- 0-based, seperti create_fgd_plan
+      from unnest(ids) with ordinality as i(id, pos)
+     where r.id = i.id;
   else
     raise exception 'unknown reorder kind: %', kind using errcode = '22023';
   end if;
@@ -698,6 +703,66 @@ begin
     execute format('grant usage, select on sequence %I to authenticated', seq);
   end loop;
 end $do$;
+
+-- ---------- (C) memindahkan item RAB antar kategori (0047) --------------------
+-- Menyeret satu item ke kategori LAIN mengubah dua hal sekaligus: kategori
+-- barisnya, dan urutan seluruh item di rencana itu. Lewat PostgREST itu dua
+-- transaksi terpisah, dan judul kategori di tabel RAB diturunkan DARI urutan
+-- itu, jadi kegagalan di langkah kedua membelah satu kategori jadi dua di layar.
+-- Warna kategori ikut diurus di sini: titik warna milik KATEGORI, bukan milik
+-- satu baris, jadi item yang pindah mengambil warna kategori tujuannya.
+drop function if exists move_budget_item(uuid, text, uuid[]);
+
+create or replace function move_budget_item(
+  p_item_id uuid,
+  p_category text,
+  p_ids uuid[] default '{}'
+)
+returns integer
+language plpgsql
+security invoker
+set search_path = public
+as $fn$
+declare
+  v_plan   uuid;
+  v_colour text;
+  touched  integer := 0;
+begin
+  select plan_id into v_plan from budget_items where id = p_item_id;
+  if v_plan is null then
+    raise exception 'item anggaran tidak ditemukan' using errcode = '22023';
+  end if;
+
+  select b.category_color into v_colour
+    from budget_items b
+   where b.plan_id = v_plan
+     and b.category = p_category
+     and b.id <> p_item_id
+     and b.category_color is not null
+   limit 1;
+
+  update budget_items
+     set category = p_category,
+         category_color = v_colour
+   where id = p_item_id;
+
+  if p_ids is not null and array_length(p_ids, 1) is not null then
+    update budget_items b
+       set "order" = i.pos - 1
+      from unnest(p_ids) with ordinality as i(id, pos)
+     where b.id = i.id
+       and b.plan_id = v_plan;
+    get diagnostics touched = row_count;
+  end if;
+
+  return touched;
+end; $fn$;
+
+revoke all on function move_budget_item(uuid, text, uuid[]) from public, anon;
+grant execute on function move_budget_item(uuid, text, uuid[]) to authenticated;
+
+comment on function move_budget_item(uuid, text, uuid[]) is
+  'Pindahkan satu item RAB ke kategori lain sekaligus tulis ulang urutan rencananya, dalam satu transaksi. RLS tetap berlaku (security invoker).';
 
 -- Penomoran otomatis. Advisory lock membuat dua insert bersamaan dalam lingkup
 -- yang sama tidak bisa menghasilkan nomor kembar.

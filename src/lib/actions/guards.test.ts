@@ -76,6 +76,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["budget.deletePlan", () => budget.deleteBudgetPlanAction("p1")],
   ["budget.setCategoryColor", () => budget.setCategoryColorAction("p1", "KONSUMSI", "#f97316")],
   ["budget.reorderItems", () => budget.reorderBudgetItemsAction(["i1", "i2"])],
+  ["budget.moveItem", () => budget.moveBudgetItemAction("i1", "KONSUMSI", ["i1", "i2"])],
 
   ["faq.create", () => faq.createFaqAction({ question: "Q?", answer: "A" })],
   ["faq.update", () => faq.updateFaqAction("f1", { question: "Q?", answer: "B" })],
@@ -120,6 +121,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["himpunan.createFgdRow", () => himpunan.createFgdRowAction("f1")],
   ["himpunan.updateFgdRow", () => himpunan.updateFgdRowAction("r1", { ours: "X" })],
   ["himpunan.deleteFgdRow", () => himpunan.deleteFgdRowAction("r1")],
+  ["himpunan.reorderFgdRows", () => himpunan.reorderFgdRowsAction(["r1", "r2"])],
   ["himpunan.createCompareSubject", () => himpunan.createCompareSubjectAction({ event_id: "ov1", org_name: "X" })],
   ["himpunan.deleteCompareSubject", () => himpunan.deleteCompareSubjectAction("s1")],
   ["himpunan.createCompare", () => himpunan.createCompareEntryAction({ event_id: "ov1", subject_id: "s1" })],

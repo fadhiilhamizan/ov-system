@@ -53,6 +53,31 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.43.0",
+    date: "2026-09-01",
+    title: "Anggaran bisa diedit dan dipindah langsung di tabel, baris FGD bisa diseret",
+    changes: [
+      { kind: "new", text: "Nama item dan satuan di Anggaran sekarang kolom yang bisa langsung diketik di tabelnya, sama seperti Qty dan Harga. Tidak perlu lagi hapus lalu tambah ulang cuma untuk membetulkan satu nama." },
+      { kind: "new", text: "Item Anggaran bisa diseret keluar dari kategorinya: jatuhkan di baris kategori lain untuk memindahkannya, atau di antara item kategori itu untuk sekaligus menentukan posisinya. Warna titiknya ikut kategori tujuan." },
+      { kind: "new", text: "Baris pada tabel Focus Group Discussion bisa diurutkan dengan menyeret ikon di kiri baris, seperti di FAQ dan Hari-H." },
+      { kind: "fix", text: "Menu Himpunan di Mode Demo gagal di semua tombolnya (\"new row violates row-level security policy\") karena empat tabelnya belum dibukakan aksesnya di project demo. Skrip demo sudah diperbarui, jalankan ulang supabase/demo/demo-open-access.sql pada project demo." },
+      { kind: "data", text: "Perpindahan kategori item Anggaran ditulis dalam satu transaksi database, jadi kegagalan di tengah tidak bisa lagi membuat satu kategori tampil dua kali di tabel." },
+    ],
+  },
+  {
+    version: "1.42.0",
+    date: "2026-08-30",
+    title: "Satu sumber data saja, dan satu error yang muncul di tiap halaman hilang",
+    changes: [
+      { kind: "fix", text: "Ikon ganti tema tidak lagi memicu error React di setiap kali halaman dibuka. Bagian atas halaman sempat dibangun ulang dua kali karena itu." },
+      { kind: "data", text: "Mode data JSON lokal dihapus. Sistem sekarang selalu berbicara ke satu database, jadi tidak ada lagi dua salinan aturan yang bisa berbeda diam-diam. Mode Demo tidak terpengaruh: itu proyek database terpisah dan tetap berjalan seperti biasa." },
+      { kind: "fix", text: "Kalau konfigurasi database belum diisi, pesannya sekarang menyebut variabel mana yang kurang, bukan error mentah dari pustaka." },
+      { kind: "new", text: "Halaman Kebijakan Privasi dan Ketentuan Layanan kini mencantumkan dua alamat email beserta perannya, bukan hanya nomor WhatsApp." },
+      { kind: "fix", text: "Urutan tenggat terdekat di Dashboard tidak lagi bisa berubah-ubah sendiri untuk tugas yang tenggatnya sama persis." },
+      { kind: "fix", text: "Akun tanpa alamat email tidak lagi membuat seluruh halaman gagal dimuat." },
+    ],
+  },
+  {
     version: "1.41.2",
     date: "2026-08-30",
     title: "Pencarian dan menu samping kini benar-benar bisa dipakai lewat keyboard",

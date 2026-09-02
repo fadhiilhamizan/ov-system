@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "../supabase/server";
 import { readRows } from "./read";
+import { reorderVia } from "./repo";
 import { HMSI_DEPARTMENTS } from "../constants";
 import type { CompareEntry, CompareSubject, FgdPlan, FgdRow } from "../types";
 
@@ -121,6 +122,19 @@ export async function updateFgdRow(id: string, patch: { ours?: string; theirs?: 
 export async function deleteFgdRow(id: string) {
   const { error } = await (await sb()).from("fgd_rows").delete().eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Persist a drag-and-drop reorder of one table's rows.
+ *
+ * Goes through the same `reorder_rows` RPC as the RAB and the FAQ (0044, with
+ * the `fgd_rows` branch added in 0047): one statement, so a ten-row table is
+ * one round trip instead of ten UPDATEs that can each fail on their own and
+ * leave the table half-renumbered.
+ */
+export async function reorderFgdRows(orderedIds: string[]) {
+  if (!orderedIds.length) return;
+  await reorderVia("fgd_rows", orderedIds);
 }
 
 // ---------------- Compare ----------------

@@ -3,11 +3,11 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy, GripVertical } from "lucide-react";
 import {
-  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter, useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
+  SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
@@ -25,9 +25,10 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
   duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction, setCategoryColorAction,
-  reorderBudgetItemsAction,
+  reorderBudgetItemsAction, moveBudgetItemAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
+import { categoryDropId, planAfterDrag } from "@/lib/budget";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { useAutosave } from "@/lib/use-autosave";
@@ -36,6 +37,9 @@ import { useSynced } from "@/lib/use-synced";
 import type { BudgetItem, BudgetPlan, OVEvent } from "@/lib/types";
 
 const CATEGORY_PRESETS = ["KONSUMSI", "TRANSPORTASI & AKOMODASI", "PERALATAN & CETAKAN", "PEMINJAMAN TEMPAT", "LAIN-LAIN"];
+
+/** What one inline cell edit can change. `total` is derived, never sent. */
+type ItemPatch = { qty?: number; unit_price?: number; name?: string; unit?: string };
 
 const CAT_COLORS: Record<string, string> = {
   KONSUMSI: "#f97316",
@@ -297,7 +301,7 @@ function ItemRow({
   canManage: boolean;
   selected: boolean;
   onToggle: () => void;
-  onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
+  onEdit: (itemId: string, patch: ItemPatch) => void;
 }) {
   const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -326,11 +330,33 @@ function ItemRow({
           </div>
         </td>
       )}
-      <td className="px-5 py-2">{it.name}</td>
+      <td className="px-3 py-2">
+        {canManage ? (
+          <TextCell
+            value={it.name}
+            onCommit={(v) => onEdit(it.id, { name: v })}
+            label={t("Nama item")}
+            placeholder={t("Nama item")}
+          />
+        ) : it.name}
+      </td>
       <td className="px-2 py-2 text-right tabular-nums">
         {canManage ? <NumCell value={it.qty} onCommit={(v) => onEdit(it.id, { qty: v })} width="w-16" /> : (it.qty ?? "-")}
       </td>
-      <td className="px-2 py-2 text-muted-foreground">{it.unit || "-"}</td>
+      <td className="px-2 py-2 text-muted-foreground">
+        {canManage ? (
+          <TextCell
+            value={it.unit}
+            onCommit={(v) => onEdit(it.id, { unit: v })}
+            label={t("Satuan")}
+            placeholder={t("Satuan")}
+            // A budget line legitimately has no unit ("Sewa gedung"), so
+            // clearing this field means "none" rather than "start retyping".
+            allowEmpty
+            className="w-20"
+          />
+        ) : (it.unit || "-")}
+      </td>
       <td className="px-2 py-2 text-right tabular-nums">
         {canManage ? <NumCell value={it.unit_price} onCommit={(v) => onEdit(it.id, { unit_price: v })} width="w-24" /> : formatRupiah(it.unit_price)}
       </td>
@@ -374,7 +400,7 @@ export function BudgetView({
     });
   }
 
-  function edit(itemId: string, patch: { qty?: number; unit_price?: number }) {
+  function edit(itemId: string, patch: ItemPatch) {
     // Remember just THIS row, so a failure can put it back without touching
     // anything else. The rollback used to be `setState(plans)` - a jump all
     // the way back to the props the page was rendered with, which also undid
@@ -411,21 +437,33 @@ export function BudgetView({
     });
   }
 
-  /** Move one item within its plan. Both ids always belong to the same category
-   *  (each category is its own SortableContext), so moving them inside the
-   *  plan-wide array keeps every group contiguous. */
-  function reorder(planId: string, activeId: string, overId: string) {
+  /**
+   * Move one item inside its plan, possibly INTO ANOTHER CATEGORY.
+   *
+   * The plan is one sortable list, not one per category, so a drop can land
+   * anywhere: on another item (take its slot) or on a category heading (go to
+   * the top of that category). Whichever it is, the destination slot is always
+   * inside the destination category's block, so setting the dragged item's
+   * category to the one it landed in keeps every group contiguous - which the
+   * table relies on, since the headings are DERIVED from item order.
+   */
+  function move(planId: string, activeId: string, overId: string) {
     const plan = state.find((p) => p.id === planId);
     if (!plan) return;
-    const from = plan.items.findIndex((i) => i.id === activeId);
-    const to = plan.items.findIndex((i) => i.id === overId);
-    if (from < 0 || to < 0 || from === to) return;
-    const nextItems = arrayMove(plan.items, from, to);
+    const drop = planAfterDrag(plan.items, activeId, overId);
+    if (!drop) return;
+    const { items: nextItems, category, changedCategory: moved } = drop;
     // Same reasoning as `edit`: put back only the plan that was dragged.
     const beforeItems = plan.items;
     setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: nextItems } : p)));
     autosave.run(async () => {
-      const r = await reorderBudgetItemsAction(nextItems.map((i) => i.id));
+      const ids = nextItems.map((i) => i.id);
+      // A cross-category drop is two writes (category + order) and has its own
+      // action so the database can do both in one transaction: half of it
+      // would print the same category twice in the table.
+      const r = moved
+        ? await moveBudgetItemAction(activeId, category, ids)
+        : await reorderBudgetItemsAction(ids);
       if (!r.ok) {
         toast.error(r.error);
         setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: beforeItems } : p)));
@@ -458,7 +496,7 @@ export function BudgetView({
           event={evMap.get(plan.event_id)}
           canManage={canManage}
           onEdit={edit}
-          onReorder={(a, o) => reorder(plan.id, a, o)}
+          onMove={(a, o) => move(plan.id, a, o)}
           sel={sel}
         />
       ))}
@@ -471,14 +509,14 @@ function PlanCard({
   event,
   canManage,
   onEdit,
-  onReorder,
+  onMove,
   sel,
 }: {
   plan: BudgetPlan;
   event?: OVEvent;
   canManage: boolean;
-  onEdit: (itemId: string, patch: { qty?: number; unit_price?: number }) => void;
-  onReorder: (activeId: string, overId: string) => void;
+  onEdit: (itemId: string, patch: ItemPatch) => void;
+  onMove: (activeId: string, overId: string) => void;
   sel: ReturnType<typeof useMultiSelect>;
 }) {
   const t = useT();
@@ -489,7 +527,7 @@ function PlanCard({
   );
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
-    if (over && active.id !== over.id) onReorder(String(active.id), String(over.id));
+    if (over && active.id !== over.id) onMove(String(active.id), String(over.id));
   }
   const grand = plan.items.reduce((s, i) => s + (i.total ?? 0), 0);
   const allSelected = plan.items.length > 0 && plan.items.every((i) => sel.selected.has(i.id));
@@ -562,7 +600,7 @@ function PlanCard({
 
           {canManage && (
             <p className="px-5 pt-2 text-xs text-muted-foreground">
-              {t("Seret ikon untuk mengurutkan item di dalam kategorinya.")}
+              {t("Seret ikon untuk mengurutkan item, atau jatuhkan ke baris kategori lain untuk memindahkannya.")}
             </p>
           )}
           <div className="overflow-x-auto">
@@ -587,29 +625,26 @@ function PlanCard({
                   {canManage && <th className="w-8" />}
                 </tr>
               </thead>
+              {/* ONE sortable list per PLAN, not one per category, so an item can
+                  be dragged out of its category and into another. Every drop
+                  slot sits inside some category's block, and `move` gives the
+                  dragged item that category, so the groups the headings are
+                  derived from stay contiguous. */}
+              <SortableContext items={plan.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {cats.map((c) => (
                   <React.Fragment key={c.name}>
-                    <tr className="bg-muted/30">
-                      <td colSpan={canManage ? 7 : 5} className="px-5 py-1.5 text-xs font-semibold" style={{ color: c.color }}>
-                        {c.name}
-                      </td>
-                    </tr>
-                    {/* One sortable list PER CATEGORY. Dragging is scoped to the
-                        group because the category headings are derived from item
-                        order - a cross-group drop would split a category in two. */}
-                    <SortableContext items={c.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                      {c.items.map((it) => (
-                        <ItemRow
-                          key={it.id}
-                          item={it}
-                          canManage={canManage}
-                          selected={sel.selected.has(it.id)}
-                          onToggle={() => sel.toggle(it.id)}
-                          onEdit={onEdit}
-                        />
-                      ))}
-                    </SortableContext>
+                    <CategoryRow name={c.name} color={c.color} span={canManage ? 7 : 5} canManage={canManage} />
+                    {c.items.map((it) => (
+                      <ItemRow
+                        key={it.id}
+                        item={it}
+                        canManage={canManage}
+                        selected={sel.selected.has(it.id)}
+                        onToggle={() => sel.toggle(it.id)}
+                        onEdit={onEdit}
+                      />
+                    ))}
                     <tr className="border-b border-border">
                       <td colSpan={canManage ? 5 : 4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
                       <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums">{formatRupiah(c.subtotal)}</td>
@@ -623,12 +658,38 @@ function PlanCard({
                   {canManage && <td />}
                 </tr>
               </tbody>
+              </SortableContext>
             </table>
             </DndContext>
           </div>
         </div>
       )}
     </Card>
+  );
+}
+
+/**
+ * A category heading row, which is also a DROP TARGET.
+ *
+ * Dropping on it puts the item at the top of that category. Without it the only
+ * way into a category is to aim at one of its existing rows, which leaves the
+ * first slot unreachable and makes a nearly-empty category hard to hit at all.
+ */
+function CategoryRow({
+  name, color, span, canManage,
+}: {
+  name: string;
+  color: string;
+  span: number;
+  canManage: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: categoryDropId(name), disabled: !canManage });
+  return (
+    <tr ref={setNodeRef} className={cn("bg-muted/30 transition", isOver && "bg-primary/10")}>
+      <td colSpan={span} className="px-5 py-1.5 text-xs font-semibold" style={{ color }}>
+        {name}
+      </td>
+    </tr>
   );
 }
 
@@ -677,6 +738,70 @@ function CategoryDot({
         <ColorPicker size="sm" value={shown} onChange={pick} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * An inline text cell: the item name and the unit, edited where they are read.
+ *
+ * Deliberately NOT debounced the way `NumCell` is. A number is finished after
+ * one keystroke and a spinner click never blurs, so it has to save on a timer;
+ * a name is finished when you stop typing it, and saving "Konsum" halfway
+ * through "Konsumsi" would put a half-word in the audit trail and in everyone
+ * else's table. Enter and blur commit, Escape puts the stored value back.
+ */
+function TextCell({
+  value,
+  onCommit,
+  label,
+  placeholder,
+  allowEmpty = false,
+  className,
+}: {
+  value: string;
+  onCommit: (v: string) => void;
+  /** Accessible name, since the column header is not tied to the input. */
+  label: string;
+  placeholder?: string;
+  /** Whether clearing the field means "none". `name` is required by the schema,
+   *  so an empty one snaps back instead of failing the save. */
+  allowEmpty?: boolean;
+  className?: string;
+}) {
+  const [text, setText] = useSynced(value);
+  // The saved value, so a commit knows whether there is anything to write.
+  const savedRef = React.useRef(value);
+  React.useEffect(() => { savedRef.current = value; }, [value]);
+
+  const commit = (raw: string) => {
+    const next = raw.trim();
+    if (!allowEmpty && next === "") { setText(savedRef.current); return; }
+    if (next === savedRef.current) return;
+    onCommit(next);
+  };
+
+  return (
+    <input
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit(text);
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          setText(savedRef.current);
+          e.currentTarget.blur();
+        }
+      }}
+      onBlur={() => commit(text)}
+      placeholder={placeholder}
+      aria-label={label}
+      className={cn(
+        "w-full rounded-md border border-transparent bg-transparent px-1.5 py-0.5 transition hover:border-border focus:border-ring focus:bg-card focus:outline-none",
+        className,
+      )}
+    />
   );
 }
 

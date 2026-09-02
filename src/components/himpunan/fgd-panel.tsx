@@ -1,7 +1,15 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Table2, Trash2 } from "lucide-react";
+import { GripVertical, Loader2, Plus, Table2, Trash2 } from "lucide-react";
+import {
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   createFgdPlanAction, createFgdRowAction, deleteFgdPlanAction, deleteFgdRowAction,
-  updateFgdPlanAction, updateFgdRowAction,
+  reorderFgdRowsAction, updateFgdPlanAction, updateFgdRowAction,
 } from "@/lib/actions/himpunan";
 import { HOME_ORG } from "@/lib/constants";
 import { useT } from "@/lib/i18n/provider";
@@ -132,11 +140,33 @@ function PlanTable({
   const t = useT();
   const [pending, start] = React.useTransition();
   const [delOpen, setDelOpen] = React.useState(false);
+  // The row order shown while a drag is being saved. `useSynced` hands control
+  // back to the server's order as soon as the revalidated props arrive, so a
+  // failed save undoes itself without a rollback branch of its own.
+  const [order, setOrder] = useSynced(rows);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   function addRow() {
     start(async () => {
       const res = await createFgdRowAction(plan.id);
       if (!res.ok) toast.error(res.error);
+    });
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = order.findIndex((r) => r.id === active.id);
+    const to = order.findIndex((r) => r.id === over.id);
+    if (from < 0 || to < 0) return;
+    const next = arrayMove(order, from, to);
+    const before = order;
+    setOrder(next);
+    void reorderFgdRowsAction(next.map((r) => r.id)).then((res) => {
+      if (!res.ok) { toast.error(res.error); setOrder(before); }
     });
   }
 
@@ -155,9 +185,11 @@ function PlanTable({
       </div>
 
       <div className="overflow-x-auto">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
+              {canManage && <th className="w-8 border-b border-border" />}
               <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {HOME_ORG}
               </th>
@@ -167,27 +199,35 @@ function PlanTable({
               {canManage && <th className="w-10 border-b border-border" />}
             </tr>
           </thead>
+          <SortableContext items={order.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <tbody>
-            {rows.map((row) => (
+            {order.map((row) => (
               <RowCells key={row.id} row={row} canManage={canManage} />
             ))}
-            {rows.length === 0 && (
+            {order.length === 0 && (
               <tr>
-                <td colSpan={canManage ? 3 : 2} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                <td colSpan={canManage ? 4 : 2} className="px-3 py-6 text-center text-sm text-muted-foreground">
                   {t("Tabel ini kosong.")}
                 </td>
               </tr>
             )}
           </tbody>
+          </SortableContext>
         </table>
+        </DndContext>
       </div>
 
       {canManage && (
-        <div className="border-t border-border px-3 py-2">
+        <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-2">
           <Button variant="ghost" size="sm" onClick={addRow} disabled={pending}>
             {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}{" "}
             {t("Tambah baris")}
           </Button>
+          {order.length > 1 && (
+            <span className="text-[11px] text-muted-foreground">
+              {t("Seret ikon untuk mengurutkan baris.")}
+            </span>
+          )}
         </div>
       )}
 
@@ -267,8 +307,30 @@ function PartnerHeading({ plan, canManage }: { plan: FgdPlan; canManage: boolean
 function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
   const t = useT();
   const [pending, start] = React.useTransition();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.id,
+    disabled: !canManage,
+  });
   return (
-    <tr className="group">
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn("group", isDragging && "relative z-10 bg-muted shadow-lg")}
+    >
+      {canManage && (
+        <td className="border-b border-border px-1 text-center align-middle">
+          <button
+            {...attributes}
+            {...listeners}
+            type="button"
+            className="cursor-grab touch-none rounded p-0.5 text-muted-foreground/50 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
+            aria-label={t("Geser untuk mengurutkan")}
+            title={t("Geser untuk mengurutkan")}
+          >
+            <GripVertical className="size-3.5" />
+          </button>
+        </td>
+      )}
       <Cell row={row} field="ours" canManage={canManage} />
       <Cell row={row} field="theirs" canManage={canManage} />
       {canManage && (

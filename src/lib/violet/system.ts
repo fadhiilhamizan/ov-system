@@ -120,7 +120,7 @@ export function systemPassages(): Passage[] {
       "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +
       "dengan departemen padanannya di himpunan mitra. Satu Ormawa Visit boleh punya beberapa tabel, " +
       "tiap tabel menyimpan judul opsional dan nama himpunan mitra, dan barisnya bisa ditambah, diubah, " +
-      "maupun dihapus. Tabel baru otomatis terisi sepuluh departemen HMSI ITS: Executive Board, " +
+      "dihapus, maupun DISERET untuk mengubah urutannya (urutan itu tersimpan untuk semua orang). Tabel baru otomatis terisi sepuluh departemen HMSI ITS: Executive Board, " +
       "External Affairs, Human Resource Development, Manage, Internal Affair, Student Welfare, " +
       "Research and Technology Application, Information Media, Social Development, dan Entrepreneurship. " +
       "Departemen ini BUKAN divisi kepanitiaan: divisi (LO, Event, Konsumsi, dan seterusnya) adalah " +
@@ -203,8 +203,15 @@ export function systemPassages(): Passage[] {
       "Total dihitung dari qty dikali harga satuan dan selalu dibulatkan ke rupiah utuh. " +
       "Warna titik kategori dimiliki oleh KATEGORINYA, bukan oleh satu item: menggantinya mengubah warna " +
       "seluruh item dalam kategori itu pada rencana yang sama. " +
-      "Kolom angka tersimpan sambil diketik (termasuk lewat panah naik-turun), Enter menyimpan lalu keluar " +
-      "dari sel, dan Esc membatalkan."),
+      "Nama item, qty, satuan, dan harga satuan semuanya diedit LANGSUNG di tabelnya, tanpa membuka pop-up. " +
+      "Kolom angka tersimpan sambil diketik (termasuk lewat panah naik-turun); kolom teks tersimpan saat " +
+      "kamu keluar dari selnya atau menekan Enter, dan Esc membatalkan. Nama item tidak boleh dikosongkan, " +
+      "satuan boleh. " +
+      "Item bisa DISERET untuk mengubah urutannya, dan seretan itu boleh KELUAR dari kategorinya: " +
+      "menjatuhkannya di baris judul kategori lain memindahkannya ke urutan teratas kategori itu, " +
+      "menjatuhkannya di antara item kategori lain memindahkan sekaligus menentukan posisinya. " +
+      "Item yang pindah mengambil warna kategori tujuannya, dan judul kategori di tabel diturunkan dari " +
+      "urutan item, jadi tiap kategori selalu tampil sebagai satu blok utuh."),
 
     p("superlink", "Struktur data: Super Link", "/links",
       "Super Link adalah direktori tautan penting: dokumen, form, folder Drive. Satu entri menyimpan: " +

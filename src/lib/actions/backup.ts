@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, USE_SUPABASE } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createBackup, listBackups, getBackupData, deleteBackup, restoreSnapshot, parseSnapshot,
@@ -9,12 +9,10 @@ import {
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY = { ok: false as const, error: "Kamu tidak punya akses mengelola backup." };
-const NO_SUPABASE = { ok: false as const, error: "Backup hanya tersedia saat terhubung ke Supabase." };
 
 export async function createBackupAction(): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   try {
     await createBackup("manual", user.id);
     revalidatePath("/settings");
@@ -28,7 +26,6 @@ type ListResult = { ok: true; backups: BackupMeta[] } | { ok: false; error: stri
 export async function listBackupsAction(): Promise<ListResult> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   const backups = await listBackups();
   return { ok: true, backups };
 }
@@ -37,7 +34,6 @@ type DownloadResult = { ok: true; data: BackupData } | { ok: false; error: strin
 export async function downloadBackupAction(id: string): Promise<DownloadResult> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   const data = await getBackupData(id);
   if (!data) return { ok: false, error: "Backup tidak ditemukan." };
   return { ok: true, data };
@@ -46,7 +42,6 @@ export async function downloadBackupAction(id: string): Promise<DownloadResult> 
 export async function deleteBackupAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   try {
     await deleteBackup(id);
   } catch (e) {
@@ -74,7 +69,6 @@ export async function deleteBackupAction(id: string): Promise<Result> {
 export async function importBackupAction(raw: unknown): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   const parsed = parseSnapshot(raw);
   if (!parsed.ok) return parsed;
   try {
@@ -101,7 +95,6 @@ export async function inspectBackupFileAction(raw: unknown): Promise<InspectResu
 export async function restoreBackupAction(id: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageBackups(user)) return DENY;
-  if (!USE_SUPABASE) return NO_SUPABASE;
   try {
     // Taken BEFORE reading the target, so an unknown id costs a harmless extra
     // snapshot rather than leaving the user without one. The restore itself is

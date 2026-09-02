@@ -5,12 +5,10 @@ import { redirect } from "next/navigation";
 import type { AppUser, Role } from "./types";
 import { AUTH_COOKIE, DEMO_USERS } from "./demo-users";
 import { createClient } from "./supabase/server";
-import { DEMO_COOKIE, demoActive, demoConfigured } from "./demo";
+import { DEMO_COOKIE, demoActive } from "./demo";
 
 export { AUTH_COOKIE, DEMO_USERS };
 
-// Supabase-backed when EITHER production or a demo project is configured.
-export const USE_SUPABASE = !!process.env.NEXT_PUBLIC_SUPABASE_URL || demoConfigured();
 export const GUEST_COOKIE = "ov_guest";
 
 const GUEST_USER: AppUser = {
@@ -70,8 +68,8 @@ const readUser = cache(async (): Promise<AppUser | null> => {
     return DEMO_USERS.find((u) => u.id === id) ?? DEMO_USERS[0];
   }
 
-  if (USE_SUPABASE) {
-    const supabase = await createClient();
+  const supabase = await createClient();
+  {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -96,13 +94,13 @@ const readUser = cache(async (): Promise<AppUser | null> => {
     // and migration 0028, which removed the same assumption from RLS.
     return {
       id: user.id,
-      name: profile?.name || user.email!.split("@")[0],
+      // `user.email!` used to be here. An account is not guaranteed to have
+      // one - a phone or a provider that returns none - and the assertion turns
+      // that into a crash on EVERY page rather than a missing display name.
+      name: profile?.name || user.email?.split("@")[0] || "Pengguna",
       email: user.email ?? "",
       role: normalizeRole(profile?.role),
       avatarColor: profile?.avatar_color ?? undefined,
     };
   }
-
-  const id = store.get(AUTH_COOKIE)?.value;
-  return DEMO_USERS.find((u) => u.id === id) ?? DEMO_USERS[0];
 });

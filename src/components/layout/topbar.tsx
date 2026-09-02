@@ -16,7 +16,6 @@ export function Topbar({
   user,
   events,
   activeEventId,
-  demoMode,
   sandboxMode,
   roleOptions = [],
   pendingRoleRequest = null,
@@ -26,7 +25,6 @@ export function Topbar({
   user: AppUser;
   events: OVEvent[];
   activeEventId: string;
-  demoMode: boolean;
   sandboxMode: boolean;
   roleOptions?: RequestableRole[];
   pendingRoleRequest?: RoleRequest | null;
@@ -65,7 +63,7 @@ export function Topbar({
         <EventSwitcher events={events} activeId={activeEventId} />
         <LangToggle />
         <ThemeToggle />
-        {demoMode || sandboxMode ? (
+        {sandboxMode ? (
           <RoleSwitcher user={user} />
         ) : (
           <UserMenu user={user} roleOptions={roleOptions} pendingRoleRequest={pendingRoleRequest} isDeveloper={isDeveloper} />
