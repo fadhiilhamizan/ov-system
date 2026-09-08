@@ -1,4 +1,4 @@
-import type { BudgetItem } from "./types";
+import type { BudgetItem, BudgetPlan } from "./types";
 
 // ============================================================
 // Pure helpers for Anggaran (RAB).
@@ -10,6 +10,48 @@ import type { BudgetItem } from "./types";
 // rows under each, which is the kind of thing a test catches and a reviewer
 // does not.
 // ============================================================
+
+/** What a plan actually adds up to. */
+export function planTotal(plan: Pick<BudgetPlan, "items">): number {
+  return plan.items.reduce((sum, i) => sum + (i.total ?? 0), 0);
+}
+
+/**
+ * The edition's MAIN budget plan: the single plan Dashboard reports.
+ *
+ * Dashboard used to SUM every plan of an edition, which misreads what a plan is.
+ * "RAB Minimal" and "RAB Maksimal" are two scenarios for the same money, not two
+ * separate pots, so adding them produced a figure nobody will ever spend.
+ *
+ * Three rules, in order, and the fallbacks are not decoration:
+ *   1. the plan somebody actually marked (`is_primary`);
+ *   2. the only plan there is, because with one plan there is no choice to make
+ *      and asking for one would be a ritual;
+ *   3. the biggest plan, when an edition has several and none is marked.
+ *
+ * Rule 3 is the same rule migration 0048 backfills with, so an edition that has
+ * not been through that migration (the demo project, an edition cloned from
+ * another - `cloneEventData` deliberately does not carry the flag over) still
+ * reports the same plan the database would have chosen. It also means deleting
+ * the marked plan degrades quietly instead of leaving Dashboard with nothing to
+ * show. The tie-break is name then id so the answer never flickers between two
+ * plans that happen to cost the same.
+ *
+ * Returns null only when there are no plans at all.
+ */
+export function primaryBudgetPlan(plans: readonly BudgetPlan[]): BudgetPlan | null {
+  if (!plans.length) return null;
+  const marked = plans.find((p) => p.is_primary);
+  if (marked) return marked;
+  if (plans.length === 1) return plans[0];
+  return plans.reduce((best, p) => {
+    const d = planTotal(p) - planTotal(best);
+    if (d !== 0) return d > 0 ? p : best;
+    const byName = p.name.localeCompare(best.name);
+    if (byName !== 0) return byName < 0 ? p : best;
+    return p.id < best.id ? p : best;
+  });
+}
 
 /**
  * The droppable id of a category HEADING row.

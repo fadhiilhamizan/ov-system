@@ -551,6 +551,9 @@ create table prospects (id uuid primary key default gen_random_uuid(), event_id 
 -- (which the extractor picks up as bare statements) have a table to target.
 create table compare_subjects (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
 create table compare_entries (id uuid primary key default gen_random_uuid(), event_id text, org_name text);
+-- budget_plans ada sejak 0001, jadi project demo selalu punya. Ada di sini
+-- supaya catch-up kolom is_primary (0048) punya tabel untuk disasar.
+create table budget_plans (id uuid primary key default gen_random_uuid(), event_id text, name text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
@@ -1345,6 +1348,82 @@ console.log("0047 - pindah kategori RAB + urutkan baris FGD");
     delete from budget_items where plan_id in ('cccccccc-1111-1111-1111-111111111111','cccccccc-2222-2222-2222-222222222222');
     delete from budget_plans where id in ('cccccccc-1111-1111-1111-111111111111','cccccccc-2222-2222-2222-222222222222');
     delete from events where id in ('mv-open','mv-lock');`);
+}
+
+console.log("0048 - rencana anggaran utama");
+{
+  await db.exec(`insert into events (id, code, title, locked) values
+    ('pri-a','PRI1','Punya dua rencana', false),
+    ('pri-b','PRI2','Punya satu rencana', false)
+    on conflict (id) do nothing;
+    delete from budget_items where plan_id in
+      (select id from budget_plans where event_id in ('pri-a','pri-b'));
+    delete from budget_plans where event_id in ('pri-a','pri-b');
+    insert into budget_plans (id, event_id, name, is_primary) values
+      ('dddddddd-0000-0000-0000-000000000001','pri-a','RAB Minimal', false),
+      ('dddddddd-0000-0000-0000-000000000002','pri-a','RAB Maksimal', false),
+      ('dddddddd-0000-0000-0000-000000000003','pri-b','RAB Tunggal', false);
+    insert into budget_items (plan_id, category, name, total) values
+      ('dddddddd-0000-0000-0000-000000000001','KONSUMSI','Kecil', 400000),
+      ('dddddddd-0000-0000-0000-000000000002','KONSUMSI','Besar', 900000),
+      ('dddddddd-0000-0000-0000-000000000003','KONSUMSI','Satu', 100000);`);
+
+  // Backfill: sama persis dengan yang ada di setup.sql / 0048.
+  const backfill = `with ranked as (
+      select p.id, row_number() over (
+               partition by p.event_id
+               order by coalesce(s.total, 0) desc, p.name asc, p.id asc) as rn
+        from budget_plans p
+        left join (select plan_id, sum(coalesce(total,0)) as total
+                     from budget_items group by plan_id) s on s.plan_id = p.id
+       where not exists (select 1 from budget_plans q
+                          where q.is_primary and q.event_id is not distinct from p.event_id))
+    update budget_plans b set is_primary = true from ranked r
+     where b.id = r.id and r.rn = 1;`;
+  await db.exec(backfill);
+
+  const primaryOf = async (ev) =>
+    (await db.query(`select name from budget_plans where event_id = $1 and is_primary`, [ev]))
+      .rows.map((r) => r.name);
+
+  ok("edisi dengan dua rencana: yang totalnya terbesar jadi utama",
+    (await primaryOf("pri-a")).join(",") === "RAB Maksimal");
+  ok("edisi dengan satu rencana: rencana itu yang jadi utama",
+    (await primaryOf("pri-b")).join(",") === "RAB Tunggal");
+
+  // Idempotency: jalan kedua tidak boleh memindahkan pilihan yang sudah ada.
+  await db.exec(`update budget_plans set is_primary = false where event_id = 'pri-a';
+    update budget_plans set is_primary = true where id = 'dddddddd-0000-0000-0000-000000000001';`);
+  await db.exec(backfill);
+  ok("backfill kedua TIDAK menimpa rencana utama yang sudah dipilih orang",
+    (await primaryOf("pri-a")).join(",") === "RAB Minimal");
+
+  // Partial unique index: "hanya satu utama" ditegakkan database, bukan aplikasi.
+  let dup = null;
+  try {
+    await db.exec(`update budget_plans set is_primary = true
+      where id = 'dddddddd-0000-0000-0000-000000000002';`);
+  } catch (e) { dup = e.message.split("\n")[0]; }
+  ok("dua rencana utama pada satu edisi DITOLAK database", !!dup);
+  ok("...dan yang lama tetap utuh",
+    (await primaryOf("pri-a")).join(",") === "RAB Minimal");
+
+  // Melepas dulu lalu menunjuk yang baru adalah urutan yang dipakai repo.ts.
+  await db.exec(`update budget_plans set is_primary = false
+      where event_id = 'pri-a' and is_primary;
+    update budget_plans set is_primary = true
+      where id = 'dddddddd-0000-0000-0000-000000000002';`);
+  ok("mengganti rencana utama melepas yang sebelumnya",
+    (await primaryOf("pri-a")).join(",") === "RAB Maksimal");
+
+  // Dua edisi boleh sama-sama punya rencana utamanya sendiri.
+  ok("index-nya per edisi, bukan global",
+    (await db.query(`select count(*) c from budget_plans where is_primary`)).rows[0].c >= 2);
+
+  await db.exec(`delete from budget_items where plan_id in
+      (select id from budget_plans where event_id in ('pri-a','pri-b'));
+    delete from budget_plans where event_id in ('pri-a','pri-b');
+    delete from events where id in ('pri-a','pri-b');`);
 }
 
 console.log("0043 - restore_snapshot (transaksional)");

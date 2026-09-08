@@ -244,6 +244,11 @@ export interface BudgetPlan {
   id: string;
   name: string;
   event_id: string;
+  /** The edition's MAIN plan, the one Dashboard reports. At most one per
+   *  edition (partial unique index, 0048). False on every plan of an edition
+   *  nobody has chosen for yet - `primaryBudgetPlan` in lib/budget.ts decides
+   *  what that means, so a reader never has to. */
+  is_primary: boolean;
   items: BudgetItem[];
 }
 

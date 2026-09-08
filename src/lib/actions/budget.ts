@@ -6,18 +6,16 @@ import { can } from "@/lib/permissions";
 import {
   updateBudgetItem, createBudgetItem, deleteBudgetItem, bulkDeleteBudgetItems,
   createBudgetPlan, deleteBudgetPlan, getBudgetPlans, setCategoryColor, reorderBudgetItems,
-  moveBudgetItem,
+  moveBudgetItem, setPrimaryBudgetPlan,
 } from "@/lib/data/repo";
 import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
+// The shared one, not a local copy: it recognises the two database errors a
+// committee member can act on (an RLS denial, and a database that is behind the
+// app) and says which script to run, instead of handing over raw Postgres prose.
+import { errMsg } from "./lock";
 
 type Result = { ok: true } | { ok: false; error: string };
 const DENY: Result = { ok: false, error: "Kamu tidak punya akses mengelola anggaran." };
-/** Repo writes throw on a Supabase error - surface it rather than
- *  reporting a save that never happened. */
-const errMsg = (e: unknown): Result => ({
-  ok: false,
-  error: e instanceof Error ? `Gagal menyimpan: ${e.message}` : "Gagal menyimpan anggaran.",
-});
 
 export async function updateBudgetItemAction(
   itemId: string,
@@ -164,6 +162,22 @@ export async function createBudgetPlanAction(input: { name: string }): Promise<R
   if (!v.ok) return v;
   const event = await getActiveEvent();
   try { await createBudgetPlan({ ...v.data, event_id: event.id }); } catch (e) { return errMsg(e); }
+  revalidateEntities("budget");
+  return { ok: true };
+}
+
+/**
+ * Mark one plan as the edition's main one.
+ *
+ * The "budget" entity already busts /dashboard and /events, which is what makes
+ * this enough on its own: both report the edition's figure, and moving the mark
+ * changes that figure without touching a single item.
+ */
+export async function setPrimaryBudgetPlanAction(id: string): Promise<Result> {
+  if (!can.manageBudget(await getCurrentUser())) return DENY;
+  const idv = parse(idSchema, id);
+  if (!idv.ok) return idv;
+  try { await setPrimaryBudgetPlan(idv.data); } catch (e) { return errMsg(e); }
   revalidateEntities("budget");
   return { ok: true };
 }

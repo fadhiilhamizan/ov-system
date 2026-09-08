@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.44.0",
+    date: "2026-09-02",
+    title: "Angka anggaran di Dashboard sekarang satu rencana, bukan semuanya dijumlahkan",
+    changes: [
+      { kind: "fix", text: "Dashboard menjumlahkan SELURUH rencana anggaran satu edisi, padahal RAB Minimal dan RAB Maksimal adalah dua skenario untuk uang yang sama. Angkanya jadi hampir dua kali lipat dari yang akan benar-benar dibelanjakan, dan makin besar tiap kali ada skenario baru dibuat. Sekarang yang tampil adalah total rencana utama saja, lengkap dengan nama rencananya." },
+      { kind: "new", text: "Anggaran punya status Rencana Utama. Rencana pertama sebuah Ormawa Visit otomatis jadi yang utama, dan kalau ada beberapa rencana, tombol bintang di kartu rencana memindahkannya. Database memastikan hanya ada satu rencana utama per Ormawa Visit, jadi menunjuk yang baru otomatis melepas yang lama." },
+      { kind: "data", text: "Data yang sudah ada ditandai otomatis: pada tiap Ormawa Visit, rencana dengan total terbesar dijadikan rencana utama. Pilihan yang sudah kamu tetapkan sendiri tidak pernah ditimpa kalau skripnya dijalankan ulang." },
+      { kind: "fix", text: "Kartu Total Rencana Anggaran di halaman Anggaran ikut diperbaiki, dan Violet juga berhenti menjumlahkan skenario saat ditanya berapa anggaran sebuah Ormawa Visit." },
+    ],
+  },
+  {
     version: "1.43.0",
     date: "2026-09-01",
     title: "Anggaran bisa diedit dan dipindah langsung di tabel, baris FGD bisa diseret",

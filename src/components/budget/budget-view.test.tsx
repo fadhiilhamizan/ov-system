@@ -25,6 +25,7 @@ const actions = vi.hoisted(() => ({
   setCategoryColorAction: vi.fn(async () => ({ ok: true as const })),
   reorderBudgetItemsAction: vi.fn(async () => ({ ok: true as const })),
   moveBudgetItemAction: vi.fn(async () => ({ ok: true as const })),
+  setPrimaryBudgetPlanAction: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("@/lib/actions/budget", () => actions);
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
@@ -41,6 +42,7 @@ function plan(): BudgetPlan {
     id: "b1",
     name: "RAB Utama",
     event_id: "ov1",
+    is_primary: true,
     items: [
       { id: "i1", category: "KONSUMSI", no: 1, name: "Snack", qty: 10, unit: "box", unit_price: 15000, total: 150000, category_color: null },
       { id: "i2", category: "KONSUMSI", no: 2, name: "Air", qty: 4, unit: "dus", unit_price: 20000, total: 80000, category_color: null },

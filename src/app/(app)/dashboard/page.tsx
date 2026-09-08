@@ -18,10 +18,11 @@ import {
   taskStats,
   divisionStats,
   prospectStats,
-  budgetTotal,
+  getBudgetPlans,
   getDivisions,
   getMembers,
 } from "@/lib/data/repo";
+import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import { PIPELINE_STAGES, STATUS_META } from "@/lib/constants";
 import { formatRupiah, formatDate, relativeDeadline, daysUntil } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -46,14 +47,22 @@ const STATUS_HEX: Record<TaskStatus, string> = {
 
 export default async function DashboardPage() {
   const [user, event] = await Promise.all([getCurrentUser(), getActiveEvent()]);
-  const [stats, divStats, pstats, budget, divisions, members] = await Promise.all([
+  const [stats, divStats, pstats, plans, divisions, members] = await Promise.all([
     taskStats(event.id),
     divisionStats(event.id),
     prospectStats(event.id),
-    budgetTotal(event.id),
+    getBudgetPlans(event.id),
     getDivisions(event.id),
     getMembers(event.id),
   ]);
+  // The MAIN plan, not every plan added together. Summing them misread what a
+  // plan is: "RAB Minimal" and "RAB Maksimal" are two scenarios for the same
+  // money, so an edition that had thought its budget through carefully reported
+  // roughly double what it would actually spend, and drafting a third scenario
+  // made the figure grow again. The card names the plan for the same reason:
+  // a single number with no plan behind it is what let the old one look right.
+  const mainPlan = primaryBudgetPlan(plans);
+  const budget = mainPlan ? planTotal(mainPlan) : 0;
   const memberCount = members.length;
   const t = await getT();
 
@@ -133,7 +142,7 @@ export default async function DashboardPage() {
         <StatCard
           label={t("Anggaran Edisi")}
           value={formatRupiah(budget)}
-          sub={t("Total rencana pengeluaran")}
+          sub={mainPlan ? `${t("Rencana utama")}: ${mainPlan.name}` : t("Belum ada rencana anggaran")}
           icon={<Wallet />}
           accent="#0ea5e9"
         />

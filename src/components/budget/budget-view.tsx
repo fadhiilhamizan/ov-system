@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy, GripVertical } from "lucide-react";
+import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy, GripVertical, Star } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter, useDroppable,
   type DragEndEvent,
@@ -25,10 +25,10 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import {
   updateBudgetItemAction, createBudgetItemAction, deleteBudgetItemAction, bulkDeleteBudgetItemsAction,
   duplicateBudgetItemAction, createBudgetPlanAction, deleteBudgetPlanAction, setCategoryColorAction,
-  reorderBudgetItemsAction, moveBudgetItemAction,
+  reorderBudgetItemsAction, moveBudgetItemAction, setPrimaryBudgetPlanAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
-import { categoryDropId, planAfterDrag } from "@/lib/budget";
+import { categoryDropId, planAfterDrag, primaryBudgetPlan } from "@/lib/budget";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import { useAutosave } from "@/lib/use-autosave";
@@ -208,6 +208,36 @@ function AddItemDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Make this plan the edition's main one.
+ *
+ * Only shown on a plan that is NOT already the main one, and only when there is
+ * more than one plan: with a single plan there is nothing to choose between,
+ * and a button that can only confirm what is already true is noise. Marking is
+ * one-way on purpose - there is no "unmark", because an edition with no main
+ * plan is not a state worth being able to ask for; pick a different plan
+ * instead, and the database releases the old one for you.
+ */
+function SetPrimaryPlanButton({ plan }: { plan: BudgetPlan }) {
+  const t = useT();
+  const [pending, start] = React.useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      title={t("Jadikan rencana utama")}
+      aria-label={`${t("Jadikan rencana utama")}: ${plan.name}`}
+      onClick={() => start(async () => {
+        const res = await setPrimaryBudgetPlanAction(plan.id);
+        if (res.ok) toast.success(t("Rencana utama diperbarui")); else toast.error(res.error);
+      })}
+      className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" /> : <Star className="size-4" />}
+    </button>
   );
 }
 
@@ -392,6 +422,7 @@ export function BudgetView({
   );
   const [bulkPending, startBulk] = React.useTransition();
   const autosave = useAutosave();
+  const mainId = primaryBudgetPlan(state)?.id;
   function bulkDelete() {
     startBulk(async () => {
       const res = await bulkDeleteBudgetItemsAction(sel.ids);
@@ -495,6 +526,11 @@ export function BudgetView({
           plan={plan}
           event={evMap.get(plan.event_id)}
           canManage={canManage}
+          // Derived, not read from the row: an edition whose plans carry no flag
+          // yet (never migrated, cloned from another edition) still shows the
+          // same plan the Dashboard reports, instead of showing none.
+          isPrimary={plan.id === mainId}
+          canChoose={state.length > 1}
           onEdit={edit}
           onMove={(a, o) => move(plan.id, a, o)}
           sel={sel}
@@ -508,6 +544,8 @@ function PlanCard({
   plan,
   event,
   canManage,
+  isPrimary,
+  canChoose,
   onEdit,
   onMove,
   sel,
@@ -515,6 +553,10 @@ function PlanCard({
   plan: BudgetPlan;
   event?: OVEvent;
   canManage: boolean;
+  /** This is the plan the edition's figure comes from. */
+  isPrimary: boolean;
+  /** There is more than one plan, so choosing between them is a real choice. */
+  canChoose: boolean;
   onEdit: (itemId: string, patch: ItemPatch) => void;
   onMove: (activeId: string, overId: string) => void;
   sel: ReturnType<typeof useMultiSelect>;
@@ -566,6 +608,9 @@ function PlanCard({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-semibold">{plan.name}</h3>
+              {isPrimary && (
+                <Badge className="gap-1"><Star className="size-3" /> {t("Rencana Utama")}</Badge>
+              )}
               {event && <Badge variant="outline">{event.code}</Badge>}
               {scenario && <Badge variant={scenario === "max" ? "warning" : "success"}>{scenario === "max" ? t("Maksimal") : t("Minimal")}</Badge>}
             </div>
@@ -573,10 +618,13 @@ function PlanCard({
           </div>
           <div className="text-right">
             <div className="text-lg font-bold tabular-nums">{formatRupiah(grand)}</div>
-            <div className="text-[11px] text-muted-foreground">{t("Total")}</div>
+            <div className="text-[11px] text-muted-foreground">
+              {isPrimary ? t("Total (dipakai Dashboard)") : t("Total")}
+            </div>
           </div>
           <ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition", open && "rotate-180")} />
         </button>
+        {canManage && !isPrimary && canChoose && <SetPrimaryPlanButton plan={plan} />}
         {canManage && <DeletePlanButton plan={plan} />}
       </div>
 

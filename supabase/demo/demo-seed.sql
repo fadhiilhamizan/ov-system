@@ -36,6 +36,12 @@ alter table prospects add column if not exists link_label text default '';
 alter table prospects add column if not exists notes text default '';
 alter table prospects add column if not exists link_in_super_link boolean not null default false;
 alter table prospects add column if not exists link_id uuid references links(id) on delete set null;
+-- 0048: rencana anggaran utama. Dashboard membaca rencana ini saja, jadi tanpa
+-- kolomnya halaman Anggaran demo gagal dengan "Could not find the 'is_primary'
+-- column". Backfill-nya ada di bawah, setelah data seed masuk.
+alter table budget_plans add column if not exists is_primary boolean not null default false;
+create unique index if not exists budget_plans_primary_uniq
+  on budget_plans(event_id) where is_primary;
 -- 0037: tabel referensi tugas (tidak ada sama sekali di project demo lama).
 create table if not exists task_refs (
   id uuid primary key default gen_random_uuid(),
@@ -278,7 +284,7 @@ insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,e
 insert into tasks(event_id,division,no,pic,title,start_date,start_raw,end_date,end_raw,notes,result,status) values ('demo-ov','OPERATIONAL','1','Fajar','Siapkan perlengkapan & ruangan','2026-09-15','','2026-09-19','','','','overtime');
 
 -- budget
-with p as (insert into budget_plans(name,event_id) values ('RAB Ormawa Visit Demo','demo-ov') returning id)
+with p as (insert into budget_plans(name,event_id,is_primary) values ('RAB Ormawa Visit Demo','demo-ov',true) returning id)
   insert into budget_items(plan_id,category,no,name,qty,unit,unit_price,total,"order")
   select p.id, v.* from p, (values
     ('KONSUMSI',1,'Snack peserta',30,'box',15000,450000,0),

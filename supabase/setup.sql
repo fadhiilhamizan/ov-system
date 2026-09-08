@@ -297,8 +297,18 @@ create unique index if not exists prospect_links_link_uniq
 create table if not exists budget_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  event_id text references events(id) on delete set null
+  event_id text references events(id) on delete set null,
+  -- Rencana UTAMA edisi ini (0048). RAB Minimal dan RAB Maksimal adalah dua
+  -- skenario untuk uang yang sama, jadi Dashboard membaca satu rencana saja,
+  -- bukan jumlah semuanya. Pola yang sama dengan prospects.is_primary (0022).
+  is_primary boolean not null default false
 );
+-- Untuk database yang tabelnya sudah ada sebelum 0048.
+alter table budget_plans add column if not exists is_primary boolean not null default false;
+-- Paling banyak satu rencana utama per edisi, ditegakkan database dan bukan
+-- sekadar dijaga aplikasi.
+create unique index if not exists budget_plans_primary_uniq
+  on budget_plans(event_id) where is_primary;
 create table if not exists budget_items (
   id uuid primary key default gen_random_uuid(),
   plan_id uuid references budget_plans(id) on delete cascade,
@@ -317,6 +327,36 @@ alter table budget_items drop constraint if exists budget_items_category_color_h
 alter table budget_items add constraint budget_items_category_color_hex
   check (category_color is null or category_color ~* '^#([0-9a-f]{3}|[0-9a-f]{6})$');
 create index if not exists budget_items_plan_idx on budget_items(plan_id);
+
+-- Menunjuk rencana utama untuk edisi yang belum punya (0048). Aturannya sama
+-- dengan yang dipakai aplikasi saat tidak ada yang ditunjuk: total terbesar yang
+-- menang, karena RAB Maksimal yang biasanya dipegang saat pengajuan. Hanya
+-- menyentuh edisi tanpa rencana utama, jadi pilihan yang sudah dibuat orang
+-- tidak pernah ditimpa oleh jalan ulang skrip ini. `is not distinct from` supaya
+-- rencana ber-event_id NULL (edisinya sudah dihapus) tidak lolos lewat NULL.
+with ranked as (
+  select p.id,
+         row_number() over (
+           partition by p.event_id
+           order by coalesce(s.total, 0) desc, p.name asc, p.id asc
+         ) as rn
+    from budget_plans p
+    left join (
+      select plan_id, sum(coalesce(total, 0)) as total
+        from budget_items
+       group by plan_id
+    ) s on s.plan_id = p.id
+   where not exists (
+     select 1 from budget_plans q
+      where q.is_primary
+        and q.event_id is not distinct from p.event_id
+   )
+)
+update budget_plans b
+   set is_primary = true
+  from ranked r
+ where b.id = r.id
+   and r.rn = 1;
 
 -- 2.10 rundown -----------------------------------------------------
 -- job_lo … job_opr adalah kolom warisan: tidak lagi ditulis, tapi masih dibaca

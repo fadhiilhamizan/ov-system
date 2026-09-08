@@ -199,6 +199,12 @@ export function systemPassages(): Passage[] {
 
     p("budget", "Struktur data: anggaran (RAB)", "/budget",
       "Anggaran berisi satu atau beberapa RENCANA (RAB) per Ormawa Visit, dan tiap rencana berisi item. " +
+      "Satu rencana ditandai sebagai RENCANA UTAMA, dan totalnya itulah angka anggaran edisi tersebut: " +
+      "itu yang tampil di Dashboard, di kartu atas halaman Anggaran, dan di daftar Ormawa Visit. " +
+      "Rencana lain (misalnya RAB Minimal di samping RAB Maksimal) adalah SKENARIO pembanding untuk uang " +
+      "yang sama, jadi totalnya TIDAK dijumlahkan dengan rencana utama. " +
+      "Rencana pertama sebuah Ormawa Visit otomatis menjadi rencana utama, dan hanya boleh ada SATU " +
+      "rencana utama per Ormawa Visit: menunjuk yang baru otomatis melepas yang lama. " +
       "Satu item menyimpan: kategori, nomor, nama, qty (jumlah), satuan, harga satuan, dan total. " +
       "Total dihitung dari qty dikali harga satuan dan selalu dibulatkan ke rupiah utuh. " +
       "Warna titik kategori dimiliki oleh KATEGORINYA, bukan oleh satu item: menggantinya mengubah warna " +

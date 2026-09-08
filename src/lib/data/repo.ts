@@ -5,6 +5,7 @@ import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
 import { divisionFields, memberInDivision } from "../members";
+import { planTotal, primaryBudgetPlan } from "../budget";
 import { uid } from "../utils";
 import type {
   BudgetItem,
@@ -623,15 +624,26 @@ export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan
   // every event's budget, then fetch only those plans' items.
   let pq = client.from("budget_plans").select("*");
   if (eventId) pq = pq.eq("event_id", eventId);
-  const { data: plans } = await pq;
-  const planIds = (plans ?? []).map((p: { id: string }) => p.id);
-  const { data: items } = planIds.length
-    ? await client.from("budget_items").select("*").in("plan_id", planIds).order("order")
-    : { data: [] as (BudgetItem & { plan_id: string })[] };
-  const list = (plans ?? []).map((p: { id: string; name: string; event_id: string }) => ({
+  // `select("*")`, so a database that has not run 0048 yet simply returns rows
+  // without `is_primary` rather than erroring on an unknown column - which is
+  // why this can go through readRows without blanking the page on the demo
+  // project. The flag is read defensively below for the same reason.
+  const plans = await readRows<{ id: string; name: string; event_id: string; is_primary?: boolean }[]>(
+    "budget plans", pq, [],
+  );
+  const planIds = plans.map((p) => p.id);
+  const items = planIds.length
+    ? await readRows<(BudgetItem & { plan_id: string })[]>(
+        "budget items",
+        client.from("budget_items").select("*").in("plan_id", planIds).order("order"),
+        [],
+      )
+    : [];
+  const list = plans.map((p) => ({
     id: p.id,
     name: p.name,
     event_id: p.event_id,
+    is_primary: !!p.is_primary,
     items: (items ?? [])
       .filter((i: { plan_id: string }) => i.plan_id === p.id)
       .map(
@@ -763,7 +775,45 @@ export async function moveBudgetItem(itemId: string, category: string, orderedId
   if (error) throw new Error(error.message);
 }
 export async function createBudgetPlan(input: { name: string; event_id: string }) {
-  await must((await sb()).from("budget_plans").insert({ name: input.name, event_id: input.event_id }));
+  const client = await sb();
+  // The FIRST plan of an edition is its main one: with one plan there is no
+  // choice to make, and making somebody press a button to say so would be a
+  // ritual. Later plans arrive unmarked, so adding "RAB Maksimal" beside the
+  // one already in use never silently moves what Dashboard reports.
+  const existing = await readRows<{ id: string }[]>(
+    "budget plan count",
+    client.from("budget_plans").select("id").eq("event_id", input.event_id).limit(1),
+    [],
+  );
+  await must(client.from("budget_plans").insert({
+    name: input.name,
+    event_id: input.event_id,
+    is_primary: existing.length === 0,
+  }));
+}
+
+/**
+ * Make one plan its edition's main one, clearing whichever held it before.
+ *
+ * Two statements rather than an RPC, and the order matters: the partial unique
+ * index (0048) forbids two primaries at once, so the old one is released first.
+ * Same shape as `setPrimaryProspect`. A failure between the two leaves the
+ * edition with NO marked plan, which is a state the app already handles -
+ * `primaryBudgetPlan` falls back to the largest plan - rather than a corrupt
+ * one, which is why this does not need the transactional treatment
+ * `move_budget_item` got.
+ */
+export async function setPrimaryBudgetPlan(planId: string) {
+  const client = await sb();
+  const plan = await must(
+    client.from("budget_plans").select("id, event_id").eq("id", planId).maybeSingle(),
+  ) as { id: string; event_id: string | null } | null;
+  if (!plan) throw new Error("Rencana anggaran tidak ditemukan.");
+  if (plan.event_id) {
+    await must(client.from("budget_plans").update({ is_primary: false })
+      .eq("event_id", plan.event_id).eq("is_primary", true));
+  }
+  await must(client.from("budget_plans").update({ is_primary: true }).eq("id", planId));
 }
 export async function deleteBudgetPlan(id: string) {
   await must((await sb()).from("budget_plans").delete().eq("id", id));
@@ -940,9 +990,19 @@ export async function prospectStats(eventId?: string) {
   return { total: prospects.length, stages, prospects };
 }
 
+/**
+ * What this edition plans to spend: its MAIN plan's total, not every plan added
+ * together.
+ *
+ * Summing them was wrong in a way that got worse the more carefully the budget
+ * was prepared: "RAB Minimal" and "RAB Maksimal" are two scenarios for the same
+ * money, so an edition with both reported roughly double what it would ever
+ * spend, and drafting a third scenario made the Dashboard figure grow again.
+ * `primaryBudgetPlan` decides which plan that is.
+ */
 export async function budgetTotal(eventId?: string) {
-  const plans = await getBudgetPlans(eventId);
-  return plans.reduce((sum, p) => sum + p.items.reduce((s, i) => s + (i.total ?? 0), 0), 0);
+  const plan = primaryBudgetPlan(await getBudgetPlans(eventId));
+  return plan ? planTotal(plan) : 0;
 }
 
 // helper: drop client-only id before insert/update

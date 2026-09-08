@@ -720,6 +720,13 @@ export const EN: Record<string, string> = {
 
   // Budget category colour
   "Warna kategori": "Category colour",
+  // Rencana anggaran utama (v1.44.0)
+  "Rencana Utama": "Main plan",
+  "Rencana utama": "Main plan",
+  "Jadikan rencana utama": "Make this the main plan",
+  "Rencana utama diperbarui": "Main plan updated",
+  "Total (dipakai Dashboard)": "Total (used on the Dashboard)",
+  "Belum ada rencana anggaran": "No budget plan yet",
   "Ubah warna kategori": "Change category colour",
   "Warna kategori diperbarui": "Category colour updated",
   "Warna berlaku untuk seluruh item pada kategori ini.":

@@ -9,6 +9,7 @@ import { getCompareEntries, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-
 import { getActiveEvent } from "@/lib/session";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { memberDivisions, memberInDivision } from "@/lib/members";
+import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import type { AppUser, Division, Member, OVEvent, Task } from "@/lib/types";
 import type { Passage } from "./retrieve";
 
@@ -257,9 +258,12 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
           rundownCount: forEvent(allRundown, e.id).length,
           jobCount: forEvent(allJobs, e.id).length,
           linkCount: forEvent(allLinks, e.id).length,
-          budgetTotal: allPlans
-            .filter((p) => p.event_id === e.id)
-            .reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0),
+          // The MAIN plan's total, not every plan added together: two RAB
+          // scenarios are two figures for the same money. Same rule the
+          // Dashboard uses, so the two can never disagree.
+          budgetTotal: planTotal(
+            primaryBudgetPlan(allPlans.filter((p) => p.event_id === e.id)) ?? { items: [] },
+          ),
           canSeeRoster,
         }),
         e.id === event.id
@@ -483,19 +487,27 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   // ---- Budget --------------------------------------------------------------
 
   if (plans.length) {
-    const grand = plans.reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0);
+    // "Berapa anggaran Ormawa Visit ini" has ONE right answer, and it is the
+    // main plan's total. Adding the scenarios up used to answer with a number
+    // nobody would ever spend, and it grew every time someone drafted another
+    // scenario.
+    const main = primaryBudgetPlan(plans);
     out.push({
       id: "live-budget",
       source: "Data: Anggaran",
       href: "/budget",
       text: sentence(
-        `Anggaran (RAB) ${event.title}: ${plans.length} rencana, total keseluruhan ${formatRupiah(grand)}.`,
-        `${plans.map((p) => `${p.name} (${p.items.length} item)`).join(", ")}.`,
+        `Anggaran (RAB) ${event.title}: ${plans.length} rencana.`,
+        main &&
+          `Rencana utama (yang dipakai sebagai angka anggaran edisi ini, tampil juga di Dashboard) adalah "${main.name}", total ${formatRupiah(planTotal(main))}.`,
+        plans.length > 1 &&
+          "Rencana lain adalah skenario pembanding (misalnya RAB Minimal dan RAB Maksimal), jadi totalnya TIDAK dijumlahkan: anggaran edisi ini adalah total rencana utamanya saja.",
+        `${plans.map((p) => `${p.name} (${p.items.length} item, ${formatRupiah(planTotal(p))}${p.id === main?.id ? ", rencana utama" : ""})`).join(", ")}.`,
       ),
     });
 
     for (const plan of plans) {
-      const total = plan.items.reduce((a, i) => a + (i.total ?? 0), 0);
+      const total = planTotal(plan);
       const byCategory = new Map<string, number>();
       for (const i of plan.items) {
         byCategory.set(i.category, (byCategory.get(i.category) ?? 0) + (i.total ?? 0));
@@ -507,6 +519,9 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
         href: "/budget",
         text: sentence(
           `Rencana anggaran (RAB) "${plan.name}" pada Ormawa Visit ${event.title}.`,
+          plan.id === main?.id
+            ? "Ini rencana UTAMA edisi ini: totalnya yang dipakai sebagai angka anggaran di Dashboard."
+            : "Ini bukan rencana utama, jadi totalnya adalah skenario pembanding dan tidak dipakai sebagai angka anggaran edisi.",
           `Total ${formatRupiah(total)} dari ${plan.items.length} item.`,
           byCategory.size &&
             `Per kategori: ${[...byCategory].map(([c, v]) => `${c || "tanpa kategori"} ${formatRupiah(v)}`).join(", ")}.`,

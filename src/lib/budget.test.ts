@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { categoryDropId, planAfterDrag } from "./budget";
-import type { BudgetItem } from "./types";
+import { categoryDropId, planAfterDrag, planTotal, primaryBudgetPlan } from "./budget";
+import type { BudgetItem, BudgetPlan } from "./types";
 
 // ============================================================
 // Dragging an item around the RAB table.
@@ -107,5 +107,65 @@ describe("planAfterDrag - dropping on a category heading", () => {
     const items = [...plan(), item("cat:KONSUMSI", "LAIN-LAIN")];
     const r = planAfterDrag(items, "a", categoryDropId("LAIN-LAIN"))!;
     expect(r.category).toBe("LAIN-LAIN");
+  });
+});
+
+// ============================================================
+// Which plan the edition's figure comes from.
+//
+// Dashboard used to SUM every plan, which misreads what a plan is: "RAB
+// Minimal" and "RAB Maksimal" are two scenarios for the same money, so the
+// figure was roughly double and grew again with every scenario drafted.
+// ============================================================
+
+const budgetPlan = (
+  id: string, name: string, total: number, is_primary = false,
+): BudgetPlan => ({
+  id, name, event_id: "ov1", is_primary,
+  items: total ? [{ ...item("x", "KONSUMSI"), id: `${id}-i`, total }] : [],
+});
+
+describe("primaryBudgetPlan", () => {
+  it("has no answer when there are no plans", () => {
+    expect(primaryBudgetPlan([])).toBeNull();
+  });
+
+  it("uses the single plan without needing it marked", () => {
+    // "One plan means that plan" - making somebody press a button to confirm
+    // the obvious would be a ritual.
+    expect(primaryBudgetPlan([budgetPlan("a", "RAB", 500)])?.id).toBe("a");
+  });
+
+  it("prefers the marked plan even when it is not the biggest", () => {
+    const picked = primaryBudgetPlan([
+      budgetPlan("a", "RAB Maksimal", 900),
+      budgetPlan("b", "RAB Fix", 400, true),
+    ]);
+    expect(picked?.id).toBe("b");
+  });
+
+  it("falls back to the biggest plan when nothing is marked", () => {
+    // The same rule migration 0048 backfills with, so an edition that has not
+    // been through it (the demo project, or one cloned from another edition -
+    // the clone deliberately does not carry the flag) still reports the plan
+    // the database would have chosen.
+    const picked = primaryBudgetPlan([
+      budgetPlan("a", "RAB Minimal", 400),
+      budgetPlan("b", "RAB Maksimal", 900),
+      budgetPlan("c", "RAB Draft", 100),
+    ]);
+    expect(picked?.id).toBe("b");
+  });
+
+  it("breaks a tie the same way every time", () => {
+    const plans = [budgetPlan("z", "Beta", 500), budgetPlan("y", "Alfa", 500)];
+    expect(primaryBudgetPlan(plans)?.id).toBe("y");
+    expect(primaryBudgetPlan([...plans].reverse())?.id).toBe("y");
+  });
+
+  it("never sums the scenarios", () => {
+    // The whole point: two scenarios for the same money is ONE figure.
+    const plans = [budgetPlan("a", "RAB Minimal", 400), budgetPlan("b", "RAB Maksimal", 900)];
+    expect(planTotal(primaryBudgetPlan(plans)!)).toBe(900);
   });
 });

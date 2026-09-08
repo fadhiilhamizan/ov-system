@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wallet, Layers, Receipt } from "lucide-react";
 import { formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/empty";
+import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata = { title: "Anggaran" };
@@ -23,7 +24,10 @@ export default async function BudgetPage() {
   const plans = await getBudgetPlans(event.id);
   const t = await getT();
 
-  const grand = plans.reduce((s, p) => s + p.items.reduce((a, i) => a + (i.total ?? 0), 0), 0);
+  // The headline figure is the MAIN plan's total, not every plan added up: two
+  // RAB scenarios are two figures for the same money, so the old sum reported
+  // an amount nobody would ever spend and grew with each scenario drafted.
+  const main = primaryBudgetPlan(plans);
   const itemCount = plans.reduce((s, p) => s + p.items.length, 0);
 
   return (
@@ -40,7 +44,13 @@ export default async function BudgetPage() {
       />
 
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <StatCard label={t("Total Rencana Anggaran")} value={formatRupiah(grand)} icon={<Wallet />} accent="#0ea5e9" />
+        <StatCard
+          label={t("Anggaran Edisi")}
+          value={formatRupiah(main ? planTotal(main) : 0)}
+          sub={main ? `${t("Rencana utama")}: ${main.name}` : undefined}
+          icon={<Wallet />}
+          accent="#0ea5e9"
+        />
         <StatCard label={t("Skenario / Plan")} value={plans.length} icon={<Layers />} accent="#6366f1" />
         <StatCard label={t("Total Item")} value={itemCount} icon={<Receipt />} accent="#f59e0b" />
       </div>
