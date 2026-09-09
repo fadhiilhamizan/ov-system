@@ -53,6 +53,18 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.45.0",
+    date: "2026-09-09",
+    title: "Violet bisa dipakai lagi, dan modelnya sekarang bisa diganti sendiri",
+    changes: [
+      { kind: "fix", text: "Violet menolak setiap pertanyaan dengan \"Layanan AI yang dipakai Violet sedang bermasalah\". Penyebabnya dua nama model yang sudah tidak berlaku lagi: model utama Google dialihkan ke model baru yang menjawab \"sedang penuh\" pada empat dari enam permintaan, dan model cadangan Groq sudah dihapus sepenuhnya sehingga selalu balas 404. Karena keduanya mati, Violet tidak punya jalan lain untuk dicoba." },
+      { kind: "new", text: "Ada pemilih model di kepala panel Violet. Selain Otomatis, tersedia dua model Google dan tiga model Groq, masing-masing dengan keterangan kapan cocok dipakai. Pilihannya diingat di perangkatmu." },
+      { kind: "new", text: "Tiap jawaban Violet kini mencantumkan model yang menulisnya, jadi mengganti model terlihat hasilnya." },
+      { kind: "fix", text: "Kalau model AI kehabisan jatah jawaban karena terlalu lama \"berpikir\", pesannya sekarang menyarankan ganti model, bukan menyuruh mengulang pertanyaan yang tidak akan menolong." },
+      { kind: "fix", text: "Sebagian model menuliskan proses berpikirnya ke dalam jawaban. Bagian itu kini dibuang, jadi yang tampil hanya jawabannya." },
+    ],
+  },
+  {
     version: "1.44.0",
     date: "2026-09-02",
     title: "Angka anggaran di Dashboard sekarang satu rencana, bukan semuanya dijumlahkan",

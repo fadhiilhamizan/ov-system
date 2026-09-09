@@ -32,6 +32,17 @@ export type VioletErrorCode =
   | "safety"
   /** The model answered with nothing usable. */
   | "empty"
+  /**
+   * The model spent its whole output allowance before writing any answer.
+   *
+   * Its own cause, not a flavour of "empty", because it has a different fix and
+   * a different culprit. A THINKING model reasons in hidden tokens that come out
+   * of the same budget as the answer, so with a tight `maxOutputTokens` it can
+   * hit the ceiling having produced nothing at all. Telling someone to "rephrase
+   * the question" (the `empty` advice) sends them chasing a problem that is not
+   * theirs: the fix is another model.
+   */
+  | "no_output"
   /** Anything we could not place. */
   | "unknown";
 
@@ -102,6 +113,12 @@ const COPY: Record<VioletErrorCode, Copy> = {
   },
   empty: {
     message: "Violet tidak jadi menjawab. Coba ulangi pertanyaannya dengan kalimat yang berbeda.",
+    retryable: true,
+    failover: true,
+  },
+  no_output: {
+    message:
+      "Model AI yang dipakai kehabisan jatah jawaban sebelum sempat menjawab, biasanya karena model itu \"berpikir\" terlalu panjang. Ganti modelnya lewat tombol model di atas (Gemini Flash Lite paling aman), atau persingkat pertanyaanmu.",
     retryable: true,
     failover: true,
   },

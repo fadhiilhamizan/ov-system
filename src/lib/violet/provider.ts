@@ -23,13 +23,18 @@ export interface LlmProvider {
   label: string;
   /** False when its key is missing: the chain skips it silently. */
   configured(): boolean;
+  /** The provider's own default model id, for the "answered by" note when the
+   *  caller pinned nothing. */
+  defaultModel(): string;
   /** `timeoutMs` is what the CHAIN has left to give, not this provider's own
-   *  ceiling - see CHAIN_BUDGET_MS. Defaults to PROVIDER_TIMEOUT_MS. */
+   *  ceiling - see CHAIN_BUDGET_MS. Defaults to PROVIDER_TIMEOUT_MS.
+   *  `model` pins one from lib/violet/models.ts; omitted means the default. */
   generate(
     system: string,
     history: Turn[],
     question: string,
     timeoutMs?: number,
+    model?: string,
   ): Promise<LlmResult>;
 }
 
@@ -72,4 +77,22 @@ export function classifyThrow(e: unknown): VioletError {
     return { code: "timeout", detail: name };
   }
   return { code: "network", detail: e instanceof Error ? e.message : String(e) };
+}
+
+/**
+ * Clean one model's raw answer before anybody sees it.
+ *
+ * Some open-weight models emit their reasoning inline, wrapped in `<think>`
+ * tags, instead of in a separate field. Qwen 3.6 on Groq does exactly this: ask
+ * it a one-line factual question and the answer begins "<think> Here's a
+ * thinking process: 1. Analyse user input...". That is not an answer, it is the
+ * model's scratchpad, and the markdown renderer would print the whole thing.
+ *
+ * Only a leading, properly closed block is removed. An UNCLOSED `<think>` is
+ * left alone deliberately: it means the model was cut off mid-thought and there
+ * is no answer behind it, so stripping would turn a visible failure into a
+ * blank bubble, and a blank bubble is reported as `empty` further up.
+ */
+export function cleanAnswer(raw: string): string {
+  return raw.replace(/^\s*<think>[\s\S]*?<\/think>\s*/i, "").trim();
 }

@@ -2,14 +2,17 @@
 import * as React from "react";
 import {
   Sparkles, Send, X, ExternalLink, Trash2, RotateCw, Copy, Check,
-  AlertTriangle,
+  AlertTriangle, Cpu, ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import { askVioletAction, type VioletSource } from "@/lib/actions/violet";
 import { toPlainText } from "@/lib/violet/markdown";
 import { scrollToAnchor } from "@/lib/scroll-to-anchor";
 import { useT } from "@/lib/i18n/provider";
+import { cn } from "@/lib/utils";
 import { RichText } from "./rich-text";
+import { VIOLET_MODELS, modelLabel } from "@/lib/violet/models";
+import { AUTO, setModelPref, useModelPref } from "@/lib/violet/model-pref";
 
 interface Msg {
   role: "user" | "model";
@@ -19,6 +22,9 @@ interface Msg {
   failed?: boolean;
   /** Whether a "try again" button is worth offering (see lib/violet/errors). */
   retryable?: boolean;
+  /** Which model wrote it. Shown under the bubble, so switching the picker has
+   *  visible consequences rather than being an act of faith. */
+  model?: string;
 }
 
 const SUGGESTIONS = [
@@ -44,6 +50,11 @@ export function VioletChat() {
   const [pending, setPending] = React.useState(false);
   /** The last question, so a failed turn can be retried without retyping it. */
   const [lastAsked, setLastAsked] = React.useState("");
+  // Read through an external store, not state-plus-effect: this component is
+  // server-rendered inside the app shell, so it needs a server snapshot rather
+  // than a first render with the wrong value. See lib/violet/model-pref.ts.
+  const model = useModelPref();
+  const [modelOpen, setModelOpen] = React.useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -91,6 +102,11 @@ export function VioletChat() {
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  function chooseModel(next: string) {
+    setModelPref(next);
+    setModelOpen(false);
+  }
+
   async function ask(question: string, { replaceLast = false } = {}) {
     const q = question.trim();
     if (!q || pending) return;
@@ -109,12 +125,15 @@ export function VioletChat() {
 
     setMsgs(base);
     setPending(true);
-    const res = await askVioletAction(q, history);
+    // AUTO is sent as undefined rather than the literal "auto": the server's
+    // whitelist would reject "auto" anyway, and "no pin" is exactly what the
+    // chain's normal behaviour is called there.
+    const res = await askVioletAction(q, history, model === AUTO ? undefined : model);
     setPending(false);
     setMsgs((prev) => [
       ...prev,
       res.ok
-        ? { role: "model", text: res.answer, sources: res.sources }
+        ? { role: "model", text: res.answer, sources: res.sources, model: res.model }
         : { role: "model", text: res.error, failed: true, retryable: res.retryable },
     ]);
     inputRef.current?.focus();
@@ -143,9 +162,20 @@ export function VioletChat() {
             </span>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="text-sm font-semibold">Violet</p>
-              <p className="truncate text-[11px] text-white/75">
-                {t("Asisten Ormawa Visit Management System")}
-              </p>
+              <button
+                type="button"
+                onClick={() => setModelOpen((o) => !o)}
+                aria-expanded={modelOpen}
+                aria-label={t("Ganti model AI")}
+                title={t("Ganti model AI")}
+                className="-ml-1 inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[11px] text-white/75 transition hover:bg-white/15 hover:text-white"
+              >
+                <Cpu className="size-3 shrink-0" />
+                <span className="truncate">
+                  {model === AUTO ? t("Model otomatis") : modelLabel(model)}
+                </span>
+                <ChevronDown className={cn("size-3 shrink-0 transition", modelOpen && "rotate-180")} />
+              </button>
             </div>
             {msgs.length > 0 && (
               <IconBtn onClick={() => setMsgs([])} label={t("Bersihkan percakapan")}>
@@ -156,6 +186,32 @@ export function VioletChat() {
               <X className="size-4" />
             </IconBtn>
           </div>
+
+          {modelOpen && (
+            <div className="max-h-64 overflow-y-auto border-b border-border bg-card p-2">
+              <p className="px-1.5 pb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t("Model AI")}
+              </p>
+              <ModelOption
+                active={model === AUTO}
+                label={t("Otomatis")}
+                note={t("Coba Gemini dulu, pindah ke Groq kalau kuotanya habis. Paling tahan gangguan.")}
+                onClick={() => chooseModel(AUTO)}
+              />
+              {VIOLET_MODELS.map((m) => (
+                <ModelOption
+                  key={m.id}
+                  active={model === m.id}
+                  label={m.label}
+                  note={t(m.note)}
+                  onClick={() => chooseModel(m.id)}
+                />
+              ))}
+              <p className="px-1.5 pt-1.5 text-[10px] leading-snug text-muted-foreground">
+                {t("Model yang dipilih dipakai apa adanya: kalau layanannya sedang bermasalah, Violet tidak diam-diam pindah ke model lain. Kembalikan ke Otomatis kalau ragu.")}
+              </p>
+            </div>
+          )}
 
           {/* Transcript */}
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto bg-muted/20 p-3">
@@ -309,6 +365,12 @@ function AnswerBubble({
           </div>
         )}
 
+        {msg.model && (
+          <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+            {t("Dijawab oleh")} {modelLabel(msg.model) ?? msg.model}
+          </p>
+        )}
+
         <button
           onClick={copy}
           aria-label={t("Salin jawaban")}
@@ -355,6 +417,44 @@ function ErrorBubble({
         )}
       </div>
     </div>
+  );
+}
+
+/** One row in the model picker. */
+function ModelOption({
+  active,
+  label,
+  note,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  note: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "flex w-full items-start gap-2 rounded-lg px-1.5 py-1.5 text-left transition",
+        active ? "bg-violet-50 dark:bg-violet-500/10" : "hover:bg-muted",
+      )}
+    >
+      <span
+        className={cn(
+          "mt-1 size-1.5 shrink-0 rounded-full",
+          active ? "bg-violet-500" : "bg-transparent ring-1 ring-border",
+        )}
+      />
+      <span className="min-w-0">
+        <span className={cn("block text-xs", active ? "font-semibold text-violet-700 dark:text-violet-300" : "font-medium")}>
+          {label}
+        </span>
+        <span className="block text-[10px] leading-snug text-muted-foreground">{note}</span>
+      </span>
+    </button>
   );
 }
 

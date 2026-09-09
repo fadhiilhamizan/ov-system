@@ -280,7 +280,13 @@ export function systemPassages(): Passage[] {
       "Rincian per baris tersedia untuk Ormawa Visit yang sedang DIBUKA; untuk edisi lain Violet tahu ringkasannya " +
       "(jumlah tugas, divisi, prospek, anggaran, dan daftar namanya), dan untuk rinciannya edisi itu perlu " +
       "dijadikan aktif dulu lewat pemilih Ormawa Visit di bagian atas. " +
-      "Percakapan dengan Violet tidak disimpan: menutup panel atau memuat ulang halaman menghapusnya."),
+      "Percakapan dengan Violet tidak disimpan: menutup panel atau memuat ulang halaman menghapusnya. " +
+      "MODEL AI-nya bisa diganti penanya sendiri lewat nama model di kepala panel Violet, tepat di bawah tulisan " +
+      "\"Violet\". Pilihannya: Otomatis (bawaan, boleh berpindah layanan sendiri kalau satu layanan penuh), " +
+      "dua model Google (Gemini Flash Lite dan Gemini Flash), dan tiga model Groq (GPT-OSS 120B, GPT-OSS 20B, " +
+      "Qwen 3.8 27B). Model yang dipilih sendiri dipakai apa adanya: kalau layanannya bermasalah Violet melapor " +
+      "gagal, tidak diam-diam memakai model lain. Pilihan itu diingat di perangkat penanya saja. " +
+      "Di bawah tiap jawaban tertulis model mana yang menulisnya."),
 
     p("glossary", "Istilah yang dipakai di sistem ini", "/faq",
       "Ormawa: organisasi mahasiswa. Ormawa Visit (OV): program kunjungan benchmarking antar himpunan. " +

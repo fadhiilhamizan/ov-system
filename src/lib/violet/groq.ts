@@ -1,6 +1,10 @@
 import "server-only";
 import { classifyHttp } from "./errors";
-import { classifyThrow, PROVIDER_TIMEOUT_MS, type LlmProvider, type LlmResult, type Turn } from "./provider";
+import {
+  cleanAnswer, classifyThrow, PROVIDER_TIMEOUT_MS,
+  type LlmProvider, type LlmResult, type Turn,
+} from "./provider";
+import { DEFAULT_MODEL } from "./models";
 
 // ============================================================
 // Groq. Violet's BACKUP provider.
@@ -22,12 +26,13 @@ import { classifyThrow, PROVIDER_TIMEOUT_MS, type LlmProvider, type LlmResult, t
 const ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
 /**
- * Groq retires model ids fairly often and the symptom is a 404 on every
- * question, so this is overridable via GROQ_MODEL without a deploy. The
- * default is their general-purpose instruct model, which is more than enough
- * for grounded question answering over a small context.
+ * Groq retires model ids often, and the symptom is a 404 on every question -
+ * which is precisely what happened to the old default, `llama-3.3-70b-versatile`
+ * (see ./models.ts). GROQ_MODEL still overrides without a deploy, which is the
+ * point of keeping the env var.
  */
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+const modelFor = (pinned?: string) =>
+  pinned || process.env.GROQ_MODEL || DEFAULT_MODEL.groq;
 
 const configured = () => !!process.env.GROQ_API_KEY;
 
@@ -36,10 +41,11 @@ async function generate(
   history: Turn[],
   question: string,
   timeoutMs: number = PROVIDER_TIMEOUT_MS,
+  pinned?: string,
 ): Promise<LlmResult> {
   const key = process.env.GROQ_API_KEY;
   if (!key) return { ok: false, error: { code: "not_configured" } };
-  const model = process.env.GROQ_MODEL || DEFAULT_MODEL;
+  const model = modelFor(pinned);
 
   let res: Response;
   try {
@@ -81,15 +87,19 @@ async function generate(
     choices?: { message?: { content?: string }; finish_reason?: string }[];
   } | null)?.choices?.[0];
 
-  const text = (choice?.message?.content ?? "").trim();
+  // `cleanAnswer` matters more here than on Gemini: the open-weight models Groq
+  // serves are a mixed bag about where reasoning goes. GPT-OSS puts it in a
+  // separate `reasoning` field (which we simply never read), but Qwen 3.6 writes
+  // it into `content` inside <think> tags.
+  const text = cleanAnswer(choice?.message?.content ?? "");
   if (!text) {
-    return {
-      ok: false,
-      error: {
-        code: choice?.finish_reason === "content_filter" ? "safety" : "empty",
-        detail: choice?.finish_reason,
-      },
-    };
+    // Same three-way split as Gemini: a length stop with nothing to show is a
+    // model that reasoned past its own allowance, not a model with nothing to
+    // say, and the two need opposite advice.
+    const reason = choice?.finish_reason;
+    const code =
+      reason === "content_filter" ? "safety" : reason === "length" ? "no_output" : "empty";
+    return { ok: false, error: { code, detail: reason } };
   }
   return { ok: true, text };
 }
@@ -98,5 +108,6 @@ export const groq: LlmProvider = {
   name: "groq",
   label: "Groq",
   configured,
+  defaultModel: () => modelFor(),
   generate,
 };

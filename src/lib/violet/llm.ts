@@ -6,6 +6,7 @@ import {
   CHAIN_BUDGET_MS, MIN_ATTEMPT_MS, PROVIDER_TIMEOUT_MS,
   type LlmProvider, type Turn,
 } from "./provider";
+import { resolveModel } from "./models";
 
 // ============================================================
 // One question, several providers, first usable answer wins.
@@ -22,7 +23,14 @@ import {
 const CHAIN: LlmProvider[] = [gemini, groq];
 
 export type GenerateResult =
-  | { ok: true; text: string; provider: LlmProvider["name"]; fallback: boolean }
+  | {
+      ok: true;
+      text: string;
+      provider: LlmProvider["name"];
+      fallback: boolean;
+      /** The model id that actually produced this answer. */
+      model: string;
+    }
   | { ok: false; error: VioletError };
 
 /** True when at least one provider has a key: the Violet button hangs off this. */
@@ -68,8 +76,20 @@ export async function generate(
   system: string,
   history: Turn[],
   question: string,
+  /** A model id from ./models.ts, or null to run the normal chain. */
+  pinnedModel?: string | null,
 ): Promise<GenerateResult> {
-  const usable = CHAIN.filter((p) => p.configured());
+  // A PINNED MODEL DOES NOT FAIL OVER, and that is the whole point of pinning.
+  //
+  // Somebody who picked "GPT-OSS 120B" because Gemini was giving them nonsense
+  // is not helped by quietly getting a Gemini answer instead; they would have
+  // no way to tell it happened, and would go on believing the switch did
+  // nothing. So a pin narrows the chain to that model's own provider, and a
+  // failure comes back as a failure with advice to switch back to Otomatis.
+  const pinned = resolveModel(pinnedModel);
+  const chain = pinned ? CHAIN.filter((p) => p.name === pinned.provider) : CHAIN;
+
+  const usable = chain.filter((p) => p.configured());
   if (!usable.length) return { ok: false, error: { code: "not_configured" } };
 
   let first: VioletError | null = null;
@@ -95,9 +115,15 @@ export async function generate(
     }
     const budget = Math.min(PROVIDER_TIMEOUT_MS, Math.max(left, MIN_ATTEMPT_MS));
 
-    const res = await provider.generate(system, history, question, budget);
+    const res = await provider.generate(system, history, question, budget, pinned?.id);
     if (res.ok) {
-      return { ok: true, text: res.text, provider: provider.name, fallback: i > 0 };
+      return {
+        ok: true,
+        text: res.text,
+        provider: provider.name,
+        fallback: i > 0,
+        model: pinned?.id ?? provider.defaultModel(),
+      };
     }
     first ??= res.error;
     // Logged, never shown: the provider's own wording routinely contains the

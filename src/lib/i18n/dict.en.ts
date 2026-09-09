@@ -727,6 +727,24 @@ export const EN: Record<string, string> = {
   "Rencana utama diperbarui": "Main plan updated",
   "Total (dipakai Dashboard)": "Total (used on the Dashboard)",
   "Belum ada rencana anggaran": "No budget plan yet",
+  // Violet: pemilih model (v1.45.0)
+  "Model AI": "AI model",
+  "Model otomatis": "Automatic model",
+  "Ganti model AI": "Change the AI model",
+  "Dijawab oleh": "Answered by",
+  "Coba Gemini dulu, pindah ke Groq kalau kuotanya habis. Paling tahan gangguan.":
+    "Tries Gemini first and moves to Groq when its quota runs out. The most resilient option.",
+  "Model yang dipilih dipakai apa adanya: kalau layanannya sedang bermasalah, Violet tidak diam-diam pindah ke model lain. Kembalikan ke Otomatis kalau ragu.":
+    "A chosen model is used as-is: if its service is having trouble, Violet will not quietly switch to another one. Set it back to Automatic if in doubt.",
+  "Cepat dan paling jarang gagal. Pilihan bawaan.": "Fast, and the least likely to fail. The default.",
+  "Jawaban lebih dalam, tapi sering penuh dan lebih lambat.":
+    "Deeper answers, but often busy and slower.",
+  "Paling teliti di Groq. Dipakai saat kuota Gemini habis.":
+    "The most careful one on Groq. Used when Gemini's quota is gone.",
+  "Lebih ringan dan lebih cepat, sedikit kurang teliti.":
+    "Lighter and faster, a little less careful.",
+  "Alternatif kalau dua di atas sedang bermasalah.":
+    "An alternative when the two above are having trouble.",
   "Ubah warna kategori": "Change category colour",
   "Warna kategori diperbarui": "Category colour updated",
   "Warna berlaku untuk seluruh item pada kategori ini.":

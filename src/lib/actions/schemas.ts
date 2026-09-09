@@ -254,6 +254,13 @@ export const violetAskSchema = z.object({
     .max(20, "Riwayat percakapan terlalu panjang.")
     .optional()
     .transform((v) => (v ?? []).slice(-6)),
+  // The model the chat's picker is set to. Length-capped and nothing more here:
+  // the real check is `resolveModel`, which returns an entry from the whitelist
+  // in lib/violet/models.ts or null, so an id that is not on that list can never
+  // reach a provider URL. Same shape as `resolveHref` for routes. Left as a
+  // plain string rather than a z.enum so adding a model does not mean editing
+  // two files that can drift apart.
+  model: z.string().trim().max(80).optional().transform((v) => v || null),
 });
 
 // ---------------- Budget ----------------

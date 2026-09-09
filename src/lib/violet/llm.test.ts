@@ -14,7 +14,7 @@ import type { LlmResult } from "./provider";
 // `llm.ts` freezes its CHAIN at module load, so the provider OBJECTS have to
 // exist before the mock factory runs. Hoisted, with swappable behaviour inside.
 const H = vi.hoisted(() => {
-  const calls: { name: string; timeoutMs: number | undefined }[] = [];
+  const calls: { name: string; timeoutMs: number | undefined; model?: string }[] = [];
   const behaviour: Record<string, { takesMs: number; result: unknown }> = {
     gemini: { takesMs: 0, result: { ok: true, text: "" } },
     groq: { takesMs: 0, result: { ok: true, text: "" } },
@@ -24,8 +24,9 @@ const H = vi.hoisted(() => {
     name,
     label: name,
     configured: () => true,
-    async generate(_s: string, _h: unknown[], _q: string, timeoutMs?: number) {
-      calls.push({ name, timeoutMs });
+    defaultModel: () => `${name}-default`,
+    async generate(_s: string, _h: unknown[], _q: string, timeoutMs?: number, model?: string) {
+      calls.push({ name, timeoutMs, model });
       // A real provider aborts at its signal, so it can never burn more wall
       // clock than the budget it was handed. Modelling that is the point: a
       // stub that ignores `timeoutMs` would measure the stub, not the chain.
@@ -156,5 +157,51 @@ describe("generate - failover rules still hold", () => {
       expect(res.provider).toBe("groq");
       expect(res.fallback).toBe(true);
     }
+  });
+});
+
+// ------------------------------------------------------------------
+// Pinning a model.
+//
+// The picker in the chat exists because both DEFAULTS went stale at once and
+// every question failed. Its promise is narrow and worth pinning down: the
+// model you chose is the model that answers, or you are told it did not.
+// ------------------------------------------------------------------
+describe("generate - a pinned model", () => {
+  it("passes the id to the provider that owns it", async () => {
+    stub("gemini", { takesMs: 10, result: FINE });
+    stub("groq", { takesMs: 10, result: FINE });
+    const res = await generate("s", [], "q", "openai/gpt-oss-120b");
+    expect(calls.map((c) => c.name)).toEqual(["groq"]);
+    expect(calls[0].model).toBe("openai/gpt-oss-120b");
+    if (res.ok) expect(res.model).toBe("openai/gpt-oss-120b");
+  });
+
+  it("does NOT fall back to the other provider", async () => {
+    // Silently answering with Gemini when the user picked a Groq model would
+    // make the picker look broken while hiding that it worked.
+    stub("gemini", { takesMs: 10, result: FINE });
+    stub("groq", { takesMs: 10, result: QUOTA });
+    const res = await generate("s", [], "q", "openai/gpt-oss-120b");
+    expect(calls.map((c) => c.name)).toEqual(["groq"]);
+    expect(res.ok).toBe(false);
+  });
+
+  it("ignores an id that is not on the whitelist", async () => {
+    // The id arrives from a browser. Anything unrecognised degrades to the
+    // normal chain rather than reaching a provider URL.
+    stub("gemini", { takesMs: 10, result: FINE });
+    const res = await generate("s", [], "q", "../../etc/passwd");
+    expect(calls.map((c) => c.name)).toEqual(["gemini"]);
+    expect(calls[0].model).toBeUndefined();
+    expect(res.ok).toBe(true);
+  });
+
+  it("runs the normal chain when nothing is pinned", async () => {
+    stub("gemini", { takesMs: 10, result: QUOTA });
+    stub("groq", { takesMs: 10, result: FINE });
+    const res = await generate("s", [], "q", null);
+    expect(calls.map((c) => c.name)).toEqual(["gemini", "groq"]);
+    if (res.ok) expect(res.model).toBe("groq-default");
   });
 });

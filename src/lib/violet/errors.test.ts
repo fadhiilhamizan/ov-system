@@ -36,10 +36,14 @@ describe("classifyHttp", () => {
 });
 
 describe("copy", () => {
-  const ALL: VioletErrorCode[] = [
-    "not_configured", "quota", "rate_limit", "auth", "unavailable",
-    "timeout", "network", "safety", "empty", "unknown",
-  ];
+  // Built from a Record so TYPESCRIPT keeps this list complete. It used to be a
+  // hand-written array, which meant adding a cause and forgetting to cover it
+  // was silent: the suite went on passing while the new cause had no copy test
+  // at all. `no_output` was added exactly that way.
+  const ALL = Object.keys({
+    not_configured: 1, quota: 1, rate_limit: 1, auth: 1, unavailable: 1,
+    timeout: 1, network: 1, safety: 1, empty: 1, no_output: 1, unknown: 1,
+  } satisfies Record<VioletErrorCode, number>) as VioletErrorCode[];
 
   it("has Indonesian copy for every cause", () => {
     for (const code of ALL) {
@@ -56,6 +60,19 @@ describe("copy", () => {
     expect(isRetryable("not_configured")).toBe(false);
     expect(isRetryable("rate_limit")).toBe(true);
     expect(isRetryable("unavailable")).toBe(true);
+  });
+
+  it("tells a user whose model ran out of room what to actually do", () => {
+    // The distinction that cost the outage its diagnosis. "empty" advises
+    // rephrasing the question, which cannot help when the model spent its whole
+    // allowance thinking; this one has to point at the model picker.
+    const msg = violetErrorMessage("no_output");
+    expect(msg).toMatch(/model/i);
+    expect(msg).not.toBe(violetErrorMessage("empty"));
+    // Worth another provider: the failure is a property of the model, not the
+    // question, so the backup has a real chance.
+    expect(shouldFailover("no_output")).toBe(true);
+    expect(isRetryable("no_output")).toBe(true);
   });
 
   it("does not burn the backup provider on a refusal", () => {

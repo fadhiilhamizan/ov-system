@@ -14,7 +14,14 @@ export interface VioletSource {
 }
 
 export type VioletResult =
-  | { ok: true; answer: string; sources: VioletSource[] }
+  | {
+      ok: true;
+      answer: string;
+      sources: VioletSource[];
+      /** Which model wrote this, so the chat can say so under the bubble.
+       *  Absent on the canned "nothing matched" reply, which no model wrote. */
+      model?: string;
+    }
   | { ok: false; error: string; code: VioletErrorCode; retryable: boolean };
 
 /** Wrap a failure so the chat can decide whether to offer a retry button. */
@@ -84,6 +91,8 @@ function systemPrompt(roleLabel: string, context: string): string {
 export async function askVioletAction(
   question: string,
   history: Turn[] = [],
+  /** The chat's model picker. Whitelisted server-side; see lib/violet/models.ts. */
+  model?: string | null,
 ): Promise<VioletResult> {
   const user = await getCurrentUser();
   if (!user) {
@@ -96,7 +105,7 @@ export async function askVioletAction(
   }
   if (!violetConfigured()) return fail("not_configured");
 
-  const v = parse(violetAskSchema, { question, history });
+  const v = parse(violetAskSchema, { question, history, model });
   if (!v.ok) return { ok: false, error: v.error, code: "unknown", retryable: false };
 
   let corpus;
@@ -130,6 +139,7 @@ export async function askVioletAction(
     systemPrompt(ROLE_META[user.role].label, buildContext(hits)),
     v.data.history,
     v.data.question,
+    v.data.model,
   );
   if (!res.ok) return fail(res.error.code);
 
@@ -142,5 +152,5 @@ export async function askVioletAction(
     .slice(0, 4)
     .map((h) => ({ source: h.source, href: resolveHref(h.href) }));
 
-  return { ok: true, answer: res.text, sources };
+  return { ok: true, answer: res.text, sources, model: res.model };
 }

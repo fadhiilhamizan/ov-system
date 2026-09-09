@@ -1,6 +1,10 @@
 import "server-only";
 import { classifyHttp } from "./errors";
-import { classifyThrow, PROVIDER_TIMEOUT_MS, type LlmProvider, type LlmResult, type Turn } from "./provider";
+import {
+  cleanAnswer, classifyThrow, PROVIDER_TIMEOUT_MS,
+  type LlmProvider, type LlmResult, type Turn,
+} from "./provider";
+import { DEFAULT_MODEL } from "./models";
 
 // ============================================================
 // Minimal Google Gemini client. Violet's primary provider.
@@ -19,16 +23,18 @@ import { classifyThrow, PROVIDER_TIMEOUT_MS, type LlmProvider, type LlmResult, t
 // ============================================================
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+
 /**
- * A rolling ALIAS, not a pinned version, and deliberately so.
+ * A rolling ALIAS, not a pinned version, and deliberately so - but an alias is
+ * not a free lunch, and which one you point at matters. See DEFAULT_MODEL in
+ * ./models.ts for what `gemini-flash-latest` did to this app.
  *
- * Pinning bit us immediately: `gemini-2.0-flash` was already retired, and the
- * only symptom was every question failing with "this model is no longer
- * available". The alias tracks whatever the current flash model is, which is
- * the right trade for a support chatbot. Pin it via GEMINI_MODEL if a specific
- * version is ever needed.
+ * Order of precedence: the id the caller pinned (validated against the picker's
+ * whitelist by the action), then GEMINI_MODEL from the environment, then the
+ * default. The env var is last-resort admin control, not a user preference.
  */
-const DEFAULT_MODEL = "gemini-flash-latest";
+const modelFor = (pinned?: string) =>
+  pinned || process.env.GEMINI_MODEL || DEFAULT_MODEL.gemini;
 
 const configured = () => !!process.env.GEMINI_API_KEY;
 
@@ -37,10 +43,11 @@ async function generate(
   history: Turn[],
   question: string,
   timeoutMs: number = PROVIDER_TIMEOUT_MS,
+  pinned?: string,
 ): Promise<LlmResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return { ok: false, error: { code: "not_configured" } };
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const model = modelFor(pinned);
 
   let res: Response;
   try {
@@ -81,17 +88,23 @@ async function generate(
     candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
   } | null)?.candidates?.[0];
 
-  const text = (candidate?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+  const text = cleanAnswer((candidate?.content?.parts ?? []).map((p) => p.text ?? "").join(""));
   if (!text) {
-    // A blocked candidate is not an outage, and must not fail over: the next
-    // provider would refuse the same question, just more slowly.
-    return {
-      ok: false,
-      error: {
-        code: candidate?.finishReason === "SAFETY" ? "safety" : "empty",
-        detail: candidate?.finishReason,
-      },
-    };
+    // Three different silences, and they must not be reported as one.
+    //
+    // MAX_TOKENS with nothing to show is the THINKING-MODEL failure: the model
+    // spent all 900 tokens reasoning and never started the answer. Measured on
+    // the real API - `gemini-flash-latest` now resolves to a thinking model,
+    // and a two-word question came back finishReason MAX_TOKENS, empty content,
+    // thoughtsTokenCount 32. It used to be reported as "empty", whose advice is
+    // to rephrase the question, which cannot possibly help.
+    //
+    // A blocked candidate is not an outage either, and must not fail over: the
+    // next provider would refuse the same question, just more slowly.
+    const reason = candidate?.finishReason;
+    const code =
+      reason === "SAFETY" ? "safety" : reason === "MAX_TOKENS" ? "no_output" : "empty";
+    return { ok: false, error: { code, detail: reason } };
   }
   return { ok: true, text };
 }
@@ -100,5 +113,6 @@ export const gemini: LlmProvider = {
   name: "gemini",
   label: "Google Gemini",
   configured,
+  defaultModel: () => modelFor(),
   generate,
 };
