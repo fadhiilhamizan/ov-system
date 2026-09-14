@@ -14,6 +14,8 @@ import { ErrorPanel } from "./error-panel";
 import { ConsolePanel } from "./console-panel";
 import { SystemPanel, type BuildInfo, type EnvFlag } from "./system-panel";
 import { ONLINE_WINDOW_MS } from "./presence-panel";
+import { APP_TIME_ZONE } from "@/lib/format";
+import { useNow } from "@/lib/use-now";
 import type {
   AccessCount, ActivityEntry, ActorStat, AppUser, ErrorEntry, PresenceEntry, TableCount,
 } from "@/lib/types";
@@ -44,14 +46,13 @@ export function DeveloperView({
   build: BuildInfo;
 }) {
   const openErrors = errors.filter((e) => !e.resolved).length;
-  // Read once at mount and re-ticked on a timer, not on every render: "who is
-  // online" is a moving target, and calling Date.now() while rendering makes
-  // the number depend on when React happened to re-run the component.
-  const [now, setNow] = React.useState(() => Date.now());
-  React.useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(t);
-  }, []);
+  // The server's clock, sent down with the page. It is what every panel here
+  // renders until hydration finishes, so the HTML and the first client paint
+  // agree on "who is online" - a locally-read Date.now() put the two a round
+  // trip apart and flipped anyone sitting near the 2,5-minute boundary.
+  const serverNow = Date.parse(build.serverTime);
+  // Ticks on a timer after hydration; never read during render. See lib/use-now.
+  const now = useNow(serverNow);
   const online = presence.filter((p) => now - new Date(p.last_seen).getTime() < ONLINE_WINDOW_MS);
   const lastEdit = activity[0];
 
@@ -125,15 +126,15 @@ export function DeveloperView({
           <TabsTrigger value="sistem"><Database /> Sistem</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="aktivitas"><ActivityFeed entries={activity} /></TabsContent>
-        <TabsContent value="online"><PresencePanel entries={presence} /></TabsContent>
+        <TabsContent value="aktivitas"><ActivityFeed entries={activity} serverNow={serverNow} /></TabsContent>
+        <TabsContent value="online"><PresencePanel entries={presence} serverNow={serverNow} /></TabsContent>
         <TabsContent value="akun">
           <div className="space-y-4">
-            <AccessPanel counts={access} />
-            <ActorPanel actors={actors} presence={presence} />
+            <AccessPanel counts={access} serverNow={serverNow} />
+            <ActorPanel actors={actors} presence={presence} serverNow={serverNow} />
           </div>
         </TabsContent>
-        <TabsContent value="error"><ErrorPanel errors={errors} /></TabsContent>
+        <TabsContent value="error"><ErrorPanel errors={errors} serverNow={serverNow} /></TabsContent>
         <TabsContent value="konsol"><ConsolePanel /></TabsContent>
         <TabsContent value="sistem"><SystemPanel env={env} build={build} counts={counts} /></TabsContent>
       </Tabs>
@@ -161,17 +162,28 @@ function Stat({
 export const verb = (action: string) =>
   action === "insert" ? "menambah" : action === "delete" ? "menghapus" : "mengubah";
 
-/** Full local timestamp. The audit trail is the one place a relative "2 jam
- *  lalu" is not good enough - you need to line it up against other evidence. */
+/** Full timestamp, always in the committee's timezone. The audit trail is the
+ *  one place a relative "2 jam lalu" is not good enough - you need to line it up
+ *  against other evidence.
+ *
+ *  `timeZone` is pinned rather than left to the host. Without it the server
+ *  formats in UTC and the browser in WIB, so every timestamp on this page was a
+ *  seven-hour hydration mismatch that React threw the subtree away over - see
+ *  `APP_TIME_ZONE` in lib/format.ts for why this app never reads the host clock. */
 export const full = (iso: string) =>
   new Date(iso).toLocaleString("id-ID", {
+    timeZone: APP_TIME_ZONE,
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit", second: "2-digit",
   });
 
-/** Compact "how long ago", for lists where the exact second is noise. */
-export function ago(iso: string): string {
-  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+/** Compact "how long ago", for lists where the exact second is noise.
+ *
+ *  `now` is passed IN rather than read here: a `Date.now()` inside a render is
+ *  a different number on the server than in the browser milliseconds later, and
+ *  the difference is visible in the text. Callers get theirs from `useNow`. */
+export function ago(iso: string, now: number): string {
+  const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
   if (s < 60) return `${s} detik lalu`;
   const m = Math.round(s / 60);
   if (m < 60) return `${m} menit lalu`;

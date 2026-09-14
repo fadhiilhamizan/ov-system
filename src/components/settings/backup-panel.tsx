@@ -16,6 +16,7 @@ import {
 } from "@/lib/actions/backup";
 import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
+import { APP_TIME_ZONE } from "@/lib/format";
 import type { BackupMeta } from "@/lib/backup";
 
 // "Otomatis" is legacy - scheduled backups were removed in v1.20.0. Kept so
@@ -26,9 +27,17 @@ const KIND_LABEL: Record<BackupMeta["kind"], { label: string; variant: "primary"
   pre_restore: { label: "Pra-Pemulihan", variant: "warning" },
 };
 
+/** Pinned to the committee's timezone, NOT the host's. Left to the host, the
+ *  server formats in UTC and the browser in WIB, so every snapshot timestamp on
+ *  this page was a seven-hour hydration mismatch (React #418) and the card was
+ *  thrown away and re-rendered on every load. */
 function formatTimestamp(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+  return d.toLocaleString("id-ID", {
+    timeZone: APP_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }) {

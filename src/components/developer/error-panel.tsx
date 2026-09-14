@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty";
 import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { deleteErrorAction, pruneErrorsAction, resolveErrorAction } from "@/lib/actions/developer";
 import { ago, full } from "./developer-view";
+import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import type { ErrorEntry } from "@/lib/types";
 
@@ -45,7 +46,7 @@ function asPlainText(groups: ErrorEntry[][]): string {
   const occurrences = groups.reduce((n, g) => n + g.length, 0);
   const lines: string[] = [
     "Catatan error - Ormawa Visit Management System",
-    `Disalin ${new Date().toLocaleString("id-ID")}`,
+    `Disalin ${full(new Date().toISOString())}`,
     `${groups.length} error unik, ${occurrences} kejadian`,
     "",
   ];
@@ -72,7 +73,16 @@ function asPlainText(groups: ErrorEntry[][]): string {
   return lines.join("\n");
 }
 
-export function ErrorPanel({ errors }: { errors: ErrorEntry[] }) {
+export function ErrorPanel({
+  errors,
+  serverNow,
+}: {
+  errors: ErrorEntry[];
+  /** The server's clock, so the relative labels rendered into the HTML and the
+   *  ones rendered while hydrating are the same. See lib/use-now. */
+  serverNow: number;
+}) {
+  const now = useNow(serverNow);
   const [kinds, setKinds] = React.useState<Set<string>>(new Set());
   const [showResolved, setShowResolved] = React.useState(false);
   const [pending, start] = React.useTransition();
@@ -157,14 +167,14 @@ export function ErrorPanel({ errors }: { errors: ErrorEntry[] }) {
         />
       ) : (
         <div className="space-y-1.5">
-          {groups.map((group) => <ErrorGroup key={group[0].message} group={group} />)}
+          {groups.map((group) => <ErrorGroup key={group[0].message} group={group} now={now} />)}
         </div>
       )}
     </div>
   );
 }
 
-function ErrorGroup({ group }: { group: ErrorEntry[] }) {
+function ErrorGroup({ group, now }: { group: ErrorEntry[]; now: number }) {
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   const latest = group[0];
@@ -205,7 +215,7 @@ function ErrorGroup({ group }: { group: ErrorEntry[] }) {
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
             <Badge variant="outline" className="px-1 py-0 text-[10px]">{KIND_LABEL[latest.kind] ?? latest.kind}</Badge>
             <span>{group.length}x</span>
-            <time dateTime={latest.at} title={full(latest.at)}>{ago(latest.at)}</time>
+            <time dateTime={latest.at} title={full(latest.at)}>{ago(latest.at, now)}</time>
             {people.size > 0 && <span>{people.size} akun</span>}
             {paths.size > 0 && <code className="font-mono">{[...paths].slice(0, 2).join(", ")}</code>}
           </p>

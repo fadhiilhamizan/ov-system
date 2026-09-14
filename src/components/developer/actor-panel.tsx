@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty";
 import { ago, full } from "./developer-view";
+import { useNow } from "@/lib/use-now";
 import type { ActorStat, PresenceEntry } from "@/lib/types";
 
 // ============================================================
@@ -22,7 +23,18 @@ import type { ActorStat, PresenceEntry } from "@/lib/types";
 // whole cabinet year.
 // ============================================================
 
-export function ActorPanel({ actors, presence }: { actors: ActorStat[]; presence: PresenceEntry[] }) {
+export function ActorPanel({
+  actors,
+  presence,
+  serverNow,
+}: {
+  actors: ActorStat[];
+  presence: PresenceEntry[];
+  /** The server's clock, so the relative labels rendered into the HTML and the
+   *  ones rendered while hydrating are the same. See lib/use-now. */
+  serverNow: number;
+}) {
+  const now = useNow(serverNow);
   const seen = React.useMemo(
     () => new Map(presence.map((p) => [p.user_id, p.last_seen])),
     [presence],
@@ -89,10 +101,10 @@ export function ActorPanel({ actors, presence }: { actors: ActorStat[]; presence
                   <TableCell className="text-right text-sm tabular-nums text-sky-600 dark:text-sky-400">{a.updates}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-danger">{a.deletes}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {a.last_edit ? <span title={full(a.last_edit)}>{ago(a.last_edit)}</span> : "-"}
+                    {a.last_edit ? <span title={full(a.last_edit)}>{ago(a.last_edit, now)}</span> : "-"}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {lastSeen ? <span title={full(lastSeen)}>{ago(lastSeen)}</span> : "-"}
+                    {lastSeen ? <span title={full(lastSeen)}>{ago(lastSeen, now)}</span> : "-"}
                   </TableCell>
                 </TableRow>
               );

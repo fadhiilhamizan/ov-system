@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useNow } from "@/lib/use-now";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -24,16 +25,20 @@ import type { PresenceEntry } from "@/lib/types";
 /** Two and a half beats: one missed heartbeat should not drop someone off. */
 export const ONLINE_WINDOW_MS = 150_000;
 
-export function PresencePanel({ entries }: { entries: PresenceEntry[] }) {
+export function PresencePanel({
+  entries,
+  serverNow,
+}: {
+  entries: PresenceEntry[];
+  /** The server's clock, so the online/offline split in the HTML and in the
+   *  hydrating render are the same one. */
+  serverNow: number;
+}) {
   const router = useRouter();
-  const [now, setNow] = React.useState(() => Date.now());
-
   // The rows are a server snapshot, but "3 menit lalu" ages while you read it.
-  // Re-ticking locally keeps the labels honest without re-querying.
-  React.useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(t);
-  }, []);
+  // Re-ticking keeps the labels honest without re-querying - and it starts from
+  // the server's own time, so hydration has nothing to disagree about.
+  const now = useNow(serverNow);
 
   const online = entries.filter((p) => now - new Date(p.last_seen).getTime() < ONLINE_WINDOW_MS);
   const recent = entries.filter((p) => now - new Date(p.last_seen).getTime() >= ONLINE_WINDOW_MS);
@@ -53,13 +58,13 @@ export function PresencePanel({ entries }: { entries: PresenceEntry[] }) {
         {online.length === 0 ? (
           <EmptyState icon={<RefreshCw />} title="Tidak ada yang online" description="Belum ada denyut dalam 2,5 menit terakhir." />
         ) : (
-          online.map((p) => <PersonRow key={p.user_id} p={p} live />)
+          online.map((p) => <PersonRow key={p.user_id} p={p} now={now} live />)
         )}
       </Section>
 
       {recent.length > 0 && (
         <Section title={`Baru saja di sini (${recent.length})`} dot="#94a3b8">
-          {recent.map((p) => <PersonRow key={p.user_id} p={p} />)}
+          {recent.map((p) => <PersonRow key={p.user_id} p={p} now={now} />)}
         </Section>
       )}
     </div>
@@ -78,7 +83,7 @@ function Section({ title, dot, children }: { title: string; dot: string; childre
   );
 }
 
-function PersonRow({ p, live = false }: { p: PresenceEntry; live?: boolean }) {
+function PersonRow({ p, now, live = false }: { p: PresenceEntry; now: number; live?: boolean }) {
   return (
     <Card className="flex items-center gap-3 p-3">
       <span className="relative">
@@ -96,7 +101,7 @@ function PersonRow({ p, live = false }: { p: PresenceEntry; live?: boolean }) {
       </code>
       {p.role && <Badge variant="outline" className="shrink-0 text-[10px]">{p.role}</Badge>}
       <time dateTime={p.last_seen} title={full(p.last_seen)} className="shrink-0 text-[11px] text-muted-foreground">
-        {ago(p.last_seen)}
+        {ago(p.last_seen, now)}
       </time>
     </Card>
   );

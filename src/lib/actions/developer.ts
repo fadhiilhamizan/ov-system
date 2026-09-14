@@ -75,6 +75,7 @@ export async function reportErrorAction(input: {
   message: string;
   stack?: string;
   path?: string;
+  digest?: string;
 }): Promise<void> {
   try {
     const user = await getOptionalUser();
@@ -84,7 +85,12 @@ export async function reportErrorAction(input: {
     const h = await headers();
     await reportError({
       kind: v.data.kind ?? "client",
-      message: v.data.message,
+      // Carried in the message rather than its own column so this needs no
+      // migration - and grouping by message then separates two crashes that
+      // share Next's one redacted sentence but have different causes.
+      message: v.data.digest
+        ? `${v.data.message} [digest ${v.data.digest}]`
+        : v.data.message,
       stack: v.data.stack,
       path: v.data.path,
       // Read server-side rather than trusted from the payload: the client has

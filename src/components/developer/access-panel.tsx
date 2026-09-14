@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useNow } from "@/lib/use-now";
 import { FlaskConical, UserRound } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -34,11 +35,19 @@ const META = {
   },
 } as const;
 
-export function AccessPanel({ counts }: { counts: AccessCount[] }) {
-  // Read the clock ONCE per mount rather than on every render: "today" is what
-  // splits the figures, and a value that changes between renders would make the
-  // numbers wobble for no visible reason.
-  const [now] = React.useState(() => Date.now());
+export function AccessPanel({
+  counts,
+  serverNow,
+}: {
+  counts: AccessCount[];
+  /** The server's clock, so the relative labels rendered into the HTML and the
+   *  ones rendered while hydrating are the same. See lib/use-now. */
+  serverNow: number;
+}) {
+  // "Today" is what splits the figures, so the clock has to be one both sides
+  // of hydration agree on - the server's, until the page is live. It only moves
+  // on the tick after that, so the numbers never wobble mid-render.
+  const now = useNow(serverNow);
   const today = new Date(now).toISOString().slice(0, 10);
   const since = (days: number) =>
     new Date(now - days * 86_400_000).toISOString().slice(0, 10);

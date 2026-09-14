@@ -31,6 +31,10 @@ export default function AppError({
       message: error.message || "Unknown error",
       stack: error.stack ?? "",
       path: typeof window === "undefined" ? "" : window.location.pathname,
+      // The digest is the whole report for a server-side failure: production
+      // replaces the real message with one fixed sentence, and this hash is
+      // what matches the row to the platform log entry that has the cause.
+      digest: error.digest,
     }).catch(() => {});
   }, [error]);
 

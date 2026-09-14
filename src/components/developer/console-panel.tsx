@@ -11,6 +11,7 @@ import {
   clearConsoleLines, getConsoleLines, subscribeConsole, type ConsoleLevel,
 } from "@/lib/dev-console";
 import { cn } from "@/lib/utils";
+import { APP_TIME_ZONE } from "@/lib/format";
 
 // ============================================================
 // The console, in the page.
@@ -134,7 +135,9 @@ export function ConsolePanel() {
   );
 }
 
+// Committee time, like every other timestamp in this menu. Left to the host
+// clock, a line captured in one place and read in another disagree by hours.
 const time = (ms: number) =>
-  new Date(ms).toLocaleTimeString("id-ID", { hour12: false }) +
+  new Date(ms).toLocaleTimeString("id-ID", { timeZone: APP_TIME_ZONE, hour12: false }) +
   "." +
   String(ms % 1000).padStart(3, "0");

@@ -10,6 +10,7 @@ import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { EmptyState } from "@/components/ui/empty";
 import { pruneActivityAction } from "@/lib/actions/developer";
 import { ago, full, verb } from "./developer-view";
+import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import type { ActivityEntry } from "@/lib/types";
 
@@ -35,7 +36,16 @@ const ACTION_META: Record<string, { label: string; className: string }> = {
 /** Columns nobody needs to see diffed - they change on every single write. */
 const NOISE = new Set(["updated_at", "created_at"]);
 
-export function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
+export function ActivityFeed({
+  entries,
+  serverNow,
+}: {
+  entries: ActivityEntry[];
+  /** The server's clock, so the relative labels rendered into the HTML and the
+   *  ones rendered while hydrating are the same. See lib/use-now. */
+  serverNow: number;
+}) {
+  const now = useNow(serverNow);
   const [q, setQ] = React.useState("");
   const [tables, setTables] = React.useState<Set<string>>(new Set());
   const [actions, setActions] = React.useState<Set<string>>(new Set());
@@ -133,14 +143,14 @@ export function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
         />
       ) : (
         <div className="space-y-1.5">
-          {rows.map((e) => <Row key={e.id} entry={e} />)}
+          {rows.map((e) => <Row key={e.id} entry={e} now={now} />)}
         </div>
       )}
     </div>
   );
 }
 
-function Row({ entry }: { entry: ActivityEntry }) {
+function Row({ entry, now }: { entry: ActivityEntry; now: number }) {
   const [open, setOpen] = React.useState(false);
   const meta = ACTION_META[entry.action] ?? ACTION_META.update;
   const changedKeys = Object.keys(entry.changed ?? {}).filter((k) => !NOISE.has(k));
@@ -164,7 +174,7 @@ function Row({ entry }: { entry: ActivityEntry }) {
             {entry.label && <> &ldquo;{entry.label}&rdquo;</>}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-            <time dateTime={entry.at} title={full(entry.at)}>{ago(entry.at)}</time>
+            <time dateTime={entry.at} title={full(entry.at)}>{ago(entry.at, now)}</time>
             {entry.actor_role && <Badge variant="outline" className="px-1 py-0 text-[10px]">{entry.actor_role}</Badge>}
             {changedKeys.length > 0 && <span>{changedKeys.length} kolom berubah: {changedKeys.slice(0, 4).join(", ")}{changedKeys.length > 4 ? "…" : ""}</span>}
             {entry.event_id && <span className="font-mono">{entry.event_id}</span>}

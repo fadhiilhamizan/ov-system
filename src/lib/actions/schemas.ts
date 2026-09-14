@@ -589,6 +589,13 @@ export const errorReportSchema = z.object({
   // runaway report from costing more storage than a thousand real ones.
   stack: z.string().trim().max(8000).optional().transform((v) => v ?? ""),
   path: z.string().trim().max(300).optional().transform((v) => v ?? ""),
+  // Next's digest for a server-side render failure. In production the real
+  // message is redacted before it ever reaches the browser, so the digest is
+  // the ONLY thing that ties the report to the line in the platform log that
+  // says what actually threw. Without it a boundary report reads "an error
+  // occurred in the Server Components render" and nothing more, which is how
+  // thirty-one crashes sat in this log for two weeks being un-diagnosable.
+  digest: z.string().trim().max(120).optional(),
 });
 
 export const pruneSchema = z.object({

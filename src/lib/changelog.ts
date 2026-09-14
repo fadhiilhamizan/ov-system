@@ -53,6 +53,16 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.45.1",
+    date: "2026-09-14",
+    title: "Halaman Developer & Pengaturan tidak lagi dimuat ulang sendiri saat dibuka",
+    changes: [
+      { kind: "fix", text: "Setiap jam pada halaman Developer dan Pengaturan ditulis memakai jam komputer yang memformatnya: server memakai UTC, browser memakai WIB. Selisih tujuh jam itu membuat React menganggap halamannya salah dan membuang lalu menggambar ulang seluruh bagian itu di tiap kali dibuka. Semua jam sekarang dipatok ke waktu WIB." },
+      { kind: "fix", text: "Label \"3 menit lalu\" dan pemisah Online/Pernah ke sini juga membaca jam lokal saat digambar, sehingga server dan browser menjawab berbeda. Keduanya kini berangkat dari jam server dan baru berdetak sendiri setelah halaman hidup." },
+      { kind: "fix", text: "Catatan error dari halaman yang gagal dimuat kini menyimpan kode digest-nya. Tanpa itu, seluruh kegagalan di sisi server tercatat dengan satu kalimat yang sama dan tidak bisa ditelusuri ke penyebabnya." },
+    ],
+  },
+  {
     version: "1.45.0",
     date: "2026-09-09",
     title: "Violet bisa dipakai lagi, dan modelnya sekarang bisa diganti sendiri",
