@@ -69,14 +69,28 @@ export function withDivisionAdded(
 }
 
 /**
- * The coordinator names of a division. Stored on the team row as a
- * comma-joined display name (a division may have none - that's valid).
+ * Split a stored roster string into display names.
+ *
+ * The separator is not just a comma. These strings were typed by hand long
+ * before member assignment existed, and the ones in the database separate names
+ * with a comma, a middle dot, or two spaces, in any combination. Three call
+ * sites had each grown their own copy of this regex, and `coordinatorNames` was
+ * the odd one out: it split on the comma alone, so a pair joined by a middle
+ * dot came back as ONE name that matched nobody on the roster.
+ */
+export function splitRoster(s: string | null | undefined): string[] {
+  return (s ?? "")
+    .split(/\s{2,}|,|·/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+/**
+ * The coordinator names of a division. Stored on the team row as a joined
+ * display name (a division may have none - that's valid).
  */
 export function coordinatorNames(team?: Pick<Team, "coordinator">): string[] {
-  return (team?.coordinator ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return splitRoster(team?.coordinator);
 }
 
 /** True when this member is the coordinator of the given division's team. */
@@ -84,4 +98,34 @@ export function isCoordinator(m: Pick<Member, "name" | "nickname">, team?: Pick<
   const names = coordinatorNames(team).map((n) => n.toLowerCase());
   if (!names.length) return false;
   return names.includes(memberLabel(m).toLowerCase()) || names.includes((m.name ?? "").toLowerCase());
+}
+
+/**
+ * Who the PIC picker offers for a task in `key`, in two parts.
+ *
+ * `inDivision` is the answer to the question the picker is actually asking, and
+ * it is what the division card shows: everyone whose roster row carries this
+ * division, plus its coordinator. The coordinator is there because the card
+ * prints them under "Koordinator" whether or not their roster row was ever
+ * assigned to the division, and a name you can see listed under a division but
+ * cannot pick as its PIC reads as the feature being broken.
+ *
+ * `others` is the rest of the edition's roster. Scoping the list to one
+ * division is a convenience, not a rule: a member with no division filled in
+ * yet, or someone genuinely helping another division, must still be
+ * assignable - refusing to is how "not all members appear" happens, whatever
+ * put the roster in that state.
+ */
+export function splitForDivision(
+  members: Member[],
+  key: DivisionKey,
+  team?: Pick<Team, "coordinator">,
+): { inDivision: Member[]; others: Member[] } {
+  const inDivision: Member[] = [];
+  const others: Member[] = [];
+  for (const m of members) {
+    if (memberInDivision(m, key) || isCoordinator(m, team)) inDivision.push(m);
+    else others.push(m);
+  }
+  return { inDivision, others };
 }

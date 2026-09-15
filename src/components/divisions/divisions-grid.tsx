@@ -15,7 +15,7 @@ import { AddDivisionButton, DivisionActions } from "@/components/divisions/divis
 import { STATUS_META } from "@/lib/constants";
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/actions/manage";
-import { memberInDivision, memberLabel } from "@/lib/members";
+import { memberInDivision, memberLabel, splitRoster } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Division, Member, Team } from "@/lib/types";
@@ -29,9 +29,6 @@ export interface DivisionStat {
   overtime: number;
   progress: number;
 }
-
-/** Split a comma/·/double-space joined roster string into display chips. */
-const roster = (s: string) => (s ?? "").split(/\s{2,}|,|·/).map((x) => x.trim()).filter(Boolean);
 
 /**
  * A division's team structure, DERIVED from the member roster: whoever has this
@@ -51,7 +48,7 @@ function TeamBlock({
   canManageMembers: boolean;
 }) {
   const t = useT();
-  const coord = roster(team?.coordinator ?? "");
+  const coord = splitRoster(team?.coordinator);
   const coordSet = new Set(coord.map((n) => n.toLowerCase()));
   const inDivision = members.filter((m) => memberInDivision(m, division.key));
   // The coordinator is listed on their own line, not repeated under Fungsionaris.
@@ -64,7 +61,7 @@ function TeamBlock({
   // was already entered ever disappears from the card.
   const legacy = inDivision.length
     ? { fung: [], intern: [] }
-    : { fung: roster(team?.fungsionaris ?? ""), intern: roster(team?.intern ?? "") };
+    : { fung: splitRoster(team?.fungsionaris), intern: splitRoster(team?.intern) };
   const empty =
     !coord.length && !fung.length && !intern.length && !legacy.fung.length && !legacy.intern.length;
 

@@ -7,6 +7,8 @@ import {
   divisionFields,
   coordinatorNames,
   isCoordinator,
+  splitForDivision,
+  splitRoster,
   withDivisionAdded,
 } from "./members";
 import type { Member } from "./types";
@@ -136,3 +138,61 @@ describe("withDivisionAdded", () => {
   });
 });
 
+describe("splitRoster", () => {
+  // These strings were typed by hand years before member assignment existed and
+  // they use whichever separator the typist reached for. Splitting on the comma
+  // alone - which `coordinatorNames` used to do - turns a pair into one name
+  // that matches nobody, so the division looks leaderless.
+  it("accepts commas, middle dots and double spaces", () => {
+    expect(splitRoster("Aul, Daniel")).toEqual(["Aul", "Daniel"]);
+    expect(splitRoster("Aul · Daniel")).toEqual(["Aul", "Daniel"]);
+    expect(splitRoster("Aul  Daniel")).toEqual(["Aul", "Daniel"]);
+    expect(splitRoster("Aul, Daniel · Mega")).toEqual(["Aul", "Daniel", "Mega"]);
+  });
+
+  it("keeps a single name with one internal space intact", () => {
+    expect(splitRoster("Budi Santoso")).toEqual(["Budi Santoso"]);
+  });
+
+  it("treats empty as no names", () => {
+    expect(splitRoster("")).toEqual([]);
+    expect(splitRoster(null)).toEqual([]);
+    expect(splitRoster(undefined)).toEqual([]);
+  });
+});
+
+describe("splitForDivision", () => {
+  const aul = m({ id: "a", name: "Auliya", nickname: "Aul", divisions: ["LO"] });
+  const dani = m({ id: "d", name: "Daniel", nickname: "Daniel", divisions: ["EVENT", "LO"] });
+  const mega = m({ id: "g", name: "Mega", nickname: "Mega", divisions: ["EVENT"] });
+  const none = m({ id: "n", name: "Nisrina", nickname: "Nisrina", divisions: [] });
+  const roster = [aul, dani, mega, none];
+
+  it("puts the division's own members first, by any of their divisions", () => {
+    const { inDivision } = splitForDivision(roster, "LO");
+    expect(inDivision.map((x) => x.id)).toEqual(["a", "d"]);
+  });
+
+  it("never drops anyone: the rest of the roster comes back as `others`", () => {
+    // This is the bug being fixed. Whatever left somebody without a division -
+    // an unfilled field, a roster imported before divisions existed - they still
+    // have to be pickable as a PIC.
+    const { inDivision, others } = splitForDivision(roster, "LO");
+    expect([...inDivision, ...others].map((x) => x.id).sort()).toEqual(["a", "d", "g", "n"]);
+    expect(others.map((x) => x.id)).toEqual(["g", "n"]);
+  });
+
+  it("counts the coordinator as in the division even when their row is not", () => {
+    // The division card prints the coordinator whether or not their roster row
+    // carries the division, so a picker that omits them contradicts the page
+    // the user just came from.
+    const { inDivision } = splitForDivision(roster, "LO", { coordinator: "Mega" });
+    expect(inDivision.map((x) => x.id)).toEqual(["a", "d", "g"]);
+  });
+
+  it("handles a division with no team row at all", () => {
+    const { inDivision, others } = splitForDivision(roster, "EVENT", undefined);
+    expect(inDivision.map((x) => x.id)).toEqual(["d", "g"]);
+    expect(others.map((x) => x.id)).toEqual(["a", "n"]);
+  });
+});

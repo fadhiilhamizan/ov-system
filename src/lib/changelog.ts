@@ -53,6 +53,27 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.45.3",
+    date: "2026-09-15",
+    title: "Pilihan PIC tidak lagi menyembunyikan anggota",
+    changes: [
+      { kind: "fix", text: "Pilihan PIC di form tugas memotong daftarnya pada anggota yang divisinya sudah diisi, jadi siapa pun yang belum punya divisi di Anggota EA sama sekali tidak bisa ditunjuk sebagai PIC. Sekarang anggota divisi itu tetap tampil paling atas, dan sisa anggota Ormawa Visit ini ada di bawahnya sebagai 'Anggota divisi lain'." },
+      { kind: "fix", text: "Koordinator divisi kini selalu ikut di bagian atas, walau baris anggotanya belum dimasukkan ke divisi itu. Kartu divisi memang sudah menampilkan namanya, jadi tidak masuk akal kalau namanya tidak bisa dipilih." },
+      { kind: "fix", text: "Kotak pencarian di pilihan PIC sekarang mencari di kedua bagian, dan pesan 'tidak ada yang cocok' hanya muncul kalau memang dua-duanya kosong." },
+      { kind: "fix", text: "Nama koordinator yang dipisah dengan titik tengah atau spasi ganda, bukan koma, tidak pernah cocok dengan anggota mana pun, sehingga divisinya terlihat tanpa koordinator. Ketiga tempat yang membaca daftar nama itu kini memakai pemisah yang sama." },
+      { kind: "fix", text: "Hal yang sama diterapkan pada 'Ubah massal' di Work Breakdown." },
+    ],
+  },
+  {
+    version: "1.45.2",
+    date: "2026-09-15",
+    title: "Halaman yang gagal dimuat sekarang mencatat penyebab aslinya",
+    changes: [
+      { kind: "fix", text: "Kalau sebuah halaman gagal dimuat, yang tercatat hanya kalimat bawaan React tanpa isi, karena penyebab aslinya memang disembunyikan sebelum sampai ke browser. Sekarang server ikut menuliskan pesan aslinya ke Catatan Error, dengan kode digest yang sama di kedua barisnya supaya keduanya bisa dicocokkan." },
+      { kind: "fix", text: "Kegagalan membaca data kini menyertakan kode kesalahannya, jadi sambungan yang putus, token kedaluwarsa, dan kueri yang kehabisan waktu bisa dibedakan, bukan cuma tiga kalimat yang bunyinya mirip." },
+    ],
+  },
+  {
     version: "1.45.1",
     date: "2026-09-14",
     title: "Halaman Developer & Pengaturan tidak lagi dimuat ulang sendiri saat dibuka",

@@ -82,6 +82,6 @@ describe("readRows", () => {
   it("names the read in the error, so the log points at the query", async () => {
     await expect(
       readRows("budget plans", fails({ code: "PGRST301", message: "JWT expired" }), []),
-    ).rejects.toThrow("budget plans: JWT expired");
+    ).rejects.toThrow("budget plans: JWT expired (PGRST301)");
   });
 });

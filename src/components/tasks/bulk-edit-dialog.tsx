@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
-import { memberInDivision } from "@/lib/members";
+import { splitForDivision } from "@/lib/members";
 import { bulkUpdateTaskFieldsAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
@@ -47,10 +47,12 @@ export function BulkEditDialog({
 
   // PIC choices follow the division being applied; without a division change we
   // cannot know which roster to narrow to, so all members stay available.
-  const picMembers = React.useMemo(
-    () => (f.useDivision && f.division ? members.filter((m) => memberInDivision(m, f.division)) : members),
-    [members, f.useDivision, f.division],
-  );
+  // Narrowing SORTS the list, it does not cut it: the same reason the task form
+  // keeps the rest of the roster underneath (see splitForDivision).
+  const picMembers = React.useMemo(() => {
+    if (!f.useDivision || !f.division) return { inDivision: members, others: [] };
+    return splitForDivision(members, f.division);
+  }, [members, f.useDivision, f.division]);
 
   const nothingPicked = !f.useDivision && !f.usePic && !f.useDeadline;
 
@@ -113,10 +115,15 @@ export function BulkEditDialog({
             </label>
             <div className={!f.usePic ? "pointer-events-none opacity-50" : undefined}>
               <MemberPicker
-                members={picMembers}
+                members={picMembers.inDivision}
                 value={f.pic}
                 onChange={(v) => setF({ ...f, pic: v })}
                 placeholder={t("Pilih dari anggota")}
+                extra={
+                  picMembers.others.length
+                    ? { label: t("Anggota divisi lain"), members: picMembers.others }
+                    : undefined
+                }
               />
             </div>
             {f.usePic && !f.pic && (

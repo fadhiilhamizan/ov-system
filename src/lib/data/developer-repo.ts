@@ -145,14 +145,24 @@ export async function touchPresence(user: {
  * five descriptive columns (0039). Otherwise any session could file errors
  * under somebody else's name.
  */
-export async function reportError(input: {
-  kind: "client" | "boundary" | "server";
-  message: string;
-  stack?: string;
-  path?: string;
-  userAgent?: string;
-}) {
-  const { error } = await (await sb()).from("error_log").insert({
+export async function reportError(
+  input: {
+    kind: "client" | "boundary" | "server";
+    message: string;
+    stack?: string;
+    path?: string;
+    userAgent?: string;
+  },
+  /**
+   * An already-built client, for callers that have no request scope to build
+   * one from. `instrumentation.ts` is the only one: `onRequestError` fires
+   * outside React's request context, so `cookies()` throws there and the
+   * session has to be read off the raw header instead. Everyone else omits it.
+   */
+  client?: Awaited<ReturnType<typeof createClient>>,
+) {
+  const db = client ?? (await sb());
+  const { error } = await db.from("error_log").insert({
     kind: input.kind,
     message: input.message.slice(0, 2000),
     stack: (input.stack ?? "").slice(0, 8000),

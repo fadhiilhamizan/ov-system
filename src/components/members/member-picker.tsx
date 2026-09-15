@@ -20,6 +20,7 @@ export function MemberPicker({
   onChange,
   placeholder,
   roleOf,
+  extra,
 }: {
   members: Member[];
   value: string;
@@ -27,6 +28,17 @@ export function MemberPicker({
   placeholder?: string;
   /** When provided, the list is grouped under role headers. */
   roleOf?: (m: Member) => PickerRole;
+  /**
+   * A second section, below the main list and under its own heading.
+   *
+   * The task form puts the rest of the edition's roster here. Narrowing the
+   * list to one division is a convenience, not a rule: whoever the roster says
+   * is in the division comes first, but a name that is not there - because the
+   * division field was never filled in, or because that person is genuinely
+   * helping another division - must still be reachable. A picker that can
+   * refuse to name somebody as PIC is a picker people work around.
+   */
+  extra?: { label: string; members: Member[] };
 }) {
   const t = useT();
   const [query, setQuery] = React.useState("");
@@ -36,13 +48,22 @@ export function MemberPicker({
     [value],
   );
   const isSelected = (m: Member) => tokens.some((tok) => tok.toLowerCase() === label(m).toLowerCase());
-  const extras = tokens.filter((tok) => !members.some((m) => label(m).toLowerCase() === tok.toLowerCase()));
+  const known = React.useMemo(() => [...members, ...(extra?.members ?? [])], [members, extra]);
+  const extras = tokens.filter((tok) => !known.some((m) => label(m).toLowerCase() === tok.toLowerCase()));
 
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) => `${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q));
-  }, [members, query]);
+  const match = React.useCallback(
+    (list: Member[], q: string) =>
+      q ? list.filter((m) => `${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q)) : list,
+    [],
+  );
+  const q = query.trim().toLowerCase();
+  const filtered = React.useMemo(() => match(members, q), [match, members, q]);
+  // The search box covers BOTH sections: typing a name that turned out to be in
+  // the second one is the whole point of having it.
+  const filteredExtra = React.useMemo(
+    () => (extra ? match(extra.members, q) : []),
+    [match, extra, q],
+  );
 
   const ROLE_LABEL: Record<PickerRole, string> = {
     coordinator: t("Koordinator"),
@@ -106,21 +127,31 @@ export function MemberPicker({
             </div>
           </div>
           <div className="max-h-64 overflow-y-auto p-1.5">
-            {members.length === 0 ? (
+            {known.length === 0 ? (
               <p className="p-2 text-xs text-muted-foreground">{t("Belum ada anggota untuk Ormawa Visit ini.")}</p>
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && filteredExtra.length === 0 ? (
               <p className="p-2 text-xs text-muted-foreground">{t("Tidak ada anggota yang cocok.")}</p>
-            ) : groups ? (
-              groups.map((g) => (
-                <div key={g.role} className="mb-1 last:mb-0">
-                  <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {ROLE_LABEL[g.role]}
-                  </p>
-                  {g.items.map(Row)}
-                </div>
-              ))
             ) : (
-              filtered.map(Row)
+              <>
+                {groups
+                  ? groups.map((g) => (
+                      <div key={g.role} className="mb-1 last:mb-0">
+                        <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {ROLE_LABEL[g.role]}
+                        </p>
+                        {g.items.map(Row)}
+                      </div>
+                    ))
+                  : filtered.map(Row)}
+                {extra && filteredExtra.length > 0 && (
+                  <div className="mt-1 border-t border-border pt-1">
+                    <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {extra.label}
+                    </p>
+                    {filteredExtra.map(Row)}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </PopoverContent>

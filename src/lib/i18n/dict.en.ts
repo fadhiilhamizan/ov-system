@@ -1031,6 +1031,7 @@ export const EN: Record<string, string> = {
   "Ini masih rencana - cukup isi nama & tanggal. Detail seperti partner, kampus, lokasi, tipe, dan mode bisa dikosongkan dulu; nanti terisi otomatis dari prospek utama di Reach & Offer.":
     "This is still a plan - just fill in the name and dates. Details like partner, campus, location, type, and mode can be left empty for now; they fill in automatically from the primary prospect in Reach & Offer.",
   "Pilih dari anggota divisi ini": "Choose from this division's members",
+  "Anggota divisi lain": "Members of other divisions",
   "Pilih koordinator…": "Choose a coordinator…",
 
   // --- Empty states & toast ---

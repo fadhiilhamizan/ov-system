@@ -61,7 +61,15 @@ export async function readRows<T>(
       console.warn(`[read] ${what}: skipped, not in this database (${error.message})`);
       return fallback;
     }
-    throw new Error(`${what}: ${error.message}`);
+    // The CODE is carried too, not just the prose. Production redacts this
+    // message before the browser ever sees it, so the copy that survives is the
+    // one `instrumentation.ts` files into the error log - and there the
+    // difference between 57014 (statement timeout), PGRST301 (expired token)
+    // and a bare `TypeError: fetch failed` is the whole diagnosis, while the
+    // English sentence attached to each is often the same shrug.
+    throw new Error(
+      `${what}: ${error.message}${error.code ? ` (${error.code})` : ""}`,
+    );
   }
   return data ?? fallback;
 }

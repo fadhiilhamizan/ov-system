@@ -28,12 +28,12 @@ import { createTaskAction, updateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import { MemberPicker, type PickerRole } from "@/components/members/member-picker";
 import { useMembers, useTeams } from "@/components/members/members-context";
-import { memberInDivision } from "@/lib/members";
+import { isCoordinator, splitForDivision } from "@/lib/members";
 import { useTaskLinks, useTaskRefs, useSuperLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
 import { RefsEditor, toRefDraft, validateRefs, cleanRefs, newRefDraft, type DraftRef } from "./refs-editor";
 import { useResetOn } from "@/lib/use-synced";
-import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
+import type { AppUser, Division, DivisionKey, Member, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
   mode,
@@ -97,29 +97,21 @@ export function TaskFormDialog({
   const [refs, setRefs] = useResetOn<DraftRef[]>(formKey, () =>
     existingRefs?.length ? existingRefs.map(toRefDraft) : [newRefDraft()]);
 
-  // PIC picker: only this division's members, grouped by role (coordinator from
-  // the division's team, else the member's fungsionaris/intern type).
-  const divisionMembers = React.useMemo(
-    // A member can belong to several divisions, so match against all of them.
-    () => members.filter((m) => memberInDivision(m, form.division)),
-    [members, form.division],
+  // PIC picker. This division's people first, grouped by role (coordinator from
+  // the division's team row, else the member's fungsionaris/intern type), with
+  // the rest of the edition's roster underneath so nobody is unreachable - see
+  // `splitForDivision`.
+  const team = React.useMemo(
+    () => teams.find((tm) => tm.division === form.division),
+    [teams, form.division],
   );
-  const coordinatorNames = React.useMemo(() => {
-    const team = teams.find((tm) => tm.division === form.division);
-    return new Set(
-      (team?.coordinator ?? "")
-        .split(/\s{2,}|,|·/)
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean),
-    );
-  }, [teams, form.division]);
+  const { inDivision, others } = React.useMemo(
+    () => splitForDivision(members, form.division, team),
+    [members, form.division, team],
+  );
   const roleOf = React.useCallback(
-    (m: { nickname: string; name: string; type: "fungsionaris" | "intern" }): PickerRole => {
-      const nn = (m.nickname || m.name).toLowerCase();
-      if (coordinatorNames.has(nn) || coordinatorNames.has(m.name.toLowerCase())) return "coordinator";
-      return m.type;
-    },
-    [coordinatorNames],
+    (m: Member): PickerRole => (isCoordinator(m, team) ? "coordinator" : m.type),
+    [team],
   );
 
 
@@ -261,11 +253,12 @@ export function TaskFormDialog({
               <div className="grid gap-1.5">
                 <Label>{t("PIC / Penanggung Jawab")}</Label>
                 <MemberPicker
-                  members={divisionMembers}
+                  members={inDivision}
                   value={form.pic}
                   onChange={(v) => setForm({ ...form, pic: v })}
                   placeholder={t("Pilih dari anggota divisi ini")}
                   roleOf={roleOf}
+                  extra={{ label: t("Anggota divisi lain"), members: others }}
                 />
               </div>
 
