@@ -35,3 +35,16 @@ export function useTaskComments(taskId?: string): TaskComment[] | undefined {
   if (!all) return undefined;
   return (taskId ? all[taskId] : undefined) ?? [];
 }
+
+/**
+ * The whole map at once, for a caller that needs MANY tasks in one render.
+ *
+ * The task table flags every row that has an open thread, and it cannot use
+ * `useTaskComments` to do it: the rows are produced by `.map()` over a list
+ * whose length changes with the search and filters, so a hook called per row
+ * would change in count between renders and break the rules of hooks. Reading
+ * the map once at the top of the component sidesteps that entirely.
+ */
+export function useAllTaskComments(): Record<string, TaskComment[]> | undefined {
+  return React.useContext(Ctx);
+}

@@ -292,7 +292,17 @@ export function TaskCommentsPanel({ task, user }: { task: Task; user: AppUser })
 }
 
 /**
- * The notification on a Work Breakdown row.
+ * The notification for a task, shown beside its title.
+ *
+ * It sits INSIDE the "Tugas" cell rather than in a trailing column of its own.
+ * A column at the far right is the first thing an `overflow-x-auto` table
+ * pushes off screen, so on exactly the rows that carry the most content -
+ * long references, a long result - the signal was invisible until you scrolled
+ * sideways looking for something you had no reason to think was there.
+ *
+ * It must be a SIBLING of the row's dialog trigger, never a child: a button
+ * inside a button is a hydration error as well as an unusable control (the
+ * same trap the notes preview in task-table.tsx documents).
  *
  * Deliberately absent - not disabled, not greyed - when the task has no OPEN
  * thread: "tombol notifikasi tidak akan muncul jika tugas tersebut tidak
@@ -314,16 +324,16 @@ export function TaskCommentBadge({ task, user }: { task: Task; user: AppUser }) 
       <PopoverTrigger
         aria-label={`${t("Lihat catatan tugas")} (${open})`}
         title={`${open} ${t("catatan belum selesai")}`}
-        className="relative inline-flex size-7 items-center justify-center rounded-md text-amber-600 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-amber-400 dark:hover:bg-amber-500/15"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-700 transition hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30"
       >
-        <MessageSquare className="size-4" />
-        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[14px] items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold leading-[14px] text-white">
-          {open}
-        </span>
+        <MessageSquare className="size-3" />
+        {open}
       </PopoverTrigger>
-      {/* Wide enough to read a paragraph, capped so a long thread scrolls
-          inside the popover instead of running off the screen. */}
-      <PopoverContent align="end" className="max-h-[70vh] w-[360px] overflow-y-auto p-3">
+      {/* Opens rightward (`align="start"`), because the trigger now sits near
+          the LEFT edge of the table. Aligned to the end it flipped outward and
+          ran off the side of the viewport. Wide enough to read a paragraph,
+          capped so a long thread scrolls inside instead of down the page. */}
+      <PopoverContent align="start" className="max-h-[70vh] w-[360px] overflow-y-auto p-3">
         <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{task.title}</p>
         <div className="grid gap-2.5">
           {threads.map((th) => (
