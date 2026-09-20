@@ -53,6 +53,18 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.46.0",
+    date: "2026-09-20",
+    title: "Catatan & diskusi per tugas di Work Breakdown",
+    changes: [
+      { kind: "new", text: "Tiap tugas di Work Breakdown sekarang bisa diberi catatan: revisi, informasi tambahan, atau hal lain yang perlu disampaikan pada tugas itu saja. Catatan dibuka lewat tombol Edit pada tugasnya." },
+      { kind: "new", text: "Tugas yang punya catatan belum selesai menampilkan lencana notifikasi di tabel dan kanban Work Breakdown, lengkap dengan jumlahnya. Diklik, lencananya membuka chat mini berisi catatan itu, siapa yang menulisnya, dan kapan dikirim." },
+      { kind: "new", text: "Catatan bisa dibalas oleh semua peran yang boleh menulis tugas, intern termasuk. Yang boleh MEMULAI catatan baru hanya admin, koordinator, dan staff." },
+      { kind: "new", text: "Catatan yang sudah tuntas ditandai selesai lewat tombol centang: lencana notifikasinya hilang dari tugas, tapi percakapannya tetap bisa dibalas dan tetap terbaca lewat tombol Edit. Satu tugas boleh punya lebih dari satu catatan." },
+      { kind: "data", text: "Catatan ikut dalam Backup & Rollback, jadi memulihkan snapshot tidak lagi menghapusnya diam-diam. Jalankan supabase/migrations/0049_task_comments.sql (atau supabase/setup.sql) sebelum memakai menu ini." },
+    ],
+  },
+  {
     version: "1.45.3",
     date: "2026-09-15",
     title: "Pilihan PIC tidak lagi menyembunyikan anggota",

@@ -41,6 +41,10 @@ const DIVISION_DETAIL = "/divisions/[key]";
 const CONSUMERS = {
   tasks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/dashboard", "/events"],
   taskLinks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/links"],
+  // Same three task surfaces as taskLinks, minus /links: a comment is never
+  // published anywhere. The notification badge lives in the Work Breakdown
+  // table, so a reply posted from the mini chat has to bust that route too.
+  taskComments: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL],
   divisions: ["/tasks", "/calendar", "/rundown", "/members", "/divisions", DIVISION_DETAIL, "/links", "/dashboard"],
   members: ["/members", "/divisions", DIVISION_DETAIL, "/tasks", "/calendar", "/jobs", "/prospects", "/dashboard"],
   teams: ["/members", "/divisions", DIVISION_DETAIL, "/tasks", "/calendar", "/links"],

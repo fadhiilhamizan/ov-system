@@ -17,6 +17,7 @@ import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { DivisionBadge } from "@/components/division-badge";
 import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskCommentBadge } from "./task-comments";
 import { setTaskStatusAction } from "@/lib/actions/tasks";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
@@ -186,6 +187,7 @@ function KanbanCard({
             <p className="line-clamp-3 text-sm font-medium group-hover:text-primary">{task.title}</p>
           </button>
         </TaskDetailDialog>
+        <TaskCommentBadge task={task} user={user} />
         <TaskActions
           task={task}
           divisions={divisions}

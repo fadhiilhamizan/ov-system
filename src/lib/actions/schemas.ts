@@ -212,6 +212,31 @@ export const taskRefsSchema = z
     }
   });
 
+// ---------------- Task comments (0049) ----------------
+
+/**
+ * One message in a task's comment thread.
+ *
+ * 4000 characters is deliberately generous for a "chat kecil": an initiation
+ * comment is often a whole revision brief pasted in. `nonEmpty` trims first, so
+ * a message of nothing but spaces is refused rather than stored blank.
+ */
+export const taskCommentBodySchema = nonEmpty("Komentar", 4000);
+
+/** Start a thread: a task id plus the first message. There is no `parent_id`
+ *  here on purpose - a root is defined by not having one. */
+export const startTaskCommentSchema = z.object({
+  task_id: idSchema,
+  body: taskCommentBodySchema,
+});
+
+/** Reply to an existing thread. `parent_id` must name a ROOT; the action
+ *  checks that, because a self-referencing CHECK cannot. */
+export const replyTaskCommentSchema = z.object({
+  parent_id: idSchema,
+  body: taskCommentBodySchema,
+});
+
 // ---------------- Global search ----------------
 /**
  * What the command palette may send.

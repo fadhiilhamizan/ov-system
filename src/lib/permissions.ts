@@ -180,6 +180,44 @@ export const can = {
     return atLeast(user, "tasks", "limited");
   },
 
+  // --- Work Breakdown: komentar per tugas (0049) ---
+  // NOT derived from MODULE_ACCESS_LEVEL, and that is the point. The matrix
+  // gives staff and intern the SAME level on "tasks" ("limited"), so it cannot
+  // express the one rule this feature has: an intern may join a conversation
+  // but may not start one. A fake module key would be worse - MODULE_ACCESS is
+  // derived from the same map, so it would invent a route nobody can open and
+  // put a phantom row in the Settings access matrix.
+  /**
+   * Start a new comment thread on a task ("komentar inisiasi").
+   *
+   * Admin, koordinator and staff only. An initiation comment is an
+   * instruction - a revision, a correction, extra context - so it comes from
+   * someone who owns the task's direction. Interns reply (see below).
+   */
+  startTaskComment(user: AppUser): boolean {
+    return user.role === "admin" || user.role === "coordinator" || user.role === "staff";
+  },
+  /** Reply inside an existing thread. Every writing role, interns included. */
+  replyTaskComment(user: AppUser): boolean {
+    return atLeast(user, "tasks", "limited");
+  },
+  /** Tick a thread as finished (which closes the task's notification), or
+   *  re-open it. Same roles that may start one. */
+  resolveTaskComment(user: AppUser): boolean {
+    return can.startTaskComment(user);
+  },
+  /**
+   * Remove a comment.
+   *
+   * Your own message always; anyone else's needs "full" access on tasks
+   * (admin & koordinator), the same bar as deleting the task itself. Deleting
+   * a thread root takes its replies with it (ON DELETE CASCADE).
+   */
+  deleteTaskComment(user: AppUser, authorId: string): boolean {
+    if (!can.replyTaskComment(user)) return false;
+    return can.deleteTask(user) || (!!authorId && authorId === user.id);
+  },
+
   // --- helpers ---
   /**
    * May this account OPEN this module?

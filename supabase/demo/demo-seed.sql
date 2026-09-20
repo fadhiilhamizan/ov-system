@@ -52,6 +52,25 @@ create table if not exists task_refs (
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+-- 0049: komentar tugas (Work Breakdown), juga belum pernah ada di project demo.
+-- author_id sengaja text: Mode Demo tidak punya auth.users sama sekali.
+create table if not exists task_comments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  parent_id uuid references task_comments(id) on delete cascade,
+  body text not null,
+  author_id text not null default '',
+  author_name text not null default '',
+  author_role text not null default '',
+  resolved boolean not null default false,
+  resolved_at timestamptz,
+  resolved_by text not null default '',
+  created_at timestamptz not null default now(),
+  constraint task_comments_reply_not_resolved check (parent_id is null or resolved = false)
+);
+create index if not exists task_comments_task_idx on task_comments(task_id, created_at);
+create index if not exists task_comments_parent_idx on task_comments(parent_id);
+
 -- 0038: banyak tautan per prospek, juga belum pernah ada di project demo.
 create table if not exists prospect_links (
   id uuid primary key default gen_random_uuid(),

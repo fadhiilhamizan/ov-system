@@ -1,12 +1,13 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
-import { getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTeams } from "@/lib/data/repo";
+import { getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { MembersProvider } from "@/components/members/members-context";
 import { TaskLinksProvider } from "@/components/tasks/task-links-context";
+import { TaskCommentsProvider } from "@/components/tasks/task-comments-context";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = { title: "Kalender" };
@@ -16,13 +17,14 @@ export default async function CalendarPage() {
   // Clicking a date opens the same task dialog as Work Breakdown, so this page
   // needs the reference data too: without it the editor has no Super Link
   // picker and cannot show what the task already references.
-  const [tasks, divisions, events, members, taskLinks, taskRefs, superLinks, teams] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks, taskRefs, taskComments, superLinks, teams] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
     getTaskRefsByEvent(event.id),
+    getTaskCommentsByEvent(event.id),
     getLinks(),
     getTeams(event.id),
   ]);
@@ -41,6 +43,7 @@ export default async function CalendarPage() {
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
+        <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
         <CalendarView
           tasks={tasks}
@@ -52,6 +55,7 @@ export default async function CalendarPage() {
           initialMonth={initialMonth}
         />
       </MembersProvider>
+        </TaskCommentsProvider>
       </TaskLinksProvider>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

@@ -26,6 +26,7 @@ import type {
   Task,
   TaskLink,
   TaskLinkInput,
+  TaskComment,
   TaskRef,
   TaskRefInput,
   TaskStatus,
@@ -431,6 +432,93 @@ export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
       await must(client.from("task_refs").insert({ task_id: taskId, ...row }));
     }
   }
+}
+
+// ---------------- Task comments ----------------
+// The per-task conversation shown in Work Breakdown (migration 0049). A row
+// with `parent_id === null` is a thread root ("komentar inisiasi"); everything
+// else is a reply to one. Ordered oldest-first so a thread reads like a chat.
+
+export const getTaskComments = cache(async (taskId: string): Promise<TaskComment[]> => {
+  const data = await readRows<TaskComment[]>(
+    "task comments",
+    (await sb()).from("task_comments").select("*").eq("task_id", taskId).order("created_at"),
+    [],
+  );
+  return coalesce(data, ["body", "author_id", "author_name", "author_role", "resolved_by"]);
+});
+
+/** One row by id, or null. The actions need the parent task's edition (for the
+ *  archive guard) and the author (for "may I delete this?"). */
+export const getTaskComment = cache(async (id: string): Promise<TaskComment | null> => {
+  const row = await readRows<TaskComment | null>(
+    "task comment",
+    (await sb()).from("task_comments").select("*").eq("id", id).maybeSingle(),
+    null,
+  );
+  return row ? coalesce([row], ["body", "author_id", "author_name", "author_role", "resolved_by"])[0] : null;
+});
+
+/**
+ * Every comment on an edition's tasks, keyed by task id (one round trip).
+ *
+ * Same `!inner` join as `getTaskRefsByEvent`: the embedded parent is a filter,
+ * not data, so it is dropped before the rows travel to the client.
+ */
+export const getTaskCommentsByEvent = cache(
+  async (eventId: string): Promise<Record<string, TaskComment[]>> => {
+    const data = await readRows<TaskComment[]>(
+      "task comments by edition",
+      (await sb())
+        .from("task_comments")
+        .select("*, tasks!inner(event_id)")
+        .eq("tasks.event_id", eventId)
+        .order("created_at"),
+      [],
+    );
+    const rows = coalesce(dropEmbed(data, "tasks"), [
+      "body", "author_id", "author_name", "author_role", "resolved_by",
+    ]);
+    const byTask: Record<string, TaskComment[]> = {};
+    for (const r of rows) (byTask[r.task_id] ??= []).push(r);
+    return byTask;
+  },
+);
+
+export interface TaskCommentRow {
+  task_id: string;
+  parent_id: string | null;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_role: string;
+}
+
+export async function createTaskComment(row: TaskCommentRow): Promise<string | null> {
+  const data = await must(
+    (await sb()).from("task_comments").insert(row).select("id").single(),
+  );
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+/** Tick / untick a thread as finished. Only a ROOT is ever passed here - the
+ *  action refuses a reply, and a DB CHECK backs that up. */
+export async function setTaskCommentResolved(id: string, resolved: boolean, by: string) {
+  await must(
+    (await sb())
+      .from("task_comments")
+      .update({
+        resolved,
+        resolved_at: resolved ? new Date().toISOString() : null,
+        resolved_by: resolved ? by : "",
+      })
+      .eq("id", id),
+  );
+}
+
+/** Delete one comment. A root takes its replies with it (ON DELETE CASCADE). */
+export async function deleteTaskComment(id: string) {
+  await must((await sb()).from("task_comments").delete().eq("id", id));
 }
 
 // ---------------- Prospects ----------------
@@ -1187,6 +1275,10 @@ export async function cloneEventData(
           notes: t.notes, result: "", status: "todo" as TaskStatus,
         };
       });
+      // Comments (0049) are NOT copied, on purpose and by omission: a copied
+      // task is a fresh plan with its progress reset, and a revision request
+      // from last edition's execution would arrive already answered - or
+      // worse, raise a notification on a task nobody has started.
       if (rows.length) await must(client.from("tasks").insert(rows));
     }
 

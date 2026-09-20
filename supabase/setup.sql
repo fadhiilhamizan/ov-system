@@ -235,6 +235,33 @@ create table if not exists task_refs (
 create index if not exists task_refs_task_idx on task_refs(task_id);
 create index if not exists task_refs_link_idx on task_refs(link_id);
 
+-- 2.7c task_comments (0049): catatan/komentar per tugas di Work Breakdown.
+-- parent_id null = komentar inisiasi (akar thread); terisi = balasan atas
+-- thread itu. Satu tugas boleh punya banyak thread. `resolved` hanya boleh
+-- true di akar (lihat CHECK) karena "selesai" adalah sifat THREAD, bukan sifat
+-- satu pesan. author_id sengaja TEXT tanpa FK ke auth.users: Mode Demo
+-- berjalan tanpa auth (id-nya "admin"/"staff"), dan tabel ini ikut di-backup -
+-- FK ke akun yang sudah dihapus akan menggagalkan restore (lihat 0049 dan
+-- src/lib/backup.ts).
+create table if not exists task_comments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  parent_id uuid references task_comments(id) on delete cascade,
+  body text not null,
+  author_id text not null default '',
+  author_name text not null default '',
+  author_role text not null default '',
+  resolved boolean not null default false,
+  resolved_at timestamptz,
+  resolved_by text not null default '',
+  created_at timestamptz not null default now(),
+  constraint task_comments_reply_not_resolved check (parent_id is null or resolved = false)
+);
+create index if not exists task_comments_task_idx on task_comments(task_id, created_at);
+create index if not exists task_comments_parent_idx on task_comments(parent_id);
+create index if not exists task_comments_open_idx
+  on task_comments(task_id) where parent_id is null and not resolved;
+
 -- 2.8 prospects (Reach & Offer) ------------------------------------
 create table if not exists prospects (
   id uuid primary key default gen_random_uuid(),
@@ -606,7 +633,7 @@ declare
   -- Urutan HAPUS: anak dulu. INSERT menyusuri terbalik. Kembar dengan
   -- DELETE_ORDER di src/lib/backup.ts.
   del_order constant text[] := array[
-    'task_links', 'task_refs', 'prospect_links', 'budget_items',
+    'task_links', 'task_refs', 'task_comments', 'prospect_links', 'budget_items',
     'tasks', 'members', 'teams', 'rundown', 'job_harih',
     'prospects', 'links', 'budget_plans', 'faqs', 'divisions', 'events'
   ];
@@ -874,7 +901,7 @@ create trigger trg_assign_job_no before insert on job_harih
 do $do$
 declare t text;
 begin
-  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items', 'rundown',
                            'job_harih', 'faqs', 'teams', 'backups', 'role_requests']
   loop
@@ -889,7 +916,7 @@ end $do$;
 do $do$
 declare t text;
 begin
-  foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'rundown', 'job_harih', 'faqs']
   loop
     execute format('drop policy if exists "read_all" on %I;', t);
@@ -1009,6 +1036,26 @@ create policy "task_refs_update" on task_refs for update to authenticated
 create policy "task_refs_delete" on task_refs for delete to authenticated
   using (has_role()
     and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
+
+-- task_comments (0049) ikut tugas induknya juga, aturannya sama persis. Siapa
+-- yang boleh MEMULAI thread (bukan sekadar membalas) adalah aturan peran, dan
+-- itu hidup di src/lib/permissions.ts + aksi servernya - RLS di sini hanya
+-- lapis keduanya: punya peran, dan edisinya tidak diarsipkan.
+drop policy if exists "task_comments_write" on task_comments;
+drop policy if exists "task_comments_insert" on task_comments;
+drop policy if exists "task_comments_update" on task_comments;
+drop policy if exists "task_comments_delete" on task_comments;
+create policy "task_comments_insert" on task_comments for insert to authenticated
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
+create policy "task_comments_update" on task_comments for update to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)))
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
+create policy "task_comments_delete" on task_comments for delete to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
 
 -- prospect_links (0038) ikut prospek induknya, aturannya sama persis.
 drop policy if exists "prospect_links_write" on prospect_links;
@@ -1339,7 +1386,7 @@ end $fn$;
 do $do$
 declare t text;
 begin
-  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items',
                            'rundown', 'job_harih', 'faqs', 'teams', 'profiles', 'role_requests']
   loop
@@ -1806,7 +1853,7 @@ begin
   if not is_developer() then
     raise exception 'hanya developer';
   end if;
-  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items',
                            'rundown', 'job_harih', 'faqs', 'teams', 'profiles', 'role_requests',
                            'backups', 'activity_log', 'error_log', 'presence']

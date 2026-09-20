@@ -130,6 +130,40 @@ export interface TaskRef {
   order: number;
 }
 
+/**
+ * One message in a task's comment thread (Work Breakdown).
+ *
+ * `parent_id === null` is a "komentar inisiasi": the START of a thread, which
+ * only admin/koordinator/staff may create. Anything with a `parent_id` is a
+ * reply to that root, and an intern may post those. Replies are exactly one
+ * level deep - see `startTaskCommentAction` for why the depth is capped there
+ * rather than by a database CHECK.
+ *
+ * `resolved` belongs to the ROOT only (a DB CHECK enforces it): ticking it is
+ * what closes the notification on the task, and a thread stays replyable after
+ * it is closed. The author is stored by NAME, not by a foreign key - see
+ * migration 0049 for why.
+ */
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  parent_id: string | null;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_role: string;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string;
+  created_at: string;
+}
+
+/** A comment root plus its replies, oldest first. Built by `toThreads()`. */
+export interface TaskCommentThread {
+  root: TaskComment;
+  replies: TaskComment[];
+}
+
 /** Shape the references editor sends back; `id` is absent for new rows. */
 export interface TaskRefInput {
   id?: string;
@@ -490,6 +524,7 @@ export interface Database {
   tasks: Task[];
   taskLinks?: TaskLink[];
   taskRefs?: TaskRef[];
+  taskComments?: TaskComment[];
   prospects: Prospect[];
   prospectLinks?: ProspectLink[];
   links: LinkItem[];

@@ -1518,7 +1518,7 @@ console.log("0046 - kunci arsip di setiap policy tulis");
   /** Tabel yang barisnya milik satu Ormawa Visit, langsung atau lewat induk. */
   const SCOPED = [
     "divisions", "members", "teams", "prospects", "budget_plans", "budget_items",
-    "tasks", "task_links", "task_refs", "prospect_links", "links",
+    "tasks", "task_links", "task_refs", "task_comments", "prospect_links", "links",
     "rundown", "job_harih",
     "fgd_plans", "fgd_rows", "compare_subjects", "compare_entries",
   ];
@@ -1621,6 +1621,103 @@ console.log("0046 - kunci arsip di setiap policy tulis");
     delete from budget_plans where id = 'bbbbbbbb-0000-0000-0000-00000000b001';
     delete from events where id = 'rab-open';`);
 }
+
+// ------------------------------------------------------------------
+// 0049: komentar tugas.
+//
+// Dua hal yang tidak bisa dijaga TypeScript. Pertama, tabel ini tidak punya
+// event_id sendiri, jadi kunci arsipnya harus ditemukan lewat subquery ke
+// tugas induknya - sama seperti task_links dan task_refs, dan sama rapuhnya.
+// Kedua, "resolved hanya di akar" adalah CHECK, bukan aturan aplikasi: kalau
+// hilang, satu balasan yang resolved akan membuat hitungan notifikasi salah
+// tanpa ada yang melihatnya.
+//
+// Aturan PERAN (intern boleh membalas, tidak boleh memulai) sengaja TIDAK ada
+// di RLS: policy-nya cuma tahu "punya peran". Itu ditegakkan di aksi server
+// dan dipagari src/lib/actions/task-comments.test.ts.
+// ------------------------------------------------------------------
+console.log("0049 - komentar tugas");
+{
+  // Fikstur sendiri: blok 0043 di atas menjalankan restore sungguhan, yang
+  // mengosongkan `tasks` beserta seluruh isi database. Apa pun yang dibuat di
+  // bagian atas berkas ini sudah tidak ada lagi di sini.
+  const OPEN = "'cm-open'";
+  const LOCK = "'cm-lock'";
+  const TASK = "'aaaaaaaa-0000-0000-0000-0000000000d1'";
+  const TASK_LOCK = "'aaaaaaaa-0000-0000-0000-0000000000d2'";
+  const ROOT = "'ffffffff-0000-0000-0000-000000000001'";
+  await db.exec(`insert into events (id, code, title) values
+      (${OPEN}, 'CM1', 'Komentar terbuka'), (${LOCK}, 'CM2', 'Komentar arsip');
+    insert into divisions (event_id, key, name, short, color)
+      values (${OPEN}, 'EVENT', 'Event', 'EVE', '#111');
+    insert into tasks (id, event_id, division, title) values
+      (${TASK}, ${OPEN}, 'EVENT', 'Tugas berkomentar'),
+      (${TASK_LOCK}, ${LOCK}, 'EVENT', 'Tugas arsip');
+    update events set locked = true where id = ${LOCK};
+    insert into task_comments (id, task_id, body, author_name)
+      values (${ROOT}, ${TASK}, 'Tolong revisi anggaran', 'Koordinator');`);
+
+  await check("staff boleh memulai catatan di edisi terbuka", U.staff, false,
+    `insert into task_comments (task_id, body, author_name)
+       values (${TASK}, 'Catatan staff', 'Staff')`, "allow");
+  // Peran, bukan divisi: intern menulis di tugas divisi mana pun.
+  await check("intern boleh membalas", U.intern, false,
+    `insert into task_comments (task_id, parent_id, body, author_name)
+       values (${TASK}, ${ROOT}, 'Siap', 'Intern')`, "allow");
+  await check("viewer (Tamu terdaftar) DITOLAK menulis", U.viewer, false,
+    `insert into task_comments (task_id, body, author_name)
+       values (${TASK}, 'Nyelonong', 'Viewer')`, "deny");
+  await check("sesi anonim DITOLAK menulis", U.anon, true,
+    `insert into task_comments (task_id, body, author_name)
+       values (${TASK}, 'Nyelonong', 'Anon')`, "deny");
+
+  await check("semua sesi boleh MEMBACA komentar", U.intern, false,
+    `select * from task_comments where task_id = ${TASK}`, "rows");
+
+  // Kunci arsip, lewat induknya.
+  await check("koordinator DITOLAK menulis di tugas edisi terkunci", U.coord, false,
+    `insert into task_comments (task_id, body, author_name)
+       values (${TASK_LOCK}, 'Catatan arsip', 'Koordinator')`, "deny");
+  await check("admin tetap boleh, walau edisinya terkunci", U.admin, false,
+    `insert into task_comments (task_id, body, author_name)
+       values (${TASK_LOCK}, 'Perbaikan admin', 'Admin')`, "allow");
+
+  await check("koordinator boleh menandai catatan selesai", U.coord, false,
+    `update task_comments set resolved = true where id = ${ROOT}`, "allow");
+  await check("koordinator boleh menghapus catatan", U.coord, false,
+    `delete from task_comments where task_id = ${TASK} and body = 'Catatan staff'`, "allow");
+
+  // CHECK: balasan tidak boleh punya centangnya sendiri.
+  let checkHeld = false;
+  try {
+    await db.exec(`insert into task_comments (task_id, parent_id, body, resolved, author_name)
+      values (${TASK}, ${ROOT}, 'Balasan resolved', true, 'X');`);
+  } catch { checkHeld = true; }
+  ok("balasan tidak bisa ditandai selesai sendiri (CHECK)", checkHeld);
+
+  // Balasan ikut terhapus bersama akarnya, dan semuanya ikut terhapus bersama
+  // tugasnya. Kalau salah satu cascade hilang, yang tertinggal adalah baris
+  // yatim yang tidak terlihat di UI mana pun.
+  await db.exec(`delete from task_comments where id = ${ROOT};`);
+  const orphanReplies = await db.query(
+    `select count(*)::int as n from task_comments where parent_id = ${ROOT}`);
+  ok("menghapus catatan utama ikut menghapus balasannya", orphanReplies.rows[0].n === 0);
+
+  await db.exec(`insert into tasks (id, event_id, division, title)
+      values ('aaaaaaaa-0000-0000-0000-0000000000c1', ${OPEN}, 'EVENT', 'Tugas sementara');
+    insert into task_comments (task_id, body, author_name)
+      values ('aaaaaaaa-0000-0000-0000-0000000000c1', 'Ikut terhapus', 'X');
+    delete from tasks where id = 'aaaaaaaa-0000-0000-0000-0000000000c1';`);
+  const orphans = await db.query(`select count(*)::int as n from task_comments
+    where task_id = 'aaaaaaaa-0000-0000-0000-0000000000c1'`);
+  ok("menghapus tugas ikut menghapus komentarnya", orphans.rows[0].n === 0);
+
+  await db.exec(`delete from task_comments;
+    delete from tasks where id in (${TASK}, ${TASK_LOCK});
+    delete from divisions where event_id = ${OPEN};
+    delete from events where id in (${OPEN}, ${LOCK});`);
+}
+
 
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

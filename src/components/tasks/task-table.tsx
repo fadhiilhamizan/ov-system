@@ -15,6 +15,7 @@ import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useTaskLinks, useTaskRefs } from "./task-links-context";
+import { TaskCommentBadge } from "./task-comments";
 import { EmptyState } from "@/components/ui/empty";
 import { ExpandableText } from "@/components/ui/expandable-text";
 import { SortHead } from "@/components/ui/sort-indicator";
@@ -196,6 +197,10 @@ export function TaskTable({
               <SortHead sort={sort} k="status">{tr("Status")}</SortHead>
               <TableHead className="min-w-[110px]">{tr("Referensi")}</TableHead>
               <TableHead className="min-w-[180px]">{tr("Hasil")}</TableHead>
+              {/* The comment notification. Deliberately its own narrow column
+                  rather than a chip inside "Tugas": it has to be findable at a
+                  glance down the whole table, which is the point of it. */}
+              <TableHead className="w-10" />
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -236,6 +241,7 @@ export function TaskTable({
                   <TableCell><StatusMenu task={t} user={user} /></TableCell>
                   <TableCell><RefsCell task={t} /></TableCell>
                   <TableCell><ResultCell task={t} /></TableCell>
+                  <TableCell><TaskCommentBadge task={t} user={user} /></TableCell>
                   <TableCell>
                     <TaskActions task={t} divisions={divisions} events={events} activeEventId={activeEventId} user={user} />
                   </TableCell>

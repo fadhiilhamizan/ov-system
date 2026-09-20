@@ -4,11 +4,12 @@ import { ArrowLeft, Users2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
-import { getDivision, getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTeams } from "@/lib/data/repo";
+import { getDivision, getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { MembersProvider } from "@/components/members/members-context";
 import { TaskLinksProvider } from "@/components/tasks/task-links-context";
+import { TaskCommentsProvider } from "@/components/tasks/task-comments-context";
 import { Badge } from "@/components/ui/badge";
 import { getT } from "@/lib/i18n/server";
 import type { DivisionKey } from "@/lib/types";
@@ -27,7 +28,7 @@ export default async function DivisionDetailPage({
   // page that mounts the dialog has to fetch BOTH, or the reference editor
   // opens blank: no Super Link picker, and the task's saved references
   // invisible. See TaskLinksProvider.
-  const [tasks, divisions, events, teams, members, taskLinks, taskRefs, superLinks] = await Promise.all([
+  const [tasks, divisions, events, teams, members, taskLinks, taskRefs, taskComments, superLinks] = await Promise.all([
     getTasks({ event_id: event.id, division: division.key }),
     getDivisions(event.id),
     getEvents(),
@@ -35,6 +36,7 @@ export default async function DivisionDetailPage({
     getMembers(event.id),
     getTaskLinksByEvent(event.id),
     getTaskRefsByEvent(event.id),
+    getTaskCommentsByEvent(event.id),
     getLinks(),
   ]);
   const team = teams.find((t) => t.division === division.key);
@@ -75,6 +77,7 @@ export default async function DivisionDetailPage({
       />
 
       <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
+        <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
         <TasksView
           tasks={tasks}
@@ -85,6 +88,7 @@ export default async function DivisionDetailPage({
           lockedDivision={division.key as DivisionKey}
         />
       </MembersProvider>
+        </TaskCommentsProvider>
       </TaskLinksProvider>
     </div>
   );
