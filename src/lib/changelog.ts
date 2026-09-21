@@ -53,6 +53,18 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.47.0",
+    date: "2026-09-21",
+    title: "Violet paham catatan tugas, dan beberapa data yang selama ini tidak terbaca",
+    changes: [
+      { kind: "new", text: "Panduan menu Work Breakdown kini menjelaskan fitur Catatan & Diskusi: cara menulisnya, siapa yang boleh memulai, dan apa arti tombol Tandai selesai." },
+      { kind: "new", text: "Violet bisa ditanya soal catatan tugas, baik aturannya (siapa boleh menambah, apa efek menandai selesai) maupun datanya (tugas mana yang catatannya belum selesai, beserta isi catatannya)." },
+      { kind: "fix", text: "Violet tidak bisa melihat himpunan yang sudah dibuatkan perbandingan tapi belum diisi satu pun aspek penilaiannya, karena daftarnya diambil dari penilaiannya, bukan dari himpunan yang dipilih. Sekarang himpunan seperti itu ikut terbaca dan disebut sebagai belum ada penilaian." },
+      { kind: "new", text: "Violet bisa menjawab status pengajuan peran: pengajuanmu sendiri bagi semua orang, dan antrean yang menunggu keputusan bagi admin. Yang boleh dilihat tetap ditentukan database, sama seperti menu Role Request." },
+      { kind: "fix", text: "Violet menyaring baris rundown berdasarkan versi lama yang sudah tidak dipakai, sehingga berpotensi menyembunyikan baris yang tetap tampil di halaman Rundown. Penyaringan itu dihapus." },
+    ],
+  },
+  {
     version: "1.46.0",
     date: "2026-09-20",
     title: "Catatan & diskusi per tugas di Work Breakdown",

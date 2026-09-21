@@ -1,16 +1,17 @@
 import "server-only";
-import { STATUS_META } from "@/lib/constants";
+import { ROLE_META, STATUS_META } from "@/lib/constants";
 import {
   getEvents, getDivisions, getTasks, getProspects, getProspectLinksByEvent, getLinks,
   getRundown, getJobs, getBudgetPlans, getMembers, getTeams,
-  getTaskLinksByEvent, getTaskRefsByEvent,
+  getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getRoleRequests,
 } from "@/lib/data/repo";
-import { getCompareEntries, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
+import { getCompareEntries, getCompareSubjects, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
 import { getActiveEvent } from "@/lib/session";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { memberDivisions, memberInDivision } from "@/lib/members";
 import { planTotal, primaryBudgetPlan } from "@/lib/budget";
-import type { AppUser, Division, Member, OVEvent, Task } from "@/lib/types";
+import { toThreads, formatCommentTime } from "@/lib/task-comments";
+import type { AppUser, Division, Member, OVEvent, Task, TaskComment } from "@/lib/types";
 import type { Passage } from "./retrieve";
 
 // ============================================================
@@ -57,6 +58,15 @@ const val = (s: string | null | undefined, empty = "belum diisi") =>
 const statusLabel = (s: string) =>
   STATUS_META[s as keyof typeof STATUS_META]?.label ?? s;
 
+/** Cut a quoted body down to size without slicing a word in half. */
+const clip = (text: string, max: number) => {
+  const t = (text ?? "").trim().replace(/\s+/g, " ");
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${space > max * 0.6 ? cut.slice(0, space) : cut}…`;
+};
+
 /** Human date, or a plain "belum ditentukan" that Violet can quote directly. */
 const when = (iso: string | null | undefined, raw?: string) =>
   iso ? formatDate(iso, { long: true }) : (raw ?? "").trim() || "belum ditentukan";
@@ -80,6 +90,7 @@ function taskPassage(
   eventTitle: string,
   refs: string,
   resultLinks: string,
+  comments: string,
 ): Passage {
   return {
     id: `task-${t.id}`,
@@ -98,8 +109,37 @@ function taskPassage(
       t.result.trim() && `Hasil tugas: ${t.result.trim()}.`,
       resultLinks && `Tautan hasil tugas ini: ${resultLinks}.`,
       refs && `Referensi tugas: ${refs}.`,
+      comments,
     ),
   };
+}
+
+/**
+ * One task's notes, written out as sentences Violet can quote.
+ *
+ * Spelled out rather than counted, because "apa isi catatan tugas X" is the
+ * question people actually ask, and a count answers none of it. The synonym
+ * run is the same trick the rest of this file uses: retrieval is lexical, and
+ * people say catatan, komentar, diskusi and revisi for the same thing.
+ *
+ * Only the ACTIVE edition gets this, like every other row-level passage.
+ */
+function commentsSentence(comments: TaskComment[] | undefined): string {
+  const threads = toThreads(comments);
+  if (!threads.length) return "";
+  const open = threads.filter((th) => !th.root.resolved).length;
+  const lines = threads.map((th) => {
+    const state = th.root.resolved ? "sudah selesai" : "belum selesai";
+    const replies = th.replies.length
+      ? ` Balasan: ${th.replies.map((r) => `${r.author_name} menulis "${r.body}"`).join("; ")}.`
+      : " Belum ada balasan.";
+    return `${th.root.author_name} menulis "${th.root.body}" pada ${formatCommentTime(th.root.created_at)} (${state}).${replies}`;
+  });
+  return sentence(
+    `Tugas ini punya ${threads.length} catatan (komentar, diskusi, revisi),`,
+    open ? `${open} di antaranya belum selesai.` : "semuanya sudah ditandai selesai.",
+    ...lines,
+  );
 }
 
 /**
@@ -170,15 +210,22 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   // is a change to what Violet can answer, not a refactor.
   const [
     events, allDivisions, allTasks, allProspects, allLinks, allRundown, allJobs, allPlans,
-    refsByTask, resultLinksByTask, prospectLinksById, fgdPlans, fgdRows, compareEntries,
-    allMembers, allTeams,
+    refsByTask, resultLinksByTask, commentsByTask, prospectLinksById, fgdPlans, fgdRows,
+    compareEntries, compareSubjects,
+    allMembers, allTeams, roleRequests,
   ] = await Promise.all([
     getEvents(), getDivisions(), getTasks(), getProspects(),
     getLinks(), getRundown(), getJobs(), getBudgetPlans(),
-    getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getProspectLinksByEvent(event.id),
-    getFgdPlans(event.id), getFgdRows(event.id), getCompareEntries(event.id),
+    getTaskRefsByEvent(event.id), getTaskLinksByEvent(event.id), getTaskCommentsByEvent(event.id),
+    getProspectLinksByEvent(event.id),
+    getFgdPlans(event.id), getFgdRows(event.id), getCompareEntries(event.id), getCompareSubjects(event.id),
     canSeeRoster ? getMembers() : [],
     canSeeRoster ? getTeams() : [],
+    // Scoped by RLS, not by us: `role_requests_read` is
+    // `user_id = auth.uid() or admin`, so an ordinary account gets back only
+    // its OWN rows and an admin gets the queue. That is why this is safe to
+    // index even though the rows carry names and emails.
+    getRoleRequests(),
   ]);
 
   /** Rows belonging to one edition. Lenient like the repo: an unscoped legacy
@@ -190,7 +237,10 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
   const tasks = forEvent(allTasks, event.id);
   const prospects = forEvent(allProspects, event.id);
   const links = forEvent(allLinks, event.id);
-  const rundown = forEvent(allRundown, event.id).filter((r) => !r.variant || r.variant === "A");
+  // No variant filter. 0035 consolidated every row to "A" and deleted the "B"
+  // set, and the rundown PAGE renders whatever is there without filtering - so
+  // a filter here could only ever hide a row the page still shows.
+  const rundown = forEvent(allRundown, event.id);
   const jobs = forEvent(allJobs, event.id);
   const plans = allPlans.filter((p) => p.event_id === event.id);
 
@@ -300,7 +350,43 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     const results = (resultLinksByTask[t.id] ?? [])
       .map((l) => `${l.label || l.url} (${l.url})${l.in_super_link ? ", juga terbit di Super Link" : ""}`)
       .join("; ");
-    out.push(taskPassage(t, divisions, event.title, refs, results));
+    out.push(taskPassage(t, divisions, event.title, refs, results, commentsSentence(commentsByTask[t.id])));
+  }
+
+  // ---- Task notes ----------------------------------------------------------
+  // The aggregate half of the same data. "Tugas mana saja yang masih ada
+  // catatannya" is a counting question and the per-task passages cannot answer
+  // it: each one only knows about itself, and the retriever would have to
+  // return all of them at once to add up.
+  {
+    const withOpen = tasks
+      .map((t) => ({ t, open: toThreads(commentsByTask[t.id]).filter((th) => !th.root.resolved) }))
+      .filter((x) => x.open.length > 0);
+    const totalThreads = Object.values(commentsByTask).reduce((n2, list) => n2 + toThreads(list).length, 0);
+    out.push({
+      id: "live-task-comments",
+      source: "Data: catatan & diskusi tugas",
+      href: "/tasks",
+      text: sentence(
+        `Catatan (komentar, diskusi, revisi) pada tugas Ormawa Visit ${event.title}:`,
+        `ada ${totalThreads} catatan di seluruh tugas,`,
+        withOpen.length
+          ? `dan ${withOpen.length} tugas masih punya catatan yang BELUM selesai: ${withOpen
+              .map(({ t, open }) =>
+                // The BODY, not just a count. Asked "apa isi catatannya", the
+                // retriever picks this summary over the per-task passage (the
+                // question's words are all here), and a summary that answers
+                // "2 catatan" and nothing else sends the reader back to the UI
+                // for something Violet was holding all along. Truncated and
+                // roots only: the whole corpus shares one 6,500-char budget.
+                `${t.title}${t.pic ? ` (PIC ${t.pic})` : ""} dengan ${open.length} catatan, isinya: ${open
+                  .map((th) => `${th.root.author_name} menulis "${clip(th.root.body, 120)}"`)
+                  .join(" dan ")}`)
+              .join("; ")}.`
+          : "tidak ada tugas yang catatannya belum selesai.",
+        "Catatan yang sudah ditandai selesai tidak lagi memunculkan lencana notifikasi pada tugasnya, tapi tetap bisa dibaca lewat tombol Edit.",
+      ),
+    });
   }
 
   // ---- Divisions -----------------------------------------------------------
@@ -583,12 +669,19 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     }
   }
 
-  if (compareEntries.length) {
+  // A compare SUBJECT is an explicit row (0041), not something derived from the
+  // entries, so the list of associations being weighed up comes from the
+  // subjects. Grouping the entries alone made a subject created from "Buat
+  // perbandingan" but not yet filled in invisible to Violet, which is exactly
+  // the state it is in right after somebody creates it and asks about it.
+  {
     const byOrg = new Map<string, typeof compareEntries>();
+    for (const sub of compareSubjects) byOrg.set(sub.org_name || "(tanpa nama)", []);
     for (const e of compareEntries) {
       const key = e.org_name || "(tanpa nama)";
       byOrg.set(key, [...(byOrg.get(key) ?? []), e]);
     }
+    if (byOrg.size) {
     out.push({
       id: "live-compare",
       source: "Data: Compare himpunan",
@@ -596,7 +689,10 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
       text: sentence(
         `Perbandingan himpunan yang menerima ajakan pada ${event.title}:`,
         `${[...byOrg.keys()].join(", ")}.`,
-        `Total ${compareEntries.length} aspek penilaian.`,
+        `Total ${compareEntries.length} aspek penilaian pada ${byOrg.size} himpunan.`,
+        [...byOrg.entries()].filter(([, rows]) => !rows.length).length
+          ? `Himpunan yang sudah dibuatkan perbandingan tapi BELUM ada aspek penilaiannya: ${[...byOrg.entries()].filter(([, rows]) => !rows.length).map(([org]) => org).join(", ")}.`
+          : "Semua himpunan yang dibandingkan sudah punya aspek penilaian.",
       ),
     });
 
@@ -608,18 +704,58 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
         href: "/himpunan",
         text: sentence(
           `Penilaian himpunan ${org} pada Ormawa Visit ${event.title}, dipakai untuk membandingkan calon mitra.`,
-          rows
-            .map((r) =>
-              sentence(
-                `Aspek ${val(r.aspect, "tanpa nama")}${r.indicator ? `, indikator yang dinilai: ${r.indicator}` : ""}.`,
-                `Kelebihan atau plus: ${val(r.plus, "belum diisi")}.`,
-                `Kekurangan atau minus: ${val(r.minus, "belum diisi")}.`,
-              ),
-            )
-            .join(" "),
+          rows.length
+            ? rows
+              .map((r) =>
+                sentence(
+                  `Aspek ${val(r.aspect, "tanpa nama")}${r.indicator ? `, indikator yang dinilai: ${r.indicator}` : ""}.`,
+                  `Kelebihan atau plus: ${val(r.plus, "belum diisi")}.`,
+                  `Kekurangan atau minus: ${val(r.minus, "belum diisi")}.`,
+                ),
+              )
+              .join(" ")
+            : "Belum ada satu pun aspek penilaian yang diisi untuk himpunan ini.",
         ),
       });
     }
+    }
+  }
+
+  // ---- Role requests -------------------------------------------------------
+  // NOT edition data: a role is global (see AGENTS.md), so this passage has no
+  // Ormawa Visit in it. Worth indexing anyway, because "apakah pengajuan peran
+  // saya sudah disetujui" is a question about THIS system that Violet could
+  // not answer at all, and the database already decides who sees what: an
+  // ordinary account reads only its own rows.
+  if (roleRequests.length) {
+    const pending = roleRequests.filter((r) => r.status === "pending");
+    const mine = roleRequests.filter((r) => r.user_id === user.id);
+    const isAdmin = user.role === "admin";
+    out.push({
+      id: "live-role-requests",
+      source: "Data: pengajuan peran (Role Request)",
+      href: isAdmin ? "/roles" : "/settings",
+      text: sentence(
+        "Pengajuan peran (role request, permintaan akses, naik peran):",
+        isAdmin
+          ? sentence(
+              `ada ${roleRequests.length} pengajuan, ${pending.length} di antaranya masih menunggu keputusan.`,
+              pending.length
+                ? `Yang menunggu: ${pending.map((r) => `${r.name || r.email} mengajukan ${ROLE_META[r.requested_role]?.label ?? r.requested_role}`).join("; ")}.`
+                : "Tidak ada yang menunggu keputusan.",
+            )
+          : sentence(
+              `pengajuan milikmu sendiri: ${mine.length} pengajuan.`,
+              ...mine.map((r) => {
+                const label = ROLE_META[r.requested_role]?.label ?? r.requested_role;
+                const state = r.status === "pending" ? "masih menunggu keputusan admin"
+                  : r.status === "approved" ? "sudah disetujui" : "diabaikan admin";
+                return `Pengajuan peran ${label} ${state}.`;
+              }),
+            ),
+        "Peran berlaku global untuk semua Ormawa Visit, dan hanya admin yang bisa menyetujuinya.",
+      ),
+    });
   }
 
   // ---- Super Link ----------------------------------------------------------

@@ -115,6 +115,26 @@ export function systemPassages(): Passage[] {
       "oleh banyak tugas sekaligus. Menghapus entri Super Link tidak menghapus referensinya, alamatnya tetap " +
       "tersimpan sebagai teks."),
 
+    p("task-comments", "Aturan: catatan & diskusi pada tugas", "/tasks",
+      "Tiap tugas di Work Breakdown bisa diberi CATATAN (komentar, comment, diskusi, revisi, masukan) yang " +
+      "berbentuk obrolan kecil menempel pada tugas itu saja. Satu tugas boleh punya lebih dari satu catatan. " +
+      "Catatan dibuka lewat tombol Edit pada tugasnya, di bagian 'Catatan & Diskusi' paling bawah. " +
+      "SIAPA YANG BOLEH: catatan awal (catatan pembuka, komentar inisiasi) hanya bisa dibuat oleh Admin, " +
+      "Koordinator, dan Staff. Intern TIDAK bisa memulai catatan baru, tapi Intern BOLEH membalas catatan " +
+      "yang sudah ada. Tamu hanya bisa membaca. " +
+      "NOTIFIKASI: tugas yang punya catatan belum selesai menampilkan lencana kecil berisi angka jumlahnya, " +
+      "tepat di samping judul tugas di tabel Work Breakdown dan di kartu Kanban, ditambah garis penanda " +
+      "di tepi kiri barisnya. Lencananya diklik untuk membuka obrolan mini berisi catatan itu, siapa " +
+      "penulisnya, dan kapan dikirim. Kalau sebuah tugas tidak punya catatan terbuka, lencananya tidak " +
+      "muncul sama sekali. " +
+      "SELESAI: catatan awal punya tombol centang 'Tandai selesai'. Menandainya selesai menutup " +
+      "notifikasi pada tugas itu, tapi percakapannya TETAP bisa dibalas dan tetap terbaca lewat tombol Edit. " +
+      "Tombol 'Buka lagi' mengembalikannya jadi belum selesai. " +
+      "Balasan hanya satu tingkat: balasan ditujukan ke catatan awal, bukan ke balasan lain. " +
+      "Menghapus catatan awal ikut menghapus seluruh balasannya. Seseorang boleh menghapus catatannya " +
+      "sendiri; menghapus catatan orang lain butuh akses penuh (Admin atau Koordinator). " +
+      "Catatan tidak ikut tersalin ketika tugas disalin ke Ormawa Visit lain, karena salinan selalu mulai dari nol."),
+
     p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
       "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
       "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +
