@@ -304,6 +304,35 @@ export const GUIDE: GuideSection[] = [
     access: { id: "Hanya Admin yang bisa membuat/mengubah edisi, serta mengunci dan membuka arsip.", en: "Only Admins can create/edit editions, and lock or unlock the archive." },
   },
   {
+    key: "inbox",
+    title: { id: "Kotak Masuk (Inbox)", en: "Inbox" },
+    purpose: {
+      id: "Menerima pengumuman dari admin, dan - bagi admin - menyiarkannya ke akun lain.",
+      en: "Receive announcements from an admin and, if you are one, broadcast them to other accounts.",
+    },
+    steps: [
+      { id: "Menu Kotak Masuk menampilkan siaran yang ditujukan ke akunmu, yang terbaru di atas. Pesan yang belum dibaca ditandai lebih tebal dan berlabel 'Baru'.", en: "The Inbox menu lists the broadcasts addressed to your account, newest first. Unread messages are bolder and carry a 'New' label." },
+      { id: "Klik pesannya untuk membaca isi lengkapnya. Membuka pesan itulah yang menandainya sudah dibaca - bukan sekadar membuka halamannya.", en: "Click a message to read it in full. Opening it is what marks it read, not merely opening the page." },
+      { id: "Kalau ingin menyimpannya sebagai penanda, tekan 'Tandai belum dibaca' di dalam pesan yang sudah terbuka. Tombol 'Tandai semua dibaca' mengosongkan angka notifikasi sekaligus.", en: "To keep it as a reminder, hit 'Mark as unread' inside an opened message. 'Mark all as read' clears the notification count in one go." },
+      { id: "Admin: buka tab 'Kelola Siaran', lalu 'Siaran Baru'. Isi judul dan isi pesannya.", en: "Admins: open the 'Manage Broadcasts' tab, then 'New Broadcast'. Fill in the title and the message." },
+      { id: "Pilih tujuannya: Semua akun, Peran tertentu (boleh lebih dari satu peran sekaligus), atau Akun tertentu. Untuk mengirim ke satu orang saja, pilih 'Akun tertentu' lalu centang satu nama.", en: "Pick the audience: All accounts, Specific roles (more than one role at a time is fine), or Specific accounts. To send to just one person, choose 'Specific accounts' and tick one name." },
+      { id: "Sebelum mengirim, sistem menunjukkan berapa kotak masuk yang akan menerimanya. Kalau angkanya nol, tombol kirim mati - tujuan yang tidak cocok dengan akun mana pun tidak akan terkirim diam-diam.", en: "Before sending, the system shows how many inboxes it will reach. If that is zero the send button stays disabled, so an audience matching no account is never sent silently." },
+      { id: "Siaran yang sudah terkirim bisa diubah atau dihapus lewat ikon pensil dan tong sampah. Menghapusnya menghilangkan pesan itu dari kotak masuk semua penerimanya.", en: "A sent broadcast can be edited or deleted with the pencil and bin icons. Deleting removes it from every recipient's inbox." },
+    ],
+    tips: [
+      { id: "Angka di samping menu Kotak Masuk adalah jumlah pesan yang belum kamu baca, dan tampil dari halaman mana pun.", en: "The number beside the Inbox menu is how many messages you have not read, and it shows from any page." },
+      { id: "Daftar penerima dibekukan saat siaran dikirim. Akun yang baru mendaftar besok tidak akan menerima siaran hari ini, dan mengubah peran seseorang tidak menambah atau mengurangi pesan yang sudah ada di kotak masuknya.", en: "The recipient list is frozen when the broadcast is sent. An account created tomorrow will not receive today's broadcast, and changing somebody's role neither adds nor removes messages already in their inbox." },
+      { id: "Mengubah tujuan siaran yang sudah terkirim tidak menandai ulang pesannya sebagai belum dibaca bagi orang yang sudah membacanya - hanya selisih penerimanya yang ditulis.", en: "Re-targeting a sent broadcast does not mark it unread again for people who already read it: only the difference in recipients is written." },
+      { id: "Tiap siaran menampilkan berapa penerimanya yang sudah membaca, misalnya '3/12 sudah dibaca'.", en: "Each broadcast shows how many recipients have read it, e.g. '3/12 read'." },
+      { id: "Sesi Tamu dipakai bersama banyak orang, jadi tidak punya kotak masuk sendiri dan tidak bisa dikirimi siaran.", en: "A Guest session is shared by many people, so it has no inbox of its own and cannot be sent a broadcast." },
+      { id: "Di Mode Demo tidak ada akun sungguhan, jadi daftar akun pada penyusun siaran selalu kosong.", en: "Demo Mode has no real accounts, so the account list in the composer is always empty." },
+    ],
+    access: {
+      id: "Semua peran bisa membuka dan membaca kotak masuknya sendiri. Hanya Admin yang bisa mengirim, mengubah, dan menghapus siaran.",
+      en: "Every role can open and read their own inbox. Only Admins can send, edit, and delete broadcasts.",
+    },
+  },
+  {
     key: "roles",
     title: { id: "Role Request (Permintaan Peran)", en: "Role Request" },
     purpose: {

@@ -135,6 +135,27 @@ export function systemPassages(): Passage[] {
       "sendiri; menghapus catatan orang lain butuh akses penuh (Admin atau Koordinator). " +
       "Catatan tidak ikut tersalin ketika tugas disalin ke Ormawa Visit lain, karena salinan selalu mulai dari nol."),
 
+    p("inbox", "Struktur data & aturan: Kotak Masuk (siaran admin)", "/inbox",
+      "Menu KOTAK MASUK (inbox, pesan, pengumuman, siaran, broadcast) berisi pesan yang dikirim admin ke " +
+      "akun-akun tertentu. Satu siaran menyimpan judul, isi pesan, siapa pengirimnya, kapan dikirim, dan " +
+      "kapan terakhir diubah. " +
+      "SIAPA YANG BOLEH MENGIRIM: hanya Admin. Koordinator, Staff, Intern, dan Tamu hanya bisa membaca " +
+      "kotak masuknya sendiri, dan tidak bisa melihat pesan milik akun lain. " +
+      "TUJUAN SIARAN ada tiga bentuk: seluruh akun; akun dengan peran tertentu (boleh beberapa peran " +
+      "sekaligus); atau akun tertentu yang dipilih satu per satu, termasuk kalau yang dipilih hanya satu " +
+      "akun. Sebelum dikirim, sistem menunjukkan berapa kotak masuk yang akan menerimanya, dan menolak " +
+      "mengirim kalau tidak ada akun yang cocok. " +
+      "DAFTAR PENERIMA DIBEKUKAN saat siaran dikirim. Akun yang mendaftar setelah itu tidak menerima siaran " +
+      "lama, dan mengubah peran seseorang tidak menambah maupun mengurangi isi kotak masuknya. " +
+      "BELUM DIBACA: pesan ditandai sudah dibaca ketika DIBUKA, bukan saat halamannya dibuka. Jumlah pesan " +
+      "yang belum dibaca muncul sebagai angka di samping menu Kotak Masuk, terlihat dari halaman mana pun. " +
+      "Ada tombol untuk menandai satu pesan kembali belum dibaca, dan tombol untuk menandai semuanya sudah dibaca. " +
+      "Admin bisa mengubah dan menghapus siaran yang sudah terkirim; menghapusnya menghilangkan pesan itu dari " +
+      "kotak masuk semua penerimanya, dan mengubah tujuannya tidak menandai ulang pesan bagi yang sudah membaca. " +
+      "Siaran TIDAK terikat Ormawa Visit mana pun, karena ditujukan ke akun, dan akun tidak punya lingkup edisi. " +
+      "Menu Role Request juga menampilkan angka notifikasi berisi jumlah pengajuan peran yang belum ditangani, " +
+      "dan itu hanya terlihat oleh Admin."),
+
     p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
       "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
       "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +

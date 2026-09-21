@@ -353,6 +353,67 @@ export type RoleRequestStatus = "pending" | "approved" | "ignored";
 
 /** A signed-up (role-less) account asking to be given a real role. Admins
  *  approve or ignore these from the "Role Request" menu. */
+/** Who a broadcast was sent to. "accounts" covers "just one account" too. */
+export type BroadcastAudience = "all" | "role" | "accounts";
+
+/**
+ * One message an admin sent to people's inboxes.
+ *
+ * The CONTENT lives here once; who received it lives in `BroadcastRecipient`,
+ * one row each. The recipient list is frozen when the broadcast is sent (see
+ * migration 0050), so `audience` and `roles` describe how that list was
+ * CHOSEN, not a rule re-evaluated every time somebody opens their inbox.
+ *
+ * `created_by` is a plain id string, not a foreign key - Mode Demo has no
+ * auth.users to point at.
+ */
+export interface Broadcast {
+  id: string;
+  title: string;
+  body: string;
+  audience: BroadcastAudience;
+  /** Only meaningful when `audience === "role"`. */
+  roles: Role[];
+  created_by: string;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/** One account's copy of a broadcast. `read_at === null` means unread. */
+export interface BroadcastRecipient {
+  id: string;
+  broadcast_id: string;
+  user_id: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+/** A broadcast as it appears in the recipient's own inbox. */
+export interface InboxMessage extends Broadcast {
+  read_at: string | null;
+}
+
+/** A broadcast as the admin sees it, with who it reached. */
+export interface BroadcastWithStats extends Broadcast {
+  recipient_count: number;
+  read_count: number;
+}
+
+/**
+ * An account, for the broadcast composer's "pick who receives this" list.
+ *
+ * Read straight from `profiles`, whose policy already lets any signed-in
+ * account read the table. Anonymous Tamu sessions are filtered out before this
+ * ever reaches the UI - see `getAccounts`.
+ */
+export interface Account {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}
+
 export interface RoleRequest {
   id: string;
   user_id: string;

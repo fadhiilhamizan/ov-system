@@ -50,6 +50,8 @@ describe("retrieval of system knowledge", () => {
     ["apa bedanya tautan hasil dan referensi tugas", "system-task-links"],
     ["siapa yang boleh menambah catatan pada tugas", "system-task-comments"],
     ["kenapa lencana komentar hilang setelah ditandai selesai", "system-task-comments"],
+    ["siapa yang boleh mengirim siaran ke kotak masuk", "system-inbox"],
+    ["kenapa akun baru tidak menerima pengumuman lama", "system-inbox"],
     ["bisa tidak satu prospek punya beberapa tautan", "system-prospect-links"],
     ["apa itu data utama Ormawa Visit", "system-prospect-primary"],
     ["kolom apa saja yang ada di rundown", "system-rundown"],

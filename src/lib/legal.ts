@@ -114,6 +114,14 @@ export const PRIVACY: LegalDoc = {
           en: "Role requests - the role you ask for and any note you write for the admin.",
         },
         {
+          id: "Catatan pada tugas - komentar dan balasan yang kamu tulis pada sebuah tugas, beserta namamu dan waktu pengirimannya.",
+          en: "Task notes - the comments and replies you write on a task, along with your name and when you sent them.",
+        },
+        {
+          id: "Siaran Kotak Masuk - judul dan isi pengumuman yang dikirim admin, siapa pengirimnya, akun mana saja yang menerimanya, dan kapan tiap penerima membukanya. Siaran hanya bisa dibaca admin dan akun yang dituju.",
+          en: "Inbox broadcasts - the title and body of an announcement an admin sends, who sent it, which accounts received it, and when each recipient opened it. A broadcast is readable only by admins and by the accounts it was addressed to.",
+        },
+        {
           id: "Data teknis - cookie yang diperlukan agar sistem berfungsi (lihat bagian 3). Kami tidak memasang alat analitik, piksel iklan, atau pelacak pihak ketiga apa pun.",
           en: "Technical data - cookies required for the system to work (see section 3). We do not install any analytics tools, advertising pixels, or third-party trackers.",
         },

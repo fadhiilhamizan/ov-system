@@ -71,6 +71,29 @@ create table if not exists task_comments (
 create index if not exists task_comments_task_idx on task_comments(task_id, created_at);
 create index if not exists task_comments_parent_idx on task_comments(parent_id);
 
+-- 0050: Kotak Masuk (siaran admin). Belum pernah ada di project demo, dan
+-- id-nya sengaja text karena demo berjalan tanpa auth.
+create table if not exists broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  audience text not null default 'all' check (audience in ('all', 'role', 'accounts')),
+  roles text[] not null default '{}',
+  created_by text not null default '',
+  created_by_name text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+create table if not exists broadcast_recipients (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid not null references broadcasts(id) on delete cascade,
+  user_id text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists broadcast_recipients_uniq
+  on broadcast_recipients(broadcast_id, user_id);
+
 -- 0038: banyak tautan per prospek, juga belum pernah ada di project demo.
 create table if not exists prospect_links (
   id uuid primary key default gen_random_uuid(),

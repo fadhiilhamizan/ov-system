@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.48.0",
+    date: "2026-09-21",
+    title: "Kotak Masuk: siaran dari admin, dan angka notifikasi di menu",
+    changes: [
+      { kind: "new", text: "Menu baru Kotak Masuk: tiap akun punya kotak masuk sendiri untuk menerima pengumuman dari admin. Pesan ditandai sudah dibaca saat dibuka, bisa ditandai belum dibaca lagi, dan ada tombol untuk menandai semuanya sekaligus." },
+      { kind: "new", text: "Admin bisa mengirim siaran ke seluruh akun, ke peran tertentu (boleh beberapa peran sekaligus), atau ke akun tertentu yang dipilih satu per satu, termasuk hanya satu akun. Siaran yang sudah terkirim bisa diubah dan dihapus, lengkap dengan catatan berapa penerimanya yang sudah membaca." },
+      { kind: "new", text: "Sebelum mengirim, penyusun siaran menunjukkan berapa kotak masuk yang akan menerimanya, dan menolak mengirim kalau tujuannya tidak cocok dengan akun mana pun. Sebelumnya hal seperti ini hanya ketahuan setelah terkirim." },
+      { kind: "ui", text: "Menu Kotak Masuk menampilkan angka pesan yang belum dibaca, dan menu Role Request menampilkan angka pengajuan peran yang belum ditangani. Keduanya terlihat dari halaman mana pun, juga saat menu samping diciutkan, dan angkanya ikut terbaca pembaca layar." },
+      { kind: "security", text: "Siaran hanya bisa dibaca admin dan orang yang memang dikirimi, ditegakkan di database. Penerima hanya boleh mengubah status dibaca pada pesannya sendiri, tidak bisa memindahkan pesan ke akun lain." },
+      { kind: "data", text: "Jalankan supabase/migrations/0050_broadcasts_inbox.sql (atau supabase/setup.sql) sebelum memakai menu ini. Siaran sengaja TIDAK ikut Backup & Rollback: isinya pesan antar akun, bukan data Ormawa Visit." },
+    ],
+  },
+  {
     version: "1.47.0",
     date: "2026-09-21",
     title: "Violet paham catatan tugas, dan beberapa data yang selama ini tidak terbaca",

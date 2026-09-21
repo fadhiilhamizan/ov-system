@@ -18,6 +18,8 @@
 --     yang perlu mendaftar ulang atau minta peran lagi.
 --   * backups                - riwayat backup justru penyelamatmu di sini.
 --   * role_requests          - pengajuan peran bukan data Ormawa Visit.
+--   * broadcasts / broadcast_recipients - siaran ditujukan ke akun, bukan ke
+--     satu Ormawa Visit, jadi tidak ikut dikosongkan bersama data edisi.
 --
 -- URUTAN LENGKAP REBUILD (lihat supabase/README.md):
 --   1. Backup manual dari Pengaturan.

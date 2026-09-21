@@ -64,6 +64,10 @@ const CONSUMERS = {
   events: ["LAYOUT"],
   backups: ["/settings"],
   roles: ["/settings", "LAYOUT"],
+  // LAYOUT, not just "/inbox": the unread count is drawn on the sidebar menu,
+  // which the shell renders on every route. Busting only the inbox page would
+  // leave the badge showing yesterday's number everywhere else.
+  inbox: ["LAYOUT"],
 } as const;
 
 export type Entity = keyof typeof CONSUMERS;

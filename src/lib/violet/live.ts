@@ -3,7 +3,7 @@ import { ROLE_META, STATUS_META } from "@/lib/constants";
 import {
   getEvents, getDivisions, getTasks, getProspects, getProspectLinksByEvent, getLinks,
   getRundown, getJobs, getBudgetPlans, getMembers, getTeams,
-  getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getRoleRequests,
+  getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getRoleRequests, getInbox,
 } from "@/lib/data/repo";
 import { getCompareEntries, getCompareSubjects, getFgdPlans, getFgdRows } from "@/lib/data/himpunan-repo";
 import { getActiveEvent } from "@/lib/session";
@@ -212,7 +212,7 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     events, allDivisions, allTasks, allProspects, allLinks, allRundown, allJobs, allPlans,
     refsByTask, resultLinksByTask, commentsByTask, prospectLinksById, fgdPlans, fgdRows,
     compareEntries, compareSubjects,
-    allMembers, allTeams, roleRequests,
+    allMembers, allTeams, roleRequests, inbox,
   ] = await Promise.all([
     getEvents(), getDivisions(), getTasks(), getProspects(),
     getLinks(), getRundown(), getJobs(), getBudgetPlans(),
@@ -226,6 +226,9 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
     // its OWN rows and an admin gets the queue. That is why this is safe to
     // index even though the rows carry names and emails.
     getRoleRequests(),
+    // The caller's OWN inbox. A guest shares one anonymous identity, so there
+    // is no personal inbox to read and no point asking the database for one.
+    user.role === "guest" ? [] : getInbox(user.id),
   ]);
 
   /** Rows belonging to one edition. Lenient like the repo: an unscoped legacy
@@ -719,6 +722,28 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
       });
     }
     }
+  }
+
+  // ---- Inbox ---------------------------------------------------------------
+  // The caller's own messages, never anybody else's: `getInbox` is keyed on
+  // their id and RLS refuses the rest, so an admin asking Violet about their
+  // inbox sees their inbox, not everyone's.
+  if (inbox.length) {
+    const unread = inbox.filter((m) => !m.read_at);
+    out.push({
+      id: "live-inbox",
+      source: "Data: Kotak Masuk",
+      href: "/inbox",
+      text: sentence(
+        "Kotak Masuk (inbox, pesan, pengumuman, siaran) milik akun yang sedang bertanya:",
+        `${inbox.length} pesan, ${unread.length} belum dibaca.`,
+        unread.length
+          ? `Yang belum dibaca: ${unread.map((m) => `"${m.title}" dari ${m.created_by_name || "Admin"} (${formatCommentTime(m.created_at)})`).join("; ")}.`
+          : "Semua pesan sudah dibaca.",
+        ...inbox.slice(0, 15).map((m) =>
+          `Pesan "${m.title}" dari ${m.created_by_name || "Admin"}, dikirim ${formatCommentTime(m.created_at)}, ${m.read_at ? "sudah dibaca" : "belum dibaca"}: ${clip(m.body, 200)}`),
+      ),
+    });
   }
 
   // ---- Role requests -------------------------------------------------------

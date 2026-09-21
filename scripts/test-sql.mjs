@@ -91,6 +91,10 @@ grant update (name, avatar_color) on public.profiles to authenticated;
 -- 0039 narrows error_log the same way, so re-apply it after the blanket grant.
 revoke insert on public.error_log from authenticated, anon;
 grant insert (kind, message, stack, path, user_agent) on public.error_log to authenticated;
+-- 0050 narrows broadcast_recipients the same way: the policy lets a recipient
+-- UPDATE their own row, the GRANT decides they may only touch read_at.
+revoke update on public.broadcast_recipients from authenticated, anon;
+grant update (read_at) on public.broadcast_recipients to authenticated;
 grant execute on all functions in schema public to anon, authenticated;
 grant execute on all functions in schema auth to anon, authenticated;
 `);
@@ -1534,6 +1538,8 @@ console.log("0046 - kunci arsip di setiap policy tulis");
     error_log: "laporan error",
     activity_log: "jejak audit, tidak punya policy tulis sama sekali",
     developers: "daftar allowlist developer",
+    broadcasts: "siaran ditujukan ke AKUN, dan akun tidak terikat Ormawa Visit mana pun",
+    broadcast_recipients: "penerima siaran adalah akun, bukan baris milik satu edisi",
   };
 
   // Hanya policy PERMISSIVE. Yang restrictive (keluarga "%_no_anon_%" di 5.6)
@@ -1716,6 +1722,77 @@ console.log("0049 - komentar tugas");
     delete from tasks where id in (${TASK}, ${TASK_LOCK});
     delete from divisions where event_id = ${OPEN};
     delete from events where id in (${OPEN}, ${LOCK});`);
+}
+
+
+// ------------------------------------------------------------------
+// 0050: Kotak Masuk.
+//
+// Yang dijaga di sini bukan "apakah tombolnya jalan", tapi apakah sebuah
+// siaran yang ditujukan ke SATU akun benar-benar tidak terbaca akun lain.
+// Tabel operasional lain sengaja dibaca siapa saja yang punya sesi; kalau pola
+// itu ikut tercopy ke sini, seluruh gunanya hilang dan tidak ada satu pun test
+// TypeScript yang bisa melihatnya - anon key itu publik.
+//
+// Yang kedua: penerima harus bisa menandai pesannya sendiri sudah dibaca,
+// TANPA bisa memindahkan pesan itu ke akun lain. Itu dijaga GRANT per-kolom,
+// bukan policy, jadi harus diuji dari kursi pemakainya.
+// ------------------------------------------------------------------
+console.log("0050 - Kotak Masuk (siaran & penerima)");
+{
+  const B = "'abcdef00-0000-0000-0000-000000000001'";
+  await db.exec(`insert into broadcasts (id, title, body, audience, created_by_name)
+      values (${B}, 'Rapat dimajukan', 'Rapat koordinasi maju jadi jam 7.', 'accounts', 'Admin');
+    insert into broadcast_recipients (broadcast_id, user_id)
+      values (${B}, '${U.staff}');`);
+
+  await check("penerima boleh membaca siarannya", U.staff, false,
+    `select * from broadcasts where id = ${B}`, "rows");
+  // Inti fiturnya: bukan penerima tidak boleh tahu isinya sama sekali.
+  await check("BUKAN penerima tidak bisa membaca siaran itu", U.intern, false,
+    `select * from broadcasts where id = ${B}`, "norows");
+  await check("BUKAN penerima juga tidak bisa membaca baris penerimanya", U.intern, false,
+    `select * from broadcast_recipients where broadcast_id = ${B}`, "norows");
+  await check("koordinator pun tidak bisa mengintip siaran yang bukan untuknya", U.coord, false,
+    `select * from broadcasts where id = ${B}`, "norows");
+  await check("admin boleh membaca semuanya", U.admin, false,
+    `select * from broadcasts where id = ${B}`, "rows");
+
+  await check("staff DITOLAK membuat siaran", U.staff, false,
+    `insert into broadcasts (title, body, audience) values ('Palsu', 'Isi', 'all')`, "deny");
+  await check("koordinator DITOLAK membuat siaran", U.coord, false,
+    `insert into broadcasts (title, body, audience) values ('Palsu', 'Isi', 'all')`, "deny");
+  await check("sesi anonim DITOLAK membuat siaran", U.anon, true,
+    `insert into broadcasts (title, body, audience) values ('Palsu', 'Isi', 'all')`, "deny");
+  await check("admin boleh membuat siaran", U.admin, false,
+    `insert into broadcasts (title, body, audience, created_by_name)
+       values ('Pengumuman', 'Isi pengumuman', 'all', 'Admin')`, "allow");
+
+  await check("staff DITOLAK menambah dirinya sebagai penerima", U.staff, false,
+    `insert into broadcast_recipients (broadcast_id, user_id) values (${B}, '${U.intern}')`, "deny");
+
+  await check("penerima boleh menandai pesannya sendiri sudah dibaca", U.staff, false,
+    `update broadcast_recipients set read_at = now() where broadcast_id = ${B}`, "allow");
+  await check("akun lain tidak bisa menandai pesan milik orang lain", U.intern, false,
+    `update broadcast_recipients set read_at = now() where broadcast_id = ${B}`, "deny");
+
+  // GRANT per-kolom, bukan policy: tanpa ini penerima bisa memindahkan pesan
+  // ke akun lain lewat baris yang memang miliknya.
+  const steal = await as(U.staff, false,
+    `update broadcast_recipients set user_id = '${U.intern}' where broadcast_id = ${B}`);
+  ok("penerima TIDAK bisa mengubah kolom selain read_at", !!steal.error);
+
+  await check("staff DITOLAK menghapus siaran", U.staff, false,
+    `delete from broadcasts where id = ${B}`, "deny");
+
+  // Menghapus siaran harus ikut membawa penerimanya; kalau tidak, yang
+  // tertinggal adalah baris yatim yang tetap dihitung sebagai belum dibaca.
+  await db.exec(`delete from broadcasts where id = ${B};`);
+  const orphans = await db.query(
+    `select count(*)::int as n from broadcast_recipients where broadcast_id = ${B}`);
+  ok("menghapus siaran ikut menghapus penerimanya", orphans.rows[0].n === 0);
+
+  await db.exec(`delete from broadcast_recipients; delete from broadcasts;`);
 }
 
 

@@ -486,6 +486,36 @@ create index if not exists role_requests_status_idx on role_requests(status, cre
 comment on column role_requests.event_id is
   'Deprecated sejak 0024: peran bersifat global, tidak pernah dibatasi satu Ormawa Visit.';
 
+-- 2.16 broadcasts + broadcast_recipients (0050): Kotak Masuk per akun.
+-- Induk menyimpan isi pesan sekali; satu baris penerima per akun sekaligus
+-- menandai sudah dibaca. Daftar penerima DIBEKUKAN saat kirim (lihat 0050 untuk
+-- alasannya). user_id/created_by sengaja TEXT tanpa FK ke auth.users: Mode Demo
+-- berjalan tanpa auth. Tabel ini TIDAK berlingkup Ormawa Visit, karena siaran
+-- ditujukan ke akun dan akun tidak terikat edisi mana pun.
+create table if not exists broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  audience text not null default 'all' check (audience in ('all', 'role', 'accounts')),
+  roles text[] not null default '{}',
+  created_by text not null default '',
+  created_by_name text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+create table if not exists broadcast_recipients (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid not null references broadcasts(id) on delete cascade,
+  user_id text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists broadcast_recipients_uniq
+  on broadcast_recipients(broadcast_id, user_id);
+create index if not exists broadcast_recipients_user_idx
+  on broadcast_recipients(user_id, read_at);
+create index if not exists broadcasts_created_idx on broadcasts(created_at desc);
+
 -- ------------------------------------------------------------------
 -- 3. Fungsi
 -- ------------------------------------------------------------------
@@ -903,7 +933,8 @@ declare t text;
 begin
   foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items', 'rundown',
-                           'job_harih', 'faqs', 'teams', 'backups', 'role_requests']
+                           'job_harih', 'faqs', 'teams', 'backups', 'role_requests',
+                           'broadcasts', 'broadcast_recipients']
   loop
     execute format('alter table %I enable row level security;', t);
   end loop;
@@ -968,6 +999,46 @@ create policy "profiles_read" on profiles for select to authenticated
 drop policy if exists "backups_admin_all" on backups;
 create policy "backups_admin_all" on backups for all
   using (auth_role() = 'admin') with check (auth_role() = 'admin');
+
+-- broadcasts / broadcast_recipients (0050) - Kotak Masuk.
+-- Baca sengaja TIDAK memakai pola "cukup punya sesi": siaran yang ditujukan ke
+-- satu akun harus tidak terbaca akun lain lewat PostgREST. Menulis siaran
+-- adalah hak admin saja, ditegakkan di sini dan bukan hanya oleh can.*.
+drop policy if exists "broadcasts_read" on broadcasts;
+create policy "broadcasts_read" on broadcasts for select to authenticated
+  using (
+    auth_role() = 'admin'
+    or exists (
+      select 1 from broadcast_recipients r
+       where r.broadcast_id = broadcasts.id
+         and r.user_id = auth.uid()::text
+    )
+  );
+drop policy if exists "broadcasts_insert" on broadcasts;
+drop policy if exists "broadcasts_update" on broadcasts;
+drop policy if exists "broadcasts_delete" on broadcasts;
+create policy "broadcasts_insert" on broadcasts for insert to authenticated
+  with check (auth_role() = 'admin');
+create policy "broadcasts_update" on broadcasts for update to authenticated
+  using (auth_role() = 'admin') with check (auth_role() = 'admin');
+create policy "broadcasts_delete" on broadcasts for delete to authenticated
+  using (auth_role() = 'admin');
+
+drop policy if exists "broadcast_recipients_read" on broadcast_recipients;
+create policy "broadcast_recipients_read" on broadcast_recipients for select to authenticated
+  using (user_id = auth.uid()::text or auth_role() = 'admin');
+drop policy if exists "broadcast_recipients_insert" on broadcast_recipients;
+drop policy if exists "broadcast_recipients_update" on broadcast_recipients;
+drop policy if exists "broadcast_recipients_delete" on broadcast_recipients;
+create policy "broadcast_recipients_insert" on broadcast_recipients for insert to authenticated
+  with check (auth_role() = 'admin');
+create policy "broadcast_recipients_delete" on broadcast_recipients for delete to authenticated
+  using (auth_role() = 'admin');
+-- Penerima menandai pesannya sendiri sudah dibaca. Yang membatasinya pada kolom
+-- read_at saja adalah GRANT per-kolom di bagian 6, pola yang sama dengan profiles.
+create policy "broadcast_recipients_update" on broadcast_recipients for update to authenticated
+  using (user_id = auth.uid()::text or auth_role() = 'admin')
+  with check (user_id = auth.uid()::text or auth_role() = 'admin');
 
 drop policy if exists "role_requests_read" on role_requests;
 create policy "role_requests_read" on role_requests for select to authenticated
@@ -1218,6 +1289,13 @@ end $do$;
 -- ------------------------------------------------------------------
 revoke update on public.profiles from authenticated, anon;
 grant update (name, avatar_color) on public.profiles to authenticated;
+
+-- broadcast_recipients (0050): penerima hanya boleh menyentuh `read_at`, tidak
+-- boleh memindahkan pesan ke akun lain atau menempelkan dirinya ke siaran yang
+-- bukan untuknya. Policy-nya mengizinkan UPDATE pada baris miliknya; GRANT ini
+-- yang memutuskan kolom mana. Sama persis dengan pola profiles di atas.
+revoke update on public.broadcast_recipients from authenticated, anon;
+grant update (read_at) on public.broadcast_recipients to authenticated;
 
 -- tasks: pembatasan kolom dari 0020/0026 dicabut. Batasan itu dulu menahan
 -- Staff/Intern pada kolom status+hasil saja; matriks sekarang memberi mereka

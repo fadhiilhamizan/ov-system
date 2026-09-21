@@ -16,6 +16,10 @@ import { createClient } from "./supabase/server";
  *  - `role_requests` - administrative workflow, and its `user_id` points at
  *    `auth.users`; restoring a row whose account was since deleted would fail
  *    the whole restore on a foreign key.
+ *  - `broadcasts` / `broadcast_recipients` - messages between ACCOUNTS, not
+ *    Ormawa Visit data, and the same reasoning as role_requests: a restore
+ *    would resurrect announcements somebody deleted on purpose and mark read
+ *    messages unread again for everyone.
  *  - `backups` itself.
  */
 const DELETE_ORDER = [

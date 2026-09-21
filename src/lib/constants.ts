@@ -149,6 +149,10 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   roles: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
+  // Kotak Masuk: semua peran boleh MEMBUKA dan membaca siarannya sendiri;
+  // hanya admin yang boleh menyiarkan, mengedit, dan menghapus. Tamu ikut
+  // "view" karena sebuah siaran bisa saja ditujukan kepadanya.
+  inbox: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   // Tamu boleh MEMBUKA Pengaturan (matriks akses, changelog, arsip spreadsheet,
   // versi) tapi tidak boleh menyentuh apa pun di sana. Kartu yang destruktif -
   // Backup & Rollback, Reset Data Demo - punya pemeriksaan `can.manageBackups`

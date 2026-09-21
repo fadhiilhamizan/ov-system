@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { SIDEBAR_COOKIE, SIDEBAR_COLLAPSED } from "@/lib/ui-prefs";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
-import { getEvents, getRoleRequestsFor } from "@/lib/data/repo";
+import { getEvents, getRoleRequestsFor, getRoleRequests, getUnreadCount } from "@/lib/data/repo";
 import { DEMO_COOKIE, demoActive } from "@/lib/demo";
 import { requestableRolesFor } from "@/lib/permissions";
 import { violetConfigured } from "@/lib/violet/llm";
@@ -46,9 +46,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const developer = isDeveloper(user);
   const beaconsEnabled = !sandboxMode && user.role !== "guest";
 
+  // Numbers drawn on the menu. Both are cheap and both are asked for by name:
+  // "ada request yang belum ditangani" and "ada pesan baru" are questions you
+  // want answered from wherever you happen to be, not only after opening the
+  // menu that holds them.
+  //
+  // Each is skipped for the roles that cannot act on it anyway: an unread
+  // count for a guest counts an inbox that cannot exist (they share one
+  // anonymous identity), and the role-request queue is an admin-only menu, so
+  // for everybody else the read would be one round trip to render nothing.
+  const [unreadInbox, pendingRoleRequests] = await Promise.all([
+    user.role === "guest" ? 0 : getUnreadCount(user.id),
+    user.role === "admin"
+      ? getRoleRequests().then((rs) => rs.filter((r) => r.status === "pending").length)
+      : 0,
+  ]);
+  const navBadges = { inbox: unreadInbox, roles: pendingRoleRequests };
+
   return (
     <AppShell
       user={user}
+      badges={navBadges}
       events={events}
       activeEventId={activeEvent.id}
       sandboxMode={sandboxMode}

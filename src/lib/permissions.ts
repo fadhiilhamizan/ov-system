@@ -218,6 +218,20 @@ export const can = {
     return can.deleteTask(user) || (!!authorId && authorId === user.id);
   },
 
+  // --- Kotak Masuk (Inbox) ---
+  /**
+   * Send, edit or delete a broadcast.
+   *
+   * Admin only, and unlike most helpers here that is the WHOLE rule: the
+   * matrix gives every other role "view" on this module, which is exactly
+   * "you can read your own inbox and nothing else". RLS says the same thing
+   * again in migration 0050, because a message aimed at one account must not
+   * be readable by the rest through PostgREST.
+   */
+  manageBroadcasts(user: AppUser): boolean {
+    return atLeast(user, "inbox", "full");
+  },
+
   // --- helpers ---
   /**
    * May this account OPEN this module?
