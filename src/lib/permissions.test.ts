@@ -3,8 +3,8 @@ import {
   accessLevel, atLeast, can, canRequestRole, canToggleLock, canWriteEvent,
   isAssignedTo, requestableRolesFor,
 } from "./permissions";
-import { MODULE_ACCESS_LEVEL, ROLE_ORDER } from "./constants";
-import type { AppUser, Task } from "./types";
+import { MODULE_ACCESS, MODULE_ACCESS_LEVEL, ROLE_ORDER } from "./constants";
+import type { AppUser, Role, Task } from "./types";
 
 function user(role: AppUser["role"]): AppUser {
   return { id: role, name: "Test User", email: "", role };
@@ -297,5 +297,30 @@ describe("accessModule / isReadOnly", () => {
   it("guest is read-only", () => {
     expect(can.isReadOnly(user("guest"))).toBe(true);
     expect(can.isReadOnly(user("staff"))).toBe(false);
+  });
+});
+
+describe("Kotak Masuk access", () => {
+  const u = (role: Role): AppUser => ({ id: "u", name: "N", email: "e@x.id", role });
+
+  it("shuts Tamu out of the menu entirely", () => {
+    // Not "view with an empty list": a shared anonymous session is not an
+    // account, so there is no inbox that could ever be theirs. accessModule is
+    // what hides the sidebar entry and what requireModule() redirects on.
+    expect(can.accessModule(u("guest"), "inbox")).toBe(false);
+    expect(MODULE_ACCESS.inbox).not.toContain("guest");
+  });
+
+  it("still lets every role that HAS an account read their own inbox", () => {
+    for (const r of ["admin", "coordinator", "staff", "intern"] as const) {
+      expect(can.accessModule(u(r), "inbox"), r).toBe(true);
+    }
+  });
+
+  it("lets only an admin broadcast", () => {
+    expect(can.manageBroadcasts(u("admin"))).toBe(true);
+    for (const r of ["coordinator", "staff", "intern", "guest"] as const) {
+      expect(can.manageBroadcasts(u(r)), r).toBe(false);
+    }
   });
 });

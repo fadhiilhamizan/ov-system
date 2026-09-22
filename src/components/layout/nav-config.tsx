@@ -14,6 +14,7 @@ import {
   Settings,
   UserRoundCheck,
   Building2,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 
@@ -150,6 +151,13 @@ export const NAV: NavGroup[] = [
   {
     group: "Sistem",
     items: [
+      {
+        key: "inbox",
+        label: "Kotak Masuk",
+        href: "/inbox",
+        icon: Inbox,
+        description: "Pengumuman & siaran dari admin",
+      },
       {
         key: "roles",
         label: "Role Request",

@@ -212,6 +212,69 @@ export const taskRefsSchema = z
     }
   });
 
+// ---------------- Task comments (0049) ----------------
+
+/**
+ * One message in a task's comment thread.
+ *
+ * 4000 characters is deliberately generous for a "chat kecil": an initiation
+ * comment is often a whole revision brief pasted in. `nonEmpty` trims first, so
+ * a message of nothing but spaces is refused rather than stored blank.
+ */
+export const taskCommentBodySchema = nonEmpty("Komentar", 4000);
+
+/** Start a thread: a task id plus the first message. There is no `parent_id`
+ *  here on purpose - a root is defined by not having one. */
+export const startTaskCommentSchema = z.object({
+  task_id: idSchema,
+  body: taskCommentBodySchema,
+});
+
+/** Reply to an existing thread. `parent_id` must name a ROOT; the action
+ *  checks that, because a self-referencing CHECK cannot. */
+export const replyTaskCommentSchema = z.object({
+  parent_id: idSchema,
+  body: taskCommentBodySchema,
+});
+
+// ---------------- Inbox / broadcasts (0050) ----------------
+
+/**
+ * One broadcast, as the composer sends it.
+ *
+ * `audience` decides which of the other two fields matters, and the refine
+ * below is what stops a broadcast being created with nobody to receive it:
+ * "kirim ke peran tertentu" with no role ticked, or "akun tertentu" with no
+ * account ticked, would otherwise save happily and reach zero inboxes, which
+ * looks identical to a delivery bug from the admin's side.
+ *
+ * `user_ids` are account ids, not rows anybody can forge into something
+ * dangerous: the action only ever writes them into `broadcast_recipients`, and
+ * an id that matches no account simply never shows anyone a message.
+ */
+export const broadcastSchema = z
+  .object({
+    title: nonEmpty("Judul", 160),
+    body: nonEmpty("Isi pesan", 4000),
+    audience: z.enum(["all", "role", "accounts"], { error: "Tujuan tidak valid." }),
+    roles: z.array(z.enum(["admin", "coordinator", "staff", "intern", "guest"]))
+      .max(5)
+      .optional()
+      .transform((v) => v ?? []),
+    user_ids: z.array(idSchema)
+      .max(500, "Terlalu banyak akun dipilih.")
+      .optional()
+      .transform((v) => v ?? []),
+  })
+  .superRefine((v, ctx) => {
+    if (v.audience === "role" && v.roles.length === 0) {
+      ctx.addIssue({ code: "custom", message: "Pilih minimal satu peran tujuan." });
+    }
+    if (v.audience === "accounts" && v.user_ids.length === 0) {
+      ctx.addIssue({ code: "custom", message: "Pilih minimal satu akun tujuan." });
+    }
+  });
+
 // ---------------- Global search ----------------
 /**
  * What the command palette may send.

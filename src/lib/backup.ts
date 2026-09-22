@@ -16,6 +16,10 @@ import { createClient } from "./supabase/server";
  *  - `role_requests` - administrative workflow, and its `user_id` points at
  *    `auth.users`; restoring a row whose account was since deleted would fail
  *    the whole restore on a foreign key.
+ *  - `broadcasts` / `broadcast_recipients` - messages between ACCOUNTS, not
+ *    Ormawa Visit data, and the same reasoning as role_requests: a restore
+ *    would resurrect announcements somebody deleted on purpose and mark read
+ *    messages unread again for everyone.
  *  - `backups` itself.
  */
 const DELETE_ORDER = [
@@ -24,6 +28,10 @@ const DELETE_ORDER = [
   // to be deleted before both, for the same reason task_links does. Leaving it
   // out would mean a restore silently loses every task reference.
   "task_refs",
+  // task_comments (0049) is a child of tasks (CASCADE) as well, and the same
+  // trap applies: leave it out and a restore cascades every task comment away
+  // with the tasks it deletes, with nothing in the snapshot to put back.
+  "task_comments",
   // prospect_links (0038) is the same shape again: a child of prospects
   // (CASCADE) and of links (SET NULL), so it goes before both.
   "prospect_links",

@@ -72,6 +72,10 @@ export const GUIDE: GuideSection[] = [
       { id: "Simpan dengan 'Simpan Perubahan', atau 'Simpan & Selesai' untuk sekaligus menandai tugas selesai.", en: "Save with 'Save Changes', or use 'Save & Done' to save and mark the task complete in one step." },
       { id: "Pilih beberapa tugas lewat kotak centang untuk ubah status atau hapus massal.", en: "Select several tasks with the checkboxes to change status or delete them in bulk." },
       { id: "Tombol 'Ubah massal' pada baris pilihan mengubah Divisi, PIC, dan Deadline sekaligus untuk semua tugas yang dicentang. Centang dulu kolom mana yang ingin diubah - kolom yang tidak dicentang tidak akan tersentuh, jadi mengganti deadline tidak ikut mengosongkan PIC-nya.", en: "The 'Bulk edit' button on the selection bar changes Division, PIC, and Deadline for every ticked task at once. First tick which fields to change - unticked fields are left alone, so changing the deadline won't also clear the PIC." },
+      { id: "Bagian 'Catatan & Diskusi' di bagian bawah pop-up Edit adalah obrolan kecil yang menempel pada tugas itu saja: dipakai untuk revisi, informasi tambahan, atau hal lain yang perlu disampaikan. Tulis di kotak 'Catatan baru untuk tugas ini' lalu tekan Enter (Shift+Enter untuk baris baru). Satu tugas boleh punya lebih dari satu catatan.", en: "The 'Notes & Discussion' block at the bottom of the Edit dialog is a small chat attached to that one task: use it for revisions, extra context, or anything else worth passing on. Type in the 'New note on this task' box and press Enter (Shift+Enter for a new line). One task may carry more than one note." },
+      { id: "Tugas yang punya catatan belum selesai menampilkan lencana berisi angka jumlahnya, tepat di samping judul tugas, plus garis penanda di tepi kiri barisnya. Klik lencananya untuk membuka obrolan mini dan membalas tanpa masuk ke Edit. Lencana yang sama ada di kartu Kanban.", en: "A task with unresolved notes shows a badge with the count right next to its title, plus a marker down the row's leading edge. Click the badge to open the mini chat and reply without going into Edit. The same badge appears on Kanban cards." },
+      { id: "Penyaring 'Catatan' di toolbar menyisakan tugas yang catatannya MASIH aktif saja. Angka di sampingnya menunjukkan berapa tugas yang akan tersisa sebelum kamu menekannya. Catatan yang sudah ditandai selesai tidak ikut, karena itu sudah beres.", en: "The 'Notes' filter in the toolbar narrows the list to tasks whose notes are STILL open. The number beside it shows how many tasks would remain before you press it. Notes already marked as done are excluded, because they are settled." },
+      { id: "Kalau catatannya sudah tuntas, tekan 'Tandai selesai' pada catatan itu. Lencana notifikasinya hilang dari tugas, tapi percakapannya tetap bisa dibalas dan tetap terbaca lewat tombol Edit. 'Buka lagi' mengembalikannya jadi belum selesai.", en: "Once a note is settled, hit 'Mark as done' on it. The notification badge disappears from the task, but the conversation can still be replied to and stays readable via Edit. 'Reopen' puts it back to unresolved." },
     ],
     tips: [
       { id: "Tautan hasil tidak akan terduplikat di Super Link walau tugas disimpan berkali-kali; mengubah atau menghapus tautan di tugas juga otomatis memperbarui Super Link.", en: "Result links never duplicate in Super Link no matter how many times you save; editing or removing a link on the task updates Super Link automatically." },
@@ -80,6 +84,8 @@ export const GUIDE: GuideSection[] = [
       { id: "Kolom # pada tabel adalah nomor urut baris yang sedang tampil (1 sampai baris terakhir), bukan nomor tugas. Kalau difokuskan ke satu divisi, penomorannya tetap mulai dari 1.", en: "The # column is the row position in the current view (1 to the last row), not the task number. Focus on one division and it still starts at 1." },
       { id: "Catatan dan Hasil yang panjang dipotong di tabel; klik 'Selengkapnya' di bawahnya untuk membaca isinya penuh di tempat, lalu 'Tutup' untuk merapikannya lagi. Tidak perlu membuka Edit hanya untuk membaca.", en: "A long Notes or Result entry is clipped in the table; click 'Show more' underneath to read all of it in place, then 'Close' to tidy it away. No need to open Edit just to read." },
       { id: "Tampilan bisa diganti antara Tabel, Kanban, dan Timeline.", en: "You can switch between Table, Kanban, and Timeline views." },
+      { id: "Catatan awal hanya bisa dibuat Admin, Koordinator, dan Staff. Intern tidak bisa memulai catatan baru, tapi tetap bisa membalas catatan yang sudah ada - jadi permintaan revisi datang dari yang memegang arah tugasnya, dan yang mengerjakan tetap bisa menjawab.", en: "Only Admins, Coordinators and Staff can start a note. Interns cannot open a new one but can always reply to an existing one, so a revision request comes from whoever owns the task's direction while the person doing the work can still answer." },
+      { id: "Catatan tidak ikut tersalin ketika tugas disalin ke Ormawa Visit lain, karena salinan tugas memang selalu mulai dari nol.", en: "Notes are not carried over when a task is copied into another Ormawa Visit, because a copied task always starts fresh." },
     ],
     access: {
       id: "Admin & Koordinator akses penuh (termasuk hapus). Staff & Intern akses terbatas: boleh membuat tugas baru, mengubah, dan mengisi hasil - tapi tidak boleh menghapus. Tamu hanya melihat.",
@@ -297,6 +303,35 @@ export const GUIDE: GuideSection[] = [
       { id: "Admin tetap bisa mengubah isi edisi yang diarsipkan, supaya kesalahan lama masih bisa diperbaiki tanpa harus membuka kuncinya untuk semua orang.", en: "Admins can still edit an archived edition, so an old mistake can be corrected without reopening it for everyone." },
     ],
     access: { id: "Hanya Admin yang bisa membuat/mengubah edisi, serta mengunci dan membuka arsip.", en: "Only Admins can create/edit editions, and lock or unlock the archive." },
+  },
+  {
+    key: "inbox",
+    title: { id: "Kotak Masuk (Inbox)", en: "Inbox" },
+    purpose: {
+      id: "Menerima pengumuman dari admin, dan - bagi admin - menyiarkannya ke akun lain.",
+      en: "Receive announcements from an admin and, if you are one, broadcast them to other accounts.",
+    },
+    steps: [
+      { id: "Menu Kotak Masuk menampilkan siaran yang ditujukan ke akunmu, yang terbaru di atas. Pesan yang belum dibaca ditandai lebih tebal dan berlabel 'Baru'.", en: "The Inbox menu lists the broadcasts addressed to your account, newest first. Unread messages are bolder and carry a 'New' label." },
+      { id: "Klik pesannya untuk membaca isi lengkapnya. Membuka pesan itulah yang menandainya sudah dibaca - bukan sekadar membuka halamannya.", en: "Click a message to read it in full. Opening it is what marks it read, not merely opening the page." },
+      { id: "Kalau ingin menyimpannya sebagai penanda, tekan 'Tandai belum dibaca' di dalam pesan yang sudah terbuka. Tombol 'Tandai semua dibaca' mengosongkan angka notifikasi sekaligus.", en: "To keep it as a reminder, hit 'Mark as unread' inside an opened message. 'Mark all as read' clears the notification count in one go." },
+      { id: "Admin: buka tab 'Kelola Siaran', lalu 'Siaran Baru'. Isi judul dan isi pesannya.", en: "Admins: open the 'Manage Broadcasts' tab, then 'New Broadcast'. Fill in the title and the message." },
+      { id: "Pilih tujuannya: Semua akun, Peran tertentu (boleh lebih dari satu peran sekaligus), atau Akun tertentu. Untuk mengirim ke satu orang saja, pilih 'Akun tertentu' lalu centang satu nama.", en: "Pick the audience: All accounts, Specific roles (more than one role at a time is fine), or Specific accounts. To send to just one person, choose 'Specific accounts' and tick one name." },
+      { id: "Sebelum mengirim, sistem menunjukkan berapa kotak masuk yang akan menerimanya. Kalau angkanya nol, tombol kirim mati - tujuan yang tidak cocok dengan akun mana pun tidak akan terkirim diam-diam.", en: "Before sending, the system shows how many inboxes it will reach. If that is zero the send button stays disabled, so an audience matching no account is never sent silently." },
+      { id: "Siaran yang sudah terkirim bisa diubah atau dihapus lewat ikon pensil dan tong sampah. Menghapusnya menghilangkan pesan itu dari kotak masuk semua penerimanya.", en: "A sent broadcast can be edited or deleted with the pencil and bin icons. Deleting removes it from every recipient's inbox." },
+    ],
+    tips: [
+      { id: "Angka di samping menu Kotak Masuk adalah jumlah pesan yang belum kamu baca, dan tampil dari halaman mana pun.", en: "The number beside the Inbox menu is how many messages you have not read, and it shows from any page." },
+      { id: "Daftar penerima dibekukan saat siaran dikirim. Akun yang baru mendaftar besok tidak akan menerima siaran hari ini, dan mengubah peran seseorang tidak menambah atau mengurangi pesan yang sudah ada di kotak masuknya.", en: "The recipient list is frozen when the broadcast is sent. An account created tomorrow will not receive today's broadcast, and changing somebody's role neither adds nor removes messages already in their inbox." },
+      { id: "Mengubah tujuan siaran yang sudah terkirim tidak menandai ulang pesannya sebagai belum dibaca bagi orang yang sudah membacanya - hanya selisih penerimanya yang ditulis.", en: "Re-targeting a sent broadcast does not mark it unread again for people who already read it: only the difference in recipients is written." },
+      { id: "Tiap siaran menampilkan berapa penerimanya yang sudah membaca, misalnya '3/12 sudah dibaca'.", en: "Each broadcast shows how many recipients have read it, e.g. '3/12 read'." },
+      { id: "Peran Tamu tidak punya akses ke menu ini sama sekali: menunya tidak muncul di daftar samping, dan membuka alamatnya langsung akan dialihkan ke Dashboard. Sesi Tamu dipakai bersama banyak orang, jadi tidak ada satu akun pun yang bisa memiliki kotak masuknya. Karena itu Tamu juga tidak bisa dipilih sebagai tujuan siaran.", en: "The Guest role has no access to this menu at all: it does not appear in the sidebar, and opening its address directly redirects to the Dashboard. A Guest session is shared by many people, so no single account could own that inbox. That is also why Guest cannot be picked as a broadcast audience." },
+      { id: "Di Mode Demo tidak ada akun sungguhan, jadi daftar akun pada penyusun siaran selalu kosong.", en: "Demo Mode has no real accounts, so the account list in the composer is always empty." },
+    ],
+    access: {
+      id: "Admin, Koordinator, Staff, dan Intern bisa membuka dan membaca kotak masuknya sendiri. Tamu tidak punya akses. Hanya Admin yang bisa mengirim, mengubah, dan menghapus siaran.",
+      en: "Admins, Coordinators, Staff, and Interns can open and read their own inbox. Guests have no access. Only Admins can send, edit, and delete broadcasts.",
+    },
   },
   {
     key: "roles",

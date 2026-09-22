@@ -35,6 +35,7 @@ export const APP_ROUTES: Record<string, readonly string[]> = {
   "/budget": [],
   "/members": [],
   "/events": [],
+  "/inbox": [],
   "/roles": [],
   "/faq": [],
   "/privacy": [],
@@ -55,6 +56,7 @@ export const APP_ROUTES: Record<string, readonly string[]> = {
     "guide-links",
     "guide-budget",
     "guide-events",
+    "guide-inbox",
     "guide-roles",
     "guide-violet",
     "guide-settings",
@@ -84,6 +86,7 @@ const GUIDE_KEY_TO_ROUTE: Record<string, string> = {
   links: "/links",
   budget: "/budget",
   events: "/events",
+  inbox: "/inbox",
   roles: "/roles",
   settings: "/settings",
   // NOTE: "violet" is deliberately absent. Violet is a floating button, not a

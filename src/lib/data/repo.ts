@@ -7,10 +7,15 @@ import { effectiveStatus } from "../format";
 import { divisionFields, memberInDivision } from "../members";
 import { planTotal, primaryBudgetPlan } from "../budget";
 import { uid } from "../utils";
+import { normalizeRole } from "../auth";
 import type {
   BudgetItem,
   CloneModule,
   CloneSources,
+  Account,
+  Broadcast,
+  BroadcastRecipient,
+  BroadcastWithStats,
   BudgetPlan,
   Division,
   Faq,
@@ -22,10 +27,12 @@ import type {
   ProspectLink,
   ProspectLinkInput,
   RoleRequest,
+  InboxMessage,
   RundownItem,
   Task,
   TaskLink,
   TaskLinkInput,
+  TaskComment,
   TaskRef,
   TaskRefInput,
   TaskStatus,
@@ -431,6 +438,295 @@ export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
       await must(client.from("task_refs").insert({ task_id: taskId, ...row }));
     }
   }
+}
+
+// ---------------- Task comments ----------------
+// The per-task conversation shown in Work Breakdown (migration 0049). A row
+// with `parent_id === null` is a thread root ("komentar inisiasi"); everything
+// else is a reply to one. Ordered oldest-first so a thread reads like a chat.
+
+export const getTaskComments = cache(async (taskId: string): Promise<TaskComment[]> => {
+  const data = await readRows<TaskComment[]>(
+    "task comments",
+    (await sb()).from("task_comments").select("*").eq("task_id", taskId).order("created_at"),
+    [],
+  );
+  return coalesce(data, ["body", "author_id", "author_name", "author_role", "resolved_by"]);
+});
+
+/** One row by id, or null. The actions need the parent task's edition (for the
+ *  archive guard) and the author (for "may I delete this?"). */
+export const getTaskComment = cache(async (id: string): Promise<TaskComment | null> => {
+  const row = await readRows<TaskComment | null>(
+    "task comment",
+    (await sb()).from("task_comments").select("*").eq("id", id).maybeSingle(),
+    null,
+  );
+  return row ? coalesce([row], ["body", "author_id", "author_name", "author_role", "resolved_by"])[0] : null;
+});
+
+/**
+ * Every comment on an edition's tasks, keyed by task id (one round trip).
+ *
+ * Same `!inner` join as `getTaskRefsByEvent`: the embedded parent is a filter,
+ * not data, so it is dropped before the rows travel to the client.
+ */
+export const getTaskCommentsByEvent = cache(
+  async (eventId: string): Promise<Record<string, TaskComment[]>> => {
+    const data = await readRows<TaskComment[]>(
+      "task comments by edition",
+      (await sb())
+        .from("task_comments")
+        .select("*, tasks!inner(event_id)")
+        .eq("tasks.event_id", eventId)
+        .order("created_at"),
+      [],
+    );
+    const rows = coalesce(dropEmbed(data, "tasks"), [
+      "body", "author_id", "author_name", "author_role", "resolved_by",
+    ]);
+    const byTask: Record<string, TaskComment[]> = {};
+    for (const r of rows) (byTask[r.task_id] ??= []).push(r);
+    return byTask;
+  },
+);
+
+export interface TaskCommentRow {
+  task_id: string;
+  parent_id: string | null;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_role: string;
+}
+
+export async function createTaskComment(row: TaskCommentRow): Promise<string | null> {
+  const data = await must(
+    (await sb()).from("task_comments").insert(row).select("id").single(),
+  );
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+/** Tick / untick a thread as finished. Only a ROOT is ever passed here - the
+ *  action refuses a reply, and a DB CHECK backs that up. */
+export async function setTaskCommentResolved(id: string, resolved: boolean, by: string) {
+  await must(
+    (await sb())
+      .from("task_comments")
+      .update({
+        resolved,
+        resolved_at: resolved ? new Date().toISOString() : null,
+        resolved_by: resolved ? by : "",
+      })
+      .eq("id", id),
+  );
+}
+
+/** Delete one comment. A root takes its replies with it (ON DELETE CASCADE). */
+export async function deleteTaskComment(id: string) {
+  await must((await sb()).from("task_comments").delete().eq("id", id));
+}
+
+// ---------------- Inbox / broadcasts ----------------
+// A broadcast is content (parent) plus one recipient row per account. See
+// migration 0050 for why the recipient list is frozen at send time rather than
+// re-derived from `audience` on every read.
+
+/**
+ * Every account that can receive a broadcast.
+ *
+ * Anonymous Tamu sessions are dropped: `handle_new_user` gives every auth user
+ * a profile, including the throwaway identities behind the guest button, and a
+ * message addressed to a session that no one will ever sign into again is
+ * noise in the admin's picker and a wrong number in "sent to N accounts".
+ * An account is real here if it has an email, which is exactly what an
+ * anonymous sign-in lacks.
+ */
+export const getAccounts = cache(async (): Promise<Account[]> => {
+  const data = await readRows<Account[]>(
+    "accounts",
+    (await sb()).from("profiles").select("id, name, email, role").order("name"),
+    [],
+  );
+  return coalesce(data, ["name", "email"])
+    .filter((a) => a.email.trim())
+    // `profiles.role` menyimpan 'viewer', sedangkan seluruh aplikasi memakai
+    // 'guest'. Tanpa pemetaan ini ROLE_META[a.role] undefined dan penyaringan
+    // per peran tidak pernah cocok - gagalnya diam, bukan error.
+    .map((a) => ({ ...a, role: normalizeRole(a.role) }))
+    // Tamu tidak punya akses menu Kotak Masuk (lihat MODULE_ACCESS_LEVEL), jadi
+    // mengirimi mereka siaran berarti menulis pesan ke kotak yang tidak bisa
+    // dibuka siapa pun. Termasuk akun terdaftar yang perannya belum disetujui.
+    .filter((a) => a.role !== "guest");
+});
+
+/** One account's inbox, newest first, with its own read state joined on. */
+export const getInbox = cache(async (userId: string): Promise<InboxMessage[]> => {
+  const rows = await readRows<(BroadcastRecipient & { broadcasts: Broadcast | null })[]>(
+    "inbox",
+    (await sb())
+      .from("broadcast_recipients")
+      .select("*, broadcasts!inner(*)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    [],
+  );
+  return rows
+    .filter((r) => r.broadcasts)
+    .map((r) => ({
+      ...(r.broadcasts as Broadcast),
+      roles: (r.broadcasts as Broadcast).roles ?? [],
+      read_at: r.read_at,
+    }));
+});
+
+/**
+ * How many messages this account has not opened yet.
+ *
+ * A COUNT, not `getInbox().length`: this runs in the app shell on every single
+ * navigation to draw the number on the menu, and shipping every message body
+ * across the wire to length-check an array is the kind of cost that only shows
+ * up once the inbox is big.
+ */
+export const getUnreadCount = cache(async (userId: string): Promise<number> => {
+  const { count, error } = await (await sb())
+    .from("broadcast_recipients")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("read_at", null);
+  // A table this database has not migrated yet is the one case that degrades
+  // rather than throws, same rule as readRows - the badge is not worth taking
+  // the whole shell down for.
+  if (error) return 0;
+  return count ?? 0;
+});
+
+/** Everything the admin sent, with how far each one got. */
+export const getBroadcasts = cache(async (): Promise<BroadcastWithStats[]> => {
+  const list = await readRows<Broadcast[]>(
+    "broadcasts",
+    (await sb()).from("broadcasts").select("*").order("created_at", { ascending: false }),
+    [],
+  );
+  if (!list.length) return [];
+  const recipients = await readRows<BroadcastRecipient[]>(
+    "broadcast recipients",
+    (await sb()).from("broadcast_recipients").select("broadcast_id, read_at"),
+    [],
+  );
+  return coalesce(list, ["title", "body", "created_by", "created_by_name"]).map((b) => {
+    const mine = recipients.filter((r) => r.broadcast_id === b.id);
+    return {
+      ...b,
+      roles: b.roles ?? [],
+      recipient_count: mine.length,
+      read_count: mine.filter((r) => r.read_at).length,
+    };
+  });
+});
+
+export const getBroadcast = cache(async (id: string): Promise<Broadcast | null> => {
+  const row = await readRows<Broadcast | null>(
+    "broadcast",
+    (await sb()).from("broadcasts").select("*").eq("id", id).maybeSingle(),
+    null,
+  );
+  return row ? { ...row, roles: row.roles ?? [] } : null;
+});
+
+/** The account ids a broadcast was sent to, for re-opening the edit form. */
+export const getBroadcastRecipientIds = cache(async (id: string): Promise<string[]> => {
+  const rows = await readRows<{ user_id: string }[]>(
+    "broadcast recipient ids",
+    (await sb()).from("broadcast_recipients").select("user_id").eq("broadcast_id", id),
+    [],
+  );
+  return rows.map((r) => r.user_id);
+});
+
+export interface BroadcastRow {
+  title: string;
+  body: string;
+  audience: Broadcast["audience"];
+  roles: string[];
+  created_by: string;
+  created_by_name: string;
+}
+
+export async function createBroadcast(row: BroadcastRow): Promise<string | null> {
+  const data = await must(
+    (await sb()).from("broadcasts").insert(row).select("id").single(),
+  );
+  return (data as { id?: string } | null)?.id ?? null;
+}
+
+export async function updateBroadcast(
+  id: string,
+  patch: Partial<BroadcastRow>,
+): Promise<void> {
+  await must(
+    (await sb())
+      .from("broadcasts")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", id),
+  );
+}
+
+export async function deleteBroadcast(id: string): Promise<void> {
+  // Recipients go with it through ON DELETE CASCADE (0050).
+  await must((await sb()).from("broadcasts").delete().eq("id", id));
+}
+
+/**
+ * Make the recipient list exactly `userIds`.
+ *
+ * Re-targeting an edited broadcast must not resend it to people who already
+ * had it: their row (and its read state) is left alone, only the difference is
+ * written. Dropping everybody and re-inserting would mark every message unread
+ * again, which reads to the recipient as a second message that never came.
+ */
+export async function syncBroadcastRecipients(broadcastId: string, userIds: string[]) {
+  const client = await sb();
+  const existing = await readRows<{ id: string; user_id: string }[]>(
+    "broadcast recipients",
+    client.from("broadcast_recipients").select("id, user_id").eq("broadcast_id", broadcastId),
+    [],
+  );
+  const want = new Set(userIds);
+  const have = new Set(existing.map((r) => r.user_id));
+
+  const drop = existing.filter((r) => !want.has(r.user_id)).map((r) => r.id);
+  if (drop.length) {
+    await must(client.from("broadcast_recipients").delete().in("id", drop));
+  }
+  const add = userIds.filter((id) => !have.has(id));
+  if (add.length) {
+    await must(client.from("broadcast_recipients").insert(
+      add.map((user_id) => ({ broadcast_id: broadcastId, user_id })),
+    ));
+  }
+}
+
+/** Mark one message read, or unread again. Scoped to the caller's own row. */
+export async function setInboxRead(broadcastId: string, userId: string, read: boolean) {
+  await must(
+    (await sb())
+      .from("broadcast_recipients")
+      .update({ read_at: read ? new Date().toISOString() : null })
+      .eq("broadcast_id", broadcastId)
+      .eq("user_id", userId),
+  );
+}
+
+/** Mark everything in this account's inbox as read. */
+export async function markInboxAllRead(userId: string) {
+  await must(
+    (await sb())
+      .from("broadcast_recipients")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("read_at", null),
+  );
 }
 
 // ---------------- Prospects ----------------
@@ -1187,6 +1483,10 @@ export async function cloneEventData(
           notes: t.notes, result: "", status: "todo" as TaskStatus,
         };
       });
+      // Comments (0049) are NOT copied, on purpose and by omission: a copied
+      // task is a fresh plan with its progress reset, and a revision request
+      // from last edition's execution would arrive already answered - or
+      // worse, raise a notification on a task nobody has started.
       if (rows.length) await must(client.from("tasks").insert(rows));
     }
 

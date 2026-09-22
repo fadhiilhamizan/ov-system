@@ -10,7 +10,7 @@
 -- mengosongkan dulu, lalu seed SEKALI.
 --
 -- YANG DIHAPUS: seluruh data operasional Ormawa Visit -
---   task_links, task_refs, prospect_links, budget_items, tasks, members, teams,
+--   task_links, task_refs, task_comments, prospect_links, budget_items, tasks, members, teams,
 --   rundown, job_harih, prospects, links, budget_plans, faqs, divisions, events.
 --
 -- YANG TIDAK DISENTUH (sengaja):
@@ -18,6 +18,8 @@
 --     yang perlu mendaftar ulang atau minta peran lagi.
 --   * backups                - riwayat backup justru penyelamatmu di sini.
 --   * role_requests          - pengajuan peran bukan data Ormawa Visit.
+--   * broadcasts / broadcast_recipients - siaran ditujukan ke akun, bukan ke
+--     satu Ormawa Visit, jadi tidak ikut dikosongkan bersama data edisi.
 --
 -- URUTAN LENGKAP REBUILD (lihat supabase/README.md):
 --   1. Backup manual dari Pengaturan.
@@ -56,7 +58,7 @@ begin
   -- Urutan anak-dulu. Sebagian sudah ikut terhapus lewat ON DELETE CASCADE,
   -- tapi menyebutkannya eksplisit membuat laporannya jujur dan urutannya jelas.
   foreach t in array array[
-    'task_links', 'task_refs', 'prospect_links', 'budget_items', 'tasks',
+    'task_links', 'task_refs', 'task_comments', 'prospect_links', 'budget_items', 'tasks',
     'members', 'teams', 'rundown', 'job_harih', 'prospects', 'links',
     'budget_plans', 'faqs', 'divisions', 'events'
   ]

@@ -235,6 +235,33 @@ create table if not exists task_refs (
 create index if not exists task_refs_task_idx on task_refs(task_id);
 create index if not exists task_refs_link_idx on task_refs(link_id);
 
+-- 2.7c task_comments (0049): catatan/komentar per tugas di Work Breakdown.
+-- parent_id null = komentar inisiasi (akar thread); terisi = balasan atas
+-- thread itu. Satu tugas boleh punya banyak thread. `resolved` hanya boleh
+-- true di akar (lihat CHECK) karena "selesai" adalah sifat THREAD, bukan sifat
+-- satu pesan. author_id sengaja TEXT tanpa FK ke auth.users: Mode Demo
+-- berjalan tanpa auth (id-nya "admin"/"staff"), dan tabel ini ikut di-backup -
+-- FK ke akun yang sudah dihapus akan menggagalkan restore (lihat 0049 dan
+-- src/lib/backup.ts).
+create table if not exists task_comments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  parent_id uuid references task_comments(id) on delete cascade,
+  body text not null,
+  author_id text not null default '',
+  author_name text not null default '',
+  author_role text not null default '',
+  resolved boolean not null default false,
+  resolved_at timestamptz,
+  resolved_by text not null default '',
+  created_at timestamptz not null default now(),
+  constraint task_comments_reply_not_resolved check (parent_id is null or resolved = false)
+);
+create index if not exists task_comments_task_idx on task_comments(task_id, created_at);
+create index if not exists task_comments_parent_idx on task_comments(parent_id);
+create index if not exists task_comments_open_idx
+  on task_comments(task_id) where parent_id is null and not resolved;
+
 -- 2.8 prospects (Reach & Offer) ------------------------------------
 create table if not exists prospects (
   id uuid primary key default gen_random_uuid(),
@@ -459,6 +486,36 @@ create index if not exists role_requests_status_idx on role_requests(status, cre
 comment on column role_requests.event_id is
   'Deprecated sejak 0024: peran bersifat global, tidak pernah dibatasi satu Ormawa Visit.';
 
+-- 2.16 broadcasts + broadcast_recipients (0050): Kotak Masuk per akun.
+-- Induk menyimpan isi pesan sekali; satu baris penerima per akun sekaligus
+-- menandai sudah dibaca. Daftar penerima DIBEKUKAN saat kirim (lihat 0050 untuk
+-- alasannya). user_id/created_by sengaja TEXT tanpa FK ke auth.users: Mode Demo
+-- berjalan tanpa auth. Tabel ini TIDAK berlingkup Ormawa Visit, karena siaran
+-- ditujukan ke akun dan akun tidak terikat edisi mana pun.
+create table if not exists broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  audience text not null default 'all' check (audience in ('all', 'role', 'accounts')),
+  roles text[] not null default '{}',
+  created_by text not null default '',
+  created_by_name text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+create table if not exists broadcast_recipients (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid not null references broadcasts(id) on delete cascade,
+  user_id text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists broadcast_recipients_uniq
+  on broadcast_recipients(broadcast_id, user_id);
+create index if not exists broadcast_recipients_user_idx
+  on broadcast_recipients(user_id, read_at);
+create index if not exists broadcasts_created_idx on broadcasts(created_at desc);
+
 -- ------------------------------------------------------------------
 -- 3. Fungsi
 -- ------------------------------------------------------------------
@@ -606,7 +663,7 @@ declare
   -- Urutan HAPUS: anak dulu. INSERT menyusuri terbalik. Kembar dengan
   -- DELETE_ORDER di src/lib/backup.ts.
   del_order constant text[] := array[
-    'task_links', 'task_refs', 'prospect_links', 'budget_items',
+    'task_links', 'task_refs', 'task_comments', 'prospect_links', 'budget_items',
     'tasks', 'members', 'teams', 'rundown', 'job_harih',
     'prospects', 'links', 'budget_plans', 'faqs', 'divisions', 'events'
   ];
@@ -874,9 +931,10 @@ create trigger trg_assign_job_no before insert on job_harih
 do $do$
 declare t text;
 begin
-  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['profiles', 'divisions', 'events', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items', 'rundown',
-                           'job_harih', 'faqs', 'teams', 'backups', 'role_requests']
+                           'job_harih', 'faqs', 'teams', 'backups', 'role_requests',
+                           'broadcasts', 'broadcast_recipients']
   loop
     execute format('alter table %I enable row level security;', t);
   end loop;
@@ -889,7 +947,7 @@ end $do$;
 do $do$
 declare t text;
 begin
-  foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['divisions', 'events', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'rundown', 'job_harih', 'faqs']
   loop
     execute format('drop policy if exists "read_all" on %I;', t);
@@ -941,6 +999,46 @@ create policy "profiles_read" on profiles for select to authenticated
 drop policy if exists "backups_admin_all" on backups;
 create policy "backups_admin_all" on backups for all
   using (auth_role() = 'admin') with check (auth_role() = 'admin');
+
+-- broadcasts / broadcast_recipients (0050) - Kotak Masuk.
+-- Baca sengaja TIDAK memakai pola "cukup punya sesi": siaran yang ditujukan ke
+-- satu akun harus tidak terbaca akun lain lewat PostgREST. Menulis siaran
+-- adalah hak admin saja, ditegakkan di sini dan bukan hanya oleh can.*.
+drop policy if exists "broadcasts_read" on broadcasts;
+create policy "broadcasts_read" on broadcasts for select to authenticated
+  using (
+    auth_role() = 'admin'
+    or exists (
+      select 1 from broadcast_recipients r
+       where r.broadcast_id = broadcasts.id
+         and r.user_id = auth.uid()::text
+    )
+  );
+drop policy if exists "broadcasts_insert" on broadcasts;
+drop policy if exists "broadcasts_update" on broadcasts;
+drop policy if exists "broadcasts_delete" on broadcasts;
+create policy "broadcasts_insert" on broadcasts for insert to authenticated
+  with check (auth_role() = 'admin');
+create policy "broadcasts_update" on broadcasts for update to authenticated
+  using (auth_role() = 'admin') with check (auth_role() = 'admin');
+create policy "broadcasts_delete" on broadcasts for delete to authenticated
+  using (auth_role() = 'admin');
+
+drop policy if exists "broadcast_recipients_read" on broadcast_recipients;
+create policy "broadcast_recipients_read" on broadcast_recipients for select to authenticated
+  using (user_id = auth.uid()::text or auth_role() = 'admin');
+drop policy if exists "broadcast_recipients_insert" on broadcast_recipients;
+drop policy if exists "broadcast_recipients_update" on broadcast_recipients;
+drop policy if exists "broadcast_recipients_delete" on broadcast_recipients;
+create policy "broadcast_recipients_insert" on broadcast_recipients for insert to authenticated
+  with check (auth_role() = 'admin');
+create policy "broadcast_recipients_delete" on broadcast_recipients for delete to authenticated
+  using (auth_role() = 'admin');
+-- Penerima menandai pesannya sendiri sudah dibaca. Yang membatasinya pada kolom
+-- read_at saja adalah GRANT per-kolom di bagian 6, pola yang sama dengan profiles.
+create policy "broadcast_recipients_update" on broadcast_recipients for update to authenticated
+  using (user_id = auth.uid()::text or auth_role() = 'admin')
+  with check (user_id = auth.uid()::text or auth_role() = 'admin');
 
 drop policy if exists "role_requests_read" on role_requests;
 create policy "role_requests_read" on role_requests for select to authenticated
@@ -1009,6 +1107,26 @@ create policy "task_refs_update" on task_refs for update to authenticated
 create policy "task_refs_delete" on task_refs for delete to authenticated
   using (has_role()
     and writable_event((select t.event_id from tasks t where t.id = task_refs.task_id)));
+
+-- task_comments (0049) ikut tugas induknya juga, aturannya sama persis. Siapa
+-- yang boleh MEMULAI thread (bukan sekadar membalas) adalah aturan peran, dan
+-- itu hidup di src/lib/permissions.ts + aksi servernya - RLS di sini hanya
+-- lapis keduanya: punya peran, dan edisinya tidak diarsipkan.
+drop policy if exists "task_comments_write" on task_comments;
+drop policy if exists "task_comments_insert" on task_comments;
+drop policy if exists "task_comments_update" on task_comments;
+drop policy if exists "task_comments_delete" on task_comments;
+create policy "task_comments_insert" on task_comments for insert to authenticated
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
+create policy "task_comments_update" on task_comments for update to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)))
+  with check (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
+create policy "task_comments_delete" on task_comments for delete to authenticated
+  using (has_role()
+    and writable_event((select t.event_id from tasks t where t.id = task_comments.task_id)));
 
 -- prospect_links (0038) ikut prospek induknya, aturannya sama persis.
 drop policy if exists "prospect_links_write" on prospect_links;
@@ -1171,6 +1289,13 @@ end $do$;
 -- ------------------------------------------------------------------
 revoke update on public.profiles from authenticated, anon;
 grant update (name, avatar_color) on public.profiles to authenticated;
+
+-- broadcast_recipients (0050): penerima hanya boleh menyentuh `read_at`, tidak
+-- boleh memindahkan pesan ke akun lain atau menempelkan dirinya ke siaran yang
+-- bukan untuknya. Policy-nya mengizinkan UPDATE pada baris miliknya; GRANT ini
+-- yang memutuskan kolom mana. Sama persis dengan pola profiles di atas.
+revoke update on public.broadcast_recipients from authenticated, anon;
+grant update (read_at) on public.broadcast_recipients to authenticated;
 
 -- tasks: pembatasan kolom dari 0020/0026 dicabut. Batasan itu dulu menahan
 -- Staff/Intern pada kolom status+hasil saja; matriks sekarang memberi mereka
@@ -1339,7 +1464,7 @@ end $fn$;
 do $do$
 declare t text;
 begin
-  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items',
                            'rundown', 'job_harih', 'faqs', 'teams', 'profiles', 'role_requests']
   loop
@@ -1806,7 +1931,7 @@ begin
   if not is_developer() then
     raise exception 'hanya developer';
   end if;
-  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs',
+  foreach t in array array['events', 'divisions', 'members', 'tasks', 'task_links', 'task_refs', 'task_comments',
                            'prospects', 'prospect_links', 'links', 'budget_plans', 'budget_items',
                            'rundown', 'job_harih', 'faqs', 'teams', 'profiles', 'role_requests',
                            'backups', 'activity_log', 'error_log', 'presence']

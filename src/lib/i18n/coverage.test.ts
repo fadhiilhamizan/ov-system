@@ -3,6 +3,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { EN } from "./dict.en";
+import {
+  ACCESS_LEVEL_META, ACCESS_LEVEL_ORDER, ROLE_META, ROLE_ORDER,
+} from "../constants";
 
 // ============================================================
 // Translation coverage.
@@ -164,5 +167,35 @@ describe("EN translation coverage", () => {
     // it renders as empty text on screen.
     const blank = Object.entries(EN).filter(([, en]) => !en.trim());
     expect(blank.map(([id]) => id)).toEqual([]);
+  });
+});
+
+// ============================================================
+// The blind spot the scan above cannot close by reading harder.
+//
+// `t(ROLE_META[r].description)` has no literal to find: the key only exists at
+// runtime. So a role description can be reworded in constants.ts and the
+// English map keeps the OLD key, which `translate()` answers by falling back to
+// Indonesian - silently, for English readers only, on four screens at once
+// (Pengaturan, the sidebar footer, the demo role switcher, the role-request
+// dialog). That is exactly what happened when Staff and Intern were given new
+// descriptions; this pins it so the next rewording has to bring its translation
+// along.
+// ============================================================
+describe("maps whose strings are translated dynamically", () => {
+  it.each(ROLE_ORDER)("role %s has an English description", (role) => {
+    const d = ROLE_META[role].description;
+    expect(EN[d], `no EN entry for ROLE_META.${role}.description: "${d}"`).toBeTruthy();
+  });
+
+  it.each(ROLE_ORDER)("role %s has an English label", (role) => {
+    const l = ROLE_META[role].label;
+    expect(EN[l] ?? (IDENTICAL_IN_BOTH.has(l) ? l : ""), `no EN entry for "${l}"`).toBeTruthy();
+  });
+
+  it.each(ACCESS_LEVEL_ORDER)("access level %s is translated", (level) => {
+    const { label, description } = ACCESS_LEVEL_META[level];
+    expect(EN[label], `no EN entry for "${label}"`).toBeTruthy();
+    expect(EN[description], `no EN entry for "${description}"`).toBeTruthy();
   });
 });

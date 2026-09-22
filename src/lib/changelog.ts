@@ -53,6 +53,65 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.49.1",
+    date: "2026-09-22",
+    title: "Keterangan hak akses per peran di Pengaturan diperbarui",
+    changes: [
+      { kind: "fix", text: "Keterangan peran Staff dan Intern di Pengaturan tertulis sama persis, padahal berbeda: Staff punya akses penuh di menu Himpunan sedangkan Intern hanya melihat. Keterangan tiap peran kini cocok dengan matriksnya." },
+      { kind: "fix", text: "Keterangan Koordinator belum menyebut menu Himpunan, dan tidak satu pun peran menyebut Kotak Masuk. Keduanya sudah ditambahkan, termasuk catatan bahwa Tamu tidak punya akses ke Kotak Masuk, Super Link, Anggaran, dan Role Request." },
+      { kind: "new", text: "Matriks hak akses kini punya catatan kaki untuk dua aturan yang tidak muat di dalam tabelnya: arti 'lihat' pada Kotak Masuk, dan siapa yang boleh memulai catatan tugas di Work Breakdown (Intern hanya bisa membalas)." },
+      { kind: "fix", text: "Versi bahasa Inggris untuk keterangan tingkat akses (Akses penuh, Akses terbatas, Hanya lihat, Tidak ada akses) belum pernah ada sehingga selalu tampil berbahasa Indonesia. Sekarang ada, dan sebuah pemeriksaan otomatis menjaganya supaya tidak hilang lagi." },
+    ],
+  },
+  {
+    version: "1.49.0",
+    date: "2026-09-22",
+    title: "Penyaring catatan aktif di Work Breakdown, dan Kotak Masuk tidak lagi untuk Tamu",
+    changes: [
+      { kind: "new", text: "Toolbar Work Breakdown punya penyaring 'Catatan' baru yang menyisakan tugas dengan catatan yang MASIH aktif saja. Catatan yang sudah ditandai selesai tidak ikut, dan angka di samping tombolnya menunjukkan berapa tugas yang akan tersisa sebelum ditekan." },
+      { kind: "ui", text: "Peran Tamu tidak lagi punya akses ke menu Kotak Masuk: menunya hilang dari daftar samping dan alamatnya dialihkan ke Dashboard. Sesi Tamu dipakai bersama banyak orang, jadi tidak ada akun yang bisa memiliki kotak masuknya." },
+      { kind: "fix", text: "Tamu juga tidak lagi bisa dipilih sebagai tujuan siaran, karena pesannya tidak akan pernah bisa dibuka." },
+      { kind: "fix", text: "Daftar akun pada penyusun siaran salah membaca peran akun yang belum disetujui adminnya: database menyimpannya sebagai 'viewer' sementara seluruh aplikasi memakai 'Tamu', sehingga label perannya kosong dan penyaringan per peran tidak pernah cocok dengan akun itu." },
+    ],
+  },
+  {
+    version: "1.48.0",
+    date: "2026-09-21",
+    title: "Kotak Masuk: siaran dari admin, dan angka notifikasi di menu",
+    changes: [
+      { kind: "new", text: "Menu baru Kotak Masuk: tiap akun punya kotak masuk sendiri untuk menerima pengumuman dari admin. Pesan ditandai sudah dibaca saat dibuka, bisa ditandai belum dibaca lagi, dan ada tombol untuk menandai semuanya sekaligus." },
+      { kind: "new", text: "Admin bisa mengirim siaran ke seluruh akun, ke peran tertentu (boleh beberapa peran sekaligus), atau ke akun tertentu yang dipilih satu per satu, termasuk hanya satu akun. Siaran yang sudah terkirim bisa diubah dan dihapus, lengkap dengan catatan berapa penerimanya yang sudah membaca." },
+      { kind: "new", text: "Sebelum mengirim, penyusun siaran menunjukkan berapa kotak masuk yang akan menerimanya, dan menolak mengirim kalau tujuannya tidak cocok dengan akun mana pun. Sebelumnya hal seperti ini hanya ketahuan setelah terkirim." },
+      { kind: "ui", text: "Menu Kotak Masuk menampilkan angka pesan yang belum dibaca, dan menu Role Request menampilkan angka pengajuan peran yang belum ditangani. Keduanya terlihat dari halaman mana pun, juga saat menu samping diciutkan, dan angkanya ikut terbaca pembaca layar." },
+      { kind: "security", text: "Siaran hanya bisa dibaca admin dan orang yang memang dikirimi, ditegakkan di database. Penerima hanya boleh mengubah status dibaca pada pesannya sendiri, tidak bisa memindahkan pesan ke akun lain." },
+      { kind: "data", text: "Jalankan supabase/migrations/0050_broadcasts_inbox.sql (atau supabase/setup.sql) sebelum memakai menu ini. Siaran sengaja TIDAK ikut Backup & Rollback: isinya pesan antar akun, bukan data Ormawa Visit." },
+    ],
+  },
+  {
+    version: "1.47.0",
+    date: "2026-09-21",
+    title: "Violet paham catatan tugas, dan beberapa data yang selama ini tidak terbaca",
+    changes: [
+      { kind: "new", text: "Panduan menu Work Breakdown kini menjelaskan fitur Catatan & Diskusi: cara menulisnya, siapa yang boleh memulai, dan apa arti tombol Tandai selesai." },
+      { kind: "new", text: "Violet bisa ditanya soal catatan tugas, baik aturannya (siapa boleh menambah, apa efek menandai selesai) maupun datanya (tugas mana yang catatannya belum selesai, beserta isi catatannya)." },
+      { kind: "fix", text: "Violet tidak bisa melihat himpunan yang sudah dibuatkan perbandingan tapi belum diisi satu pun aspek penilaiannya, karena daftarnya diambil dari penilaiannya, bukan dari himpunan yang dipilih. Sekarang himpunan seperti itu ikut terbaca dan disebut sebagai belum ada penilaian." },
+      { kind: "new", text: "Violet bisa menjawab status pengajuan peran: pengajuanmu sendiri bagi semua orang, dan antrean yang menunggu keputusan bagi admin. Yang boleh dilihat tetap ditentukan database, sama seperti menu Role Request." },
+      { kind: "fix", text: "Violet menyaring baris rundown berdasarkan versi lama yang sudah tidak dipakai, sehingga berpotensi menyembunyikan baris yang tetap tampil di halaman Rundown. Penyaringan itu dihapus." },
+    ],
+  },
+  {
+    version: "1.46.0",
+    date: "2026-09-20",
+    title: "Catatan & diskusi per tugas di Work Breakdown",
+    changes: [
+      { kind: "new", text: "Tiap tugas di Work Breakdown sekarang bisa diberi catatan: revisi, informasi tambahan, atau hal lain yang perlu disampaikan pada tugas itu saja. Catatan dibuka lewat tombol Edit pada tugasnya." },
+      { kind: "new", text: "Tugas yang punya catatan belum selesai menampilkan lencana notifikasi berisi jumlahnya, tepat di samping judul tugas, plus garis penanda di tepi kiri barisnya supaya bisa dipindai sekilas tanpa menggeser tabel ke kanan. Diklik, lencananya membuka chat mini berisi catatan itu, siapa yang menulisnya, dan kapan dikirim. Lencana yang sama ada di kartu kanban." },
+      { kind: "new", text: "Catatan bisa dibalas oleh semua peran yang boleh menulis tugas, intern termasuk. Yang boleh MEMULAI catatan baru hanya admin, koordinator, dan staff." },
+      { kind: "new", text: "Catatan yang sudah tuntas ditandai selesai lewat tombol centang: lencana notifikasinya hilang dari tugas, tapi percakapannya tetap bisa dibalas dan tetap terbaca lewat tombol Edit. Satu tugas boleh punya lebih dari satu catatan." },
+      { kind: "data", text: "Catatan ikut dalam Backup & Rollback, jadi memulihkan snapshot tidak lagi menghapusnya diam-diam. Jalankan supabase/migrations/0049_task_comments.sql (atau supabase/setup.sql) sebelum memakai menu ini." },
+    ],
+  },
+  {
     version: "1.45.3",
     date: "2026-09-15",
     title: "Pilihan PIC tidak lagi menyembunyikan anggota",

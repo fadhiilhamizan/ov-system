@@ -130,6 +130,40 @@ export interface TaskRef {
   order: number;
 }
 
+/**
+ * One message in a task's comment thread (Work Breakdown).
+ *
+ * `parent_id === null` is a "komentar inisiasi": the START of a thread, which
+ * only admin/koordinator/staff may create. Anything with a `parent_id` is a
+ * reply to that root, and an intern may post those. Replies are exactly one
+ * level deep - see `startTaskCommentAction` for why the depth is capped there
+ * rather than by a database CHECK.
+ *
+ * `resolved` belongs to the ROOT only (a DB CHECK enforces it): ticking it is
+ * what closes the notification on the task, and a thread stays replyable after
+ * it is closed. The author is stored by NAME, not by a foreign key - see
+ * migration 0049 for why.
+ */
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  parent_id: string | null;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_role: string;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string;
+  created_at: string;
+}
+
+/** A comment root plus its replies, oldest first. Built by `toThreads()`. */
+export interface TaskCommentThread {
+  root: TaskComment;
+  replies: TaskComment[];
+}
+
 /** Shape the references editor sends back; `id` is absent for new rows. */
 export interface TaskRefInput {
   id?: string;
@@ -319,6 +353,67 @@ export type RoleRequestStatus = "pending" | "approved" | "ignored";
 
 /** A signed-up (role-less) account asking to be given a real role. Admins
  *  approve or ignore these from the "Role Request" menu. */
+/** Who a broadcast was sent to. "accounts" covers "just one account" too. */
+export type BroadcastAudience = "all" | "role" | "accounts";
+
+/**
+ * One message an admin sent to people's inboxes.
+ *
+ * The CONTENT lives here once; who received it lives in `BroadcastRecipient`,
+ * one row each. The recipient list is frozen when the broadcast is sent (see
+ * migration 0050), so `audience` and `roles` describe how that list was
+ * CHOSEN, not a rule re-evaluated every time somebody opens their inbox.
+ *
+ * `created_by` is a plain id string, not a foreign key - Mode Demo has no
+ * auth.users to point at.
+ */
+export interface Broadcast {
+  id: string;
+  title: string;
+  body: string;
+  audience: BroadcastAudience;
+  /** Only meaningful when `audience === "role"`. */
+  roles: Role[];
+  created_by: string;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/** One account's copy of a broadcast. `read_at === null` means unread. */
+export interface BroadcastRecipient {
+  id: string;
+  broadcast_id: string;
+  user_id: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+/** A broadcast as it appears in the recipient's own inbox. */
+export interface InboxMessage extends Broadcast {
+  read_at: string | null;
+}
+
+/** A broadcast as the admin sees it, with who it reached. */
+export interface BroadcastWithStats extends Broadcast {
+  recipient_count: number;
+  read_count: number;
+}
+
+/**
+ * An account, for the broadcast composer's "pick who receives this" list.
+ *
+ * Read straight from `profiles`, whose policy already lets any signed-in
+ * account read the table. Anonymous Tamu sessions are filtered out before this
+ * ever reaches the UI - see `getAccounts`.
+ */
+export interface Account {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}
+
 export interface RoleRequest {
   id: string;
   user_id: string;
@@ -490,6 +585,7 @@ export interface Database {
   tasks: Task[];
   taskLinks?: TaskLink[];
   taskRefs?: TaskRef[];
+  taskComments?: TaskComment[];
   prospects: Prospect[];
   prospectLinks?: ProspectLink[];
   links: LinkItem[];

@@ -15,6 +15,9 @@ import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useTaskLinks, useTaskRefs } from "./task-links-context";
+import { useAllTaskComments } from "./task-comments-context";
+import { TaskCommentBadge } from "./task-comments";
+import { openThreadCount } from "@/lib/task-comments";
 import { EmptyState } from "@/components/ui/empty";
 import { ExpandableText } from "@/components/ui/expandable-text";
 import { SortHead } from "@/components/ui/sort-indicator";
@@ -59,6 +62,9 @@ export function TaskTable({
   // Changing Divisi/PIC/Deadline is a real edit, not a progress update, so it
   // needs the same permission as opening a task's form.
   const canBulkEdit = can.editTask(user);
+  // Read once, not once per row: the row list is produced by `.map()` over a
+  // filtered array, so a per-row hook would vary in count between renders.
+  const allComments = useAllTaskComments();
 
 
   const rows = React.useMemo(() => {
@@ -85,6 +91,9 @@ export function TaskTable({
   // is cleared - that is what makes "select some, search, select more" work.
   const visibleIds = rows.map((t) => t.id);
   const selectedInView = visibleSelection(selected, visibleIds);
+  // Does anything ON SCREEN carry an open note? Drives whether the title
+  // column reserves room for the marker at all - see the row below.
+  const anyFlagged = rows.some((t) => openThreadCount(allComments?.[t.id]) > 0);
   const allChecked = rows.length > 0 && selectedInView.length === rows.length;
   /** Select-all adds/removes only the visible rows, leaving hidden ticks alone. */
   function toggleAll() {
@@ -179,7 +188,7 @@ export function TaskTable({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               {canSelect && (
-                <TableHead className="w-9">
+                <TableHead className="w-9 border-l-2 border-l-transparent">
                   <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label={tr("Pilih semua")} />
                 </TableHead>
               )}
@@ -188,7 +197,7 @@ export function TaskTable({
                   1,2,3,1,2,1,2,3… Counting the rows instead means it always
                   runs 1..N of whatever is on screen, and there is nothing
                   meaningful to sort by. */}
-              <TableHead className="w-10">#</TableHead>
+              <TableHead className={cn("w-10", !canSelect && "border-l-2 border-l-transparent")}>#</TableHead>
               <SortHead sort={sort} k="title" className="min-w-[220px]">{tr("Tugas")}</SortHead>
               <SortHead sort={sort} k="division">{tr("Divisi")}</SortHead>
               <SortHead sort={sort} k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
@@ -205,25 +214,46 @@ export function TaskTable({
               const d = daysUntil(t.end_date);
               const overdue = d !== null && d < 0 && t.status !== "done";
               const checked = selected.has(t.id);
+              // A stripe down the left edge of the row, so open notes can be
+              // spotted by scanning the table rather than by reading it. It
+              // lives on the first CELL: a border on <tr> is unreliable under
+              // `border-collapse: collapse`, which Tailwind's preflight sets.
+              // Rows without notes keep a transparent border of the same width
+              // so nothing shifts by 2px from row to row.
+              const flagged = openThreadCount(allComments?.[t.id]) > 0;
+              const accent = flagged
+                ? "border-l-2 border-l-amber-400 dark:border-l-amber-500"
+                : "border-l-2 border-l-transparent";
               return (
                 <TableRow key={t.id} className={cn(checked && "bg-accent/40")}>
                   {canSelect && (
-                    <TableCell>
+                    <TableCell className={accent}>
                       <Checkbox checked={checked} onCheckedChange={() => toggleOne(t.id)} aria-label={tr("Pilih tugas")} />
                     </TableCell>
                   )}
-                  <TableCell className="text-xs tabular-nums text-muted-foreground">{rowIndex + 1}</TableCell>
+                  <TableCell className={cn("text-xs tabular-nums text-muted-foreground", !canSelect && accent)}>{rowIndex + 1}</TableCell>
                   <TableCell className="align-top">
-                    <TaskDetailDialog task={t} division={div} event={evMap.get(t.event_id)} user={user}>
-                      <button className="group flex flex-col text-left">
-                        <span className="line-clamp-2 text-sm font-medium group-hover:text-primary">{t.title}</span>
-                      </button>
-                    </TaskDetailDialog>
+                    <div className="flex items-start gap-1.5">
+                      {/* The slot is reserved for EVERY row, but only once some
+                          row on screen actually carries a note - otherwise a
+                          table with no comments at all would pay 28px of
+                          indent for a marker that never appears. */}
+                      {anyFlagged && (
+                        <span className="flex min-w-7 shrink-0 justify-start pt-0.5">
+                          <TaskCommentBadge task={t} user={user} />
+                        </span>
+                      )}
+                      <TaskDetailDialog task={t} division={div} event={evMap.get(t.event_id)} user={user}>
+                        <button className="group min-w-0 flex-1 text-left">
+                          <span className="line-clamp-2 text-sm font-medium group-hover:text-primary">{t.title}</span>
+                        </button>
+                      </TaskDetailDialog>
+                    </div>
                     {/* Outside the dialog trigger on purpose: the expand toggle
                         is a button, and a button inside a button is a hydration
                         error as well as an unusable control. */}
                     {t.notes && (
-                      <ExpandableText text={t.notes} lines={1} className="mt-0.5 text-xs text-muted-foreground" />
+                      <ExpandableText text={t.notes} lines={1} className={cn("mt-0.5 text-xs text-muted-foreground", anyFlagged && "pl-[34px]")} />
                     )}
                   </TableCell>
                   <TableCell>{div && <DivisionBadge division={div} />}</TableCell>

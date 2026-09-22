@@ -115,6 +115,51 @@ export function systemPassages(): Passage[] {
       "oleh banyak tugas sekaligus. Menghapus entri Super Link tidak menghapus referensinya, alamatnya tetap " +
       "tersimpan sebagai teks."),
 
+    p("task-comments", "Aturan: catatan & diskusi pada tugas", "/tasks",
+      "Tiap tugas di Work Breakdown bisa diberi CATATAN (komentar, comment, diskusi, revisi, masukan) yang " +
+      "berbentuk obrolan kecil menempel pada tugas itu saja. Satu tugas boleh punya lebih dari satu catatan. " +
+      "Catatan dibuka lewat tombol Edit pada tugasnya, di bagian 'Catatan & Diskusi' paling bawah. " +
+      "SIAPA YANG BOLEH: catatan awal (catatan pembuka, komentar inisiasi) hanya bisa dibuat oleh Admin, " +
+      "Koordinator, dan Staff. Intern TIDAK bisa memulai catatan baru, tapi Intern BOLEH membalas catatan " +
+      "yang sudah ada. Tamu hanya bisa membaca. " +
+      "NOTIFIKASI: tugas yang punya catatan belum selesai menampilkan lencana kecil berisi angka jumlahnya, " +
+      "tepat di samping judul tugas di tabel Work Breakdown dan di kartu Kanban, ditambah garis penanda " +
+      "di tepi kiri barisnya. Lencananya diklik untuk membuka obrolan mini berisi catatan itu, siapa " +
+      "penulisnya, dan kapan dikirim. Kalau sebuah tugas tidak punya catatan terbuka, lencananya tidak " +
+      "muncul sama sekali. " +
+      "SELESAI: catatan awal punya tombol centang 'Tandai selesai'. Menandainya selesai menutup " +
+      "notifikasi pada tugas itu, tapi percakapannya TETAP bisa dibalas dan tetap terbaca lewat tombol Edit. " +
+      "Tombol 'Buka lagi' mengembalikannya jadi belum selesai. " +
+      "Balasan hanya satu tingkat: balasan ditujukan ke catatan awal, bukan ke balasan lain. " +
+      "Menghapus catatan awal ikut menghapus seluruh balasannya. Seseorang boleh menghapus catatannya " +
+      "sendiri; menghapus catatan orang lain butuh akses penuh (Admin atau Koordinator). " +
+      "Catatan tidak ikut tersalin ketika tugas disalin ke Ormawa Visit lain, karena salinan selalu mulai dari nol."),
+
+    p("inbox", "Struktur data & aturan: Kotak Masuk (siaran admin)", "/inbox",
+      "Menu KOTAK MASUK (inbox, pesan, pengumuman, siaran, broadcast) berisi pesan yang dikirim admin ke " +
+      "akun-akun tertentu. Satu siaran menyimpan judul, isi pesan, siapa pengirimnya, kapan dikirim, dan " +
+      "kapan terakhir diubah. " +
+      "SIAPA YANG BOLEH MENGIRIM: hanya Admin. Koordinator, Staff, dan Intern hanya bisa membaca " +
+      "kotak masuknya sendiri, dan tidak bisa melihat pesan milik akun lain. " +
+      "TAMU TIDAK PUNYA AKSES sama sekali ke menu Kotak Masuk: menunya tidak muncul untuknya dan " +
+      "alamatnya dialihkan ke Dashboard. Sesi Tamu dipakai bersama banyak orang sehingga tidak mewakili " +
+      "satu akun, jadi tidak ada kotak masuk yang bisa jadi miliknya, dan Tamu juga tidak bisa dipilih " +
+      "sebagai tujuan siaran. " +
+      "TUJUAN SIARAN ada tiga bentuk: seluruh akun; akun dengan peran tertentu (boleh beberapa peran " +
+      "sekaligus); atau akun tertentu yang dipilih satu per satu, termasuk kalau yang dipilih hanya satu " +
+      "akun. Sebelum dikirim, sistem menunjukkan berapa kotak masuk yang akan menerimanya, dan menolak " +
+      "mengirim kalau tidak ada akun yang cocok. " +
+      "DAFTAR PENERIMA DIBEKUKAN saat siaran dikirim. Akun yang mendaftar setelah itu tidak menerima siaran " +
+      "lama, dan mengubah peran seseorang tidak menambah maupun mengurangi isi kotak masuknya. " +
+      "BELUM DIBACA: pesan ditandai sudah dibaca ketika DIBUKA, bukan saat halamannya dibuka. Jumlah pesan " +
+      "yang belum dibaca muncul sebagai angka di samping menu Kotak Masuk, terlihat dari halaman mana pun. " +
+      "Ada tombol untuk menandai satu pesan kembali belum dibaca, dan tombol untuk menandai semuanya sudah dibaca. " +
+      "Admin bisa mengubah dan menghapus siaran yang sudah terkirim; menghapusnya menghilangkan pesan itu dari " +
+      "kotak masuk semua penerimanya, dan mengubah tujuannya tidak menandai ulang pesan bagi yang sudah membaca. " +
+      "Siaran TIDAK terikat Ormawa Visit mana pun, karena ditujukan ke akun, dan akun tidak punya lingkup edisi. " +
+      "Menu Role Request juga menampilkan angka notifikasi berisi jumlah pengajuan peran yang belum ditangani, " +
+      "dan itu hanya terlihat oleh Admin."),
+
     p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
       "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
       "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +

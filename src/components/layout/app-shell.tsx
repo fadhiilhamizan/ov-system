@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
-import { SidebarContent } from "./sidebar";
+import { SidebarContent, type NavBadges } from "./sidebar";
 import { Topbar } from "./topbar";
 import dynamic from "next/dynamic";
 import { Logo } from "./logo";
@@ -36,6 +36,7 @@ const VioletChat = dynamic(
 
 export function AppShell({
   user,
+  badges,
   events,
   activeEventId,
   sandboxMode,
@@ -50,6 +51,8 @@ export function AppShell({
   children,
 }: {
   user: AppUser;
+  /** Counts drawn on the menu: unread inbox, role requests awaiting a decision. */
+  badges?: NavBadges;
   events: OVEvent[];
   activeEventId: string;
   sandboxMode: boolean;
@@ -107,6 +110,7 @@ export function AppShell({
       >
         <SidebarContent
           user={user}
+          badges={badges}
           collapsed={!showWide}
           toggleCollapsed={collapsed}
           onToggle={toggleCollapsed}
@@ -138,7 +142,7 @@ export function AppShell({
             >
               <X className="size-5" />
             </button>
-            <SidebarContent user={user} onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent user={user} badges={badges} onNavigate={() => setMobileOpen(false)} />
           </aside>
         </div>
       )}

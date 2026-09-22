@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -108,8 +108,34 @@ describe("DELETE_ORDER is the same list in TypeScript and in SQL", () => {
     expect(sqlOrder(read("supabase/setup.sql"))).toEqual(tsOrder());
   });
 
-  it("the 0043 migration matches it too", () => {
-    expect(sqlOrder(read("supabase/migrations/0043_restore_snapshot_rpc.sql"))).toEqual(tsOrder());
+  /**
+   * The newest migration that rebuilds restore_snapshot().
+   *
+   * Pinning 0043 by name was right until the list grew again: adding a table
+   * means shipping a NEW migration that recreates the function, and a test
+   * naming the old file would have gone on passing while the database anyone
+   * actually migrates carried the stale list. Whichever migration defines
+   * `del_order` last is the one a caught-up database is running.
+   */
+  function latestRpcMigration(): string {
+    const dir = "supabase/migrations";
+    const hit = readdirSync(join(ROOT, dir))
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .filter((f) => /del_order\s+constant/.test(read(`${dir}/${f}`)))
+      .pop();
+    if (!hit) throw new Error("no migration defines del_order");
+    return `${dir}/${hit}`;
+  }
+
+  it("the newest restore_snapshot migration matches it too", () => {
+    expect(sqlOrder(read(latestRpcMigration()))).toEqual(tsOrder());
+  });
+
+  it("checks a migration that is actually the newest one", () => {
+    // Guards the guard: a glob that stops matching would make the test above
+    // green against nothing at all.
+    expect(latestRpcMigration()).toBe("supabase/migrations/0049_task_comments.sql");
   });
 
   it("children really do come before their parents", () => {
@@ -120,6 +146,7 @@ describe("DELETE_ORDER is the same list in TypeScript and in SQL", () => {
       order.indexOf(child) < order.indexOf(parent);
     expect(before("task_links", "tasks")).toBe(true);
     expect(before("task_refs", "tasks")).toBe(true);
+    expect(before("task_comments", "tasks")).toBe(true);
     expect(before("prospect_links", "prospects")).toBe(true);
     expect(before("budget_items", "budget_plans")).toBe(true);
     expect(before("tasks", "events")).toBe(true);

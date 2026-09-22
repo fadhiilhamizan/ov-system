@@ -32,24 +32,43 @@ export const STATUS_META: Record<
 
 export const STATUS_ORDER: TaskStatus[] = ["todo", "ongoing", "overtime", "done"];
 
+/**
+ * Satu kalimat per peran, dipakai di EMPAT tempat: kartu peran di Pengaturan,
+ * kotak peran di kaki menu samping, pemilih peran Mode Demo, dan dialog
+ * pengajuan peran. Karena itu harus tetap pendek - kotak di menu samping hanya
+ * setinggi dua baris.
+ *
+ * Isinya wajib cocok dengan MODULE_ACCESS_LEVEL di bawah. Pernah tidak: Staff
+ * dan Intern memakai kalimat yang SAMA PERSIS, padahal Himpunan memberi Staff
+ * akses penuh dan Intern hanya lihat. Halaman Pengaturan jadi menyatakan dua
+ * peran itu identik sementara matriks tepat di atasnya menunjukkan sebaliknya.
+ */
 export const ROLE_META: Record<Role, { label: string; description: string; level: number }> = {
-  admin: { label: "Admin / PIC", description: "Akses penuh ke semua fitur", level: 5 },
+  admin: {
+    label: "Admin / PIC",
+    description: "Akses penuh ke semua menu, termasuk menyetujui peran & mengirim siaran",
+    level: 5,
+  },
   coordinator: {
     label: "Koordinator",
-    description: "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat",
+    description: "Kelola Work Breakdown, Rundown, Hari-H, Himpunan & Super Link; menu lain hanya lihat",
     level: 4,
   },
   staff: {
     label: "Staff",
-    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus); Himpunan penuh",
     level: 3,
   },
   intern: {
     label: "Intern",
-    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    description: "Seperti Staff, tapi Himpunan hanya lihat dan tidak bisa memulai catatan tugas",
     level: 2,
   },
-  guest: { label: "Tamu", description: "Hanya melihat", level: 1 },
+  guest: {
+    label: "Tamu",
+    description: "Hanya melihat; tanpa Kotak Masuk, Super Link, Anggaran & Role Request",
+    level: 1,
+  },
 };
 
 export const ROLE_ORDER: Role[] = ["admin", "coordinator", "staff", "intern", "guest"];
@@ -149,6 +168,15 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   faq: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   panduan: { admin: "view", coordinator: "view", staff: "view", intern: "view", guest: "view" },
   roles: { admin: "full", coordinator: "none", staff: "none", intern: "none", guest: "none" },
+  // Kotak Masuk: semua peran boleh MEMBUKA dan membaca siarannya sendiri;
+  // hanya admin yang boleh menyiarkan, mengedit, dan menghapus. Tamu ikut
+  // "view" karena sebuah siaran bisa saja ditujukan kepadanya.
+  // Tamu sengaja "none": sesi Tamu dipakai bersama banyak orang dan tidak
+  // mewakili satu akun, jadi tidak ada kotak masuk yang bisa jadi miliknya.
+  // Memberinya "view" berarti sebuah menu yang selalu kosong dan tidak pernah
+  // bisa terisi. MODULE_ACCESS diturunkan dari tabel ini, jadi satu baris ini
+  // sekaligus menghapus menunya dari sidebar dan menutup rutenya.
+  inbox: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "none" },
   // Tamu boleh MEMBUKA Pengaturan (matriks akses, changelog, arsip spreadsheet,
   // versi) tapi tidak boleh menyentuh apa pun di sana. Kartu yang destruktif -
   // Backup & Rollback, Reset Data Demo - punya pemeriksaan `can.manageBackups`

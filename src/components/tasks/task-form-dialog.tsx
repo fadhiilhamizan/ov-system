@@ -33,6 +33,7 @@ import { useTaskLinks, useTaskRefs, useSuperLinks } from "./task-links-context";
 import { ResultLinksEditor, toDraft, validateLinks, type DraftLink } from "./result-links-editor";
 import { RefsEditor, toRefDraft, validateRefs, cleanRefs, newRefDraft, type DraftRef } from "./refs-editor";
 import { useResetOn } from "@/lib/use-synced";
+import { TaskCommentsPanel } from "./task-comments";
 import type { AppUser, Division, DivisionKey, Member, OVEvent, Task, TaskStatus } from "@/lib/types";
 
 export function TaskFormDialog({
@@ -332,6 +333,16 @@ export function TaskFormDialog({
               that cannot show what is already saved would look empty and
               invite the user to "re-add" links that are not actually gone. */}
           {refsKnown && <RefsEditor refs={refs} onChange={setRefs} links={superLinks} />}
+
+          {/* Comments belong to a task that already exists, so there is
+              nothing to hang them on while creating one. The panel renders
+              itself away when the page provided no comment data at all. */}
+          {mode === "edit" && task && (
+            <>
+              <div className="h-px bg-border" />
+              <TaskCommentsPanel task={task} user={user} />
+            </>
+          )}
         </div>
 
         <DialogFooter>

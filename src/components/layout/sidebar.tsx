@@ -10,8 +10,39 @@ import { useT } from "@/lib/i18n/provider";
 import type { AppUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+/**
+ * Unhandled-work counts to draw on menu entries, keyed by nav item key.
+ *
+ * Counted on the server (the shell's layout) rather than fetched here: the
+ * sidebar renders on every route, and a client fetch per navigation would be
+ * one request per page load for two numbers. Zero or missing means no badge at
+ * all - a "0" pill is the same as nothing to do, and a menu full of zeroes
+ * trains people to stop reading the badges.
+ */
+export type NavBadges = Record<string, number>;
+
+/** The pill itself. Kept beside the sidebar because it is the only user. */
+function NavBadge({ count, collapsed }: { count: number; collapsed: boolean }) {
+  const label = count > 99 ? "99+" : String(count);
+  if (collapsed) {
+    // On the icon rail there is no room for a number beside the label, so it
+    // rides on the icon's corner instead.
+    return (
+      <span className="absolute right-1 top-1 inline-flex min-w-[15px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-[15px] text-primary-foreground">
+        {label}
+      </span>
+    );
+  }
+  return (
+    <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+      {label}
+    </span>
+  );
+}
+
 export function SidebarContent({
   user,
+  badges,
   onNavigate,
   /** Render the narrow icon-only rail. */
   collapsed = false,
@@ -20,6 +51,8 @@ export function SidebarContent({
   toggleCollapsed,
 }: {
   user: AppUser;
+  /** Per-menu counts of things waiting (unread inbox, pending role requests). */
+  badges?: NavBadges;
   onNavigate?: () => void;
   collapsed?: boolean;
   onToggle?: () => void;
@@ -73,14 +106,20 @@ export function SidebarContent({
                 {items.map((item) => {
                   const active = activeSeg === item.href;
                   const Icon = item.icon;
+                  const count = badges?.[item.key] ?? 0;
                   return (
                     <Link
                       key={item.key}
                       href={item.href}
                       onClick={onNavigate}
                       title={collapsed ? t(item.label) : undefined}
+                      // The count is IN the accessible name, not only in a
+                      // coloured pill: a screen reader gets "Kotak Masuk, 3
+                      // belum dibaca" rather than a menu entry that sounds
+                      // identical whether or not anything is waiting.
+                      aria-label={count ? `${t(item.label)}, ${count} ${t("belum ditangani")}` : undefined}
                       className={cn(
-                        "group flex items-center rounded-lg py-2 text-sm font-medium transition-colors",
+                        "group relative flex items-center rounded-lg py-2 text-sm font-medium transition-colors",
                         collapsed ? "justify-center px-2" : "gap-3 px-3",
                         active
                           ? "bg-sidebar-accent text-primary"
@@ -95,6 +134,7 @@ export function SidebarContent({
                       />
                       {!collapsed && <span className="truncate">{t(item.label)}</span>}
                       {collapsed && <span className="sr-only">{t(item.label)}</span>}
+                      {count > 0 && <NavBadge count={count} collapsed={collapsed} />}
                     </Link>
                   );
                 })}

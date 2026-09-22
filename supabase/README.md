@@ -13,6 +13,49 @@
 
 Cukup itu. **`migrations/` tidak perlu dijalankan lagi** - lihat di bawah.
 
+## Kalau SQL Editor di Dashboard tidak bisa dipakai
+
+Dashboard bisa mati sendiri tanpa ada yang salah di database kita. September
+2026 Studio tampil blank karena satu chunk JavaScript-nya macet di edge
+Cloudflare ([supabase/supabase#50652][blank], dilabeli `external-issue`).
+Postgres-nya tetap sehat; yang hilang cuma UI-nya.
+
+Jalur cadangannya bicara langsung ke Postgres:
+
+```bash
+npm run db:apply -- supabase/migrations/0050_broadcasts_inbox.sql
+```
+
+Skrip menanyakan project ref dan **password database** (password Postgres yang
+dibuat saat project dibuat, BUKAN anon key dan bukan kata sandi akun Supabase).
+Password ditanya lewat prompt tersembunyi, jadi tidak masuk riwayat shell
+maupun berkas mana pun.
+
+Tiga hal yang membuat jalur ini berbeda dari sekadar "sambung ke Postgres":
+
+* **Lewat pooler, bukan koneksi langsung.** `db.<ref>.supabase.co` sekarang
+  hanya punya alamat IPv6, dan banyak ISP rumahan tidak punya IPv6 keluar -
+  gagalnya muncul sebagai timeout jaringan yang membingungkan, bukan sebagai
+  kesalahan kredensial. Host pooler punya IPv4.
+* **Port 5432 (session mode), bukan 6543.** Berkas migrasi memakai
+  `begin; ... commit;` dan DDL; transaction mode tidak menjamin keduanya
+  berjalan di sesi yang sama. Ini kerabat dekat catatan "jangan pakai temp
+  table" di AGENTS.md.
+* **Verifikasi TLS tetap menyala.** Pooler memakai CA milik Supabase sendiri,
+  jadi `prod-ca-2021.crt` disimpan di folder ini dan dipakai untuk
+  memverifikasi server. Sertifikat itu publik, bukan rahasia. Jangan
+  menggantinya dengan `rejectUnauthorized: false`: koneksinya tetap terenkripsi
+  tapi tidak ada lagi yang membuktikan kita bicara dengan database sendiri,
+  padahal yang dikirim adalah DDL beserta password database.
+
+Setelah selesai, skrip melaporkan tabel apa yang sekarang benar-benar ada
+beserta jumlah policy RLS-nya. Itu penting karena berkas yang seluruhnya
+`if not exists` juga selesai tanpa error di database yang tidak berubah sama
+sekali, jadi "tidak ada error" saja bukan bukti.
+
+[blank]: https://github.com/supabase/supabase/issues/50652
+
+
 ## Rebuild data
 
 `seed.sql` berisi **529 `INSERT` tanpa klausa `on conflict`**. Artinya

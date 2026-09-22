@@ -631,10 +631,32 @@ export const EN: Record<string, string> = {
   "Akses terbatas": "Limited access",
   "Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.":
     "Limited access: can create, edit, and fill in results - but cannot delete.",
-  "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat":
-    "Manages Work Breakdown, Rundown, D-Day & Super Link; view-only elsewhere",
-  "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)":
-    "Create, edit & fill in results on Work Breakdown, Rundown, D-Day, Super Link (no deleting)",
+  // Deskripsi peran (ROLE_META). Dilewatkan t() secara dinamis, jadi pemindai
+  // terjemahan tidak bisa melihatnya - kalau kalimat sumbernya diubah di
+  // constants.ts, entri di sini WAJIB ikut diubah atau versi Inggrisnya diam-diam
+  // kembali berbahasa Indonesia.
+  "Akses penuh ke semua menu, termasuk menyetujui peran & mengirim siaran":
+    "Full access to every menu, including approving roles & sending broadcasts",
+  "Kelola Work Breakdown, Rundown, Hari-H, Himpunan & Super Link; menu lain hanya lihat":
+    "Manages Work Breakdown, Rundown, D-Day, Himpunan & Super Link; view-only elsewhere",
+  "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus); Himpunan penuh":
+    "Create, edit & fill in results on Work Breakdown, Rundown, D-Day, Super Link (no deleting); full access to Himpunan",
+  "Seperti Staff, tapi Himpunan hanya lihat dan tidak bisa memulai catatan tugas":
+    "Like Staff, but Himpunan is view-only and they cannot start a task note",
+  "Hanya melihat; tanpa Kotak Masuk, Super Link, Anggaran & Role Request":
+    "View only; no Inbox, Super Link, Budget or Role Request",
+  // ACCESS_LEVEL_META. Keterangan tiap tingkat akses belum pernah punya
+  // terjemahan: labelnya dipakai lewat t() literal (jadi terpindai), tapi
+  // `description` hanya dibaca dinamis, dan tidak ada yang melihatnya hilang.
+  "Buat, ubah, isi hasil, dan hapus.": "Create, edit, fill in results, and delete.",
+  "Buat, ubah, dan isi hasil - tidak bisa menghapus.": "Create, edit, and fill in results - cannot delete.",
+  "Bisa membuka dan melihat isinya saja.": "Can open it and read it, nothing more.",
+  "Modul tidak bisa dibuka.": "The menu cannot be opened at all.",
+  // Catatan kaki matriks hak akses.
+  "Kotak Masuk: 'lihat' berarti membaca kotak masuk sendiri. Hanya Admin yang bisa mengirim, mengubah, dan menghapus siaran.":
+    "Inbox: 'view' means reading your own inbox. Only Admins can send, edit, and delete broadcasts.",
+  "Catatan tugas di Work Breakdown: Admin, Koordinator, dan Staff bisa memulai catatan baru. Intern hanya bisa membalas catatan yang sudah ada.":
+    "Task notes in Work Breakdown: Admins, Coordinators, and Staff can start a new note. Interns can only reply to an existing one.",
 
   // Sign up / Google auth
   "Daftar": "Sign up",
@@ -1192,4 +1214,82 @@ export const EN: Record<string, string> = {
   "Gedung / kota…": "Building / city…",
   "Hasil pencarian": "Search results",
   "Menu navigasi": "Navigation menu",
+  // v1.43.0 - catatan & diskusi per tugas di Work Breakdown.
+  "Catatan & Diskusi": "Notes & Discussion",
+  "Catatan baru untuk tugas ini": "New note on this task",
+  "catatan": "notes",
+  "catatan belum selesai": "unresolved notes",
+  "Belum ada catatan pada tugas ini.": "No notes on this task yet.",
+  "Lihat catatan tugas": "View task notes",
+  "Perlu ditindaklanjuti": "Needs follow-up",
+  "Tandai selesai": "Mark as done",
+  "Buka lagi": "Reopen",
+  "Balas": "Reply",
+  "Tulis balasan…": "Write a reply…",
+  "Kirim catatan": "Send note",
+  "Balasan terkirim": "Reply sent",
+  "Catatan ditambahkan": "Note added",
+  "Catatan dihapus": "Note deleted",
+  "Catatan ditandai selesai": "Note marked as done",
+  "Catatan dibuka lagi": "Note reopened",
+  "Hapus catatan": "Delete note",
+  "Tanpa nama": "Unnamed",
+  "oleh": "by",
+  "Enter kirim, Shift+Enter baris baru": "Enter to send, Shift+Enter for a new line",
+  "Revisi, informasi tambahan, atau hal lain yang perlu disampaikan…": "A revision, extra context, or anything else worth passing on…",
+  "Hanya admin, koordinator, dan staff yang bisa menambah catatan baru. Kamu tetap bisa membalas catatan yang ada.": "Only admins, coordinators and staff can start a new note. You can still reply to existing ones.",
+  // v1.48.0 - Kotak Masuk (siaran admin) + angka notifikasi di menu.
+  "Kotak Masuk": "Inbox",
+  "Kotak masuk kosong": "Your inbox is empty",
+  "Kotak masuk butuh akun": "An inbox needs an account",
+  "Pengumuman dan siaran dari admin.": "Announcements and broadcasts from an admin.",
+  "Pengumuman dan siaran dari admin akan muncul di sini.": "Announcements and broadcasts from an admin will show up here.",
+  "Baca siaran yang masuk, dan kirim pengumuman ke akun lain.": "Read the broadcasts you receive, and send announcements to other accounts.",
+  "Sesi Tamu dipakai bersama, jadi tidak punya kotak masuk sendiri. Masuk dengan akunmu untuk menerima siaran.": "A Guest session is shared, so it has no inbox of its own. Sign in with your account to receive broadcasts.",
+  "Pesan Masuk": "Messages",
+  "Kelola Siaran": "Manage Broadcasts",
+  "pesan belum dibaca": "unread messages",
+  "Semua pesan sudah dibaca": "Everything has been read",
+  "Tandai semua dibaca": "Mark all as read",
+  "Semua pesan ditandai sudah dibaca": "All messages marked as read",
+  "Tandai belum dibaca": "Mark as unread",
+  "Ditandai belum dibaca": "Marked as unread",
+  "belum ditangani": "not handled yet",
+  "diubah": "edited",
+  "sudah dibaca": "read",
+  "kotak masuk": "inboxes",
+  "Akan masuk ke": "Will reach",
+  // Broadcast composer
+  "Siaran": "Broadcast",
+  "Siaran Baru": "New Broadcast",
+  "Ubah Siaran": "Edit Broadcast",
+  "Ubah siaran": "Edit broadcast",
+  "Hapus siaran": "Delete broadcast",
+  "Hapus siaran?": "Delete this broadcast?",
+  "Siaran terkirim": "Broadcast sent",
+  "Siaran diperbarui": "Broadcast updated",
+  "Siaran dihapus": "Broadcast deleted",
+  "Kirim Siaran": "Send Broadcast",
+  "Belum ada siaran": "No broadcasts yet",
+  "Kirim pengumuman ke seluruh akun, peran tertentu, atau akun tertentu saja.": "Send an announcement to every account, to specific roles, or to specific accounts only.",
+  "Pesan ini masuk ke Kotak Masuk akun yang kamu pilih.": "This message lands in the Inbox of the accounts you pick.",
+  "Judul": "Title",
+  "Isi pesan": "Message",
+  "Contoh: Rapat koordinasi dimajukan": "Example: coordination meeting moved earlier",
+  "Tulis pengumumannya di sini…": "Write the announcement here…",
+  "Kirim ke": "Send to",
+  "Semua akun": "All accounts",
+  "Akun tertentu": "Specific accounts",
+  "Peran tujuan": "Target roles",
+  "Pilih akun": "Pick accounts",
+  "Cari nama atau email…": "Search a name or email…",
+  "Belum ada akun terdaftar.": "No accounts registered yet.",
+  "Tidak ada akun yang cocok.": "No matching accounts.",
+  "Belum ada akun yang cocok dengan tujuan ini, jadi siaran belum bisa dikirim.": "No account matches this audience yet, so the broadcast cannot be sent.",
+  "Belum ada akun terdaftar yang bisa dikirimi siaran. Di Mode Demo memang tidak ada akun sungguhan, jadi daftar ini selalu kosong.": "There are no registered accounts to broadcast to. Demo Mode has no real accounts, so this list is always empty.",
+  "akan hilang dari kotak masuk semua penerimanya. Tindakan ini tidak dapat dibatalkan.": "will disappear from every recipient's inbox. This cannot be undone.",
+  // v1.49.0 - filter catatan aktif di Work Breakdown.
+  "Masih aktif": "Still open",
+  "Semua Tugas": "All tasks",
+  "Saring tugas yang masih punya catatan aktif": "Filter to tasks that still have open notes",
 };
