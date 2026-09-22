@@ -32,24 +32,43 @@ export const STATUS_META: Record<
 
 export const STATUS_ORDER: TaskStatus[] = ["todo", "ongoing", "overtime", "done"];
 
+/**
+ * Satu kalimat per peran, dipakai di EMPAT tempat: kartu peran di Pengaturan,
+ * kotak peran di kaki menu samping, pemilih peran Mode Demo, dan dialog
+ * pengajuan peran. Karena itu harus tetap pendek - kotak di menu samping hanya
+ * setinggi dua baris.
+ *
+ * Isinya wajib cocok dengan MODULE_ACCESS_LEVEL di bawah. Pernah tidak: Staff
+ * dan Intern memakai kalimat yang SAMA PERSIS, padahal Himpunan memberi Staff
+ * akses penuh dan Intern hanya lihat. Halaman Pengaturan jadi menyatakan dua
+ * peran itu identik sementara matriks tepat di atasnya menunjukkan sebaliknya.
+ */
 export const ROLE_META: Record<Role, { label: string; description: string; level: number }> = {
-  admin: { label: "Admin / PIC", description: "Akses penuh ke semua fitur", level: 5 },
+  admin: {
+    label: "Admin / PIC",
+    description: "Akses penuh ke semua menu, termasuk menyetujui peran & mengirim siaran",
+    level: 5,
+  },
   coordinator: {
     label: "Koordinator",
-    description: "Kelola Work Breakdown, Rundown, Hari-H & Super Link; menu lain hanya lihat",
+    description: "Kelola Work Breakdown, Rundown, Hari-H, Himpunan & Super Link; menu lain hanya lihat",
     level: 4,
   },
   staff: {
     label: "Staff",
-    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus); Himpunan penuh",
     level: 3,
   },
   intern: {
     label: "Intern",
-    description: "Buat, ubah & isi hasil di Work Breakdown, Rundown, Hari-H, Super Link (tanpa hapus)",
+    description: "Seperti Staff, tapi Himpunan hanya lihat dan tidak bisa memulai catatan tugas",
     level: 2,
   },
-  guest: { label: "Tamu", description: "Hanya melihat", level: 1 },
+  guest: {
+    label: "Tamu",
+    description: "Hanya melihat; tanpa Kotak Masuk, Super Link, Anggaran & Role Request",
+    level: 1,
+  },
 };
 
 export const ROLE_ORDER: Role[] = ["admin", "coordinator", "staff", "intern", "guest"];

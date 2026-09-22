@@ -245,9 +245,16 @@ export default async function SettingsPage() {
               );
             })}
           </div>
-          <p className="mb-3 text-xs text-muted-foreground">
-            {t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.")}
-          </p>
+          {/* Catatan kaki matriks. Dua di antaranya ada karena tabel di bawah
+              TIDAK bisa menyatakannya: sebuah sel hanya punya empat nilai, dan
+              "Kotak Masuk: lihat" maupun "siapa yang boleh memulai catatan
+              tugas" tidak muat di dalamnya. Tanpa ini, tabelnya terbaca seolah
+              Staff dan Intern sama persis di Work Breakdown. */}
+          <ul className="mb-3 space-y-1 text-xs text-muted-foreground">
+            <li>{t("Akses terbatas: bisa membuat, mengubah, dan mengisi hasil - tapi tidak bisa menghapus.")}</li>
+            <li>{t("Kotak Masuk: 'lihat' berarti membaca kotak masuk sendiri. Hanya Admin yang bisa mengirim, mengubah, dan menghapus siaran.")}</li>
+            <li>{t("Catatan tugas di Work Breakdown: Admin, Koordinator, dan Staff bisa memulai catatan baru. Intern hanya bisa membalas catatan yang sudah ada.")}</li>
+          </ul>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

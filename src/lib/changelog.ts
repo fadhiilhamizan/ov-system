@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.49.1",
+    date: "2026-09-22",
+    title: "Keterangan hak akses per peran di Pengaturan diperbarui",
+    changes: [
+      { kind: "fix", text: "Keterangan peran Staff dan Intern di Pengaturan tertulis sama persis, padahal berbeda: Staff punya akses penuh di menu Himpunan sedangkan Intern hanya melihat. Keterangan tiap peran kini cocok dengan matriksnya." },
+      { kind: "fix", text: "Keterangan Koordinator belum menyebut menu Himpunan, dan tidak satu pun peran menyebut Kotak Masuk. Keduanya sudah ditambahkan, termasuk catatan bahwa Tamu tidak punya akses ke Kotak Masuk, Super Link, Anggaran, dan Role Request." },
+      { kind: "new", text: "Matriks hak akses kini punya catatan kaki untuk dua aturan yang tidak muat di dalam tabelnya: arti 'lihat' pada Kotak Masuk, dan siapa yang boleh memulai catatan tugas di Work Breakdown (Intern hanya bisa membalas)." },
+      { kind: "fix", text: "Versi bahasa Inggris untuk keterangan tingkat akses (Akses penuh, Akses terbatas, Hanya lihat, Tidak ada akses) belum pernah ada sehingga selalu tampil berbahasa Indonesia. Sekarang ada, dan sebuah pemeriksaan otomatis menjaganya supaya tidak hilang lagi." },
+    ],
+  },
+  {
     version: "1.49.0",
     date: "2026-09-22",
     title: "Penyaring catatan aktif di Work Breakdown, dan Kotak Masuk tidak lagi untuk Tamu",
