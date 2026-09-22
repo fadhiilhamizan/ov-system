@@ -139,8 +139,12 @@ export function systemPassages(): Passage[] {
       "Menu KOTAK MASUK (inbox, pesan, pengumuman, siaran, broadcast) berisi pesan yang dikirim admin ke " +
       "akun-akun tertentu. Satu siaran menyimpan judul, isi pesan, siapa pengirimnya, kapan dikirim, dan " +
       "kapan terakhir diubah. " +
-      "SIAPA YANG BOLEH MENGIRIM: hanya Admin. Koordinator, Staff, Intern, dan Tamu hanya bisa membaca " +
+      "SIAPA YANG BOLEH MENGIRIM: hanya Admin. Koordinator, Staff, dan Intern hanya bisa membaca " +
       "kotak masuknya sendiri, dan tidak bisa melihat pesan milik akun lain. " +
+      "TAMU TIDAK PUNYA AKSES sama sekali ke menu Kotak Masuk: menunya tidak muncul untuknya dan " +
+      "alamatnya dialihkan ke Dashboard. Sesi Tamu dipakai bersama banyak orang sehingga tidak mewakili " +
+      "satu akun, jadi tidak ada kotak masuk yang bisa jadi miliknya, dan Tamu juga tidak bisa dipilih " +
+      "sebagai tujuan siaran. " +
       "TUJUAN SIARAN ada tiga bentuk: seluruh akun; akun dengan peran tertentu (boleh beberapa peran " +
       "sekaligus); atau akun tertentu yang dipilih satu per satu, termasuk kalau yang dipilih hanya satu " +
       "akun. Sebelum dikirim, sistem menunjukkan berapa kotak masuk yang akan menerimanya, dan menolak " +

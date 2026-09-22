@@ -19,7 +19,15 @@ const GUEST_USER: AppUser = {
   avatarColor: "#94a3b8",
 };
 
-function normalizeRole(r: string | null | undefined): Role {
+/**
+ * Database bilang 'viewer', aplikasi bilang 'guest'.
+ *
+ * Diekspor karena `getAccounts` di data/repo.ts membaca `profiles.role`
+ * mentah-mentah dan butuh pemetaan yang SAMA. Menyalinnya ke sana akan jadi
+ * dua definisi untuk satu fakta, dan yang meleset diam-diam adalah yang tidak
+ * pernah dipanggil di jalur yang diuji.
+ */
+export function normalizeRole(r: string | null | undefined): Role {
   if (r === "viewer") return "guest"; // legacy value support
   if (r === "admin" || r === "coordinator" || r === "staff" || r === "intern" || r === "guest") return r;
   return "guest";

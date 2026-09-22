@@ -1266,4 +1266,8 @@ export const EN: Record<string, string> = {
   "Belum ada akun yang cocok dengan tujuan ini, jadi siaran belum bisa dikirim.": "No account matches this audience yet, so the broadcast cannot be sent.",
   "Belum ada akun terdaftar yang bisa dikirimi siaran. Di Mode Demo memang tidak ada akun sungguhan, jadi daftar ini selalu kosong.": "There are no registered accounts to broadcast to. Demo Mode has no real accounts, so this list is always empty.",
   "akan hilang dari kotak masuk semua penerimanya. Tindakan ini tidak dapat dibatalkan.": "will disappear from every recipient's inbox. This cannot be undone.",
+  // v1.49.0 - filter catatan aktif di Work Breakdown.
+  "Masih aktif": "Still open",
+  "Semua Tugas": "All tasks",
+  "Saring tugas yang masih punya catatan aktif": "Filter to tasks that still have open notes",
 };

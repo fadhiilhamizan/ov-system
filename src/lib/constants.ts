@@ -152,7 +152,12 @@ export const MODULE_ACCESS_LEVEL: Record<string, Record<Role, AccessLevel>> = {
   // Kotak Masuk: semua peran boleh MEMBUKA dan membaca siarannya sendiri;
   // hanya admin yang boleh menyiarkan, mengedit, dan menghapus. Tamu ikut
   // "view" karena sebuah siaran bisa saja ditujukan kepadanya.
-  inbox: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "view" },
+  // Tamu sengaja "none": sesi Tamu dipakai bersama banyak orang dan tidak
+  // mewakili satu akun, jadi tidak ada kotak masuk yang bisa jadi miliknya.
+  // Memberinya "view" berarti sebuah menu yang selalu kosong dan tidak pernah
+  // bisa terisi. MODULE_ACCESS diturunkan dari tabel ini, jadi satu baris ini
+  // sekaligus menghapus menunya dari sidebar dan menutup rutenya.
+  inbox: { admin: "full", coordinator: "view", staff: "view", intern: "view", guest: "none" },
   // Tamu boleh MEMBUKA Pengaturan (matriks akses, changelog, arsip spreadsheet,
   // versi) tapi tidak boleh menyentuh apa pun di sana. Kartu yang destruktif -
   // Backup & Rollback, Reset Data Demo - punya pemeriksaan `can.manageBackups`

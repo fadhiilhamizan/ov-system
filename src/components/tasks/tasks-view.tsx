@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Search, Plus, Table2, Columns3, GanttChartSquare, X, CircleDot } from "lucide-react";
+import { Search, Plus, Table2, Columns3, GanttChartSquare, X, CircleDot, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -14,6 +14,8 @@ import { can } from "@/lib/permissions";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { DivisionFilter } from "@/components/layout/division-filter";
+import { useAllTaskComments } from "./task-comments-context";
+import { openThreadCount } from "@/lib/task-comments";
 import { PicFilter } from "./pic-filter";
 import {
   divisionKeySet, hasOrphanTasks, matchesDivision, matchesPics, parseDivisionFocus,
@@ -67,6 +69,15 @@ export function TasksView({
   );
 
   const [pics, setPics] = React.useState<Set<string>>(new Set());
+  // "Hanya yang masih punya catatan terbuka". A plain toggle, not a
+  // FilterMultiSelect: the house rule about checkbox filters exists so a
+  // question like "accepted AND rejected" stays askable, and that only applies
+  // to a filter over a SET of values. This one has a single meaningful state,
+  // and an "off" option would just be a second way to spell "no filter".
+  const [openNotesOnly, setOpenNotesOnly] = React.useState(false);
+  // undefined = this page never fetched comments, so the filter is hidden
+  // rather than shown permanently matching nothing (same rule as the badge).
+  const allComments = useAllTaskComments();
 
   const divisionKeys = React.useMemo(() => divisionKeySet(divisions), [divisions]);
   // The PIC menu is built from what the DIVISION focus leaves, not from the
@@ -87,6 +98,7 @@ export function TasksView({
     return inDivision.filter((t) => {
       if (!matchesPics(t, pics)) return false;
       if (status.size > 0 && !status.has(t.status)) return false;
+      if (openNotesOnly && openThreadCount(allComments?.[t.id]) === 0) return false;
       if (
         query &&
         !`${t.title} ${t.pic} ${t.notes} ${t.result}`.toLowerCase().includes(query)
@@ -94,7 +106,7 @@ export function TasksView({
         return false;
       return true;
     });
-  }, [inDivision, q, status, pics]);
+  }, [inDivision, q, status, pics, openNotesOnly, allComments]);
 
   const counts = React.useMemo(() => {
     const by: Record<TaskStatus, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
@@ -111,7 +123,14 @@ export function TasksView({
     return by;
   }, [inDivision, pics]);
 
-  const hasFilters = q || status.size > 0 || pics.size > 0;
+  const openNotesCount = React.useMemo(
+    () => (allComments
+      ? inDivision.filter((t) => matchesPics(t, pics) && openThreadCount(allComments[t.id]) > 0).length
+      : 0),
+    [allComments, inDivision, pics],
+  );
+
+  const hasFilters = q || status.size > 0 || pics.size > 0 || openNotesOnly;
 
   return (
     <div className="space-y-4">
@@ -157,6 +176,33 @@ export function TasksView({
             picked={status}
             onChange={setStatus}
           />
+          {allComments && (
+            <button
+              type="button"
+              onClick={() => setOpenNotesOnly((v) => !v)}
+              aria-pressed={openNotesOnly}
+              aria-label={t("Saring tugas yang masih punya catatan aktif")}
+              className={cn(
+                "flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+                openNotesOnly && "border-primary/40 bg-primary/5",
+              )}
+            >
+              <span className="flex aspect-square size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <MessageSquare className="size-3.5" />
+              </span>
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("Catatan")}
+                </span>
+                <span className="block max-w-[150px] truncate text-xs font-semibold">
+                  {openNotesOnly ? t("Masih aktif") : t("Semua Tugas")}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
+                {openNotesCount}
+              </span>
+            </button>
+          )}
           {hasFilters && (
             <Button
               variant="ghost"
@@ -165,6 +211,7 @@ export function TasksView({
                 setQ("");
                 setStatus(new Set());
                 setPics(new Set());
+                setOpenNotesOnly(false);
               }}
               // Note: Reset deliberately leaves the division focus alone. It is
               // persisted across pages, so clearing it from here would surprise

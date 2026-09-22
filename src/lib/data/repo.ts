@@ -7,6 +7,7 @@ import { effectiveStatus } from "../format";
 import { divisionFields, memberInDivision } from "../members";
 import { planTotal, primaryBudgetPlan } from "../budget";
 import { uid } from "../utils";
+import { normalizeRole } from "../auth";
 import type {
   BudgetItem,
   CloneModule,
@@ -547,7 +548,16 @@ export const getAccounts = cache(async (): Promise<Account[]> => {
     (await sb()).from("profiles").select("id, name, email, role").order("name"),
     [],
   );
-  return coalesce(data, ["name", "email"]).filter((a) => a.email.trim());
+  return coalesce(data, ["name", "email"])
+    .filter((a) => a.email.trim())
+    // `profiles.role` menyimpan 'viewer', sedangkan seluruh aplikasi memakai
+    // 'guest'. Tanpa pemetaan ini ROLE_META[a.role] undefined dan penyaringan
+    // per peran tidak pernah cocok - gagalnya diam, bukan error.
+    .map((a) => ({ ...a, role: normalizeRole(a.role) }))
+    // Tamu tidak punya akses menu Kotak Masuk (lihat MODULE_ACCESS_LEVEL), jadi
+    // mengirimi mereka siaran berarti menulis pesan ke kotak yang tidak bisa
+    // dibuka siapa pun. Termasuk akun terdaftar yang perannya belum disetujui.
+    .filter((a) => a.role !== "guest");
 });
 
 /** One account's inbox, newest first, with its own read state joined on. */

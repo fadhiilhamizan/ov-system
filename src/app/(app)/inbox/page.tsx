@@ -1,4 +1,3 @@
-import { Inbox as InboxIcon } from "lucide-react";
 import { requireModule } from "@/lib/guard";
 import { can } from "@/lib/permissions";
 import {
@@ -7,7 +6,6 @@ import {
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InboxView } from "@/components/inbox/inbox-view";
 import { BroadcastManager } from "@/components/inbox/broadcast-composer";
@@ -19,9 +17,10 @@ export default async function InboxPage() {
   const t = await getT();
   const isAdmin = can.manageBroadcasts(user);
 
-  // A guest shares one anonymous identity, so there is no personal inbox to
-  // read - and `getInbox` would key on an id that is not an account.
-  const messages = user.role === "guest" ? [] : await getInbox(user.id);
+  // No guest branch below: `requireModule("inbox")` already turned them away,
+  // because MODULE_ACCESS_LEVEL gives Tamu "none" here. A shared anonymous
+  // session has no account for an inbox to belong to.
+  const messages = await getInbox(user.id);
 
   if (!isAdmin) {
     return (
@@ -30,15 +29,7 @@ export default async function InboxPage() {
           title={t("Kotak Masuk")}
           description={t("Pengumuman dan siaran dari admin.")}
         />
-        {user.role === "guest" ? (
-          <EmptyState
-            icon={<InboxIcon />}
-            title={t("Kotak masuk butuh akun")}
-            description={t("Sesi Tamu dipakai bersama, jadi tidak punya kotak masuk sendiri. Masuk dengan akunmu untuk menerima siaran.")}
-          />
-        ) : (
-          <InboxView messages={messages} />
-        )}
+        <InboxView messages={messages} />
       </div>
     );
   }

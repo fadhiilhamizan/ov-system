@@ -53,6 +53,17 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.49.0",
+    date: "2026-09-22",
+    title: "Penyaring catatan aktif di Work Breakdown, dan Kotak Masuk tidak lagi untuk Tamu",
+    changes: [
+      { kind: "new", text: "Toolbar Work Breakdown punya penyaring 'Catatan' baru yang menyisakan tugas dengan catatan yang MASIH aktif saja. Catatan yang sudah ditandai selesai tidak ikut, dan angka di samping tombolnya menunjukkan berapa tugas yang akan tersisa sebelum ditekan." },
+      { kind: "ui", text: "Peran Tamu tidak lagi punya akses ke menu Kotak Masuk: menunya hilang dari daftar samping dan alamatnya dialihkan ke Dashboard. Sesi Tamu dipakai bersama banyak orang, jadi tidak ada akun yang bisa memiliki kotak masuknya." },
+      { kind: "fix", text: "Tamu juga tidak lagi bisa dipilih sebagai tujuan siaran, karena pesannya tidak akan pernah bisa dibuka." },
+      { kind: "fix", text: "Daftar akun pada penyusun siaran salah membaca peran akun yang belum disetujui adminnya: database menyimpannya sebagai 'viewer' sementara seluruh aplikasi memakai 'Tamu', sehingga label perannya kosong dan penyaringan per peran tidak pernah cocok dengan akun itu." },
+    ],
+  },
+  {
     version: "1.48.0",
     date: "2026-09-21",
     title: "Kotak Masuk: siaran dari admin, dan angka notifikasi di menu",

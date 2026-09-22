@@ -196,7 +196,11 @@ function BroadcastForm({
             <div className="grid gap-1.5">
               <Label>{t("Peran tujuan")}</Label>
               <div className="flex flex-wrap gap-2">
-                {ROLE_ORDER.map((r) => {
+                {/* Tanpa Tamu: peran itu tidak punya akses Kotak Masuk, jadi
+                    menawarkannya sebagai tujuan berarti menjanjikan pengiriman
+                    yang tidak akan pernah bisa dibaca. `getAccounts` juga sudah
+                    menyaringnya, jadi angkanya akan selalu 0. */}
+                {ROLE_ORDER.filter((r) => r !== "guest").map((r) => {
                   const n = accounts.filter((a) => a.role === r).length;
                   return (
                     <button
