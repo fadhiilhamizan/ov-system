@@ -78,7 +78,9 @@ export function systemPassages(): Passage[] {
       "dan Dashboard menampilkan 'belum diisi' alih-alih angka nol yang menyesatkan. " +
       "Ormawa Visit baru bisa MENYALIN data dari edisi lain per menu (divisi, anggota, prospek, tugas, rundown, " +
       "job hari-H, anggaran), dan tiap menu boleh disalin dari edisi yang berbeda. " +
-      "Salinan tugas selalu mulai dari nol: status kembali todo, PIC dan hasil dikosongkan."),
+      "Salinan tugas selalu mulai dari nol: status kembali todo, PIC dan hasil dikosongkan. " +
+      "MENGHAPUS sebuah Ormawa Visit menghapus SELURUH datanya: divisi, anggota, tugas, prospek, rundown, " +
+      "job hari-H, anggaran, dan entri Super Link-nya. Tidak ada yang tertinggal atau pindah ke edisi lain."),
 
     p("archive", "Aturan: arsip / kunci edisi", "/events",
       "Sebuah Ormawa Visit bisa DIARSIPKAN (dikunci, locked, archive). Setelah dikunci, seluruh datanya " +
@@ -112,8 +114,9 @@ export function systemPassages(): Passage[] {
       "dan menghapus tugasnya ikut menghapus entrinya. Satu entri Super Link hanya boleh dimiliki satu tugas. " +
       "TAUTAN REFERENSI adalah bahan rujukan yang DIPAKAI tugas (handbook, template, proposal tahun lalu). " +
       "Referensi boleh diketik manual atau diambil dari Super Link, dan satu entri Super Link boleh dirujuk " +
-      "oleh banyak tugas sekaligus. Menghapus entri Super Link tidak menghapus referensinya, alamatnya tetap " +
-      "tersimpan sebagai teks."),
+      "oleh banyak tugas sekaligus. Referensi yang diambil dari Super Link SELALU memakai URL terbaru entri itu, " +
+      "jadi memperbaiki alamatnya di Super Link langsung memperbaiki semua tugas yang merujuknya. " +
+      "Menghapus entri Super Link tidak menghapus referensinya, alamat terakhirnya tetap tersimpan sebagai teks."),
 
     p("task-comments", "Aturan: catatan & diskusi pada tugas", "/tasks",
       "Tiap tugas di Work Breakdown bisa diberi CATATAN (komentar, comment, diskusi, revisi, masukan) yang " +
@@ -212,7 +215,9 @@ export function systemPassages(): Passage[] {
       "Divisi yang ditandai tidak ikut rundown (biasanya PIC, Koordinator, Sekretaris, Bendahara) tidak muncul " +
       "sebagai kolom di tabel rundown. " +
       "Kalau sebuah divisi dihapus, tugas yang dulu miliknya TIDAK ikut terhapus: tugas itu jadi tanpa divisi " +
-      "dan masih bisa ditemukan lewat pilihan 'Tanpa divisi' pada filter divisi."),
+      "dan masih bisa ditemukan lewat pilihan 'Tanpa divisi' pada filter divisi. Anggotanya dilepas dari divisi " +
+      "itu (divisi lain yang mereka ikuti tetap), dan koordinator divisi itu ikut terhapus. " +
+      "Kunci (key) divisi tidak pernah berubah setelah dibuat; yang bisa diganti hanya nama, singkatan, dan warna."),
 
     p("member", "Struktur data: anggota & tim", "/members",
       "Anggota (roster External Affairs) menyimpan: nama, nama panggilan, NRP, tipe (fungsionaris atau intern), " +
@@ -223,6 +228,12 @@ export function systemPassages(): Passage[] {
       "Struktur tim sebuah divisi TIDAK disimpan terpisah, melainkan diturunkan dari roster: siapa saja yang " +
       "punya divisi itu, dialah anggotanya. Yang disimpan pada tim hanyalah KOORDINATOR divisi, dan itu opsional " +
       "(sebuah divisi boleh belum punya koordinator). " +
+      "MENGGANTI NAMA anggota (nama diganti, ganti nama, rename) atau nama panggilannya ikut mengganti namanya " +
+      "di PIC tugas, PIC Job Hari-H, PIC " +
+      "prospek, dan koordinator divisi pada Ormawa Visit yang sama, kecuali ada anggota lain yang memakai nama " +
+      "yang sama (supaya tugas orang lain tidak ikut berpindah). Anggota yang dihapus, keluar dari sebuah divisi, " +
+      "atau diubah menjadi intern otomatis dilepas dari kursi koordinator divisi itu. Namanya TETAP tercatat " +
+      "sebagai PIC tugas lama, karena tugas yang sudah dikerjakan tetap mencatat siapa yang mengerjakannya. " +
       "Nama dan NRP adalah data pribadi, jadi peran Tamu tidak bisa membacanya sama sekali dan akan melihat " +
       "roster kosong beserta pemberitahuannya."),
 
@@ -271,7 +282,27 @@ export function systemPassages(): Passage[] {
       "Entri dikelompokkan dua tingkat: per Ormawa Visit, lalu per divisi. " +
       "Sebagian entri tidak dibuat langsung di sini melainkan TERBIT OTOMATIS dari tempat lain: dari tautan " +
       "hasil sebuah tugas (kelompok 'Hasil Tugas') atau dari tautan sebuah prospek (kelompok 'Reach & Offer'). " +
-      "Entri semacam itu tetap mengikuti sumbernya, jadi memperbaikinya sebaiknya dari tugas atau prospek asalnya."),
+      "Entri semacam itu diberi label sumbernya ('Dari Work Breakdown' atau 'Dari Reach & Offer') dan tetap " +
+      "tersambung dua arah: mengubah NAMA atau URL-nya di Super Link ikut mengubahnya di tugas atau prospek " +
+      "asalnya, sedangkan divisi dan catatannya mengikuti sumbernya dan dikunci di sini. Menghapusnya dari " +
+      "Super Link mencabut centang 'Tampilkan juga di Super Link' pada sumbernya, tautannya sendiri tetap ada. " +
+      "Memindahkan tugas ke divisi lain ikut memindahkan entri hasilnya ke kelompok divisi baru."),
+
+    p("integration", "Aturan: menu yang saling terhubung (integrasi otomatis)", "/panduan",
+      "Menu-menu di sistem ini SALING TERHUBUNG: mengubah data di satu menu otomatis memperbarui menu lain, " +
+      "tanpa perlu mengetik ulang. Hubungan terpentingnya: " +
+      "Work Breakdown dan Kalender dan Papan Divisi menampilkan tugas yang SAMA, jadi mengubah di satu tempat " +
+      "langsung terlihat di semuanya, begitu juga progres per divisi di Divisi & Anggota dan angka di Dashboard. " +
+      "Tautan hasil tugas dan tautan prospek bisa terbit ke Super Link dan tetap tersambung dua arah. " +
+      "Prospek yang dijadikan data utama menyalin nama himpunan, kampus, lokasi, dan mode ke Ormawa Visit-nya. " +
+      "Respons DITERIMA di Reach & Offer membuka fitur Compare di menu Himpunan, dan mengganti nama himpunan " +
+      "di Reach & Offer ikut mengganti nama kartu perbandingannya. " +
+      "Anggota di Divisi & Anggota adalah sumber daftar PIC di Work Breakdown, Job Hari-H, dan Reach & Offer; " +
+      "mengganti namanya ikut mengganti nama PIC tersebut. Divisi menentukan kolom di Rundown dan kelompok di " +
+      "Super Link. Rencana utama Anggaran menentukan angka anggaran di Dashboard dan daftar Ormawa Visit. " +
+      "Yang sengaja TIDAK tersambung: nama mitra di tabel Plotting FGD (diketik bebas karena sering dibuat " +
+      "sebelum mitranya pasti), MC dan operator di Rundown (teks bebas), dan data Ormawa Visit yang tetap " +
+      "seperti semula ketika tanda data utama dilepas."),
 
     p("filters", "Cara pakai: filter dan pencarian di tabel", undefined,
       "Setiap tabel yang punya penyaring memakai KOTAK CENTANG, bukan pilihan tunggal, jadi beberapa nilai bisa " +

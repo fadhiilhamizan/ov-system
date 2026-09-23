@@ -4,7 +4,9 @@ import { readRows } from "./read";
 import { createClient } from "../supabase/server";
 import { prospectStage } from "../constants";
 import { effectiveStatus } from "../format";
-import { divisionFields, memberInDivision } from "../members";
+import {
+  divisionFields, memberDivisions, memberInDivision, removeFromRoster, renameInRoster,
+} from "../members";
 import { planTotal, primaryBudgetPlan } from "../budget";
 import { uid } from "../utils";
 import { normalizeRole } from "../auth";
@@ -379,13 +381,32 @@ export async function purgeTaskLinks(taskId: string) {
 // Links a task USES. See the TaskRef type and migration 0037 for why this is
 // not the same thing as task_links, and why one Super Link entry may be
 // referenced by many tasks.
+type RefRow = TaskRef & { links?: { url: string | null; name: string | null } | null };
+
+/**
+ * A reference picked from Super Link FOLLOWS that entry: its URL is read from
+ * the entry itself, and an empty label falls back to the entry's name. The row
+ * only stores a copy for the day the entry is deleted (the FK then nulls
+ * `link_id` and the copy is all that is left). Before this, fixing a broken
+ * URL in Super Link left every task that referenced it pointing at the broken
+ * one, with nothing on screen to say so.
+ */
+function followLinkedRef({ links: live, ...ref }: RefRow): TaskRef {
+  if (!live) return ref;
+  return {
+    ...ref,
+    url: live.url || ref.url,
+    label: ref.label || live.name || "",
+  };
+}
+
 export const getTaskRefs = cache(async (taskId: string): Promise<TaskRef[]> => {
-  const data = await readRows<TaskRef[]>(
+  const data = await readRows<RefRow[]>(
     "task refs",
-    (await sb()).from("task_refs").select("*").eq("task_id", taskId).order("order"),
+    (await sb()).from("task_refs").select("*, links(url, name)").eq("task_id", taskId).order("order"),
     [],
   );
-  return coalesce(data, ["url", "label"]);
+  return coalesce(data.map(followLinkedRef), ["url", "label"]);
 });
 
 /** All references for an event's tasks, keyed by task id (one round trip). */
@@ -394,16 +415,16 @@ export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<
   // back as an `in` list, so every task page paid two round trips per child
   // table and sent every id over the wire twice. `!inner` makes the embedded
   // parent a join rather than a left join, so the filter actually narrows.
-  const data = await readRows<TaskRef[]>(
+  const data = await readRows<RefRow[]>(
     "task refs by edition",
     (await sb())
       .from("task_refs")
-      .select("*, tasks!inner(event_id)")
+      .select("*, tasks!inner(event_id), links(url, name)")
       .eq("tasks.event_id", eventId)
       .order("order"),
     [],
   );
-  const rows = coalesce(dropEmbed(data, "tasks"), ["url", "label"]);
+  const rows = coalesce(dropEmbed(data, "tasks").map(followLinkedRef), ["url", "label"]);
   const byTask: Record<string, TaskRef[]> = {};
   for (const r of rows) (byTask[r.task_id] ??= []).push(r);
   return byTask;
@@ -913,6 +934,89 @@ export async function bulkDeleteLinks(ids: string[]) {
   await must((await sb()).from("links").delete().in("id", ids));
 }
 
+/** One Super Link entry by id, or null. */
+export const getLink = cache(async (id: string): Promise<LinkItem | null> => {
+  const data = await readRows<LinkItem | null>(
+    "link", (await sb()).from("links").select("*").eq("id", id).maybeSingle(), null);
+  return data ? coalesce([data], ["section", "division", "name", "url", "note", "source"])[0] : null;
+});
+
+/** The child tables that can OWN a Super Link entry (see AGENTS.md). */
+const LINK_OWNERS = ["task_links", "prospect_links"] as const;
+
+/**
+ * An owned entry was edited from the Super Link page: carry the URL and name
+ * back to the task result / prospect link that owns it.
+ *
+ * Without this the edit lasted only until the owner was next saved, which
+ * rebuilds the entry from the owner's own copy and quietly puts the old URL
+ * back. The owner's `label` becomes the entry's name, which is exactly what the
+ * next sync would publish again, so the two stay in step from either side.
+ */
+export async function pushLinkToOwners(linkId: string, patch: { url?: string; name?: string }) {
+  const row: Record<string, string> = {};
+  if (patch.url !== undefined) row.url = patch.url;
+  if (patch.name !== undefined) row.label = patch.name;
+  if (!Object.keys(row).length) return;
+  const client = await sb();
+  for (const table of LINK_OWNERS) {
+    await must(client.from(table).update(row).eq("link_id", linkId));
+  }
+}
+
+/**
+ * Owned entries are about to be deleted straight from the Super Link page:
+ * untick "publish" on their owners first.
+ *
+ * The foreign key already nulls `link_id`, but it leaves `in_super_link` true,
+ * so the task dialog went on saying "shown in Super Link" about an entry that
+ * no longer existed, and the next save of that task silently published it
+ * again. Deleting it from Super Link is a decision to unpublish; this records
+ * it where the owner will see it.
+ */
+export async function releaseLinkOwners(linkIds: string[]) {
+  if (!linkIds.length) return;
+  const client = await sb();
+  for (const table of LINK_OWNERS) {
+    await must(client.from(table).update({ in_super_link: false }).in("link_id", linkIds));
+  }
+}
+
+/**
+ * Re-derive the published Super Link entries of some tasks from the tasks'
+ * CURRENT division, title and edition.
+ *
+ * `syncTaskLinks` does this whenever the task dialog saves, but a task can
+ * change without the dialog: the bulk editor re-files many tasks into another
+ * division at once, and a published result stayed filed under the old
+ * division in Super Link. Only the fields the task owns are rewritten; the
+ * entry's name follows the task title only when the link has no label of its
+ * own (the same rule `syncTaskLinks` uses).
+ */
+export async function refreshTaskSuperLinks(taskIds: string[]) {
+  if (!taskIds.length) return;
+  const client = await sb();
+  const owned = await readRows<(TaskLink & { tasks: Pick<Task, "event_id" | "division" | "title"> })[]>(
+    "published task links",
+    client
+      .from("task_links")
+      .select("*, tasks!inner(event_id, division, title)")
+      .in("task_id", taskIds)
+      .eq("in_super_link", true)
+      .not("link_id", "is", null),
+    [],
+  );
+  for (const tl of owned) {
+    const t = tl.tasks;
+    await must(client.from("links").update({
+      event_id: t.event_id,
+      division: t.division,
+      note: t.title,
+      name: (tl.label ?? "").trim() || t.title,
+    }).eq("id", tl.link_id!));
+  }
+}
+
 // ---------------- Budget ----------------
 export const getBudgetPlans = cache(async (eventId?: string): Promise<BudgetPlan[]> => {
   const client = await sb();
@@ -1343,8 +1447,24 @@ export async function updateEvent(id: string, patch: Partial<OVEvent>) {
   void _drop;
   await must((await sb()).from("events").update(rest).eq("id", id));
 }
+/**
+ * Delete an edition AND everything that belongs to it.
+ *
+ * Most edition tables cascade in the database, but members, links, prospects
+ * and budget_plans were ON DELETE SET NULL until 0051 - and every reader treats
+ * a null `event_id` as "belongs to every edition". Deleting one Ormawa Visit
+ * used to pour its whole roster, prospect list and Super Link into all the
+ * others. These four are deleted here explicitly, before the event, so the
+ * outcome does not depend on whether this database has run 0051 (the demo
+ * project never will). Prospect links, budget items and published task/prospect
+ * Super Link rows go with their parents.
+ */
 export async function deleteEvent(id: string) {
-  await must((await sb()).from("events").delete().eq("id", id));
+  const client = await sb();
+  for (const table of ["prospects", "links", "members", "budget_plans"] as const) {
+    await must(client.from(table).delete().eq("event_id", id));
+  }
+  await must(client.from("events").delete().eq("id", id));
 }
 
 /** Archive an Ormawa Visit (or take it back out of the archive). Admin-only -
@@ -1579,6 +1699,106 @@ export async function bulkUpdateMembers(ids: string[], patch: Partial<Member>) {
   void _drop;
   const { error } = await (await sb()).from("members").update(rest).in("id", ids);
   if (error) throw new Error(error.message);
+}
+
+/** One member by id, or null. Read before an edit so the knock-on writes can
+ *  compare the old name and divisions with the new ones. */
+export const getMember = cache(async (id: string): Promise<Member | null> => {
+  const data = await readRows<Member | null>(
+    "member", (await sb()).from("members").select("*").eq("id", id).maybeSingle(), null);
+  if (!data) return null;
+  const [m] = coalesce([data], ["name", "nickname", "nrp"]);
+  return { ...m, divisions: m.divisions ?? (m.division ? [m.division] : []) };
+});
+
+/** The by-name roster fields: each table, its text column, and whether it is
+ *  scoped by `event_id` directly. */
+const NAME_FIELDS = [
+  { table: "tasks", column: "pic" },
+  { table: "job_harih", column: "pic" },
+  { table: "prospects", column: "pic" },
+  { table: "teams", column: "coordinator" },
+] as const;
+
+/**
+ * Carry a member's new display name into every field that stores people by
+ * name (task PIC, Hari-H PIC, prospect PIC, team coordinator), within the
+ * member's edition. `from`/`to` come from `memberRipple`, which has already
+ * dropped any name another member also answers to. Returns how many rows
+ * changed.
+ *
+ * `eventId === null` is a legacy unscoped member, who is shown under every
+ * edition, so the rename applies everywhere.
+ */
+export async function renameMemberReferences(
+  eventId: string | null,
+  from: string[],
+  to: string,
+): Promise<number> {
+  const client = await sb();
+  let changed = 0;
+  for (const { table, column } of NAME_FIELDS) {
+    let q = client.from(table).select(`id, ${column}`).neq(column, "");
+    if (eventId) q = q.eq("event_id", eventId);
+    const rows = await readRows<Record<string, string>[]>(`${table} names`, q, []);
+    for (const row of rows) {
+      const next = renameInRoster(row[column], from, to);
+      if (next === null) continue;
+      await must(client.from(table).update({ [column]: next }).eq("id", row.id));
+      changed++;
+    }
+  }
+  return changed;
+}
+
+/**
+ * Take a person off the coordinator line of some (or all) divisions of an
+ * edition. Used when a member leaves a division, becomes an intern, or is
+ * deleted - see `memberRipple`.
+ */
+export async function unseatCoordinator(
+  eventId: string | null,
+  divisions: string[] | "all",
+  names: string[],
+) {
+  if (divisions !== "all" && !divisions.length) return;
+  const client = await sb();
+  let q = client.from("teams").select("id, division, coordinator").neq("coordinator", "");
+  if (eventId) q = q.eq("event_id", eventId);
+  if (divisions !== "all") q = q.in("division", divisions);
+  const rows = await readRows<{ id: string; coordinator: string }[]>("team coordinators", q, []);
+  for (const row of rows) {
+    const next = removeFromRoster(row.coordinator, names);
+    if (next !== null) await must(client.from("teams").update({ coordinator: next }).eq("id", row.id));
+  }
+}
+
+/**
+ * What deleting divisions leaves behind, cleaned up: the key is removed from
+ * every member's `divisions` (their primary moves to the next one they have),
+ * and the division's team row - its coordinator line - goes with it.
+ *
+ * Tasks are deliberately NOT touched. They keep their division key and lose
+ * only the badge; deleting or re-filing a division's whole work history as a
+ * side effect of tidying the division list is the user's call, not this one's.
+ */
+export async function detachDivisions(eventId: string, keys: string[]) {
+  if (!keys.length) return;
+  const client = await sb();
+  const gone = new Set(keys);
+  const rows = await readRows<Pick<Member, "id" | "division" | "divisions">[]>(
+    "members in division",
+    client.from("members").select("id, division, divisions").eq("event_id", eventId),
+    [],
+  );
+  for (const m of rows) {
+    const current = memberDivisions(m);
+    if (!current.some((d) => gone.has(d))) continue;
+    await must(client.from("members")
+      .update(divisionFields(current.filter((d) => !gone.has(d))))
+      .eq("id", m.id));
+  }
+  await must(client.from("teams").delete().eq("event_id", eventId).in("division", keys));
 }
 
 export async function createDivision(input: Partial<Division>) {

@@ -111,9 +111,51 @@ export function AddDivisionButton() {
   );
 }
 
+/**
+ * Confirmation for deleting one or more divisions.
+ *
+ * Deleting a division reaches past the division list (see detachDivisions in
+ * the repo and docs/INTEGRATION.md), so the dialog says where: members lose
+ * the division, its coordinator line goes, and its tasks stay but lose their
+ * badge. It used to delete on the first click with no warning at all.
+ */
+export function DeleteDivisionsDialog({
+  open, onOpenChange, names, pending, onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  names: string[];
+  pending: boolean;
+  onConfirm: () => void;
+}) {
+  const t = useT();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{names.length > 1 ? `${t("Hapus")} ${names.length} ${t("divisi")}?` : t("Hapus divisi?")}</DialogTitle>
+          <DialogDescription>{names.join(", ")}</DialogDescription>
+        </DialogHeader>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>{t("Anggota dilepas dari divisi ini; divisi lain yang mereka ikuti tetap.")}</li>
+          <li>{t("Koordinator divisi ini ikut dihapus.")}</li>
+          <li>{t("Tugas divisi ini tetap ada di Work Breakdown, tetapi tanpa divisi.")}</li>
+        </ul>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
+          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+            {pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function DivisionActions({ division }: { division: Division }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
+  const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
   return (
     <>
@@ -126,13 +168,22 @@ export function DivisionActions({ division }: { division: Division }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => start(async () => {
-            const res = await deleteDivisionAction(division.key);
-            if (res.ok) toast.success(t("Divisi dihapus")); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+          <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}>
+            <Trash2 /> {t("Hapus")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <DivisionFormDialog mode="edit" division={division} open={editOpen} onOpenChange={setEditOpen} />
+      <DeleteDivisionsDialog
+        open={delOpen}
+        onOpenChange={setDelOpen}
+        names={[division.name]}
+        pending={pending}
+        onConfirm={() => start(async () => {
+          const res = await deleteDivisionAction(division.key);
+          if (res.ok) { toast.success(t("Divisi dihapus")); setDelOpen(false); } else toast.error(res.error);
+        })}
+      />
     </>
   );
 }

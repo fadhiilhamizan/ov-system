@@ -23,7 +23,7 @@ Postgres-nya tetap sehat; yang hilang cuma UI-nya.
 Jalur cadangannya bicara langsung ke Postgres:
 
 ```bash
-npm run db:apply -- supabase/migrations/0050_broadcasts_inbox.sql
+npm run db:apply -- supabase/migrations/0051_edition_delete_cascade.sql
 ```
 
 Skrip menanyakan project ref dan **password database** (password Postgres yang

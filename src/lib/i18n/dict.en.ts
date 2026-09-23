@@ -1292,4 +1292,14 @@ export const EN: Record<string, string> = {
   "Masih aktif": "Still open",
   "Semua Tugas": "All tasks",
   "Saring tugas yang masih punya catatan aktif": "Filter to tasks that still have open notes",
+  // v1.50.0 - integrasi antarmenu.
+  "Dari Work Breakdown": "From Work Breakdown",
+  "Dari Reach & Offer": "From Reach & Offer",
+  "Tautan ini dipublikasikan dari hasil tugas di Work Breakdown. Nama dan URL yang diubah di sini ikut berubah di tugasnya; divisi dan catatan mengikuti tugasnya.": "This link was published from a task result in Work Breakdown. A name or URL changed here also changes on the task; the division and note follow the task.",
+  "Tautan ini dipublikasikan dari prospek di Reach & Offer. Nama dan URL yang diubah di sini ikut berubah di prospeknya; catatan mengikuti prospeknya.": "This link was published from a prospect in Reach & Offer. A name or URL changed here also changes on the prospect; the note follows the prospect.",
+  "Sumbernya tetap ada, hanya tidak lagi ditampilkan di Super Link.": "Its source stays; it is just no longer shown in Super Link.",
+  "Hapus divisi?": "Delete division?",
+  "Anggota dilepas dari divisi ini; divisi lain yang mereka ikuti tetap.": "Members are taken out of this division; any other divisions they belong to stay.",
+  "Koordinator divisi ini ikut dihapus.": "This division's coordinator is removed too.",
+  "Tugas divisi ini tetap ada di Work Breakdown, tetapi tanpa divisi.": "This division's tasks stay in Work Breakdown, without a division.",
 };

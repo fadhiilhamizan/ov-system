@@ -42,6 +42,13 @@ describe("revalidateEntities", () => {
     expect(new Set(calls).size).toBe(calls.length);
   });
 
+  it("a task write reaches the division cards on Divisi & Anggota", () => {
+    // Regression: /members draws each division's task progress (divisionStats)
+    // but was missing from the tasks consumers, so finishing a task left the
+    // card's percentage stale until a roster edit happened to bust the route.
+    expect(callsFor("tasks")).toContain("/members");
+  });
+
   it("busts nothing outside the entities it was given", () => {
     expect(callsFor("faq")).toEqual(["/faq"]);
   });

@@ -143,7 +143,7 @@ create index if not exists divisions_event_idx on divisions(event_id);
 -- (= divisions[1]) yang dipertahankan untuk pembaca lama.
 create table if not exists members (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   name text not null,
   nickname text,
   nrp text,
@@ -152,7 +152,7 @@ create table if not exists members (
   division text,
   divisions text[] not null default '{}'
 );
-alter table members add column if not exists event_id text references events(id) on delete set null;
+alter table members add column if not exists event_id text references events(id) on delete cascade;
 alter table members add column if not exists divisions text[] not null default '{}';
 create index if not exists members_event_idx on members(event_id);
 create index if not exists members_divisions_idx on members using gin (divisions);
@@ -188,7 +188,7 @@ create index if not exists tasks_status_idx on tasks(status);
 -- 2.6 links (Super Link) -------------------------------------------
 create table if not exists links (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   section text default '',
   division text default '',
   name text not null,
@@ -196,7 +196,7 @@ create table if not exists links (
   note text default '',
   source text default 'manual'
 );
-alter table links add column if not exists event_id text references events(id) on delete set null;
+alter table links add column if not exists event_id text references events(id) on delete cascade;
 create index if not exists links_event_idx on links(event_id);
 -- Setiap entri Super Link wajib punya URL sungguhan.
 alter table links drop constraint if exists links_url_required;
@@ -265,7 +265,7 @@ create index if not exists task_comments_open_idx
 -- 2.8 prospects (Reach & Offer) ------------------------------------
 create table if not exists prospects (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   batch text default '',
   no text,
   date_text text default '',
@@ -283,7 +283,7 @@ create table if not exists prospects (
   is_primary boolean not null default false,
   source text default 'manual'
 );
-alter table prospects add column if not exists event_id text references events(id) on delete set null;
+alter table prospects add column if not exists event_id text references events(id) on delete cascade;
 alter table prospects add column if not exists mode text;
 alter table prospects add column if not exists is_primary boolean not null default false;
 -- 0036: catatan per prospek. Kolom `link*` di bawahnya WARISAN sejak 0038 -
@@ -324,7 +324,7 @@ create unique index if not exists prospect_links_link_uniq
 create table if not exists budget_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   -- Rencana UTAMA edisi ini (0048). RAB Minimal dan RAB Maksimal adalah dua
   -- skenario untuk uang yang sama, jadi Dashboard membaca satu rencana saja,
   -- bukan jumlah semuanya. Pola yang sama dengan prospects.is_primary (0022).
@@ -384,6 +384,45 @@ update budget_plans b
   from ranked r
  where b.id = r.id
    and r.rn = 1;
+
+-- 2.9b Menghapus edisi ikut menghapus datanya (0051) ---------------
+-- members, links, prospects dan budget_plans dulu ON DELETE SET NULL, dan
+-- aplikasi membaca event_id NULL sebagai "milik semua edisi": menghapus satu
+-- Ormawa Visit menumpahkan roster, prospek dan Super Link-nya ke SETIAP edisi
+-- lain. Definisi tabel di atas sudah CASCADE untuk database baru; blok ini
+-- memperbaiki database lama yang tabelnya sudah ada (create table if not
+-- exists tidak menyentuh kunci asing yang sudah terpasang).
+do $do$
+declare
+  t text;
+  c text;
+begin
+  foreach t in array array['members', 'links', 'prospects', 'budget_plans'] loop
+    for c in
+      select con.conname
+        from pg_constraint con
+       where con.conrelid = format('public.%I', t)::regclass
+         and con.contype = 'f'
+         and con.confrelid = 'public.events'::regclass
+         and con.confdeltype <> 'c'
+    loop
+      execute format('alter table public.%I drop constraint %I', t, c);
+    end loop;
+
+    if not exists (
+      select 1
+        from pg_constraint con
+       where con.conrelid = format('public.%I', t)::regclass
+         and con.contype = 'f'
+         and con.confrelid = 'public.events'::regclass
+    ) then
+      execute format(
+        'alter table public.%I add constraint %I foreign key (event_id) references public.events(id) on delete cascade',
+        t, t || '_event_id_fkey');
+    end if;
+  end loop;
+end
+$do$;
 
 -- 2.10 rundown -----------------------------------------------------
 -- job_lo … job_opr adalah kolom warisan: tidak lagi ditulis, tapi masih dibaca

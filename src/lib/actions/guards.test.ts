@@ -30,6 +30,10 @@ const REPO_FNS = [
   "setEventLocked", "setRundownDivisionJob",
   "updateBudgetItem", "updateDivision", "updateEvent", "updateFaq", "updateJob",
   "updateLink", "updateMember", "updateRundown", "updateTeam",
+  // Knock-on writes of the cross-menu integration (docs/INTEGRATION.md). The
+  // reads are here too so a refused call cannot even look.
+  "getMember", "renameMemberReferences", "unseatCoordinator", "detachDivisions",
+  "getLink", "pushLinkToOwners", "releaseLinkOwners",
 ] as const;
 
 const repo = Object.fromEntries(
@@ -43,6 +47,7 @@ const HIMPUNAN_FNS = [
   "createFgdRow", "updateFgdRow", "deleteFgdRow",
   "createCompareSubject", "deleteCompareSubject",
   "createCompareEntry", "updateCompareEntry", "deleteCompareEntry",
+  "renameCompareSubjectFor",
 ] as const;
 const himpunanRepo = Object.fromEntries(
   HIMPUNAN_FNS.map((n) => [n, vi.fn(async () => undefined)]),

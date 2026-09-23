@@ -100,6 +100,112 @@ export function isCoordinator(m: Pick<Member, "name" | "nickname">, team?: Pick<
   return names.includes(memberLabel(m).toLowerCase()) || names.includes((m.name ?? "").toLowerCase());
 }
 
+// ------------------------------------------------------------------
+// People are stored BY NAME in four places: a task's PIC, a Hari-H job's PIC,
+// a prospect's PIC and a team's coordinator. There is no member id behind any
+// of them (the comma-joined format predates the roster, and the pickers keep
+// it so hand-typed names survive). So a change on the roster has to be carried
+// into those strings explicitly, or they silently stop matching anybody: the
+// picker shows the old spelling as a stray free-text chip, and the division
+// card stops recognising its own coordinator. See docs/INTEGRATION.md.
+// ------------------------------------------------------------------
+
+const lower = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+
+/**
+ * Rewrite the tokens of a stored roster string that name `from` so they name
+ * `to` instead. Returns the new string, or null when nothing was renamed (so
+ * the caller can skip the write, and never rewrites a row just to normalise its
+ * separators).
+ */
+export function renameInRoster(
+  value: string | null | undefined,
+  from: string[],
+  to: string,
+): string | null {
+  const olds = new Set(from.map(lower).filter(Boolean));
+  const target = to.trim();
+  if (!olds.size || !target) return null;
+  let renamed = false;
+  const out: string[] = [];
+  for (const tok of splitRoster(value)) {
+    const next = olds.has(tok.toLowerCase()) ? target : tok;
+    if (next !== tok) renamed = true;
+    // Renaming "Budi" to "Andi" in "Andi, Budi" must not leave "Andi, Andi".
+    if (!out.some((x) => x.toLowerCase() === next.toLowerCase())) out.push(next);
+  }
+  return renamed ? out.join(", ") : null;
+}
+
+/** Drop the tokens naming any of `names`. Null when nothing was removed. */
+export function removeFromRoster(value: string | null | undefined, names: string[]): string | null {
+  const drop = new Set(names.map(lower).filter(Boolean));
+  const tokens = splitRoster(value);
+  const kept = tokens.filter((tok) => !drop.has(tok.toLowerCase()));
+  return kept.length === tokens.length ? null : kept.join(", ");
+}
+
+/** What a roster change means for the by-name references elsewhere. */
+export interface MemberRipple {
+  /** Rewrite these tokens to `to` in every PIC and coordinator of the edition. */
+  rename: { from: string[]; to: string } | null;
+  /** Take this person off the coordinator line of these divisions ("all" =
+   *  every division of the edition, used when the member is deleted). */
+  unseat: { divisions: DivisionKey[] | "all"; names: string[] } | null;
+}
+
+/**
+ * Plan the knock-on writes of editing (`after`) or deleting (`after === null`)
+ * one member.
+ *
+ * A name that another member of the same edition also answers to is left
+ * alone, in both directions: rewriting "Budi" everywhere because ONE of two
+ * Budis changed his nickname would reassign the other one's tasks. Ambiguous
+ * tokens were ambiguous before the edit too; the picker already shows them as
+ * matching both people.
+ *
+ * PIC fields are deliberately NOT cleared on delete. A finished task still
+ * names who did it; the picker keeps an unknown name as a free-text chip, so
+ * nothing is lost and nothing is reassigned behind anyone's back. The
+ * coordinator line is different: it claims a CURRENT role, and the division
+ * card prints it under "Koordinator".
+ */
+export function memberRipple(before: Member, after: Member | null, roster: Member[]): MemberRipple {
+  const others = roster.filter((m) => m.id !== before.id);
+  const taken = (n: string) =>
+    others.some((m) => lower(memberLabel(m)) === lower(n) || lower(m.name) === lower(n));
+  const names = (list: (string | null | undefined)[]) =>
+    [...new Set(list.map((s) => (s ?? "").trim()).filter(Boolean))].filter((n) => !taken(n));
+
+  if (!after) {
+    const all = names([memberLabel(before), before.name]);
+    return { rename: null, unseat: all.length ? { divisions: "all", names: all } : null };
+  }
+
+  const to = memberLabel(after).trim();
+  // Only a real name change ripples. Editing an NRP must not quietly rewrite
+  // every task that still spells this person by their full name.
+  const nameChanged =
+    lower(memberLabel(before)) !== lower(to) || lower(before.name) !== lower(after.name);
+  const from = nameChanged
+    ? names([memberLabel(before), before.name]).filter((n) => lower(n) !== lower(to))
+    : [];
+  const rename = to && from.length && !taken(to) ? { from, to } : null;
+
+  // Leaving a division, or stepping down to intern, ends a coordinator seat:
+  // the coordinator is always a FUNGSIONARIS OF THAT division. Divisions they
+  // never belonged to are left alone - legacy rosters name coordinators who
+  // were never assigned on their roster row, and that is not this edit's call.
+  const kept = new Set(memberDivisions(after));
+  const lost = after.type === "intern" && before.type !== "intern"
+    ? memberDivisions(before)
+    : memberDivisions(before).filter((d) => !kept.has(d));
+  const who = names([memberLabel(before), before.name, memberLabel(after), after.name]);
+  const unseat = lost.length && who.length ? { divisions: lost, names: who } : null;
+
+  return { rename, unseat };
+}
+
 /**
  * Who the PIC picker offers for a task in `key`, in two parts.
  *

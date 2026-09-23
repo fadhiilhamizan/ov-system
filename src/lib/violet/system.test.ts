@@ -61,6 +61,8 @@ describe("retrieval of system knowledge", () => {
     ["catatan di tabel terpotong, bagaimana melihat semuanya", "system-notes"],
     ["warna kategori anggaran berlaku untuk apa", "system-budget"],
     ["apa itu LPJ", "system-glossary"],
+    ["menu apa saja yang saling terhubung otomatis", "system-integration"],
+    ["kalau nama anggota diganti apakah PIC tugas ikut berubah", "system-member"],
   ])("%s -> %s", (question, expected) => {
     expect(best(question)).toBe(expected);
   });

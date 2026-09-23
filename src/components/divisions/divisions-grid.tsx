@@ -11,7 +11,7 @@ import { TeamActions, TeamFormDialog } from "@/components/members/member-manage"
 import { AddMembersToDivisionDialog } from "./add-members-dialog";
 import { ProgressRing } from "@/components/charts/donut";
 import { StackedBar } from "@/components/charts/bars";
-import { AddDivisionButton, DivisionActions } from "@/components/divisions/division-manage";
+import { AddDivisionButton, DeleteDivisionsDialog, DivisionActions } from "@/components/divisions/division-manage";
 import { STATUS_META } from "@/lib/constants";
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/actions/manage";
@@ -170,6 +170,7 @@ export function DivisionsGrid({
   // effect, so a tick survives an unrelated re-render (see use-multi-select).
   const sel = useMultiSelect(React.useMemo(() => divisions.map((d) => d.key), [divisions]));
   const [pending, start] = React.useTransition();
+  const [bulkDelOpen, setBulkDelOpen] = React.useState(false);
 
   const statMap = React.useMemo(() => new Map(stats.map((s) => [s.division.key, s])), [stats]);
   const cards = divisions.map((division) => {
@@ -184,12 +185,19 @@ export function DivisionsGrid({
   function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, ok: string) {
     start(async () => {
       const res = await fn();
-      if (res.ok) { toast.success(ok); sel.clear(); } else toast.error(res.error);
+      if (res.ok) { toast.success(ok); sel.clear(); setBulkDelOpen(false); } else toast.error(res.error);
     });
   }
 
   return (
     <div>
+      <DeleteDivisionsDialog
+        open={bulkDelOpen}
+        onOpenChange={setBulkDelOpen}
+        names={divisions.filter((d) => sel.selected.has(d.key)).map((d) => d.name)}
+        pending={pending}
+        onConfirm={() => run(() => bulkDeleteDivisionsAction(sel.ids), t("Divisi dihapus"))}
+      />
       <div className="mb-4 flex items-center justify-end gap-2">
         {canManage && <AddDivisionButton />}
       </div>
@@ -206,8 +214,7 @@ export function DivisionsGrid({
               onClick={() => run(() => bulkUpdateDivisionsAction(sel.ids, { exclude_from_rundown: false }), t("Divisi diperbarui"))}>
               <Calendar className="size-4" /> {t("Ikut rundown")}
             </Button>
-            <Button variant="destructive" size="sm" disabled={pending}
-              onClick={() => run(() => bulkDeleteDivisionsAction(sel.ids), t("Divisi dihapus"))}>
+            <Button variant="destructive" size="sm" disabled={pending} onClick={() => setBulkDelOpen(true)}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
             </Button>
             <Button variant="ghost" size="sm" onClick={sel.clear} disabled={pending}><X className="size-4" /> {t("Batal")}</Button>

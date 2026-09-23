@@ -39,7 +39,10 @@ const DIVISION_DETAIL = "/divisions/[key]";
 
 /** Routes that read each entity. */
 const CONSUMERS = {
-  tasks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/dashboard", "/events"],
+  // /members is here because its Divisi tab draws each division's task
+  // progress (divisionStats). Without it, finishing a task left that card's
+  // percentage stale until something on the roster happened to change.
+  tasks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/dashboard", "/events", "/members"],
   taskLinks: ["/tasks", "/calendar", "/divisions", DIVISION_DETAIL, "/links"],
   // Same three task surfaces as taskLinks, minus /links: a comment is never
   // published anywhere. The notification badge lives in the Work Breakdown
@@ -52,6 +55,12 @@ const CONSUMERS = {
   // have DITERIMA: editing a response in Reach & Offer is what opens or closes
   // that feature, and without this the gate stays stale until a hard reload.
   prospects: ["/prospects", "/dashboard", "/events", "/himpunan"],
+  // A prospect's own link rows. Separate from `prospects` because the Super
+  // Link page can change them (editing or deleting an entry a prospect
+  // published), and that should not re-render the dashboard.
+  prospectLinks: ["/prospects", "/links"],
+  // FGD plotting + Compare. Only the Himpunan page reads these tables.
+  himpunan: ["/himpunan"],
   // Not just /links: the task dialog's reference picker reads the whole Super
   // Link directory, and that dialog is mounted by all three task pages.
   links: ["/links", "/tasks", "/calendar", "/divisions", DIVISION_DETAIL],

@@ -28,6 +28,7 @@ const repo = {
   bulkDeleteTasks: vi.fn(async () => {}),
   syncTaskLinks: vi.fn(async () => {}),
   purgeTaskLinks: vi.fn(async () => {}),
+  refreshTaskSuperLinks: vi.fn(async () => {}),
   // archivedGuard() loads the edition to see whether it is archived. Takes the
   // id so a test can make ONE edition locked and leave the others open.
   getEvent: vi.fn(async (id: string) => ({ id, locked: false })),
@@ -397,5 +398,41 @@ describe("archive lock on task writes", () => {
     const res = await bulkSetStatusAction(["t1"], "done");
     expect(res.ok).toBe(true);
     expect(repo.bulkUpdateTasks).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ------------------------------------------------------------------
+// Published results follow the task (docs/INTEGRATION.md). The dialog runs
+// syncTaskLinks; everything else that changes what an entry should say has to
+// refresh it explicitly, or Super Link keeps the old division.
+// ------------------------------------------------------------------
+describe("published Super Link entries follow the task", () => {
+  it("bulk re-filing into another division refreshes the entries", async () => {
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    await bulkUpdateTaskFieldsAction(["t1", "t2"], { division: "LO" });
+    expect(repo.refreshTaskSuperLinks).toHaveBeenCalledWith(["t1", "t2"]);
+  });
+
+  it("a bulk deadline change does not touch Super Link", async () => {
+    repo.getTask.mockImplementation(async (id: string) => task({ id }));
+    await bulkUpdateTaskFieldsAction(["t1"], { end_date: "2026-09-01" });
+    expect(repo.refreshTaskSuperLinks).not.toHaveBeenCalled();
+  });
+
+  it("a rename without the links payload refreshes; one with it lets the sync do it", async () => {
+    await updateTaskAction("t1", { title: "Judul baru" });
+    expect(repo.refreshTaskSuperLinks).toHaveBeenCalledWith(["t1"]);
+
+    vi.clearAllMocks();
+    currentUser.mockResolvedValue(user());
+    repo.getTask.mockResolvedValue(task());
+    await updateTaskAction("t1", { title: "Judul baru" }, []);
+    expect(repo.syncTaskLinks).toHaveBeenCalled();
+    expect(repo.refreshTaskSuperLinks).not.toHaveBeenCalled();
+  });
+
+  it("a status change alone leaves Super Link alone", async () => {
+    await updateTaskAction("t1", { status: "done" });
+    expect(repo.refreshTaskSuperLinks).not.toHaveBeenCalled();
   });
 });

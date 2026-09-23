@@ -297,6 +297,7 @@ const PENDING = [
   "0035_rundown_single_version.sql",
   "0036_prospect_link_notes.sql",
   "0037_task_refs.sql",
+  "0051_edition_delete_cascade.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -1795,6 +1796,67 @@ console.log("0050 - Kotak Masuk (siaran & penerima)");
   await db.exec(`delete from broadcast_recipients; delete from broadcasts;`);
 }
 
+
+// ------------------------------------------------------------------
+// 0051: menghapus edisi ikut menghapus datanya.
+//
+// members, links, prospects dan budget_plans dulu ON DELETE SET NULL, dan
+// aplikasi membaca event_id NULL sebagai "milik semua edisi". Jadi menghapus
+// satu Ormawa Visit menumpahkan roster, prospek dan Super Link-nya ke setiap
+// edisi lain. Dua keadaan diuji: hasil akhir setup.sql, dan database LAMA yang
+// kuncinya masih SET NULL lalu diperbaiki oleh berkas migrasinya.
+// ------------------------------------------------------------------
+console.log("0051 - menghapus edisi ikut menghapus datanya");
+{
+  const seedEdition = (id) => db.exec(`
+    insert into events (id, code, title) values ('${id}', 'X', 'Hapus saya');
+    insert into members (event_id, name, nrp, type, year) values ('${id}', 'Anggota ${id}', '1', 'fungsionaris', 2024);
+    insert into links (event_id, name, url) values ('${id}', 'Tautan ${id}', 'https://z.test');
+    insert into prospects (event_id, org_name) values ('${id}', 'HIMA ${id}');
+    insert into budget_plans (name, event_id) values ('RAB ${id}', '${id}');`);
+  const leftovers = async (id) => {
+    const r = await db.query(`select
+      (select count(*) from members where name = 'Anggota ${id}')
+      + (select count(*) from links where name = 'Tautan ${id}')
+      + (select count(*) from prospects where org_name = 'HIMA ${id}')
+      + (select count(*) from budget_plans where name = 'RAB ${id}') as n`);
+    return Number(r.rows[0].n);
+  };
+
+  await seedEdition("ov-hapus-1");
+  await db.exec(`delete from events where id = 'ov-hapus-1';`);
+  ok("setup.sql: menghapus edisi tidak meninggalkan anggota/tautan/prospek/RAB tanpa edisi",
+    (await leftovers("ov-hapus-1")) === 0);
+
+  // Keadaan database produksi sebelum 0051: kunci asingnya masih SET NULL.
+  await db.exec(`
+    alter table members drop constraint members_event_id_fkey;
+    alter table members add constraint members_event_id_fkey
+      foreign key (event_id) references events(id) on delete set null;
+    alter table links drop constraint links_event_id_fkey;
+    alter table links add constraint links_event_id_fkey
+      foreign key (event_id) references events(id) on delete set null;`);
+  await seedEdition("ov-hapus-2");
+  await db.exec(`delete from events where id = 'ov-hapus-2';`);
+  ok("kondisi lama memang bocor (dua baris tertinggal dengan event_id NULL)",
+    (await leftovers("ov-hapus-2")) === 2);
+  await db.exec(`delete from members where name = 'Anggota ov-hapus-2';
+    delete from links where name = 'Tautan ov-hapus-2';`);
+
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0051_edition_delete_cascade.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  await seedEdition("ov-hapus-3");
+  await db.exec(`delete from events where id = 'ov-hapus-3';`);
+  ok("0051 memperbaiki database lama: data edisi ikut terhapus", (await leftovers("ov-hapus-3")) === 0);
+
+  const fks = await db.query(`select count(*)::int as n from pg_constraint
+    where contype = 'f' and confrelid = 'public.events'::regclass
+      and conrelid in ('public.members'::regclass, 'public.links'::regclass,
+                       'public.prospects'::regclass, 'public.budget_plans'::regclass)
+      and confdeltype <> 'c'`);
+  ok("tidak ada lagi kunci asing SET NULL ke events di keempat tabel itu", fks.rows[0].n === 0);
+}
 
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

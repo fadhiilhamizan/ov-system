@@ -24,6 +24,8 @@ const repo = {
   getEvent: vi.fn(async () => ({ id: "ov1", locked: false })),
 };
 vi.mock("@/lib/data/repo", () => repo);
+const himpunanRepo = { renameCompareSubjectFor: vi.fn(async () => false) };
+vi.mock("@/lib/data/himpunan-repo", () => himpunanRepo);
 
 const {
   createProspectAction, updateProspectAction, deleteProspectAction,
@@ -198,5 +200,19 @@ describe("deleteProspectAction", () => {
   it("admin can", async () => {
     expect((await deleteProspectAction("p1")).ok).toBe(true);
     expect(repo.deleteProspect).toHaveBeenCalledWith("p1");
+  });
+});
+
+describe("renaming a prospect renames its Compare card", () => {
+  it("carries a new org_name to the Himpunan compare subject", async () => {
+    repo.getProspects.mockResolvedValue([prospect({ org_name: "HIMA Baru" })]);
+    await updateProspectAction("p1", { org_name: "HIMA Baru" });
+    expect(himpunanRepo.renameCompareSubjectFor).toHaveBeenCalledWith("p1", "HIMA Baru");
+  });
+
+  it("does not look when the name was not part of the edit", async () => {
+    repo.getProspects.mockResolvedValue([prospect()]);
+    await updateProspectAction("p1", { notes: "catatan" });
+    expect(himpunanRepo.renameCompareSubjectFor).not.toHaveBeenCalled();
   });
 });

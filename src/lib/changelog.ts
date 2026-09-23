@@ -53,6 +53,23 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.50.0",
+    date: "2026-09-23",
+    title: "Menu-menu kini saling memperbarui",
+    changes: [
+      { kind: "fix", text: "Menghapus sebuah Ormawa Visit kini ikut menghapus anggota, prospek, Super Link dan RAB-nya; sebelumnya data itu justru muncul di semua Ormawa Visit lain (jalankan migrasi 0051)." },
+      { kind: "new", text: "Mengganti nama atau panggilan anggota kini ikut mengganti namanya di PIC tugas, PIC Hari-H, PIC prospek dan koordinator divisi." },
+      { kind: "new", text: "Anggota yang dihapus, keluar dari divisi, atau diubah menjadi intern otomatis dilepas dari kursi koordinator divisi itu." },
+      { kind: "fix", text: "Menghapus divisi kini melepas anggotanya dari divisi itu dan menghapus koordinatornya, dan selalu meminta konfirmasi lebih dulu." },
+      { kind: "new", text: "Mengubah nama atau URL tautan hasil tugas atau tautan prospek di Super Link kini ikut mengubahnya di tugas atau prospeknya, dan menghapusnya di Super Link mencabut centang tampilkan di sumbernya." },
+      { kind: "fix", text: "Memindahkan tugas ke divisi lain lewat ubah massal kini ikut memindahkan tautan hasilnya di Super Link." },
+      { kind: "fix", text: "Referensi tugas yang diambil dari Super Link kini selalu memakai URL terbaru dari entri Super Link-nya." },
+      { kind: "fix", text: "Mengganti nama himpunan di Reach & Offer kini ikut mengganti nama kartu perbandingannya di menu Himpunan." },
+      { kind: "fix", text: "Progres tugas per divisi di Divisi & Anggota kini langsung diperbarui saat status tugas berubah." },
+      { kind: "ui", text: "Entri Super Link yang berasal dari tugas atau prospek kini diberi label sumbernya, dan kolom yang diatur sumbernya dikunci." },
+    ],
+  },
+  {
     version: "1.49.1",
     date: "2026-09-22",
     title: "Keterangan hak akses per peran di Pengaturan diperbarui",
