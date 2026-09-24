@@ -6,6 +6,7 @@ import { EN } from "./dict.en";
 import {
   ACCESS_LEVEL_META, ACCESS_LEVEL_ORDER, ROLE_META, ROLE_ORDER,
 } from "../constants";
+import { CHARACTER_KEYS, CHARACTER_LABEL } from "../../components/ui/character-avatar";
 
 // ============================================================
 // Translation coverage.
@@ -191,6 +192,13 @@ describe("maps whose strings are translated dynamically", () => {
   it.each(ROLE_ORDER)("role %s has an English label", (role) => {
     const l = ROLE_META[role].label;
     expect(EN[l] ?? (IDENTICAL_IN_BOTH.has(l) ? l : ""), `no EN entry for "${l}"`).toBeTruthy();
+  });
+
+  it.each(CHARACTER_KEYS)("profile character %s has an English name", (key) => {
+    // Dilewatkan sebagai t(CHARACTER_LABEL[key]) di pemilih foto profil, jadi
+    // sama tak terlihatnya bagi pemindai seperti deskripsi peran.
+    const label = CHARACTER_LABEL[key];
+    expect(EN[label], `no EN entry for "${label}"`).toBeTruthy();
   });
 
   it.each(ACCESS_LEVEL_ORDER)("access level %s is translated", (level) => {

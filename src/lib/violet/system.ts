@@ -163,6 +163,22 @@ export function systemPassages(): Passage[] {
       "Menu Role Request juga menampilkan angka notifikasi berisi jumlah pengajuan peran yang belum ditangani, " +
       "dan itu hanya terlihat oleh Admin."),
 
+    p("account", "Aturan: akun, foto profil, dan akun bersama", "/settings",
+      "AKUN di sistem ini menyimpan nama tampilan, email, peran, dan foto profil. " +
+      "MENGUBAH INFORMASI AKUN: lewat menu akun di pojok kanan atas, pilih 'Ubah Informasi Akun', " +
+      "atau tombol Ubah pada kartu Akun Saya di menu Pengaturan. Yang bisa diubah sendiri hanya " +
+      "NAMA TAMPILAN dan FOTO PROFIL. Email dan peran TIDAK bisa diubah dari sana: peran diberikan " +
+      "admin lewat menu Role Request, dan email adalah kredensial login. " +
+      "FOTO PROFIL (avatar, gambar profil, karakter): tersedia lima pilihan karakter - Rubah, Panda, " +
+      "Burung, Kucing, dan Beruang - atau tetap memakai inisial nama, yang merupakan tampilan bawaannya. " +
+      "AKUN BERSAMA: tiga akun default coordinator@ormawavisit.id, staff@ormawavisit.id, dan " +
+      "intern@ormawavisit.id ditandai sebagai akun bersama karena dipakai banyak orang sekaligus. " +
+      "Kata sandi akun bersama TIDAK BISA DIUBAH dari dalam aplikasi, dan menu 'Ubah Kata Sandi' " +
+      "memang tidak muncul untuknya: kalau satu orang menggantinya, semua orang lain terkunci. " +
+      "Rotasinya hanya bisa dilakukan admin lewat SQL, dan itu ditegakkan database, bukan hanya tampilan. " +
+      "KATA SANDI AKUN GOOGLE: akun yang mendaftar lewat Google tidak punya kata sandi di sistem ini, " +
+      "jadi tidak ada yang bisa diubah di sini. Kata sandinya diatur di akun Google masing-masing."),
+
     p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
       "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
       "PLOTTING FGD (Focus Group Discussion): tabel dua kolom yang memasangkan tiap departemen HMSI ITS " +

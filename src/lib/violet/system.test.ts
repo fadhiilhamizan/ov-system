@@ -51,6 +51,8 @@ describe("retrieval of system knowledge", () => {
     ["siapa yang boleh menambah catatan pada tugas", "system-task-comments"],
     ["kenapa lencana komentar hilang setelah ditandai selesai", "system-task-comments"],
     ["siapa yang boleh mengirim siaran ke kotak masuk", "system-inbox"],
+    ["bagaimana cara mengganti foto profil saya", "system-account"],
+    ["kenapa kata sandi akun staff tidak bisa diubah", "system-account"],
     ["kenapa akun baru tidak menerima pengumuman lama", "system-inbox"],
     ["bisa tidak satu prospek punya beberapa tautan", "system-prospect-links"],
     ["apa itu data utama Ormawa Visit", "system-prospect-primary"],

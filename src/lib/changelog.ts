@@ -53,6 +53,18 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.51.0",
+    date: "2026-09-24",
+    title: "Ubah informasi akun, foto profil karakter, dan penandaan akun bersama",
+    changes: [
+      { kind: "new", text: "Menu akun punya 'Ubah Informasi Akun' baru untuk mengganti nama tampilan dan foto profil. Bisa juga dibuka lewat tombol Ubah pada kartu Akun Saya di Pengaturan." },
+      { kind: "new", text: "Tersedia lima karakter foto profil (Rubah, Panda, Burung, Kucing, Beruang) yang bisa dipilih, atau tetap memakai inisial nama seperti sebelumnya." },
+      { kind: "security", text: "Tiga akun default coordinator@, staff@, dan intern@ ditandai sebagai akun bersama, dan kata sandinya tidak bisa diubah lagi dari dalam aplikasi. Karena dipakai banyak orang, satu orang yang menggantinya akan mengunci semua yang lain. Penolakannya ada di database, bukan sekadar menyembunyikan menunya." },
+      { kind: "ui", text: "Email dan peran kini ditampilkan sebagai tidak bisa diubah, bukan sekadar tidak ada di formulirnya. Peran tetap diberikan admin lewat Role Request." },
+      { kind: "data", text: "Jalankan supabase/migrations/0052_shared_accounts_and_avatar.sql (atau supabase/setup.sql) sebelum memakai fitur ini. Rotasi kata sandi akun bersama hanya bisa lewat SQL; caranya ditulis di dalam berkas migrasinya." },
+    ],
+  },
+  {
     version: "1.50.0",
     date: "2026-09-23",
     title: "Menu-menu kini saling memperbarui",

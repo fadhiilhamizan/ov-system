@@ -548,6 +548,25 @@ export async function deleteTaskComment(id: string) {
   await must((await sb()).from("task_comments").delete().eq("id", id));
 }
 
+// ---------------- My own profile ----------------
+
+/**
+ * Update the CALLER's own profile.
+ *
+ * No user id parameter, on purpose: the only row this can touch is the
+ * caller's, so there is no argument anybody could point at somebody else's
+ * account. The database says the same thing twice over - `profiles_update_self`
+ * restricts the row, and a column GRANT restricts which columns - so `role`,
+ * `division` and `is_shared` are unreachable from here even if this function
+ * were handed them.
+ */
+export async function updateMyProfile(
+  userId: string,
+  patch: { name?: string; avatar?: string | null },
+) {
+  await must((await sb()).from("profiles").update(patch).eq("id", userId));
+}
+
 // ---------------- Inbox / broadcasts ----------------
 // A broadcast is content (parent) plus one recipient row per account. See
 // migration 0050 for why the recipient list is frozen at send time rather than

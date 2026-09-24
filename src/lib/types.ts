@@ -610,6 +610,20 @@ export interface AppUser {
   email: string;
   role: Role;
   avatarColor?: string;
+  /** Kunci karakter foto profil pilihannya. Kosong = pakai inisial namanya. */
+  avatar?: string | null;
+  /**
+   * Akun ini sengaja DIPAKAI BERSAMA banyak orang (coordinator@, staff@,
+   * intern@ dari default-accounts.sql).
+   *
+   * Dipakai untuk menandainya di layar dan menyembunyikan "Ubah Kata Sandi".
+   * Penegakan sebenarnya ada di database: mengubah kata sandi tidak lewat
+   * Server Action mana pun, browser memanggil Supabase langsung, jadi sebuah
+   * pemeriksaan di sini hanya menutup jalan yang sopan. Lihat trigger
+   * `block_shared_account_password` di migrasi 0052 - termasuk cara
+   * merotasinya, yang sengaja hanya bisa lewat SQL.
+   */
+  isShared?: boolean;
 }
 
 /**

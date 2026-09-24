@@ -52,6 +52,11 @@ create table if not exists task_refs (
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+-- 0052: kolom profil baru. Tanpa keduanya, menyimpan lewat "Ubah Informasi
+-- Akun" di Mode Demo gagal dengan "Could not find the 'avatar' column".
+alter table profiles add column if not exists is_shared boolean not null default false;
+alter table profiles add column if not exists avatar text;
+
 -- 0049: komentar tugas (Work Breakdown), juga belum pernah ada di project demo.
 -- author_id sengaja text: Mode Demo tidak punya auth.users sama sekali.
 create table if not exists task_comments (

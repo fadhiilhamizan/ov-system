@@ -117,8 +117,16 @@ create table if not exists profiles (
   division text,
   event_id text references events(id) on delete set null,
   avatar_color text,
+  -- 0052: akun yang sengaja dipakai bersama banyak orang (coordinator@,
+  -- staff@, intern@). Kata sandinya tidak bisa diubah dari sesi akun itu
+  -- sendiri; lihat trigger block_shared_account_password di bawah.
+  is_shared boolean not null default false,
+  -- 0052: kunci karakter foto profil. NULL = pakai inisial nama.
+  avatar text,
   created_at timestamptz not null default now()
 );
+alter table profiles add column if not exists is_shared boolean not null default false;
+alter table profiles add column if not exists avatar text;
 -- Ditinggalkan sejak 0028: peran bersifat global, tidak terikat divisi/edisi.
 -- Kolomnya dibiarkan ada (tidak dihapus) supaya migrasi ini non-destruktif.
 alter table profiles add column if not exists event_id text references events(id) on delete set null;
@@ -937,6 +945,32 @@ begin new.updated_at = now(); return new; end; $fn$;
 -- ------------------------------------------------------------------
 -- 4. Trigger
 -- ------------------------------------------------------------------
+-- 0052: tolak perubahan kata sandi pada akun bersama, tapi HANYA kalau
+-- perubahannya datang dari sesi akun itu sendiri. Admin tetap bisa merotasinya
+-- dari Dashboard/SQL Editor, di mana auth.uid() NULL. Mengubah kata sandi tidak
+-- lewat Server Action mana pun (browser memanggil supabase.auth.updateUser
+-- langsung dengan anon key yang publik), jadi database adalah satu-satunya
+-- tempat yang benar-benar bisa menolaknya.
+create or replace function block_shared_account_password()
+returns trigger
+language plpgsql security definer set search_path = public as $fn$
+begin
+  if new.encrypted_password is distinct from old.encrypted_password
+     and coalesce(current_setting('app.rotate_shared_password', true), '') <> 'on'
+     and exists (select 1 from public.profiles p where p.id = new.id and p.is_shared)
+  then
+    raise exception
+      'Akun ini dipakai bersama, jadi kata sandinya tidak bisa diganti. Rotasi hanya lewat SQL, lihat migrasi 0052.'
+      using errcode = '42501';
+  end if;
+  return new;
+end; $fn$;
+
+drop trigger if exists on_shared_account_password_change on auth.users;
+create trigger on_shared_account_password_change
+  before update on auth.users
+  for each row execute function block_shared_account_password();
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users for each row execute function handle_new_user();
@@ -1278,8 +1312,9 @@ create policy "profiles_update_self" on profiles for update to authenticated
   using (id = auth.uid() and not is_anon())
   with check (
     id = auth.uid()
-    and role     is not distinct from (select p.role     from profiles p where p.id = auth.uid())
-    and division is not distinct from (select p.division from profiles p where p.id = auth.uid())
+    and role      is not distinct from (select p.role      from profiles p where p.id = auth.uid())
+    and division  is not distinct from (select p.division  from profiles p where p.id = auth.uid())
+    and is_shared is not distinct from (select p.is_shared from profiles p where p.id = auth.uid())
   );
 
 -- 5.5 role_requests ------------------------------------------------
@@ -1327,7 +1362,9 @@ end $do$;
 --    GRANT. Inilah perbaikan sesungguhnya untuk celah angkat-diri-jadi-admin.
 -- ------------------------------------------------------------------
 revoke update on public.profiles from authenticated, anon;
-grant update (name, avatar_color) on public.profiles to authenticated;
+-- `avatar` ikut sejak 0052; `is_shared` sengaja TIDAK - kalau ikut, pemakai
+-- akun bersama tinggal mematikan tandanya sendiri lalu mengganti kata sandinya.
+grant update (name, avatar_color, avatar) on public.profiles to authenticated;
 
 -- broadcast_recipients (0050): penerima hanya boleh menyentuh `read_at`, tidak
 -- boleh memindahkan pesan ke akun lain atau menempelkan dirinya ke siaran yang

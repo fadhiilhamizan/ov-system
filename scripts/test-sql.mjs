@@ -47,7 +47,15 @@ await db.exec(`
 create role anon;
 create role authenticated;
 create schema auth;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+-- Kolom encrypted_password ada di sini karena trigger 0052 membandingkannya.
+-- (Tanpa backtick: seluruh blok ini adalah template literal JavaScript, dan
+-- sebuah backtick di dalam komentar SQL tetap menutupnya - kerabat dekat
+-- masalah $$ di dalam komentar yang dicatat AGENTS.md.)
+-- Tanpa kolomnya, uji "akun bersama tidak bisa ganti kata sandi" lulus karena
+-- kolomnya tidak ada, bukan karena trigger-nya menolak: lulus untuk alasan yang
+-- salah, yang lebih buruk daripada gagal.
+create table auth.users (id uuid primary key, email text, encrypted_password text,
+  raw_user_meta_data jsonb default '{}');
 create or replace function auth.uid() returns uuid
 language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
 create or replace function auth.jwt() returns jsonb
@@ -87,7 +95,7 @@ grant usage on schema public, auth to anon, authenticated;
 grant select, insert, delete on all tables in schema public to anon, authenticated;
 grant update on all tables in schema public to anon, authenticated;
 revoke update on public.profiles from authenticated, anon;
-grant update (name, avatar_color) on public.profiles to authenticated;
+grant update (name, avatar_color, avatar) on public.profiles to authenticated;
 -- 0039 narrows error_log the same way, so re-apply it after the blanket grant.
 revoke insert on public.error_log from authenticated, anon;
 grant insert (kind, message, stack, path, user_agent) on public.error_log to authenticated;
@@ -559,6 +567,10 @@ create table compare_entries (id uuid primary key default gen_random_uuid(), eve
 -- budget_plans ada sejak 0001, jadi project demo selalu punya. Ada di sini
 -- supaya catch-up kolom is_primary (0048) punya tabel untuk disasar.
 create table budget_plans (id uuid primary key default gen_random_uuid(), event_id text, name text);
+-- profiles ada sejak 0001 juga. Ada di sini supaya catch-up kolom is_shared
+-- dan avatar (0052) punya tabel untuk disasar; tanpanya seluruh blok ini
+-- gagal, bukan cuma satu asersinya.
+create table profiles (id uuid primary key default gen_random_uuid(), name text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
@@ -1857,6 +1869,76 @@ console.log("0051 - menghapus edisi ikut menghapus datanya");
       and confdeltype <> 'c'`);
   ok("tidak ada lagi kunci asing SET NULL ke events di keempat tabel itu", fks.rows[0].n === 0);
 }
+
+// ------------------------------------------------------------------
+// 0052: akun bersama + foto profil karakter.
+//
+// Mengubah kata sandi TIDAK lewat Server Action mana pun - browser memanggil
+// supabase.auth.updateUser() langsung dengan anon key yang publik. Jadi
+// menyembunyikan menunya di aplikasi tidak menahan siapa pun, dan satu-satunya
+// tempat yang benar-benar menolak adalah trigger di database. Itu yang diuji
+// di sini, dari kursi pemakainya.
+//
+// Yang kedua: pemilik akun boleh mengganti nama dan avatarnya sendiri, tapi
+// tidak boleh menyentuh `role` maupun `is_shared`. Kalau `is_shared` bisa
+// dimatikan sendiri, seluruh perlindungan di atas tinggal dilewati dengan satu
+// UPDATE.
+// ------------------------------------------------------------------
+console.log("0052 - akun bersama & foto profil");
+{
+  await db.exec(`update profiles set is_shared = true where id = '${U.staff}';`);
+
+  // Dijalankan SEBAGAI DATABASE, bukan lewat `as(U.staff)`. Itu bukan
+  // kemudahan: mengganti kata sandi tidak dikerjakan PostgREST melainkan
+  // GoTrue, lewat koneksi databasenya sendiri tanpa klaim JWT. Mengujinya
+  // dengan sesi pengguna akan lulus karena `authenticated` memang tidak punya
+  // GRANT di auth.users - lulus tanpa pernah menyentuh trigger-nya.
+  const tryUpdate = async (sql) => {
+    try { await db.exec(sql); return null; } catch (e) { return e.message; }
+  };
+
+  const blocked = await tryUpdate(
+    `update auth.users set encrypted_password = 'baru' where id = '${U.staff}';`);
+  ok("kata sandi akun bersama DITOLAK, siapa pun yang mengubahnya", !!blocked);
+  if (blocked) console.log(`      -> ${blocked.slice(0, 90)}`);
+
+  // Akun biasa tidak tersentuh aturan itu.
+  const normal = await tryUpdate(
+    `update auth.users set encrypted_password = 'baru' where id = '${U.intern}';`);
+  ok("akun biasa tetap bisa berganti kata sandi", normal === null);
+
+  // Satu-satunya pintu keluar, dan harus disebut secara sadar. Tanpa ini,
+  // "tidak bisa diganti" berarti juga "tidak bisa dirotasi selamanya".
+  const rotated = await tryUpdate(`
+    begin;
+    set local app.rotate_shared_password = 'on';
+    update auth.users set encrypted_password = 'rotasi' where id = '${U.staff}';
+    commit;`);
+  ok("admin bisa merotasinya lewat pintu keluar yang disengaja", rotated === null);
+
+  // Dan pintunya menutup lagi sesudahnya: `set local` hanya berlaku di dalam
+  // transaksinya sendiri.
+  const afterRotate = await tryUpdate(
+    `update auth.users set encrypted_password = 'lagi' where id = '${U.staff}';`);
+  ok("pintu keluarnya tidak menganga setelah transaksinya selesai", !!afterRotate);
+
+  await check("pemilik akun boleh mengganti nama & avatarnya", U.staff, false,
+    `update profiles set name = 'Nama Baru', avatar = 'panda' where id = '${U.staff}'`, "allow");
+
+  const unshare = await as(U.staff, false,
+    `update profiles set is_shared = false where id = '${U.staff}'`);
+  ok("pemilik akun TIDAK bisa mencabut tanda akun bersama", !!unshare.error);
+
+  const promote = await as(U.staff, false,
+    `update profiles set role = 'admin' where id = '${U.staff}'`);
+  ok("pemilik akun TIDAK bisa menaikkan perannya sendiri", !!promote.error);
+
+  await check("akun lain tidak bisa mengubah profil orang", U.intern, false,
+    `update profiles set name = 'Dibajak' where id = '${U.staff}'`, "deny");
+
+  await db.exec(`update profiles set is_shared = false, avatar = null where id = '${U.staff}';`);
+}
+
 
 console.log(`\n${pass} lulus, ${fail} gagal`);
 process.exit(fail ? 1 : 0);

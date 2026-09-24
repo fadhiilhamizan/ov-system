@@ -109,6 +109,8 @@ const readUser = cache(async (): Promise<AppUser | null> => {
       email: user.email ?? "",
       role: normalizeRole(profile?.role),
       avatarColor: profile?.avatar_color ?? undefined,
+      avatar: profile?.avatar ?? null,
+      isShared: profile?.is_shared === true,
     };
   }
 });

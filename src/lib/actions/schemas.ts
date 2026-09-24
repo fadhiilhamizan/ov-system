@@ -237,6 +237,30 @@ export const replyTaskCommentSchema = z.object({
   body: taskCommentBodySchema,
 });
 
+// ---------------- My account (0051) ----------------
+
+/**
+ * The bits of an account its owner may edit.
+ *
+ * Deliberately short. `role` is decided by an admin through the role-request
+ * flow, `email` is an auth credential that needs a confirmation round trip, and
+ * `is_shared` is what stops somebody taking a shared login private - none of
+ * them belong in a form the account fills in about itself. The database
+ * enforces the same list through a column GRANT, so an extra key here could
+ * not widen it anyway.
+ *
+ * `avatar` accepts an empty string as "back to my initials"; the enum is
+ * checked against the real character list so a forged key cannot be stored.
+ */
+export const myProfileSchema = z.object({
+  name: nonEmpty("Nama", 80),
+  avatar: z
+    .enum(["rubah", "panda", "burung", "kucing", "beruang"])
+    .or(z.literal(""))
+    .nullish()
+    .transform((v) => v || null),
+});
+
 // ---------------- Inbox / broadcasts (0050) ----------------
 
 /**

@@ -94,8 +94,8 @@ export const PRIVACY: LegalDoc = {
       ],
       bullets: [
         {
-          id: "Data akun - nama, alamat email, dan warna avatar. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
-          en: "Account data - your name, email address, and avatar colour. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
+          id: "Data akun - nama tampilan, alamat email, warna avatar, dan pilihan karakter foto profil. Nama tampilan dan foto profil bisa kamu ubah sendiri kapan saja lewat menu akun. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
+          en: "Account data - your display name, email address, avatar colour, and chosen profile character. You can change your display name and profile picture yourself at any time from the account menu. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
         },
         {
           id: "Data keanggotaan - nama, nama panggilan, NRP, angkatan, divisi, dan status (fungsionaris atau intern) anggota kepanitiaan.",

@@ -138,15 +138,20 @@ end $fix2$;
 -- Dashboard (Authentication -> Add user) - cara itu paling aman karena
 -- Supabase sendiri yang mengisi semua kolomnya.
 -- ==================================================================
-insert into public.profiles (id, name, email, role)
-select u.id, v.name, v.email, v.role::app_role
+-- `is_shared` ditandai di sini juga, bukan hanya di 0052: ketiga akun ini
+-- MEMANG dipakai bersama, dan tanda itulah yang membuat kata sandinya tidak
+-- bisa diubah dari dalam aplikasi. Kalau akunnya dibuat ulang lewat skrip ini
+-- tanpa tandanya, perlindungannya hilang tanpa ada yang memberi tahu.
+insert into public.profiles (id, name, email, role, is_shared)
+select u.id, v.name, v.email, v.role::app_role, true
 from (values
   ('coordinator@ormawavisit.id', 'Koordinator', 'coordinator'),
   ('staff@ormawavisit.id',       'Staff',       'staff'),
   ('intern@ormawavisit.id',      'Intern',      'intern')
 ) as v(email, name, role)
 join auth.users u on u.email = v.email
-on conflict (id) do update set role = excluded.role, name = excluded.name;
+on conflict (id) do update
+  set role = excluded.role, name = excluded.name, is_shared = true;
 
 -- ==================================================================
 -- VERIFIKASI - tiga baris, semuanya 'siap login'.
