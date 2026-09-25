@@ -33,7 +33,7 @@ const { TaskCommentsProvider } = await import("./task-comments-context");
 const task: Task = {
   id: "t1", event_id: "ov1", division: "EVENT", no: "1", pic: "Budi",
   title: "Susun proposal", start_date: null, start_raw: "", end_date: null, end_raw: "",
-  notes: "", result: "", status: "todo",
+  notes: "", evaluation: "", result: "", status: "todo",
 };
 
 const user = (role: Role, id = "u1"): AppUser => ({

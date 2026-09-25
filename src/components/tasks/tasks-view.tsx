@@ -101,7 +101,7 @@ export function TasksView({
       if (openNotesOnly && openThreadCount(allComments?.[t.id]) === 0) return false;
       if (
         query &&
-        !`${t.title} ${t.pic} ${t.notes} ${t.result}`.toLowerCase().includes(query)
+        !`${t.title} ${t.pic} ${t.notes} ${t.evaluation ?? ""} ${t.result}`.toLowerCase().includes(query)
       )
         return false;
       return true;

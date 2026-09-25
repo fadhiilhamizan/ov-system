@@ -1,7 +1,7 @@
 import { getActiveEvent } from "@/lib/session";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
-import { getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
+import { getDivisions, getEvents, getSuperLinkDirectory, getLinkRefCounts, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { CalendarView } from "@/components/calendar/calendar-view";
@@ -17,7 +17,7 @@ export default async function CalendarPage() {
   // Clicking a date opens the same task dialog as Work Breakdown, so this page
   // needs the reference data too: without it the editor has no Super Link
   // picker and cannot show what the task already references.
-  const [tasks, divisions, events, members, taskLinks, taskRefs, taskComments, superLinks, teams] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks, taskRefs, taskComments, superLinks, teams, refCounts] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
@@ -25,8 +25,9 @@ export default async function CalendarPage() {
     getTaskLinksByEvent(event.id),
     getTaskRefsByEvent(event.id),
     getTaskCommentsByEvent(event.id),
-    getLinks(),
+    getSuperLinkDirectory(),
     getTeams(event.id),
+    getLinkRefCounts(),
   ]);
 
   const dated = tasks.filter((t) => t.end_date);
@@ -42,7 +43,7 @@ export default async function CalendarPage() {
         description={t("Deadline tugas & hari pelaksanaan dalam satu tampilan. Klik tanggal untuk detail atau menambah tugas.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
+      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks} refCounts={refCounts}>
         <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
         <CalendarView

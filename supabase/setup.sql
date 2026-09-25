@@ -185,6 +185,8 @@ create table if not exists tasks (
 );
 -- ID warisan dari spreadsheet, dibuang di 0008.
 alter table tasks drop column if exists source_id;
+-- 0053: kolom Evaluasi di Work Breakdown (pelajaran dari OV sebelumnya/sekarang).
+alter table tasks add column if not exists evaluation text default '';
 -- Sejak 0018 sebuah key divisi boleh berulang antar edisi, jadi tasks.division
 -- bukan lagi foreign key - relasinya diselesaikan di aplikasi via (event_id, key).
 alter table tasks drop constraint if exists tasks_division_fkey;
@@ -242,6 +244,9 @@ create table if not exists task_refs (
 );
 create index if not exists task_refs_task_idx on task_refs(task_id);
 create index if not exists task_refs_link_idx on task_refs(link_id);
+-- 0053: terisi saat entri Super Link yang dirujuk DIHAPUS (lihat trigger
+-- links_release_refs). Alamat & judul terakhir entrinya disalin ke baris ini.
+alter table task_refs add column if not exists link_lost_at timestamptz;
 
 -- 2.7c task_comments (0049): catatan/komentar per tugas di Work Breakdown.
 -- parent_id null = komentar inisiasi (akar thread); terisi = balasan atas
@@ -970,6 +975,29 @@ drop trigger if exists on_shared_account_password_change on auth.users;
 create trigger on_shared_account_password_change
   before update on auth.users
   for each row execute function block_shared_account_password();
+
+-- 0053: entri Super Link yang dirujuk tugas lain dihapus. BEFORE DELETE, jadi
+-- jalan sebelum kunci asing SET NULL mengosongkan link_id: salin alamat &
+-- judul terakhirnya ke referensi dan cap link_lost_at supaya aplikasi bisa
+-- menandainya. SECURITY DEFINER karena yang menghapus belum tentu boleh
+-- menulis referensi tugas lain (mis. di edisi yang diarsipkan).
+create or replace function release_link_refs()
+returns trigger
+language plpgsql security definer set search_path = public as $fn$
+begin
+  update public.task_refs
+     set url = case when old.url ~* '^https?://' then old.url else url end,
+         label = case when coalesce(btrim(label), '') = '' then coalesce(old.name, '') else label end,
+         link_lost_at = coalesce(link_lost_at, now())
+   where link_id = old.id;
+  return old;
+end; $fn$;
+revoke all on function release_link_refs() from public;
+
+drop trigger if exists links_release_refs on links;
+create trigger links_release_refs
+  before delete on links
+  for each row execute function release_link_refs();
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created

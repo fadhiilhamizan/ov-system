@@ -4,7 +4,7 @@ import { ArrowLeft, Users2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
 import { getActiveEvent } from "@/lib/session";
-import { getDivision, getDivisions, getEvents, getLinks, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
+import { getDivision, getDivisions, getEvents, getSuperLinkDirectory, getLinkRefCounts, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getTeams } from "@/lib/data/repo";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { MembersProvider } from "@/components/members/members-context";
@@ -28,7 +28,7 @@ export default async function DivisionDetailPage({
   // page that mounts the dialog has to fetch BOTH, or the reference editor
   // opens blank: no Super Link picker, and the task's saved references
   // invisible. See TaskLinksProvider.
-  const [tasks, divisions, events, teams, members, taskLinks, taskRefs, taskComments, superLinks] = await Promise.all([
+  const [tasks, divisions, events, teams, members, taskLinks, taskRefs, taskComments, superLinks, refCounts] = await Promise.all([
     getTasks({ event_id: event.id, division: division.key }),
     getDivisions(event.id),
     getEvents(),
@@ -37,7 +37,8 @@ export default async function DivisionDetailPage({
     getTaskLinksByEvent(event.id),
     getTaskRefsByEvent(event.id),
     getTaskCommentsByEvent(event.id),
-    getLinks(),
+    getSuperLinkDirectory(),
+    getLinkRefCounts(),
   ]);
   const team = teams.find((t) => t.division === division.key);
   const t = await getT();
@@ -76,7 +77,7 @@ export default async function DivisionDetailPage({
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
 
-      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
+      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks} refCounts={refCounts}>
         <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
         <TasksView

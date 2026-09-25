@@ -5,6 +5,7 @@ import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import {
   createLink, deleteLink, updateLink, bulkDeleteLinks, getLink, pushLinkToOwners, releaseLinkOwners,
+  getTaskLinkOwners,
 } from "@/lib/data/repo";
 import { isOwnedLink } from "@/lib/links";
 import type { LinkItem } from "@/lib/types";
@@ -76,12 +77,33 @@ export async function updateLinkAction(id: string, patch: Partial<LinkItem>): Pr
   return { ok: true };
 }
 
+/**
+ * Every task result is published to Super Link (0053), so an entry a task
+ * result owns cannot be deleted from here: the task's next save would publish
+ * it again, and in the meantime the task would claim a Super Link entry that
+ * is gone. The result link has to be removed from its task instead, which
+ * deletes the entry along with it. Prospect links are still optional and are
+ * released as before.
+ */
+async function refuseTaskOwned(ids: string[]): Promise<Result | null> {
+  const owners = await getTaskLinkOwners(ids);
+  if (!owners.length) return null;
+  const titles = [...new Set(owners.map((o) => o.title).filter(Boolean))];
+  const which = titles.length === 1 ? `tugas "${titles[0]}"` : `${titles.length} tugas`;
+  return {
+    ok: false,
+    error: `${owners.length} tautan adalah hasil ${which} dan hanya bisa dihapus dari tugasnya di Work Breakdown.`,
+  };
+}
+
 export async function deleteLinkAction(id: string): Promise<Result> {
   const g = await deleteGuard();
   if (!g.ok) return g;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
   try {
+    const refused = await refuseTaskOwned([idv.data]);
+    if (refused) return refused;
     // Untick "publish" on whatever owned it, or the owner goes on claiming the
     // entry exists and republishes it on its next save.
     await releaseLinkOwners([idv.data]);
@@ -97,6 +119,10 @@ export async function bulkDeleteLinksAction(ids: string[]): Promise<Result> {
   const clean: string[] = [];
   for (const id of ids) { const v = parse(idSchema, id); if (!v.ok) return v; clean.push(v.data); }
   try {
+    // All or nothing: deleting the deletable half and quietly skipping the
+    // rest would leave a toast that looks like success.
+    const refused = await refuseTaskOwned(clean);
+    if (refused) return refused;
     await releaseLinkOwners(clean);
     await bulkDeleteLinks(clean);
   } catch (e) { return errMsg(e); }

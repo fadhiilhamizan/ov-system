@@ -8,6 +8,7 @@ import {
   divisionFields, memberDivisions, memberInDivision, removeFromRoster, renameInRoster,
 } from "../members";
 import { planTotal, primaryBudgetPlan } from "../budget";
+import { describeSuperLinks, type SuperLinkOption } from "../super-link";
 import { uid } from "../utils";
 import { normalizeRole } from "../auth";
 import type {
@@ -201,7 +202,7 @@ export const getTasks = cache(async (filter: TaskFilter = {}): Promise<Task[]> =
   if (filter.division) q = q.eq("division", filter.division);
   if (filter.status) q = q.eq("status", filter.status);
   const rows = coalesce(await readRows<Task[]>("tasks", q, []), [
-    "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
+    "no", "pic", "start_raw", "end_raw", "notes", "evaluation", "result", "division",
   ]);
   return rows.map(withOvertime);
 });
@@ -222,7 +223,7 @@ export const getTasksByIds = cache(async (ids: readonly string[]): Promise<Task[
   const rows = coalesce(
     await readRows<Task[]>("tasks by id", (await sb()).from("tasks").select("*").in("id", [...ids]), []),
     [
-    "no", "pic", "start_raw", "end_raw", "notes", "result", "division",
+    "no", "pic", "start_raw", "end_raw", "notes", "evaluation", "result", "division",
   ]);
   return rows.map(withOvertime);
 });
@@ -253,6 +254,7 @@ export async function createTask(
     end_date: input.end_date ?? null,
     end_raw: input.end_raw ?? "",
     notes: input.notes ?? "",
+    evaluation: input.evaluation ?? "",
     result: input.result ?? "",
     status: input.status ?? "todo",
   }).select("id").single());
@@ -434,32 +436,79 @@ export const getTaskRefsByEvent = cache(async (eventId: string): Promise<Record<
  * Replace a task's references with exactly what the form sent.
  *
  * Simpler than `syncTaskLinks`: nothing is published anywhere, so there is no
- * Super Link row to create or clean up. `link_id` merely records that the URL
- * came from a Super Link entry, and is left alone if that entry is later
- * deleted (the FK is ON DELETE SET NULL, so the URL text survives).
+ * Super Link row to create or clean up. `link_id` records that the URL came
+ * from a Super Link entry, and the entry keeps DRIVING the reference:
+ *
+ *  - its URL is read live (see `followLinkedRef`), so a fix in Super Link
+ *    reaches every task that points at it;
+ *  - a label identical to the entry's current name is stored EMPTY, which is
+ *    what "follow the entry's name" looks like in the row, so renaming the
+ *    entry renames the reference too. A label the user actually changed is
+ *    their own and stays;
+ *  - when the entry is deleted, the `links_release_refs` trigger (0053) copies
+ *    its last URL and name into the row and stamps `link_lost_at`, so the task
+ *    keeps a working link AND says out loud that its source is gone.
+ *
+ * A `link_id` that no longer exists by the time the form is saved (deleted
+ * while the dialog was open) is treated exactly like that trigger would have
+ * treated it, instead of failing the whole save on the foreign key.
  */
 export async function syncTaskRefs(taskId: string, inputs: TaskRefInput[]) {
   const client = await sb();
   const existing = await getTaskRefs(taskId);
   const keep = new Set(inputs.map((i) => i.id).filter(Boolean));
 
+  const wanted = [...new Set(inputs.map((i) => i.link_id).filter((v): v is string => !!v))];
+  const live = new Map<string, string>();
+  if (wanted.length) {
+    const rows = await readRows<{ id: string; name: string | null }[]>(
+      "referenced links",
+      client.from("links").select("id, name").in("id", wanted),
+      [],
+    );
+    for (const r of rows) live.set(r.id, r.name ?? "");
+  }
+
   for (const ex of existing) {
     if (!keep.has(ex.id)) await must(client.from("task_refs").delete().eq("id", ex.id));
   }
   for (const [i, input] of inputs.entries()) {
+    const prev = input.id ? existing.find((e) => e.id === input.id) : undefined;
+    const linkId = input.link_id && live.has(input.link_id) ? input.link_id : null;
+    const vanished = !!input.link_id && !linkId;
+    const label = (input.label ?? "").trim();
+    const lost = !linkId && (input.link_lost || vanished);
     const row = {
       url: input.url,
-      label: input.label ?? "",
-      link_id: input.link_id ?? null,
+      label: linkId && label === (live.get(linkId) ?? "").trim() ? "" : label,
+      link_id: linkId,
+      link_lost_at: lost ? (prev?.link_lost_at ?? new Date().toISOString()) : null,
       order: i,
     };
-    if (input.id && existing.some((e) => e.id === input.id)) {
-      await must(client.from("task_refs").update(row).eq("id", input.id));
+    if (prev) {
+      await must(client.from("task_refs").update(row).eq("id", prev.id));
     } else {
       await must(client.from("task_refs").insert({ task_id: taskId, ...row }));
     }
   }
 }
+
+/**
+ * How many task references point at each Super Link entry, keyed by link id.
+ *
+ * The result-link editor shows it next to a published result, so whoever is
+ * about to delete or rewrite it knows other tasks read from it.
+ */
+export const getLinkRefCounts = cache(async (): Promise<Record<string, number>> => {
+  const rows = await readRows<{ link_id: string | null }[]>(
+    "reference counts",
+    (await sb()).from("task_refs").select("link_id").not("link_id", "is", null),
+    [],
+  );
+  const out: Record<string, number> = {};
+  for (const r of rows) if (r.link_id) out[r.link_id] = (out[r.link_id] ?? 0) + 1;
+  return out;
+});
 
 // ---------------- Task comments ----------------
 // The per-task conversation shown in Work Breakdown (migration 0049). A row
@@ -936,6 +985,34 @@ export const getLinks = cache(async (eventId?: string): Promise<LinkItem[]> => {
   const list = coalesce(data, ["section", "division", "name", "url", "note", "source"]);
   return eventId ? list.filter((l) => !l.event_id || l.event_id === eventId) : list;
 });
+/**
+ * The Super Link directory as the task reference picker shows it: every entry
+ * with its edition's title and a READABLE division name (never a generated key
+ * like DIV-MSNZZKHR-5C1LAH). All editions, because last year's proposal is the
+ * usual thing a task wants to reference.
+ */
+export const getSuperLinkDirectory = cache(async (): Promise<SuperLinkOption[]> => {
+  const [links, events, divisions] = await Promise.all([getLinks(), getEvents(), getDivisions()]);
+  return describeSuperLinks(links, events, divisions);
+});
+
+/**
+ * Task results that own some Super Link entries, with the owning task's title.
+ *
+ * Every task result is published (0053), so deleting its entry from the Super
+ * Link page is refused: the next save of the task would only publish it again.
+ * This is what lets the action say WHICH task to go to instead.
+ */
+export async function getTaskLinkOwners(linkIds: string[]): Promise<{ link_id: string; title: string }[]> {
+  if (!linkIds.length) return [];
+  const rows = await readRows<(TaskLink & { tasks: Pick<Task, "title"> | null })[]>(
+    "task link owners",
+    (await sb()).from("task_links").select("*, tasks!inner(title)").in("link_id", linkIds),
+    [],
+  );
+  return rows.map((r) => ({ link_id: r.link_id ?? "", title: r.tasks?.title ?? "" }));
+}
+
 /** Returns the new row's id so a task link can remember which Super Link row
  *  it owns (see syncTaskLinks). */
 export async function createLink(input: Partial<LinkItem>): Promise<string | null> {
@@ -1619,7 +1696,9 @@ export async function cloneEventData(
         return {
           event_id: targetId, division: t.division, no: String(noByDiv[t.division]),
           pic: "", title: t.title, start_date: null, start_raw: "", end_date: null, end_raw: "",
-          notes: t.notes, result: "", status: "todo" as TaskStatus,
+          // Evaluasi travels WITH the task on purpose: last edition's lessons
+          // are exactly what the new edition's PIC should read first.
+          notes: t.notes, evaluation: t.evaluation ?? "", result: "", status: "todo" as TaskStatus,
         };
       });
       // Comments (0049) are NOT copied, on purpose and by omission: a copied

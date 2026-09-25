@@ -92,7 +92,10 @@ export function systemPassages(): Passage[] {
     p("task", "Struktur data: tugas (Work Breakdown)", "/tasks",
       "Satu tugas di Work Breakdown (WBS) menyimpan: nomor urut, divisi pemilik, judul, PIC (boleh lebih dari " +
       "satu nama dipisah koma), tanggal mulai, tanggal selesai alias deadline atau tenggat atau batas waktu, " +
-      "catatan, hasil (deskripsi teks), status, tautan hasil, dan tautan referensi. " +
+      "catatan, evaluasi, hasil (deskripsi teks), status, tautan hasil, dan tautan referensi. " +
+      "Kolom EVALUASI (di sebelah kanan kolom Tugas) berisi pelajaran atau masukan untuk tugas itu dari " +
+      "Ormawa Visit sebelumnya dan/atau Ormawa Visit sekarang; saat tugas disalin ke Ormawa Visit baru, " +
+      "evaluasinya ikut tersalin supaya pelajarannya tidak hilang. " +
       "Statusnya ada empat: Belum (todo), Berjalan (ongoing), Selesai (done), dan Overtime. " +
       "Kolom Catatan berisi keterangan bebas soal tugas itu; kalau isinya panjang, tabel memotongnya dan " +
       "ada tombol Selengkapnya untuk membuka teks penuh tanpa masuk ke mode edit. " +
@@ -108,15 +111,20 @@ export function systemPassages(): Passage[] {
 
     p("task-links", "Aturan: tautan hasil tugas vs tautan referensi", "/tasks",
       "Satu tugas punya DUA jenis tautan yang arahnya berlawanan. " +
-      "TAUTAN HASIL adalah keluaran tugas (Drive, Docs, foto). Kalau kotak 'Tampilkan juga di Super Link' " +
-      "dicentang, tautan itu ikut terbit sebagai entri Super Link dan tugas tersebut MEMILIKI entri itu: " +
-      "menyimpan ulang memperbarui entri yang sama (tidak menggandakan), melepas centangnya menghapus entrinya, " +
-      "dan menghapus tugasnya ikut menghapus entrinya. Satu entri Super Link hanya boleh dimiliki satu tugas. " +
+      "TAUTAN HASIL adalah keluaran tugas (Drive, Docs, foto). SETIAP tautan hasil WAJIB diberi judul dan " +
+      "SELALU terbit sebagai entri Super Link (tidak bisa dimatikan), dan tugas tersebut MEMILIKI entri itu: " +
+      "menyimpan ulang memperbarui entri yang sama (tidak menggandakan), menghapus tautan hasilnya menghapus " +
+      "entrinya, dan menghapus tugasnya ikut menghapus entrinya. Satu entri Super Link hanya boleh dimiliki satu " +
+      "tugas. Entri milik tugas tidak bisa dihapus dari menu Super Link; hapus tautannya dari tugasnya. " +
       "TAUTAN REFERENSI adalah bahan rujukan yang DIPAKAI tugas (handbook, template, proposal tahun lalu). " +
       "Referensi boleh diketik manual atau diambil dari Super Link, dan satu entri Super Link boleh dirujuk " +
       "oleh banyak tugas sekaligus. Referensi yang diambil dari Super Link SELALU memakai URL terbaru entri itu, " +
-      "jadi memperbaiki alamatnya di Super Link langsung memperbaiki semua tugas yang merujuknya. " +
-      "Menghapus entri Super Link tidak menghapus referensinya, alamat terakhirnya tetap tersimpan sebagai teks."),
+      "jadi memperbaiki alamatnya di Super Link langsung memperbaiki semua tugas yang merujuknya, dan " +
+      "mengganti judul entrinya ikut mengganti nama referensinya (kecuali nama referensi itu sudah diubah sendiri). " +
+      "Kalau entri Super Link yang dirujuk DIHAPUS (misalnya tugas pemiliknya menghapus tautan hasilnya), " +
+      "referensinya tidak ikut hilang: alamat dan judul terakhirnya disimpan, lalu referensi itu diberi tanda " +
+      "segitiga kuning 'sumbernya sudah dihapus dari Super Link' dan bisa diganti lewat tombol Ganti. " +
+      "Sebelum menghapus tautan hasil yang sedang dirujuk tugas lain, formulir meminta konfirmasi sekali lagi."),
 
     p("task-comments", "Aturan: catatan & diskusi pada tugas", "/tasks",
       "Tiap tugas di Work Breakdown bisa diberi CATATAN (komentar, comment, diskusi, revisi, masukan) yang " +

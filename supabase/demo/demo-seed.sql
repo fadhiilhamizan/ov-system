@@ -18,7 +18,7 @@ begin;
 -- ------------------------------------------------------------------
 -- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
 -- and never runs 0028+, but the APP has kept adding columns since (perf
--- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038, menu Himpunan in 0040-0041). Without them the demo's own
+-- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038, menu Himpunan in 0040-0041, task evaluation + reference lifecycle in 0053). Without them the demo's own
 -- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
 -- These add-column statements are idempotent no-ops on a caught-up schema, so
 -- re-running demo-seed silently heals an out-of-date demo project.
@@ -99,6 +99,26 @@ create table if not exists broadcast_recipients (
 create unique index if not exists broadcast_recipients_uniq
   on broadcast_recipients(broadcast_id, user_id);
 
+-- 0053: kolom Evaluasi tugas dan tanda "sumber Super Link-nya dihapus" pada
+-- referensi. Tanpa keduanya, menyimpan tugas di mode demo gagal dengan
+-- "Could not find the 'evaluation' column".
+alter table tasks add column if not exists evaluation text default '';
+alter table task_refs add column if not exists link_lost_at timestamptz;
+create or replace function release_link_refs()
+returns trigger
+language plpgsql security definer set search_path = public as $rl$
+begin
+  update public.task_refs
+     set url = case when old.url ~* '^https?://' then old.url else url end,
+         label = case when coalesce(btrim(label), '') = '' then coalesce(old.name, '') else label end,
+         link_lost_at = coalesce(link_lost_at, now())
+   where link_id = old.id;
+  return old;
+end; $rl$;
+drop trigger if exists links_release_refs on links;
+create trigger links_release_refs
+  before delete on links
+  for each row execute function release_link_refs();
 -- 0038: banyak tautan per prospek, juga belum pernah ada di project demo.
 create table if not exists prospect_links (
   id uuid primary key default gen_random_uuid(),

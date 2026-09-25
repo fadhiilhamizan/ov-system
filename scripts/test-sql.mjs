@@ -306,6 +306,7 @@ const PENDING = [
   "0036_prospect_link_notes.sql",
   "0037_task_refs.sql",
   "0051_edition_delete_cascade.sql",
+  "0053_task_evaluation_and_ref_lifecycle.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -571,6 +572,10 @@ create table budget_plans (id uuid primary key default gen_random_uuid(), event_
 -- dan avatar (0052) punya tabel untuk disasar; tanpanya seluruh blok ini
 -- gagal, bukan cuma satu asersinya.
 create table profiles (id uuid primary key default gen_random_uuid(), name text);
+-- tasks ada sejak 0001 dan task_refs dibuat oleh catch-up 0037 sendiri; di sini
+-- supaya catch-up kolom evaluation & link_lost_at (0053) punya tabel sasaran.
+create table tasks (id uuid primary key default gen_random_uuid(), event_id text, title text);
+create table task_refs (id uuid primary key default gen_random_uuid(), task_id uuid, url text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
@@ -782,12 +787,16 @@ console.log("\ntask_refs - rujukan tugas");
   )).rows.length;
   ok("TIDAK ada unique index pada task_refs.link_id (beda dari task_links)", uniq === 0);
 
-  // Deleting the Super Link entry must not delete the reference: the URL text
-  // survives so the task still shows where it pointed.
+  // Deleting the Super Link entry must not delete the reference: the entry's
+  // LAST address survives (copied in by the 0053 trigger, since the reference
+  // reads the live URL and its own copy may be stale) and the row is flagged
+  // so the task can say its source is gone.
+  const lastUrl = (await db.query(`select url from links where id = ${LINK}`)).rows[0].url;
   await db.exec(`delete from links where id = ${LINK};`);
   const survived = Number((await db.query(
-    `select count(*) c from task_refs where url = 'https://ref.test' and link_id is null`)).rows[0].c);
-  ok("menghapus entri Super Link menyisakan rujukan (link_id jadi null)", survived === 2);
+    `select count(*) c from task_refs where id in (${REF_A}, ${REF_B}) and link_id is null
+       and url = '${lastUrl}' and link_lost_at is not null`)).rows[0].c);
+  ok("menghapus entri Super Link menyisakan rujukan (link_id null, alamat terakhir, ditandai)", survived === 2);
 }
 
 // ------------------------------------------------------------------
@@ -1937,6 +1946,82 @@ console.log("0052 - akun bersama & foto profil");
     `update profiles set name = 'Dibajak' where id = '${U.staff}'`, "deny");
 
   await db.exec(`update profiles set is_shared = false, avatar = null where id = '${U.staff}';`);
+}
+
+// ------------------------------------------------------------------
+// 0053: referensi yang sumber Super Link-nya dihapus, dan hasil tugas yang
+// wajib terbit.
+//
+// Tugas A merujuk entri Super Link yang diterbitkan tugas B. Kalau B
+// menghapus tautan hasilnya, entrinya ikut terhapus dan kunci asing SET NULL
+// mengosongkan link_id di referensi A tanpa jejak. Trigger BEFORE DELETE harus
+// menyalin alamat & judul terakhirnya dan mencap link_lost_at SEBELUM itu,
+// termasuk ketika tugas A berada di edisi yang DIARSIPKAN (penghapusnya tidak
+// boleh menulis ke sana, jadi trigger-nya security definer).
+//
+// Fixture sendiri: blok 0043 di atas mengosongkan seluruh database.
+// ------------------------------------------------------------------
+console.log("0053 - referensi yang sumbernya dihapus & hasil tugas wajib terbit");
+{
+  const TB = "cccc0053-0000-0000-0000-000000000001"; // pemilik entri (edisi terbuka)
+  const TA = "cccc0053-0000-0000-0000-000000000002"; // perujuk (edisi diarsipkan)
+  const LK = "dddd0053-0000-0000-0000-000000000001";
+  await db.exec(`
+    insert into events (id, code, title, locked) values
+      ('ov-ref-open', 'REF1', 'Edisi Ref Terbuka', false),
+      ('ov-ref-lock', 'REF2', 'Edisi Ref Arsip', false)
+      on conflict (id) do nothing;
+    insert into tasks (id, event_id, division, title) values
+      ('${TB}', 'ov-ref-open', 'EVENT', 'Susun proposal B'),
+      ('${TA}', 'ov-ref-lock', 'EVENT', 'Tugas perujuk A');
+    insert into links (id, event_id, division, section, name, url, source) values
+      ('${LK}', 'ov-ref-open', 'EVENT', 'Hasil Tugas', 'Proposal B', 'https://b.example/v2', 'task');
+    insert into task_links (task_id, url, label, in_super_link, link_id) values
+      ('${TB}', 'https://b.example/v2', 'Proposal B', true, '${LK}');
+    insert into task_refs (task_id, url, label, link_id, "order") values
+      ('${TA}', 'https://b.example/v1', '', '${LK}', 0),
+      ('${TA}', 'https://b.example/v1', 'Nama sendiri', '${LK}', 1);
+    update events set locked = true where id = 'ov-ref-lock';
+  `);
+
+  await check("koordinator menghapus entri Super Link milik tugas B", U.coord, false,
+    `delete from links where id = '${LK}'`, "allow");
+
+  const refs = (await db.query(
+    `select label, url, link_id, link_lost_at from task_refs where task_id = '${TA}' order by "order"`)).rows;
+  ok("referensi tugas A tidak ikut hilang", refs.length === 2);
+  ok("link_id-nya kosong (kunci asing SET NULL tetap bekerja)", refs.every((r) => r.link_id === null));
+  ok("alamat TERBARU entrinya disalin, bukan salinan lama", refs.every((r) => r.url === "https://b.example/v2"));
+  ok("referensi yang mengikuti judul entri mewarisi judul terakhirnya", refs[0]?.label === "Proposal B");
+  ok("judul yang diubah sendiri tidak ditimpa", refs[1]?.label === "Nama sendiri");
+  ok("keduanya dicap link_lost_at, termasuk di edisi yang diarsipkan", refs.every((r) => r.link_lost_at !== null));
+
+  // Backfill: tautan hasil lama yang belum terbit dibuatkan entrinya.
+  await db.exec(`
+    update events set locked = false where id = 'ov-ref-lock';
+    insert into task_links (task_id, url, label, in_super_link, link_id) values
+      ('${TB}', 'https://b.example/lampiran', '', false, null);
+  `);
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0053_task_evaluation_and_ref_lifecycle.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  const pub = (await db.query(`
+    select tl.label, tl.in_super_link, l.name, l.source, l.section
+      from task_links tl left join links l on l.id = tl.link_id
+     where tl.task_id = '${TB}' and tl.url = 'https://b.example/lampiran'`)).rows[0];
+  ok("0053 menerbitkan tautan hasil lama ke Super Link", !!pub?.name && pub.in_super_link === true);
+  ok("tautan tanpa judul diberi judul tugasnya", pub?.label === "Susun proposal B" && pub?.name === "Susun proposal B");
+  ok("entrinya dimiliki tugas (source 'task', kelompok Hasil Tugas)", pub?.source === "task" && pub?.section === "Hasil Tugas");
+  const again = (await db.query(`select count(*)::int as n from links where url = 'https://b.example/lampiran'`)).rows[0].n;
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0053_task_evaluation_and_ref_lifecycle.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  const after = (await db.query(`select count(*)::int as n from links where url = 'https://b.example/lampiran'`)).rows[0].n;
+  ok("menjalankan 0053 dua kali tidak menggandakan entri", again === 1 && after === 1);
+
+  await db.exec(`
+    delete from events where id in ('ov-ref-open', 'ov-ref-lock');
+  `);
 }
 
 

@@ -84,7 +84,7 @@ export async function searchAction(query: string): Promise<SearchHit[]> {
 
   for (const t of tasks) {
     if (full("tasks")) break;
-    if (`${norm(t.title)} ${norm(t.pic)} ${norm(t.notes)} ${norm(t.result)} ${norm(t.no)}`.includes(q)) {
+    if (`${norm(t.title)} ${norm(t.pic)} ${norm(t.notes)} ${norm(t.evaluation)} ${norm(t.result)} ${norm(t.no)}`.includes(q)) {
       push({
         id: `task-${t.id}`,
         group: "tasks",

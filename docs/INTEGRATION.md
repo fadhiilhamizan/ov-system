@@ -54,7 +54,8 @@ Knowing which mechanism an arrow uses tells you what can go stale.
    Overtime status (`effectiveStatus`), rundown duration, a division's team
    roster (from `members.divisions`), the Compare gate (count of DITERIMA
    prospects), the RAB figure on the Dashboard (`primaryBudgetPlan`), and since
-   v1.50.0 the URL of a task reference picked from Super Link. Always current,
+   v1.50.0 the URL (and since v1.52.0 the name) of a task reference picked
+   from Super Link. Always current,
    no write needed. Prefer this whenever the value can be computed cheaply.
 3. **Write-through.** One action writes a second menu's table in the same
    request. Needed wherever a menu stores a COPY or a NAME of another menu's
@@ -115,8 +116,9 @@ name ripples nowhere.
 |---|---|---|---|
 | Any task field | Kalender, Papan Divisi, Dashboard, edition progress, division progress on `/members` | Shared read + revalidation | `CONSUMERS.tasks` |
 | Deadline passes | Status reads as Overtime everywhere | Derived at read | `withOvertime` |
-| Result link ticked "Tampilkan di Super Link" | A Super Link entry is created, then updated on every save (never duplicated) | Write-through, owner pattern | `syncTaskLinks` |
-| Result link unticked / removed / task deleted | Its Super Link entry is deleted | Write-through | `syncTaskLinks`, `purgeTaskLinks` |
+| Result link saved (always published since v1.52.0, title required) | A Super Link entry is created, then updated on every save (never duplicated) | Write-through, owner pattern | `syncTaskLinks`, `taskLinkSchema` |
+| Result link removed / task deleted | Its Super Link entry is deleted; tasks that referenced it are flagged (next table) | Write-through | `syncTaskLinks`, `purgeTaskLinks` |
+| Task copied into another edition | Its Evaluasi travels with it (progress, result and comments do not) | Write-through | `cloneEventData`, `duplicateTaskAction` |
 | Title, division or edition changed without the dialog (bulk editor) | Published entries move to the new division / title | Write-through | `refreshTaskSuperLinks` |
 | Comment thread opened or resolved | Badge in the Work Breakdown table and Kanban | Shared read | `getTaskCommentsByEvent` |
 
@@ -126,9 +128,10 @@ name ripples nowhere.
 |---|---|---|---|
 | Owned entry's name or URL edited here | The owning task result / prospect link gets the same URL and label | Write-through (reverse) | `pushLinkToOwners` |
 | Owned entry's division / note / section | Locked in the form and ignored by the action: they belong to the owner | Guard | `updateLinkAction`, `isOwnedLink` |
-| Owned entry deleted here | The owner's "Tampilkan di Super Link" is unticked, so it is not silently republished | Write-through | `releaseLinkOwners` |
-| Any entry's URL fixed | Every task reference picked from it shows the new URL | Derived at read | `followLinkedRef` |
-| Entry deleted | References keep the last URL as plain text (FK sets `link_id` null) | DB | `task_refs.link_id` |
+| Prospect-owned entry deleted here | The prospect's "Tampilkan di Super Link" is unticked, so it is not silently republished | Write-through | `releaseLinkOwners` |
+| Task-owned entry deleted here | Refused, naming the task: results are always published, so it would come straight back | Guard | `refuseTaskOwned` in `actions/links.ts` |
+| Any entry's URL or name fixed | Every task reference picked from it shows the new URL, and the new name unless the reference was renamed by hand (stored label empty = follow) | Derived at read | `followLinkedRef`, `syncTaskRefs` |
+| Entry deleted (by any path) | References get the entry's LAST URL and name copied in and `link_lost_at` stamped, then the FK nulls `link_id`; the task shows a warning and offers "Ganti" | DB trigger (security definer, so it reaches archived editions) | `links_release_refs`, migration **0053** |
 
 An "owned" entry has `links.source` = `task` or `prospect` (see
 `src/lib/links.ts`). Hand-made entries are `manual`. The clone skips owned

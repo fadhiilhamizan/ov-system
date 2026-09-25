@@ -48,7 +48,7 @@ const user = (over: Partial<AppUser> = {}): AppUser => ({
 const task = (over: Partial<Task> = {}): Task => ({
   id: "t1", event_id: "ov1", division: "EVENT", no: "1", pic: "Budi",
   title: "Susun proposal", start_date: null, start_raw: "", end_date: null, end_raw: "",
-  notes: "", result: "", status: "todo", ...over,
+  notes: "", evaluation: "", result: "", status: "todo", ...over,
 });
 
 const VALID = { event_id: "ov1", division: "EVENT", title: "Tugas baru" };
@@ -138,7 +138,7 @@ describe("createTaskAction - validation gate", () => {
 
   it("rejects a result link that is not http(s), and never writes", async () => {
     const res = await createTaskAction(VALID, [
-      { url: "javascript:alert(1)", label: "", in_super_link: false },
+      { url: "javascript:alert(1)", label: "X", in_super_link: false },
     ]);
     expect(res.ok).toBe(false);
     expect(repo.createTask).not.toHaveBeenCalled();
@@ -146,10 +146,24 @@ describe("createTaskAction - validation gate", () => {
 
   it("rejects duplicate result links (they would double-post to Super Link)", async () => {
     const res = await createTaskAction(VALID, [
-      { url: "https://a.com/x", label: "", in_super_link: true },
-      { url: "https://a.com/x/", label: "", in_super_link: true },
+      { url: "https://a.com/x", label: "A", in_super_link: true },
+      { url: "https://a.com/x/", label: "B", in_super_link: true },
     ]);
     expect(res.ok).toBe(false);
+  });
+
+  it("rejects an untitled result link, and never writes", async () => {
+    const res = await createTaskAction(VALID, [
+      { url: "https://a.com/x", label: "  ", in_super_link: true },
+    ]);
+    expect(res.ok).toBe(false);
+    expect(repo.createTask).not.toHaveBeenCalled();
+  });
+
+  it("stores the evaluation text with the task", async () => {
+    await createTaskAction({ ...VALID, evaluation: "  Mulai lebih awal  " });
+    const arg = (repo.createTask.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(arg.evaluation).toBe("Mulai lebih awal");
   });
 
   it("syncs links only after the task exists", async () => {

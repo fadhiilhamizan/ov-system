@@ -22,6 +22,7 @@ export interface TaskInput {
   start_date?: string | null;
   end_date?: string | null;
   notes?: string;
+  evaluation?: string;
   result?: string;
   status?: TaskStatus;
 }
@@ -240,6 +241,7 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
       start_date: task.start_date,
       end_date: task.end_date,
       notes: task.notes,
+      evaluation: task.evaluation,
       status: "todo",
     });
   } catch (e) {

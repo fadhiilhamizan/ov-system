@@ -30,6 +30,7 @@ const repo = {
   createLink: track("createLink", "l-new"),
   pushLinkToOwners: track("pushLinkToOwners"),
   releaseLinkOwners: track("releaseLinkOwners"),
+  getTaskLinkOwners: vi.fn(async (): Promise<{ link_id: string; title: string }[]> => []),
   // members
   getMember: vi.fn(async (): Promise<Member | null> => null),
   getMembers: vi.fn(async (): Promise<Member[]> => []),
@@ -107,6 +108,24 @@ describe("Super Link <-> the task result / prospect that published it", () => {
     await links.bulkDeleteLinksAction(["l1", "l2"]);
     expect(calls).toEqual(["releaseLinkOwners", "bulkDeleteLinks"]);
     expect(repo.releaseLinkOwners).toHaveBeenCalledWith(["l1", "l2"]);
+  });
+
+  // A task result is ALWAYS published (0053): deleting its entry here would
+  // only last until the task is saved again, so the action sends the user to
+  // the task instead, and nothing is written.
+  it("refuses to delete an entry a task result owns, naming the task", async () => {
+    repo.getTaskLinkOwners.mockResolvedValue([{ link_id: "l1", title: "Susun proposal" }]);
+    const res = await links.deleteLinkAction("l1");
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toContain("Susun proposal");
+    expect(calls).toEqual([]);
+  });
+
+  it("bulk delete is all-or-nothing when any entry is task-owned", async () => {
+    repo.getTaskLinkOwners.mockResolvedValue([{ link_id: "l2", title: "Susun proposal" }]);
+    const res = await links.bulkDeleteLinksAction(["l1", "l2"]);
+    expect(res.ok).toBe(false);
+    expect(calls).toEqual([]);
   });
 });
 

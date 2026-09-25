@@ -227,7 +227,15 @@ function LinkActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          {canDelete && (
+          {/* A task result is ALWAYS published, so its entry is deleted by
+              removing the result link from the task, not from here (the
+              action refuses it too - see refuseTaskOwned). */}
+          {canDelete && link.source === "task" && (
+            <DropdownMenuItem disabled className="max-w-60 whitespace-normal text-xs">
+              <Trash2 /> {t("Hapus lewat tugasnya di Work Breakdown")}
+            </DropdownMenuItem>
+          )}
+          {canDelete && link.source !== "task" && (
             <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
           )}
         </DropdownMenuContent>

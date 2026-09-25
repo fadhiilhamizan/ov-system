@@ -90,6 +90,15 @@ export function TaskDetailDialog({
             </div>
           )}
 
+          {task.evaluation && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{t("Evaluasi")}</p>
+              <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 text-sm leading-relaxed">
+                {task.evaluation}
+              </p>
+            </div>
+          )}
+
           <div>
             <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Link2 className="size-3.5" /> {t("Result / Hasil")}

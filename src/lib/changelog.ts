@@ -53,6 +53,21 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.52.0",
+    date: "2026-09-25",
+    title: "Kolom Evaluasi tugas, hasil tugas wajib di Super Link, dan referensi yang lebih aman",
+    changes: [
+      { kind: "new", text: "Work Breakdown punya kolom Evaluasi baru di sebelah kanan kolom Tugas untuk pelajaran dari Ormawa Visit sebelumnya dan/atau yang sekarang, dan evaluasinya ikut tersalin saat tugas disalin ke edisi lain." },
+      { kind: "fix", text: "Divisi pada tautan di pemilih 'Ambil dari Super Link' kini tampil sebagai nama divisinya, bukan kode seperti DIV-MSNZZKHR-5C1LAH." },
+      { kind: "new", text: "Pemilih 'Ambil dari Super Link' bisa disaring per Ormawa Visit dan diurutkan dari Ormawa Visit terbaru, terlama, atau nama A-Z/Z-A, dengan judul edisi sebagai pengelompok." },
+      { kind: "new", text: "Tautan hasil tugas sekarang selalu tampil di Super Link dan judulnya wajib diisi; tautan lama yang belum tampil diterbitkan oleh migrasi 0053." },
+      { kind: "new", text: "Referensi yang entri Super Link-nya dihapus tidak lagi hilang diam-diam: alamat dan judul terakhirnya disimpan, diberi tanda kuning, dan bisa diganti lewat tombol Ganti." },
+      { kind: "ui", text: "Tautan hasil yang dirujuk tugas lain menampilkan jumlah perujuknya dan meminta konfirmasi sebelum dihapus, dan mengganti judul entri Super Link ikut mengganti nama referensinya." },
+      { kind: "fix", text: "Entri Super Link milik hasil tugas tidak bisa lagi dihapus dari menu Super Link (hapus dari tugasnya), karena sebelumnya entri itu akan terbit lagi saat tugasnya disimpan." },
+      { kind: "data", text: "Jalankan supabase/migrations/0053_task_evaluation_and_ref_lifecycle.sql di project produksi, lalu jalankan ulang supabase/demo/demo-seed.sql di project demo." },
+    ],
+  },
+  {
     version: "1.51.0",
     date: "2026-09-24",
     title: "Ubah informasi akun, foto profil karakter, dan penandaan akun bersama",

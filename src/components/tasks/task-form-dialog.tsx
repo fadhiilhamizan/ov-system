@@ -90,10 +90,19 @@ export function TaskFormDialog({
     start_date: task?.start_date ?? "",
     end_date: task?.end_date ?? defaultEndDate ?? "",
     notes: task?.notes ?? "",
+    evaluation: task?.evaluation ?? "",
     result: task?.result ?? "",
     status: (task?.status ?? "todo") as TaskStatus,
   }));
-  const [links, setLinks] = useResetOn<DraftLink[]>(formKey, () => existingLinks.map(toDraft));
+  // Results are always published now and need a title. Links saved before
+  // that rule published under the TASK title when unnamed, so that is what
+  // they are prefilled with: Super Link shows the same name it already did.
+  const [links, setLinks] = useResetOn<DraftLink[]>(formKey, () =>
+    existingLinks.map((l, i) => ({
+      ...toDraft(l, i),
+      label: l.label?.trim() || task?.title || "",
+      in_super_link: true,
+    })));
   // Always keep one blank row so adding a reference needs no extra click.
   const [refs, setRefs] = useResetOn<DraftRef[]>(formKey, () =>
     existingRefs?.length ? existingRefs.map(toRefDraft) : [newRefDraft()]);
@@ -119,9 +128,13 @@ export function TaskFormDialog({
   /** `markDone` = the "Simpan & Selesai" shortcut: save and flip status to done
    *  in one go, so submitting a result doesn't need a second status edit. */
   function submit(markDone = false) {
-    const problem = validateLinks(links);
+    const problem = validateLinks(links, { requireName: true });
     if (problem === "invalid") {
       toast.error(t("Ada tautan hasil yang tidak valid (harus diawali http:// atau https://)."));
+      return;
+    }
+    if (problem === "unnamed") {
+      toast.error(t("Setiap tautan hasil wajib diberi judul."));
       return;
     }
     if (problem === "duplicate") {
@@ -140,7 +153,7 @@ export function TaskFormDialog({
     // Drop empty rows and strip the client-only key.
     const payloadLinks = links
       .filter((l) => l.url.trim())
-      .map(({ id, url, label, in_super_link }) => ({ id, url: url.trim(), label, in_super_link }));
+      .map(({ id, url, label }) => ({ id, url: url.trim(), label: label.trim(), in_super_link: true }));
     // `undefined` (not []) when the page gave us no reference data: an empty
     // array is an explicit "these are all the references now", which is how the
     // server is told to clear the ones it has.
@@ -290,8 +303,21 @@ export function TaskFormDialog({
                   id="notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder={t("Catatan penting, konteks, atau evaluasi dari OV sebelumnya")}
+                  placeholder={t("Catatan penting atau konteks tugas")}
                 />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="evaluation">{t("Evaluasi")}</Label>
+                <Textarea
+                  id="evaluation"
+                  value={form.evaluation}
+                  onChange={(e) => setForm({ ...form, evaluation: e.target.value })}
+                  placeholder={t("Evaluasi tugas ini dari Ormawa Visit sebelumnya dan/atau Ormawa Visit sekarang")}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t("Ikut tersalin saat tugas disalin ke Ormawa Visit berikutnya, jadi pelajarannya tidak hilang.")}
+                </p>
               </div>
             </>
           )}

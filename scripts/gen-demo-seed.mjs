@@ -144,7 +144,7 @@ begin;
 -- ------------------------------------------------------------------
 -- Part 0: schema catch-up. The demo project is at migrations 0001-0018 + 0027
 -- and never runs 0028+, but the APP has kept adding columns since (perf
--- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038, menu Himpunan in 0040-0041). Without them the demo's own
+-- measurement in 0029, rundown.merges in 0031, prospect link/notes in 0036, task_refs in 0037, prospect_links in 0038, menu Himpunan in 0040-0041, task evaluation + reference lifecycle in 0053). Without them the demo's own
 -- Ormawa Visit form and rundown merge fail with "Could not find the '…' column".
 -- These add-column statements are idempotent no-ops on a caught-up schema, so
 -- re-running demo-seed silently heals an out-of-date demo project.
@@ -178,6 +178,73 @@ create table if not exists task_refs (
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+-- 0052: kolom profil baru. Tanpa keduanya, menyimpan lewat "Ubah Informasi
+-- Akun" di Mode Demo gagal dengan "Could not find the 'avatar' column".
+alter table profiles add column if not exists is_shared boolean not null default false;
+alter table profiles add column if not exists avatar text;
+
+-- 0049: komentar tugas (Work Breakdown), juga belum pernah ada di project demo.
+-- author_id sengaja text: Mode Demo tidak punya auth.users sama sekali.
+create table if not exists task_comments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references tasks(id) on delete cascade,
+  parent_id uuid references task_comments(id) on delete cascade,
+  body text not null,
+  author_id text not null default '',
+  author_name text not null default '',
+  author_role text not null default '',
+  resolved boolean not null default false,
+  resolved_at timestamptz,
+  resolved_by text not null default '',
+  created_at timestamptz not null default now(),
+  constraint task_comments_reply_not_resolved check (parent_id is null or resolved = false)
+);
+create index if not exists task_comments_task_idx on task_comments(task_id, created_at);
+create index if not exists task_comments_parent_idx on task_comments(parent_id);
+
+-- 0050: Kotak Masuk (siaran admin). Belum pernah ada di project demo, dan
+-- id-nya sengaja text karena demo berjalan tanpa auth.
+create table if not exists broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  audience text not null default 'all' check (audience in ('all', 'role', 'accounts')),
+  roles text[] not null default '{}',
+  created_by text not null default '',
+  created_by_name text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+create table if not exists broadcast_recipients (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid not null references broadcasts(id) on delete cascade,
+  user_id text not null,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists broadcast_recipients_uniq
+  on broadcast_recipients(broadcast_id, user_id);
+
+-- 0053: kolom Evaluasi tugas dan tanda "sumber Super Link-nya dihapus" pada
+-- referensi. Tanpa keduanya, menyimpan tugas di mode demo gagal dengan
+-- "Could not find the 'evaluation' column".
+alter table tasks add column if not exists evaluation text default '';
+alter table task_refs add column if not exists link_lost_at timestamptz;
+create or replace function release_link_refs()
+returns trigger
+language plpgsql security definer set search_path = public as $rl$
+begin
+  update public.task_refs
+     set url = case when old.url ~* '^https?://' then old.url else url end,
+         label = case when coalesce(btrim(label), '') = '' then coalesce(old.name, '') else label end,
+         link_lost_at = coalesce(link_lost_at, now())
+   where link_id = old.id;
+  return old;
+end; $rl$;
+drop trigger if exists links_release_refs on links;
+create trigger links_release_refs
+  before delete on links
+  for each row execute function release_link_refs();
 -- 0038: banyak tautan per prospek, juga belum pernah ada di project demo.
 create table if not exists prospect_links (
   id uuid primary key default gen_random_uuid(),
@@ -432,7 +499,7 @@ writeFileSync(join(outDir, "demo-seed.sql"), out, "utf8");
 
 // --- open access: the demo uses the anon key with no login, so disable RLS ---
 const tablesForRls = [
-  "divisions", "events", "members", "tasks", "task_links", "task_refs", "prospects", "prospect_links", "links",
+  "divisions", "events", "members", "tasks", "task_links", "task_refs", "task_comments", "broadcasts", "broadcast_recipients", "prospects", "prospect_links", "links",
   "budget_plans", "budget_items", "rundown", "job_harih", "faqs", "teams",
   "fgd_plans", "fgd_rows", "compare_subjects", "compare_entries",
 ];

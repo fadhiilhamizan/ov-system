@@ -119,6 +119,7 @@ export const createTaskSchema = z.object({
   start_date: optionalDate,
   end_date: optionalDate,
   notes: optionalText(),
+  evaluation: optionalText(),
   result: optionalText(),
   status: taskStatus.optional(),
 });
@@ -133,6 +134,7 @@ export const updateTaskSchema = z
     start_date: optionalDate,
     end_date: optionalDate,
     notes: z.string().trim().max(2000),
+    evaluation: z.string().trim().max(2000),
     result: z.string().trim().max(2000),
     status: taskStatus,
   })
@@ -156,13 +158,22 @@ export const bulkTaskFieldsSchema = z
   })
   .partial();
 
-/** One result link on a task. `url` must be a real http(s) link; `label` is the
- *  name used for its Super Link entry when published. */
+/**
+ * One result link on a task. `url` must be a real http(s) link and `label` is
+ * the name of its Super Link entry.
+ *
+ * Every task result is published to Super Link: that is where other tasks go
+ * looking for last edition's proposal, and a result nobody can find from there
+ * was the gap. So `in_super_link` is forced to true whatever the client sends
+ * (the tick box is gone from the form), and the name is REQUIRED, because the
+ * old fallback to the task title filled Super Link with entries that all read
+ * like job descriptions.
+ */
 export const taskLinkSchema = z.object({
   id: z.string().trim().max(128).optional(),
   url: urlSchema,
-  label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
-  in_super_link: z.boolean().optional().transform((v) => !!v),
+  label: nonEmpty("Judul tautan hasil", 200),
+  in_super_link: z.unknown().optional().transform(() => true as const),
 });
 export const taskLinksSchema = z
   .array(taskLinkSchema)
@@ -194,6 +205,7 @@ export const taskRefSchema = z.object({
   url: urlSchema,
   label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
   link_id: z.string().trim().max(128).nullish().transform((v) => v || null),
+  link_lost: z.boolean().optional().transform((v) => !!v),
 });
 export const taskRefsSchema = z
   .array(taskRefSchema)
