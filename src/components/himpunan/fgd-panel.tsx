@@ -26,6 +26,7 @@ import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
 import { cn } from "@/lib/utils";
 import type { FgdPlan, FgdRow } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 // ============================================================
 // FGD plotting: which HMSI department talks to which of theirs.
@@ -72,9 +73,20 @@ export function FgdPanel({
           {t("Pasangkan tiap departemen HMSI ITS dengan departemen padanannya di himpunan mitra. Satu Ormawa Visit boleh punya beberapa tabel.")}
         </p>
         {canManage && (
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="size-4" /> {t("Tabel baru")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {plans.length > 0 && (
+              <ImportXlsxButton
+                module="fgd"
+                targets={plans.map((p, i) => ({
+                  value: p.id,
+                  label: [p.title || `${t("Tabel")} ${i + 1}`, p.partner_name].filter(Boolean).join(" - "),
+                }))}
+              />
+            )}
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="size-4" /> {t("Tabel baru")}
+            </Button>
+          </div>
         )}
       </div>
 

@@ -1969,6 +1969,9 @@ export async function createRundown(input: Partial<RundownItem>) {
     .limit(1)
     .maybeSingle();
   await must(client.from("rundown").insert({
+    // A client-generated uuid lets the table show the new row at once and queue
+    // edits against it before this insert has come back.
+    ...(input.id ? { id: input.id } : {}),
     event_id: input.event_id ?? null,
     variant: input.variant ?? "A",
     no: input.no ?? (maxRow?.no ?? 0) + 1,
@@ -1983,43 +1986,57 @@ export async function createRundown(input: Partial<RundownItem>) {
     merges: input.merges ?? {},
   }));
 }
-export async function updateRundown(id: string, patch: Partial<RundownItem>) {
-  const { id: _d, ...rest } = patch;
-  void _d;
-  await must((await sb()).from("rundown").update(rest).eq("id", id));
-}
 /**
- * Write ONE division's cell on a rundown row, leaving the other divisions alone.
+ * Apply a batch of inline rundown edits in one server round trip.
+ *
+ * The table queues cell edits in the browser and flushes them together after a
+ * short pause (see RundownView), so one call here usually carries several rows.
  *
  * `division_jobs` is a single jsonb column, so any write replaces the whole
- * object. The table used to build that object in the BROWSER from the row it
- * had last rendered, which meant filling in two division cells in a row faster
- * than the revalidation round trip silently reverted the first one: the second
- * payload was assembled from props that predated it, the toast still said
- * saved, and the value was gone on reload.
- *
- * Reading the current value HERE, one statement before the update, closes that
- * window: it composes with anything already committed, however stale the
- * caller's copy is. Two writes landing inside the same round trip can still
- * interleave (PostgREST cannot express a partial jsonb update, so a true fix
- * needs an RPC doing `division_jobs || jsonb_build_object(...)`), but that
- * window is one query wide rather than one React refresh wide.
+ * object. The browser therefore sends only the division keys it CHANGED, and
+ * they are merged here onto the value read one statement earlier. The table
+ * used to build the whole object from the row it had last rendered, which meant
+ * filling in two division cells faster than the revalidation round trip
+ * silently reverted the first one. Two writes landing inside the same round
+ * trip can still interleave (PostgREST cannot express a partial jsonb update,
+ * so a true fix needs an RPC doing `division_jobs || jsonb_build_object(...)`),
+ * but that window is one query wide rather than one React refresh wide.
  */
-export async function setRundownDivisionJob(id: string, division: string, value: string) {
+export async function applyRundownChanges(
+  changes: { id: string; patch: Partial<RundownItem> }[],
+) {
+  if (!changes.length) return;
   const client = await sb();
-  // This read FEEDS the write below, so a swallowed error here does not show an
-  // empty cell, it erases one: `current` would fall back to {} and the update
-  // would replace every other division's job on this row with nothing.
-  const data = await readRows<{ division_jobs: unknown } | null>(
-    "rundown division jobs",
-    client.from("rundown").select("division_jobs").eq("id", id).maybeSingle(),
-    null,
+  const jobIds = changes
+    .filter((c) => c.patch.division_jobs && Object.keys(c.patch.division_jobs).length)
+    .map((c) => c.id);
+  // This read FEEDS the writes below, so a swallowed error here does not show
+  // an empty cell, it erases one: the merge would start from {} and replace
+  // every other division's job on that row with nothing. readRows throws.
+  const current = jobIds.length
+    ? await readRows<{ id: string; division_jobs: unknown }[]>(
+        "rundown division jobs",
+        client.from("rundown").select("id, division_jobs").in("id", jobIds),
+        [],
+      )
+    : [];
+  const jobsOf = new Map(
+    current.map((r) => [
+      r.id,
+      r.division_jobs && typeof r.division_jobs === "object"
+        ? (r.division_jobs as Record<string, string>)
+        : {},
+    ]),
   );
-  const current =
-    data?.division_jobs && typeof data.division_jobs === "object" ? data.division_jobs : {};
-  await must(
-    client.from("rundown").update({ division_jobs: { ...current, [division]: value } }).eq("id", id),
-  );
+  for (const { id, patch } of changes) {
+    const { id: _d, division_jobs, ...fields } = patch;
+    void _d;
+    const row: Record<string, unknown> = { ...fields };
+    if (division_jobs && Object.keys(division_jobs).length) {
+      row.division_jobs = { ...(jobsOf.get(id) ?? {}), ...division_jobs };
+    }
+    if (Object.keys(row).length) await must(client.from("rundown").update(row).eq("id", id));
+  }
 }
 
 export async function deleteRundown(id: string) {

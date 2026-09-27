@@ -27,9 +27,9 @@ const REPO_FNS = [
   "deleteBudgetPlan", "deleteDivision", "deleteEvent", "deleteFaq", "deleteJob",
   "deleteLink", "deleteMember", "deleteRundown", "deleteTeam", "getBudgetPlans", "getMembers",
   "getEvent", "getJobs", "getRundown", "reorderBudgetItems", "reorderFaqs", "reorderJobs",
-  "setEventLocked", "setRundownDivisionJob",
+  "setEventLocked", "applyRundownChanges",
   "updateBudgetItem", "updateDivision", "updateEvent", "updateFaq", "updateJob",
-  "updateLink", "updateMember", "updateRundown", "updateTeam",
+  "updateLink", "updateMember", "updateTeam",
   // Knock-on writes of the cross-menu integration (docs/INTEGRATION.md). The
   // reads are here too so a refused call cannot even look.
   "getMember", "renameMemberReferences", "unseatCoordinator", "detachDivisions",
@@ -90,8 +90,7 @@ const CASES: [string, () => Promise<{ ok: boolean }>][] = [
   ["faq.reorder", () => faq.reorderFaqsAction(["f1", "f2"])],
 
   ["rundown.create", () => schedule.createRundownAction({ event_id: "ov1" })],
-  ["rundown.update", () => schedule.updateRundownAction("r1", { activity: "X" })],
-  ["rundown.setDivisionJob", () => schedule.setRundownDivisionJobAction("r1", "LO", "Jaga meja")],
+  ["rundown.saveChanges", () => schedule.saveRundownChangesAction([{ id: "r1", patch: { activity: "X", division_jobs: { LO: "Jaga meja" } } }])],
   ["rundown.duplicate", () => schedule.duplicateRundownAction("r1")],
   ["rundown.delete", () => schedule.deleteRundownAction("r1")],
   ["jobs.create", () => schedule.createJobAction({ event_id: "ov1", job: "MC" })],

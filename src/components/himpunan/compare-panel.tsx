@@ -19,6 +19,7 @@ import { useT } from "@/lib/i18n/provider";
 import { useSynced } from "@/lib/use-synced";
 import { cn } from "@/lib/utils";
 import type { CompareEntry, CompareSubject, Prospect } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 // ============================================================
 // Compare: weighing up the associations that accepted our invitation.
@@ -104,6 +105,12 @@ export function ComparePanel({
                 </button>
               ))}
             </div>
+          )}
+          {canManage && subjects.length > 0 && (
+            <ImportXlsxButton
+              module="compare"
+              targets={subjects.map((s) => ({ value: s.id, label: s.org_name }))}
+            />
           )}
           {canManage && (
             <Button onClick={() => setAddOpen(true)} disabled={available.length === 0}>

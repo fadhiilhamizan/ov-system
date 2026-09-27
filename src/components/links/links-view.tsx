@@ -29,6 +29,7 @@ import { isOwnedLink } from "@/lib/links";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import type { Division, LinkItem, OVEvent } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 const NO_DIVISION = "__none__";
 
@@ -375,11 +376,14 @@ export function LinksView({
           )}
         </div>
         {canCreate && (
+          <div className="flex items-center gap-2">
+          <ImportXlsxButton module="links" />
           <LinkFormDialog
             mode="create" events={events} divisions={divisions}
             defaultEventId={soleEvent ?? defaultEventId}
             trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
           />
+          </div>
         )}
       </div>
 

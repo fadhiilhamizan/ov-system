@@ -11,6 +11,7 @@ import { formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/empty";
 import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import { getT } from "@/lib/i18n/server";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 export const metadata = { title: "Anggaran" };
 
@@ -38,6 +39,13 @@ export default async function BudgetPage() {
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline">{event.title}</Badge>
+            {can.manageBudget(user) && plans.length > 0 && (
+              <ImportXlsxButton
+                module="budget"
+                targets={plans.map((p) => ({ value: p.id, label: p.name }))}
+                defaultTarget={primaryBudgetPlan(plans)?.id}
+              />
+            )}
             {can.manageBudget(user) && <AddBudgetPlanButton />}
           </div>
         }

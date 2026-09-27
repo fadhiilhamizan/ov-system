@@ -161,6 +161,14 @@ export async function deleteBackup(id: string): Promise<void> {
   if (error) throw new Error(`Gagal menghapus backup: ${error.message}`);
 }
 
+/** Delete several snapshots in ONE statement (the list view's bulk delete). */
+export async function deleteBackups(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const client = await createClient();
+  const { error } = await client.from("backups").delete().in("id", ids);
+  if (error) throw new Error(`Gagal menghapus backup: ${error.message}`);
+}
+
 /**
  * Turn an untrusted parsed-JSON blob into a BackupData, or explain why not.
  *

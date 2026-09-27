@@ -2,8 +2,10 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
+import { z } from "zod";
+import { idSchema, parse } from "./schemas";
 import {
-  createBackup, listBackups, getBackupData, deleteBackup, restoreSnapshot, parseSnapshot,
+  createBackup, listBackups, getBackupData, deleteBackup, deleteBackups, restoreSnapshot, parseSnapshot,
   type BackupData, type BackupMeta,
 } from "@/lib/backup";
 
@@ -44,6 +46,21 @@ export async function deleteBackupAction(id: string): Promise<Result> {
   if (!can.manageBackups(user)) return DENY;
   try {
     await deleteBackup(id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gagal menghapus backup." };
+  }
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+/** Delete the snapshots ticked in the list, all at once. */
+export async function bulkDeleteBackupsAction(ids: string[]): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.manageBackups(user)) return DENY;
+  const v = parse(z.array(idSchema).min(1, "Pilih minimal satu backup.").max(500), ids);
+  if (!v.ok) return v;
+  try {
+    await deleteBackups(v.data);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Gagal menghapus backup." };
   }

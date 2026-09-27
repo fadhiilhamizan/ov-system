@@ -53,6 +53,22 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.53.0",
+    date: "2026-09-27",
+    title: "Import XLSX di setiap tabel, Rundown yang tidak tersendat, dan kelola backup sekaligus",
+    changes: [
+      { kind: "new", text: "Setiap menu bertabel (Work Breakdown, Reach & Offer, Super Link, Budget, Rundown, Job Desc Hari-H, Anggota EA, Plotting FGD, dan Compare) punya tombol Import XLSX untuk menambah banyak data sekaligus dari Excel atau Google Sheets." },
+      { kind: "new", text: "Tiap menu punya template sendiri berisi sheet Petunjuk (aturan pemakaian), Data (yang diisi, lengkap dengan dropdown), Contoh (contoh pengisian), dan Referensi (daftar divisi dan pilihan yang sah)." },
+      { kind: "new", text: "Import Rundown mengenali sel yang di-merge: merge ke bawah di kolom MC, Kebutuhan Operator, dan kolom divisi menjadi sel gabungan di aplikasi, sama seperti tombol Gabung." },
+      { kind: "ui", text: "Import selalu menampilkan pratinjau dan daftar kesalahan per baris dan kolom lebih dulu; file yang masih punya kesalahan tidak disimpan sama sekali, jadi tidak ada data yang masuk setengah." },
+      { kind: "ui", text: "Rundown tetap tersimpan otomatis tetapi tidak lagi tersendat: ketikan langsung tampil, perubahan dikirim sekaligus setelah jeda singkat, dan tabel tidak pernah menunggu server sebelum bisa diedit lagi." },
+      { kind: "fix", text: "Sel Rundown yang sedang diketik tidak lagi tertimpa saat data dari server datang di tengah pengetikan." },
+      { kind: "ui", text: "Tambah baris, duplikat, hapus, dan gabung sel di Rundown kini langsung terlihat tanpa menunggu balasan server." },
+      { kind: "ui", text: "Daftar Backup & Rollback dikelompokkan per hari dan bisa dibuka-tutup seperti Changelog, dengan tombol Lihat semua untuk hari-hari lama." },
+      { kind: "new", text: "Backup bisa dipilih banyak sekaligus (per baris, per hari, atau semua yang tampil) untuk diunduh atau dihapus bersamaan." },
+    ],
+  },
+  {
     version: "1.52.0",
     date: "2026-09-25",
     title: "Kolom Evaluasi tugas, hasil tugas wajib di Super Link, dan referensi yang lebih aman",

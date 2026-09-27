@@ -28,6 +28,7 @@ import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Member, Prospect, ProspectLink } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 const STAGE_MAP = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, s]));
 
@@ -199,6 +200,7 @@ export function ProspectsView({
               </button>
             ))}
           </div>
+          {manage && <ImportXlsxButton module="prospects" />}
           {manage && (
             <ProspectFormDialog
               mode="create"

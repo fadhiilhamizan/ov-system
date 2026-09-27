@@ -263,7 +263,8 @@ export function systemPassages(): Passage[] {
 
     p("rundown", "Struktur data: rundown", "/rundown",
       "Rundown adalah susunan acara hari-H, satu baris per sesi, dan diisi langsung di tabel (bukan lewat " +
-      "dialog): setiap sel tersimpan otomatis saat kamu berpindah dari sel itu. " +
+      "dialog): ketikan langsung tampil dan tersimpan otomatis di latar belakang setelah jeda singkat, " +
+      "beberapa sel sekaligus, tanpa perlu menunggu sebelum mengedit lagi. " +
       "Satu baris menyimpan: nomor, jam mulai, jam selesai, durasi, kegiatan, MC, kebutuhan operator, " +
       "kolom tugas untuk SETIAP divisi yang ikut rundown, dan catatan. " +
       "Durasi TIDAK diketik: sistem menghitungnya dari jam mulai dan jam selesai. " +
@@ -367,8 +368,23 @@ export function systemPassages(): Passage[] {
       "supaya memulihkan data lama tidak diam-diam mengembalikan peran yang sudah dicabut. " +
       "Memulihkan backup selalu membuat snapshot pengaman lebih dulu dan harus dikonfirmasi dengan mengetik " +
       "kata PULIHKAN. " +
+      "Daftar backup dikelompokkan per hari (bisa dibuka-tutup), dan beberapa backup bisa dicentang sekaligus " +
+      "untuk diunduh atau dihapus bersamaan. " +
       "Mode Demo adalah database yang benar-benar TERPISAH berisi data contoh: apa pun yang dilakukan di sana " +
       "tidak menyentuh data asli, dan datanya bisa dikembalikan ke contoh awal kapan saja."),
+
+    p("import", "Cara pakai: Import XLSX (impor dari Excel / Google Sheets)", undefined,
+      "Setiap menu bertabel punya tombol Import XLSX untuk menambah banyak data sekaligus: Work Breakdown, " +
+      "Reach & Offer, Super Link, Anggaran (RAB), Rundown, Job Hari-H, Anggota, Plotting FGD, dan Compare. " +
+      "Caranya: unduh template menu itu, isi sheet Data di Excel atau Google Sheets, lalu unggah file .xlsx-nya. " +
+      "Template berisi sheet Petunjuk (aturan pemakaian), Data (yang diisi, dengan dropdown), Contoh (contoh " +
+      "pengisian), dan Referensi (daftar divisi dan pilihan yang sah). Satu template untuk satu jenis menu. " +
+      "Sebelum disimpan selalu ada pratinjau dan daftar kesalahan per baris dan kolom. Kalau masih ada satu " +
+      "kesalahan saja, tidak ada data yang disimpan (semua baris atau tidak sama sekali). Impor selalu MENAMBAH " +
+      "data ke Ormawa Visit yang aktif dan tidak mengubah atau menghapus data lama. " +
+      "Sel yang di-merge (digabung) ke bawah berarti nilai yang sama untuk setiap baris, KECUALI di Rundown: " +
+      "merge pada kolom MC, Kebutuhan Operator, dan kolom divisi menjadi sel gabungan di tabel rundown. " +
+      "Yang boleh mengimpor sama dengan yang boleh menambah data di menu itu."),
 
     p("violet-limits", "Aturan: apa yang Violet lihat dan tidak lihat", "/panduan#guide-violet",
       "Violet hanya MEMBACA. Violet tidak bisa membuat, mengubah, menghapus, mengunggah, atau mengirim apa pun, " +

@@ -65,6 +65,7 @@ describe("retrieval of system knowledge", () => {
     ["apa itu LPJ", "system-glossary"],
     ["menu apa saja yang saling terhubung otomatis", "system-integration"],
     ["kalau nama anggota diganti apakah PIC tugas ikut berubah", "system-member"],
+    ["bagaimana cara import data dari excel", "system-import"],
   ])("%s -> %s", (question, expected) => {
     expect(best(question)).toBe(expected);
   });

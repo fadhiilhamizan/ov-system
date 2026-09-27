@@ -594,21 +594,44 @@ export const rundownSchema = z.object({
   merges: z.record(z.string().max(128), z.number().int().min(1).max(200)).optional(),
 });
 
+/** A client-generated row id (crypto.randomUUID), so a new row can be shown
+ *  and edited before its insert has come back. */
+export const clientUuidSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID baris tidak valid.");
+
 /**
- * ONE division's cell on a rundown row.
+ * A batch of inline rundown edits, flushed together by the table after a pause.
  *
- * Its own schema because `division_jobs` is a jsonb blob and the table writes
- * it a cell at a time. Sending the whole object from the browser meant the
+ * `division_jobs` here is PARTIAL: only the division keys the person changed.
+ * It is a jsonb blob, and sending the whole object from the browser meant the
  * payload was built from whatever props React had a moment ago, so editing two
  * divisions in the same row in quick succession silently reverted the first.
- * The caller names the key it is changing and nothing else; the repo merges it
- * onto the value that is actually in the database. Caps mirror `rundownSchema`.
+ * The repo merges these keys onto the value that is actually in the database.
+ * Caps mirror `rundownSchema`.
  */
-export const rundownDivisionJobSchema = z.object({
-  division: nonEmpty("Divisi", 128),
-  value: z.string().trim().max(1000, "Teks terlalu panjang (maks. 1000 karakter).")
-    .optional().transform((v) => v ?? ""),
-});
+export const rundownChangesSchema = z
+  .array(
+    z.object({
+      id: idSchema,
+      patch: rundownSchema
+        .pick({
+          time_start: true, time_end: true, duration: true, activity: true,
+          keterangan: true, mc: true, operator: true, merges: true,
+        })
+        .extend({
+          division_jobs: z
+            .record(
+              z.string().trim().min(1).max(128),
+              z.string().trim().max(1000, "Teks terlalu panjang (maks. 1000 karakter)."),
+            )
+            .optional(),
+        }),
+    }),
+  )
+  .min(1)
+  .max(500, "Terlalu banyak perubahan sekaligus.");
 
 // ---------------- Jobs (Hari-H) ----------------
 export const jobSchema = z.object({

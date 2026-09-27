@@ -33,6 +33,7 @@ import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
 import { cn } from "@/lib/utils";
 import type { JobHariH } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 function JobFormDialog({
   mode, job, eventId, open, onOpenChange, trigger,
@@ -229,9 +230,12 @@ export function JobsTable({
             {t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}
             <SaveIndicator status={autosave.status} />
           </p>
-          <JobFormDialog mode="create" eventId={eventId} trigger={
-            <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
-          } />
+          <div className="flex items-center gap-2">
+            <ImportXlsxButton module="jobs" />
+            <JobFormDialog mode="create" eventId={eventId} trigger={
+              <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
+            } />
+          </div>
         </div>
       )}
 

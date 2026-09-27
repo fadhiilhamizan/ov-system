@@ -1,58 +1,58 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
-import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
+import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink, Check, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  createRundownAction, updateRundownAction, deleteRundownAction, duplicateRundownAction,
-  setRundownDivisionJobAction,
-} from "@/lib/actions/schedule";
 import { cn } from "@/lib/utils";
+import { computeDuration } from "@/lib/rundown-time";
 import { isUrl } from "@/lib/format";
 import {
   MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDownIn, mergedDown, splitCell,
   type CellRole,
 } from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
-import { useAutosave } from "@/lib/use-autosave";
-import { useSynced } from "@/lib/use-synced";
-import { SaveIndicator } from "@/components/ui/save-indicator";
 import { DivisionColumnFilter } from "./division-column-filter";
+import { useRundownQueue, type QueueStatus } from "./use-rundown-queue";
 import type { Division, RundownItem } from "@/lib/types";
 
-/** Parse a clock string ("07.30", "07:30", "0730", "7") to minutes-of-day. */
-function parseTime(s: string): number | null {
-  const str = (s ?? "").trim();
-  if (!str) return null;
-  const m = str.match(/^(\d{1,2})\s*[.:h ]?\s*(\d{2})$/);
-  if (m) {
-    const h = +m[1], min = +m[2];
-    if (h > 23 || min > 59) return null;
-    return h * 60 + min;
+/** How long a cell may sit untouched mid-typing before its text is committed
+ *  to the table's local copy (the save itself is batched later). */
+const IDLE_COMMIT = 700;
+
+/**
+ * Local text state for one editable cell.
+ *
+ * Mirrors `value` like `useSynced`, EXCEPT while the cell has focus: a
+ * revalidation landing mid-sentence used to reset the text under the caret.
+ * Also commits after a short typing pause, so an edit is never only in the DOM
+ * when the person moves on without leaving the cell.
+ */
+function useCellDraft(value: string, onSave: (v: string) => void) {
+  const [v, setV] = React.useState(value);
+  const [prev, setPrev] = React.useState(value);
+  const [editing, setEditing] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  if (!editing && !Object.is(prev, value)) {
+    setPrev(value);
+    setV(value);
   }
-  const only = str.match(/^(\d{1,2})$/);
-  if (only && +only[1] <= 23) return +only[1] * 60;
-  return null;
-}
-
-/** Format a minute count to "45'", "1j", or "1j 30'". */
-function formatDuration(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h && m) return `${h}j ${m}'`;
-  if (h) return `${h}j`;
-  return `${m}'`;
-}
-
-/** Duration between two clock strings, or null if not derivable. */
-function computeDuration(start: string, end: string): string | null {
-  const a = parseTime(start), b = parseTime(end);
-  if (a === null || b === null) return null;
-  let diff = b - a;
-  if (diff < 0) diff += 24 * 60; // crosses midnight
-  return formatDuration(diff);
+  React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const commit = (next: string) => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    if (next !== value) onSave(next);
+  };
+  return {
+    v,
+    set: (next: string) => {
+      setV(next);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => commit(next), IDLE_COMMIT);
+    },
+    replace: (next: string) => { setV(next); commit(next); },
+    onFocus: () => setEditing(true),
+    onBlur: () => { setEditing(false); commit(v); },
+  };
 }
 
 function EditCell({
@@ -65,27 +65,24 @@ function EditCell({
   className?: string;
   multiline?: boolean;
 }) {
-  const [v, setV] = useSynced(value);
+  const d = useCellDraft(value, onSave);
   if (readOnly) {
     return <div className={cn("whitespace-pre-line px-2 py-1.5 text-xs", className)}>{value || <span className="text-muted-foreground/50">–</span>}</div>;
   }
-  const commit = () => {
-    if (v !== value) onSave(v);
-  };
   const cls = cn(
     "w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs outline-none transition hover:border-border focus:border-primary focus:bg-card",
     className,
   );
   return multiline ? (
-    <textarea rows={1} value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} className={cn(cls, "autosize min-h-[2rem] leading-snug")} />
+    <textarea rows={1} value={d.v} placeholder={placeholder} onChange={(e) => d.set(e.target.value)} onFocus={d.onFocus} onBlur={d.onBlur} className={cn(cls, "autosize min-h-[2rem] leading-snug")} />
   ) : (
-    <input value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} className={cls} />
+    <input value={d.v} placeholder={placeholder} onChange={(e) => d.set(e.target.value)} onFocus={d.onFocus} onBlur={d.onBlur} className={cls} />
   );
 }
 
 function NoteCell({ value, onSave, readOnly }: { value: string; onSave: (v: string) => void; readOnly?: boolean }) {
   const t = useT();
-  const [v, setV] = useSynced(value);
+  const d = useCellDraft(value, onSave);
   const [min, setMin] = React.useState(5);
   const [open, setOpen] = React.useState(false);
   if (readOnly) {
@@ -93,18 +90,18 @@ function NoteCell({ value, onSave, readOnly }: { value: string; onSave: (v: stri
   }
   function quick(kind: "cepat" | "lama") {
     const s = `${kind === "cepat" ? t("Terlalu cepat") : t("Terlalu lama")} ${min} ${t("menit")}`;
-    setV(s);
-    onSave(s);
+    d.replace(s);
     setOpen(false);
   }
   return (
     <div className="flex items-start gap-1">
       <textarea
         rows={1}
-        value={v}
+        value={d.v}
         placeholder={t("Catatan…")}
-        onChange={(e) => setV(e.target.value)}
-        onBlur={() => v !== value && onSave(v)}
+        onChange={(e) => d.set(e.target.value)}
+        onFocus={d.onFocus}
+        onBlur={d.onBlur}
         className="autosize min-h-[2rem] w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1.5 text-xs leading-snug outline-none transition hover:border-border focus:border-primary focus:bg-card"
       />
       <Popover open={open} onOpenChange={setOpen}>
@@ -205,12 +202,34 @@ function MergeableCell({
   );
 }
 
+/**
+ * Ambient save state. Deliberately calm: "pending" is plain muted text with no
+ * spinner, because the table never waits for it - the person can keep typing.
+ */
+function QueueIndicator({ status }: { status: QueueStatus }) {
+  const t = useT();
+  if (status === "idle") return null;
+  const map = {
+    pending: { icon: <span className="size-1.5 rounded-full bg-muted-foreground/60" />, text: t("Perubahan disimpan otomatis"), tone: "text-muted-foreground" },
+    saved: { icon: <Check className="size-3" />, text: t("Tersimpan"), tone: "text-emerald-600 dark:text-emerald-400" },
+    error: { icon: <CircleAlert className="size-3" />, text: t("Gagal menyimpan"), tone: "text-danger" },
+  } as const;
+  const m = map[status];
+  return (
+    <span role="status" aria-live="polite" className={cn("inline-flex items-center gap-1.5 text-xs", m.tone)}>
+      {m.icon}
+      {m.text}
+    </span>
+  );
+}
+
 export function RundownView({
   items,
   divisions,
   eventId,
   canManage,
   canDelete,
+  importButton,
 }: {
   items: RundownItem[];
   divisions: Division[];
@@ -219,9 +238,10 @@ export function RundownView({
   canManage: boolean;
   /** "full" access only: remove rows. */
   canDelete: boolean;
+  /** The "Import XLSX" entry point, shown beside "Tambah baris". */
+  importButton?: React.ReactNode;
 }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
 
   // Division columns = the event's divisions not excluded from the rundown.
   // Divisions marked "tidak diikutsertakan pada rundown" (Sekretaris,
@@ -243,26 +263,23 @@ export function RundownView({
   // Single rundown: migration 0035 merged the old A/B versions and deleted
   // every B row, so there is nothing to choose between. The column still
   // exists for older rows and `createRundown` defaults it.
-  const list = React.useMemo(() => [...items].sort((a, b) => a.no - b.no), [items]);
+  //
+  // Edits are local-first: `list` already includes anything typed, added,
+  // merged or removed that the server has not confirmed yet, and the queue
+  // saves it in the background (see use-rundown-queue.ts).
+  const q = useRundownQueue(items, eventId);
+  const list = q.list;
 
-  // Inline cell edits autosave on blur; the SaveIndicator shows "Tersimpan".
-  const autosave = useAutosave();
   function save(id: string, patch: Partial<RundownItem>) {
-    autosave.run(async () => {
-      const res = await updateRundownAction(id, patch);
-      if (!res.ok) toast.error(res.error);
-      return res;
-    });
+    const { division_jobs: _j, id: _i, ...fields } = patch;
+    void _j; void _i;
+    q.edit(id, fields);
   }
-  /** Save ONE division's cell. Goes through its own action so the merge onto
+  /** Save ONE division's cell. Only this key travels; the merge onto
    *  `division_jobs` happens server-side against the live row (see A2 note on
    *  the cell below). */
   function saveDivisionJob(id: string, divisionKey: string, value: string) {
-    autosave.run(async () => {
-      const res = await setRundownDivisionJobAction(id, divisionKey, value);
-      if (!res.ok) toast.error(res.error);
-      return res;
-    });
+    q.edit(id, {}, { [divisionKey]: value });
   }
   /** Save a time field and auto-recompute the duration when both ends parse. */
   function saveTime(item: RundownItem, field: "time_start" | "time_end", value: string) {
@@ -272,26 +289,6 @@ export function RundownView({
     const dur = computeDuration(start, end);
     if (dur !== null) patch.duration = dur;
     save(item.id, patch);
-  }
-  function addRow() {
-    start(async () => {
-      // New activity starts where the last one ended (chain the schedule).
-      const prevEnd = list.length ? list[list.length - 1].time_end : "";
-      const res = await createRundownAction({ event_id: eventId, activity: "", time_start: prevEnd });
-      if (!res.ok) toast.error(res.error);
-    });
-  }
-  function remove(id: string) {
-    start(async () => {
-      const res = await deleteRundownAction(id);
-      if (res.ok) toast.success(t("Agenda dihapus")); else toast.error(res.error);
-    });
-  }
-  function duplicate(id: string) {
-    start(async () => {
-      const res = await duplicateRundownAction(id);
-      if (res.ok) toast.success(t("Agenda diduplikat")); else toast.error(res.error);
-    });
   }
 
   if (!items.length && !canManage) {
@@ -349,8 +346,8 @@ export function RundownView({
 
   return (
     <div className="space-y-3">
-      {/* Autosave (inline cell edits) and structural ops (add/remove/duplicate)
-          each get their own cue: the badge for the former, toasts for the latter. */}
+      {/* Saving is ambient: a quiet line of text, never a spinner, and nothing
+          on the table is ever disabled while it happens. */}
       <div className="flex flex-wrap items-center gap-2">
         <DivisionColumnFilter options={allCols} focus={focus} onChange={setFocus} />
         {focus.size > 0 && (
@@ -359,12 +356,7 @@ export function RundownView({
           </span>
         )}
         <div className="ml-auto flex h-4 items-center">
-          <SaveIndicator status={autosave.status} />
-          {pending && autosave.status === "idle" && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              {t("Menyimpan…")}
-            </span>
-          )}
+          <QueueIndicator status={q.status} />
         </div>
       </div>
 
@@ -470,7 +462,7 @@ export function RundownView({
                     <div className="flex items-center justify-center gap-0.5">
                       <button
                         type="button"
-                        onClick={() => duplicate(item.id)}
+                        onClick={() => q.duplicate(item.id)}
                         className="rounded p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                         title={t("Duplikat")}
                       >
@@ -479,7 +471,7 @@ export function RundownView({
                       {canDelete && (
                         <button
                           type="button"
-                          onClick={() => remove(item.id)}
+                          onClick={() => q.remove(item.id)}
                           className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
                           title={t("Hapus")}
                         >
@@ -504,9 +496,12 @@ export function RundownView({
       </div>
 
       {canManage && (
-        <Button variant="outline" size="sm" onClick={addRow} disabled={pending}>
-          <Plus className="size-4" /> {t("Tambah baris")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={q.addRow}>
+            <Plus className="size-4" /> {t("Tambah baris")}
+          </Button>
+          {importButton}
+        </div>
       )}
     </div>
   );

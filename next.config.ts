@@ -42,6 +42,19 @@ const nextConfig: NextConfig = {
   // so explicitly keeps it that way if someone adds an <img> later.
   images: { unoptimized: true },
 
+  // The XLSX import sends the file to a Server Action (actions/import.ts caps
+  // it at 3 MB); the default 1 MB body limit would reject a legitimate file
+  // before that check could explain why. 4 MB leaves room for the multipart
+  // overhead.
+  experimental: {
+    serverActions: { bodySizeLimit: "4mb" },
+  },
+
+  // exceljs is Node-only (streams, zip) and only ever runs on the server, in
+  // lib/import/xlsx.server.ts. Loading it from node_modules at runtime rather
+  // than bundling it keeps the server build lean and its CommonJS internals intact.
+  serverExternalPackages: ["exceljs"],
+
   async headers() {
     return [
       {
