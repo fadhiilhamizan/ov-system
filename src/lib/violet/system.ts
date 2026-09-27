@@ -384,7 +384,12 @@ export function systemPassages(): Passage[] {
       "data ke Ormawa Visit yang aktif dan tidak mengubah atau menghapus data lama. " +
       "Sel yang di-merge (digabung) ke bawah berarti nilai yang sama untuk setiap baris, KECUALI di Rundown: " +
       "merge pada kolom MC, Kebutuhan Operator, dan kolom divisi menjadi sel gabungan di tabel rundown. " +
-      "Yang boleh mengimpor sama dengan yang boleh menambah data di menu itu."),
+      "Yang boleh mengimpor sama dengan yang boleh menambah data di menu itu. " +
+      "Kalau ada kesalahan, tombol Unduh laporan pemeriksaan mengembalikan file itu dengan sel yang salah " +
+      "diwarnai merah dan diberi catatan. Baris yang sama dengan data yang sudah ada ditandai sudah ada dan " +
+      "bisa dilewati (kecuali di Rundown). Salah ketik divisi, status, atau nama PIC diberi saran. " +
+      "File yang diunggah TIDAK disimpan di mana pun: hanya dibaca di memori server selama pemeriksaan, " +
+      "lalu dibuang; yang tersimpan hanya baris data yang diimpor."),
 
     p("violet-limits", "Aturan: apa yang Violet lihat dan tidak lihat", "/panduan#guide-violet",
       "Violet hanya MEMBACA. Violet tidak bisa membuat, mengubah, menghapus, mengunggah, atau mengirim apa pun, " +

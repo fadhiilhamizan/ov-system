@@ -32,7 +32,45 @@ async function must(op: PromiseLike<{ error: { message: string } | null }>) {
   if (error) throw new Error(error.message);
 }
 
-export type TaskRow = Pick<Task, "event_id" | "division" | "title"> &
+/**
+ * The comparable columns of what a menu already holds, for the "sudah ada"
+ * check (spec.identity is applied to these by the action). Only the columns
+ * the identity needs are selected, and only for the one edition or target,
+ * so a preview costs one narrow read.
+ */
+export async function existingRows(
+  module: string,
+  eventId: string,
+  target: string,
+): Promise<Record<string, unknown>[]> {
+  const client = await sb();
+  const read = (label: string, q: PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>) =>
+    readRows<Record<string, unknown>[]>(label, q as never, []);
+  switch (module) {
+    case "tasks":
+      return read("import tasks", client.from("tasks").select("division, title").eq("event_id", eventId));
+    case "prospects":
+      return read("import prospects", client.from("prospects").select("org_name, contact").eq("event_id", eventId));
+    case "links":
+      return read("import links", client.from("links").select("url").eq("event_id", eventId));
+    case "budget":
+      return target ? read("import budget", client.from("budget_items").select("category, name").eq("plan_id", target)) : [];
+    case "rundown":
+      return read("import rundown", client.from("rundown").select("time_start, activity").eq("event_id", eventId));
+    case "jobs":
+      return read("import jobs", client.from("job_harih").select("pic, job").eq("event_id", eventId));
+    case "members":
+      return read("import members", client.from("members").select("name").eq("event_id", eventId));
+    case "fgd":
+      return target ? read("import fgd", client.from("fgd_rows").select("ours, theirs").eq("plan_id", target)) : [];
+    case "compare":
+      return target ? read("import compare", client.from("compare_entries").select("section, aspect").eq("subject_id", target)) : [];
+    default:
+      return [];
+  }
+}
+
+export type TaskRow =Pick<Task, "event_id" | "division" | "title"> &
   Partial<Pick<Task, "pic" | "start_date" | "end_date" | "notes" | "evaluation" | "status">>;
 
 export async function insertTasks(rows: TaskRow[]) {

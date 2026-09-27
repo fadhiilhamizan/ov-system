@@ -211,6 +211,10 @@ export const PRIVACY: LegalDoc = {
           en: "Backups of all data are created automatically on a regular schedule (every three days) and can also be made manually by an Admin before risky operations. Backups live in the same database and are accessible only to Admins.",
         },
         {
+          id: "File spreadsheet (.xlsx) yang kamu unggah lewat Import XLSX tidak disimpan. File itu hanya dibaca di memori server selama pemeriksaan berlangsung lalu dibuang; yang tersimpan hanyalah baris data yang kamu setujui untuk diimpor, sama seperti bila diketik manual.",
+          en: "Spreadsheet files (.xlsx) you upload through Import XLSX are not stored. The file is only read in the server's memory while it is being checked and is then discarded; the only thing saved is the rows you confirm for import, exactly as if they had been typed in by hand.",
+        },
+        {
           id: "Data program disimpan selama masih dibutuhkan sebagai arsip kepengurusan. Data akun disimpan selama akun masih aktif. Kamu dapat meminta penghapusan seperti dijelaskan di bagian 9.",
           en: "Programme data is retained for as long as it is needed as a cabinet archive. Account data is retained while the account is active. You can request deletion as described in section 9.",
         },

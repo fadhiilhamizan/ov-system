@@ -53,6 +53,23 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.54.0",
+    date: "2026-09-27",
+    title: "Import XLSX lebih teliti: laporan pemeriksaan, cek data ganda, dan template yang lebih membantu",
+    changes: [
+      { kind: "new", text: "Tombol Unduh laporan pemeriksaan mengembalikan file kamu sendiri dengan sel yang salah diwarnai merah (peringatan kuning) beserta catatannya, ditambah sheet daftar semua masalah yang bisa diklik ke selnya." },
+      { kind: "new", text: "Baris yang sama dengan data yang sudah ada (mis. file yang sama terunggah dua kali) ditandai \"sudah ada\" dan bisa dilewati saat impor, kecuali di Rundown." },
+      { kind: "new", text: "Pratinjau menandai masalah langsung di sel yang bersangkutan, bisa disaring (Semua, Perlu dicek, Sudah ada), dan menampilkan divisi serta status dengan namanya, bukan kodenya." },
+      { kind: "new", text: "Salah ketik dikenali dan diberi saran, mis. Divisi \"Evnt\" menjadi \"Maksudmu Event?\", status \"Doen\", nama PIC, dan judul kolom." },
+      { kind: "new", text: "Mengunggah template menu lain atau file yang bukan .xlsx (.xls lama, .csv, file yang dilindungi kata sandi) kini dijelaskan dengan kalimat yang jelas, termasuk menu mana yang cocok untuk file itu." },
+      { kind: "ui", text: "Template baru: petunjuk muncul saat sel dipilih di Excel, sel wajib yang masih kosong berwarna merah muda, kolom teks tidak lagi diubah Excel menjadi angka/tanggal, sheet Referensi dikunci, dan sheet Petunjuk memuat daftar cek serta cara merge sel di Excel dan Google Sheets." },
+      { kind: "fix", text: "Nomor HP yang kehilangan angka 0 di depan, jam 08.30 yang berubah menjadi angka 8,3 di Google Sheets, spasi tak terlihat dari WhatsApp, dan sel berisi error Excel (#N/A) kini dibaca dengan benar atau dilaporkan jelas." },
+      { kind: "new", text: "Rundown dari sheet lama dengan satu kolom Waktu \"08.00 - 08.30\" bisa langsung diimpor." },
+      { kind: "security", text: "File yang diunggah diperiksa ukuran isinya sebelum dibuka, sehingga file .xlsx yang sengaja dibuat membengkak tidak bisa membebani server." },
+      { kind: "data", text: "File yang diunggah tidak pernah disimpan: hanya dibaca di memori selama pemeriksaan. Database hanya menerima satu kali simpan untuk seluruh baris saat kamu menekan Impor." },
+    ],
+  },
+  {
     version: "1.53.0",
     date: "2026-09-27",
     title: "Import XLSX di setiap tabel, Rundown yang tidak tersendat, dan kelola backup sekaligus",

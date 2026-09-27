@@ -1,4 +1,4 @@
-import type { ColumnSpec, ImportContext, ImportModule, ModuleSpec } from "./core";
+import { normText, type ColumnSpec, type ImportContext, type ImportModule, type ModuleSpec } from "./core";
 
 // ============================================================
 // One spec per table menu. A spec is DATA: the template builder, the parser,
@@ -21,7 +21,19 @@ export const COMMON_RULES = [
   "Sel yang di-merge (gabung) ke bawah dianggap berisi nilai yang sama untuk setiap baris yang digabung, kecuali disebutkan lain di aturan menu ini.",
   "File bisa disiapkan di Excel atau Google Sheets (File > Download > Microsoft Excel .xlsx). Ukuran maksimal 3 MB.",
   "Impor selalu MENAMBAH data. Data yang sudah ada tidak diubah atau dihapus. Pratinjau ditampilkan dulu sebelum data disimpan.",
+  "Kalau masih ada kesalahan, tidak ada satu baris pun yang disimpan. Unduh laporan pemeriksaan dari jendela impor: sel yang salah diberi warna merah beserta penjelasannya.",
+  "Baris yang sama dengan data yang sudah ada di aplikasi ditandai \"sudah ada\", dan (kecuali Rundown) bisa dilewati saat impor.",
 ];
+
+/** Identity pieces joined; null when every piece is empty. */
+const id = (...parts: unknown[]) => {
+  const t = parts.map((x) => normText(x as never));
+  return t.some(Boolean) ? t.join("|") : null;
+};
+
+/** URLs compare without scheme case, "www." or a trailing slash. */
+const urlId = (u: unknown) =>
+  typeof u === "string" && u ? u.toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "") : null;
 
 const STATUS_OPTIONS = [
   { value: "todo", label: "To Do", aliases: ["Belum", "Belum Mulai", "Todo"] },
@@ -46,13 +58,15 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Work Breakdown",
     fileName: "template-work-breakdown",
     maxRows: 1000,
+    autoColumns: ["No", "Nomor", "Hasil", "Referensi", "Durasi"],
+    identity: (v) => (v.title ? id(v.division, v.title) : null),
     columns: () => [
       { key: "division", header: "Divisi", required: true, kind: "division", width: 20, aliases: ["Division"],
         help: "Divisi pemilik tugas: nama, singkatan, atau kode dari sheet Referensi." },
       { key: "title", header: "Judul Tugas", required: true, kind: "text", max: 300, width: 40, aliases: ["Tugas", "Task", "Judul"],
         help: "Nama pekerjaan yang harus dilakukan." },
-      { key: "pic", header: "PIC", kind: "text", max: 255, width: 24, aliases: ["Penanggung Jawab", "PJ"],
-        help: "Penanggung jawab. Beberapa orang dipisah koma, mis. Dewi, Raka." },
+      { key: "pic", header: "PIC", kind: "text", max: 255, width: 24, aliases: ["Penanggung Jawab", "PJ"], people: true,
+        help: "Penanggung jawab. Beberapa orang dipisah koma, mis. Dewi, Raka. Nama yang tidak ada di daftar anggota ditandai sebagai peringatan." },
       { key: "start_date", header: "Tanggal Mulai", kind: "date", width: 16, aliases: ["Mulai", "Start", "Start Date"],
         help: "Kapan tugas mulai dikerjakan." },
       { key: "end_date", header: "Deadline", kind: "date", width: 16, aliases: ["Tenggat", "Tanggal Selesai", "Batas Waktu", "Due Date", "End Date"],
@@ -86,6 +100,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Reach & Offer",
     fileName: "template-reach-and-offer",
     maxRows: 500,
+    identity: (v) => (v.org_name ? id("org", v.org_name) : v.contact ? id("contact", v.contact) : null),
     columns: () => [
       { key: "no", header: "No", kind: "text", max: 32, width: 6, help: "Nomor urut bebas (opsional)." },
       { key: "org_name", header: "Nama Ormawa", kind: "text", max: 200, width: 28, aliases: ["Ormawa", "Himpunan", "Organisasi"],
@@ -94,7 +109,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
         help: "Kampus asal ormawa." },
       { key: "location", header: "Lokasi", kind: "text", max: 200, width: 18, aliases: ["Kota", "Location"],
         help: "Kota atau alamat singkat." },
-      { key: "contact", header: "Kontak", kind: "text", max: 200, width: 24, aliases: ["Contact", "CP", "Narahubung"],
+      { key: "contact", header: "Kontak", kind: "text", max: 200, width: 24, aliases: ["Contact", "CP", "Narahubung", "No HP", "Nomor HP", "WA"], phone: true,
         help: "Nama dan/atau nomor narahubung. Isi ini atau Nama Ormawa." },
       { key: "date_text", header: "Tanggal", kind: "text", max: 60, width: 14, aliases: ["Tanggal Kontak", "Date"],
         help: "Tanggal kontak, ditulis bebas (mis. 12 Sep)." },
@@ -106,7 +121,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
           { value: "online", label: "Online", aliases: ["Daring", "Virtual"] },
         ],
         help: "Offline atau Online." },
-      { key: "pic", header: "PIC", kind: "text", max: 200, width: 18, aliases: ["Penanggung Jawab"],
+      { key: "pic", header: "PIC", kind: "text", max: 200, width: 18, aliases: ["Penanggung Jawab"], people: true,
         help: "Anggota yang memegang prospek ini." },
       { key: "contact_status", header: "Status Kontak", kind: "enum", width: 16,
         options: [
@@ -145,6 +160,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
       "Setiap baris wajib punya Nama Ormawa atau Kontak (minimal salah satu).",
       "Tautan (proposal, profil ormawa) ditambahkan dari aplikasi setelah impor.",
       "Status Kontak, Respon Mereka, dan Respon Kita memakai kata yang sama dengan di aplikasi (huruf besar).",
+      "Nomor HP yang kehilangan angka 0 di depan (karena Excel menganggapnya angka) otomatis diperbaiki.",
     ],
   },
 
@@ -154,6 +170,8 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Super Link",
     fileName: "template-super-link",
     maxRows: 1000,
+    autoColumns: ["No", "Sumber"],
+    identity: (v) => urlId(v.url),
     columns: () => [
       { key: "section", header: "Bagian", kind: "text", max: 200, width: 22, aliases: ["Kelompok", "Section", "Kategori"],
         help: "Kelompok tautan (mis. Proposal, Dokumentasi). Boleh di-merge ke bawah." },
@@ -184,6 +202,8 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Budget (RAB)",
     fileName: "template-budget-rab",
     maxRows: 1000,
+    autoColumns: ["No", "Subtotal"],
+    identity: (v) => (v.name ? id(v.category, v.name) : null),
     target: { label: "Rencana anggaran tujuan", help: "Item akan ditambahkan ke rencana anggaran ini." },
     columns: () => [
       { key: "category", header: "Kategori", required: true, kind: "text", max: 120, width: 20, aliases: ["Category"],
@@ -221,11 +241,16 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Rundown Acara",
     fileName: "template-rundown",
     maxRows: 300,
+    autoColumns: ["No", "Durasi"],
+    canSkipExisting: false,
+    identity: (v) => (v.activity ? id(v.time_start ?? String(v.time_range ?? "").split("-")[0], v.activity) : null),
     columns: (ctx) => [
       { key: "time_start", header: "Waktu Mulai", kind: "time", width: 12, aliases: ["Mulai", "Start", "Jam Mulai"],
         help: "Jam mulai, mis. 08.00." },
       { key: "time_end", header: "Waktu Selesai", kind: "time", width: 12, aliases: ["Selesai", "End", "Jam Selesai"],
         help: "Jam selesai, mis. 08.30. Durasi dihitung otomatis." },
+      { key: "time_range", header: "Waktu", kind: "timerange", uploadOnly: true, aliases: ["Jam", "Pukul"],
+        help: "Rentang jam dalam satu sel, mis. 08.00 - 08.30 (dari sheet rundown lama). Dipakai bila Waktu Mulai/Selesai kosong." },
       { key: "activity", header: "Kegiatan", required: true, kind: "longtext", max: 500, width: 32, aliases: ["Acara", "Activity", "Agenda"],
         help: "Nama sesi / kegiatan." },
       { key: "mc", header: "MC", kind: "longtext", max: 300, width: 20, merge: "span",
@@ -271,7 +296,9 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
       "Kolom divisi di template mengikuti divisi Ormawa Visit yang sedang aktif (divisi yang dikecualikan dari rundown tidak punya kolom).",
       "Merge (gabung) sel ke bawah pada kolom MC, Kebutuhan Operator, dan kolom divisi TETAP menjadi sel gabungan di aplikasi, sama seperti tombol \"Gabung dengan baris di bawah\".",
       "Kolom Catatan tidak bisa di-merge: isinya berlaku per baris.",
-      "Durasi dihitung otomatis dari Waktu Mulai dan Waktu Selesai. Tulis jam sebagai teks 08.00 (template sudah memformat kolomnya sebagai teks).",
+      "Durasi dihitung otomatis dari Waktu Mulai dan Waktu Selesai. Tulis jam sebagai 08.00 (template sudah memformat kolomnya sebagai teks).",
+      "Sheet rundown lama yang memakai satu kolom \"Waktu\" berisi 08.00 - 08.30 juga bisa diimpor langsung.",
+      "Baris yang sudah ada di rundown tidak bisa dilewati saat impor (supaya sel gabungan tidak bergeser); hapus dulu barisnya dari file bila perlu.",
       "Baris hasil impor ditambahkan di bawah rundown yang sudah ada, sesuai urutan di file.",
     ],
   },
@@ -282,8 +309,10 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Job Desc Hari-H",
     fileName: "template-jobdesc-hari-h",
     maxRows: 500,
+    autoColumns: ["No"],
+    identity: (v) => (v.job ? id(v.pic, v.job) : null),
     columns: () => [
-      { key: "pic", header: "PIC", kind: "text", max: 300, width: 24, aliases: ["Penanggung Jawab", "Nama"],
+      { key: "pic", header: "PIC", kind: "text", max: 300, width: 24, aliases: ["Penanggung Jawab", "Nama"], people: true,
         help: "Siapa yang bertugas. Beberapa orang dipisah koma. Boleh di-merge ke bawah." },
       { key: "job", header: "Tugas", required: true, kind: "longtext", max: 500, width: 40, aliases: ["Job", "Deskripsi Tugas", "Jobdesc"],
         help: "Apa yang dikerjakan pada hari-H." },
@@ -308,6 +337,8 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Anggota EA",
     fileName: "template-anggota",
     maxRows: 500,
+    autoColumns: ["No"],
+    identity: (v) => (v.name ? id(v.name) : null),
     columns: () => [
       { key: "name", header: "Nama Lengkap", required: true, kind: "text", max: 200, width: 28, aliases: ["Nama", "Name"],
         help: "Nama lengkap. Tidak boleh mengandung koma." },
@@ -333,6 +364,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     rules: [
       "Anggota diimpor ke Ormawa Visit yang sedang aktif.",
       "Nama tidak boleh mengandung koma, karena daftar PIC di menu lain dipisah dengan koma.",
+      "Anggota dengan nama yang sama dengan anggota yang sudah ada ditandai \"sudah ada\" dan bisa dilewati.",
       "Satu anggota boleh masuk beberapa divisi; divisi pertama menjadi divisi utama.",
     ],
   },
@@ -343,6 +375,8 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Himpunan - Plotting FGD",
     fileName: "template-plotting-fgd",
     maxRows: 100,
+    autoColumns: ["No"],
+    identity: (v) => (v.ours ? id(v.ours, v.theirs) : null),
     target: { label: "Tabel FGD tujuan", help: "Baris akan ditambahkan ke tabel plotting ini." },
     columns: () => [
       { key: "ours", header: "Departemen HMSI", required: true, kind: "text", max: 160, width: 30, aliases: ["HMSI", "Departemen Kita"],
@@ -366,6 +400,7 @@ export const MODULE_SPECS: Record<ImportModule, ModuleSpec> = {
     title: "Himpunan - Compare",
     fileName: "template-compare",
     maxRows: 300,
+    identity: (v) => (v.aspect ? id(v.section, v.aspect) : null),
     target: { label: "Himpunan yang dinilai", help: "Aspek penilaian akan ditambahkan ke himpunan ini." },
     columns: () => [
       { key: "section", header: "Bagian", kind: "text", max: 200, width: 28, aliases: ["Kelompok", "Section"],
