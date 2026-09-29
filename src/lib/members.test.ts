@@ -10,6 +10,9 @@ import {
   splitForDivision,
   splitRoster,
   withDivisionAdded,
+  renameInRoster,
+  removeFromRoster,
+  memberRipple,
 } from "./members";
 import type { Member } from "./types";
 
@@ -194,5 +197,86 @@ describe("splitForDivision", () => {
     const { inDivision, others } = splitForDivision(roster, "EVENT", undefined);
     expect(inDivision.map((x) => x.id)).toEqual(["d", "g"]);
     expect(others.map((x) => x.id)).toEqual(["a", "n"]);
+  });
+});
+
+// ------------------------------------------------------------------
+// Roster changes carried into the by-name fields (docs/INTEGRATION.md).
+// ------------------------------------------------------------------
+describe("renameInRoster", () => {
+  it("rewrites the matching token, case-insensitively, and keeps the rest", () => {
+    expect(renameInRoster("Andi, budi, Citra", ["Budi"], "Bima")).toBe("Andi, Bima, Citra");
+  });
+
+  it("returns null when nobody was renamed, so the row is not rewritten", () => {
+    expect(renameInRoster("Andi, Citra", ["Budi"], "Bima")).toBeNull();
+    // Not even to normalise the separators of an untouched row.
+    expect(renameInRoster("Andi · Citra", ["Budi"], "Bima")).toBeNull();
+  });
+
+  it("does not match a name that merely CONTAINS the old one", () => {
+    expect(renameInRoster("Budiman, Andi", ["Budi"], "Bima")).toBeNull();
+  });
+
+  it("never produces the same person twice", () => {
+    expect(renameInRoster("Bima, Budi", ["Budi"], "Bima")).toBe("Bima");
+  });
+
+  it("understands every separator the stored strings use", () => {
+    expect(renameInRoster("Andi · Budi  Citra", ["Budi"], "Bima")).toBe("Andi, Bima, Citra");
+  });
+});
+
+describe("removeFromRoster", () => {
+  it("drops the named tokens", () => {
+    expect(removeFromRoster("Andi, Budi", ["budi santoso", "Budi"])).toBe("Andi");
+  });
+  it("returns null when nothing matched", () => {
+    expect(removeFromRoster("Andi", ["Budi"])).toBeNull();
+  });
+});
+
+describe("memberRipple", () => {
+  const budi = m({ id: "b", event_id: "ov1", divisions: ["EVENT", "LO"] });
+  const citra = m({ id: "c", event_id: "ov1", name: "Citra Dewi", nickname: "Citra", divisions: ["EVENT"] });
+
+  it("renames the old nickname AND the old full name to the new label", () => {
+    const r = memberRipple(budi, { ...budi, nickname: "Bima" }, [budi, citra]);
+    expect(r.rename).toEqual({ from: ["Budi", "Budi Santoso"], to: "Bima" });
+    expect(r.unseat).toBeNull();
+  });
+
+  it("does nothing when the label did not change", () => {
+    const r = memberRipple(budi, { ...budi, nrp: "5026221999" }, [budi, citra]);
+    expect(r.rename).toBeNull();
+    expect(r.unseat).toBeNull();
+  });
+
+  it("leaves a name alone when another member of the edition also answers to it", () => {
+    const otherBudi = m({ id: "b2", event_id: "ov1", name: "Budi Prakoso", nickname: "Budi" });
+    const r = memberRipple(budi, { ...budi, nickname: "Bima" }, [budi, otherBudi]);
+    // "Budi" belongs to both; only the unambiguous full name may move.
+    expect(r.rename).toEqual({ from: ["Budi Santoso"], to: "Bima" });
+  });
+
+  it("refuses to rename onto a name somebody else already has", () => {
+    const r = memberRipple(budi, { ...budi, nickname: "Citra" }, [budi, citra]);
+    expect(r.rename).toBeNull();
+  });
+
+  it("unseats a coordinator from the divisions they LEFT, not the ones they kept", () => {
+    const r = memberRipple(budi, { ...budi, divisions: ["EVENT"] }, [budi, citra]);
+    expect(r.unseat).toEqual({ divisions: ["LO"], names: ["Budi", "Budi Santoso"] });
+  });
+
+  it("unseats from every division they had when they become an intern", () => {
+    const r = memberRipple(budi, { ...budi, type: "intern" }, [budi, citra]);
+    expect(r.unseat?.divisions).toEqual(["EVENT", "LO"]);
+  });
+
+  it("on delete unseats everywhere and renames nothing", () => {
+    const r = memberRipple(budi, null, [budi, citra]);
+    expect(r.rename).toBeNull();
+    expect(r.unseat).toEqual({ divisions: "all", names: ["Budi", "Budi Santoso"] });
   });
 });

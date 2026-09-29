@@ -47,7 +47,15 @@ await db.exec(`
 create role anon;
 create role authenticated;
 create schema auth;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+-- Kolom encrypted_password ada di sini karena trigger 0052 membandingkannya.
+-- (Tanpa backtick: seluruh blok ini adalah template literal JavaScript, dan
+-- sebuah backtick di dalam komentar SQL tetap menutupnya - kerabat dekat
+-- masalah $$ di dalam komentar yang dicatat AGENTS.md.)
+-- Tanpa kolomnya, uji "akun bersama tidak bisa ganti kata sandi" lulus karena
+-- kolomnya tidak ada, bukan karena trigger-nya menolak: lulus untuk alasan yang
+-- salah, yang lebih buruk daripada gagal.
+create table auth.users (id uuid primary key, email text, encrypted_password text,
+  raw_user_meta_data jsonb default '{}');
 create or replace function auth.uid() returns uuid
 language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
 create or replace function auth.jwt() returns jsonb
@@ -87,7 +95,7 @@ grant usage on schema public, auth to anon, authenticated;
 grant select, insert, delete on all tables in schema public to anon, authenticated;
 grant update on all tables in schema public to anon, authenticated;
 revoke update on public.profiles from authenticated, anon;
-grant update (name, avatar_color) on public.profiles to authenticated;
+grant update (name, avatar_color, avatar) on public.profiles to authenticated;
 -- 0039 narrows error_log the same way, so re-apply it after the blanket grant.
 revoke insert on public.error_log from authenticated, anon;
 grant insert (kind, message, stack, path, user_agent) on public.error_log to authenticated;
@@ -297,6 +305,8 @@ const PENDING = [
   "0035_rundown_single_version.sql",
   "0036_prospect_link_notes.sql",
   "0037_task_refs.sql",
+  "0051_edition_delete_cascade.sql",
+  "0053_task_evaluation_and_ref_lifecycle.sql",
 ];
 
 // The editions the imports target must exist first.
@@ -558,6 +568,14 @@ create table compare_entries (id uuid primary key default gen_random_uuid(), eve
 -- budget_plans ada sejak 0001, jadi project demo selalu punya. Ada di sini
 -- supaya catch-up kolom is_primary (0048) punya tabel untuk disasar.
 create table budget_plans (id uuid primary key default gen_random_uuid(), event_id text, name text);
+-- profiles ada sejak 0001 juga. Ada di sini supaya catch-up kolom is_shared
+-- dan avatar (0052) punya tabel untuk disasar; tanpanya seluruh blok ini
+-- gagal, bukan cuma satu asersinya.
+create table profiles (id uuid primary key default gen_random_uuid(), name text);
+-- tasks ada sejak 0001 dan task_refs dibuat oleh catch-up 0037 sendiri; di sini
+-- supaya catch-up kolom evaluation & link_lost_at (0053) punya tabel sasaran.
+create table tasks (id uuid primary key default gen_random_uuid(), event_id text, title text);
+create table task_refs (id uuid primary key default gen_random_uuid(), task_id uuid, url text);
 insert into events (id) values ('demo-ov');
 insert into rundown (event_id, activity) values ('demo-ov','Registrasi');
 insert into prospects (event_id, org_name) values ('demo-ov','HIMA X');
@@ -769,12 +787,16 @@ console.log("\ntask_refs - rujukan tugas");
   )).rows.length;
   ok("TIDAK ada unique index pada task_refs.link_id (beda dari task_links)", uniq === 0);
 
-  // Deleting the Super Link entry must not delete the reference: the URL text
-  // survives so the task still shows where it pointed.
+  // Deleting the Super Link entry must not delete the reference: the entry's
+  // LAST address survives (copied in by the 0053 trigger, since the reference
+  // reads the live URL and its own copy may be stale) and the row is flagged
+  // so the task can say its source is gone.
+  const lastUrl = (await db.query(`select url from links where id = ${LINK}`)).rows[0].url;
   await db.exec(`delete from links where id = ${LINK};`);
   const survived = Number((await db.query(
-    `select count(*) c from task_refs where url = 'https://ref.test' and link_id is null`)).rows[0].c);
-  ok("menghapus entri Super Link menyisakan rujukan (link_id jadi null)", survived === 2);
+    `select count(*) c from task_refs where id in (${REF_A}, ${REF_B}) and link_id is null
+       and url = '${lastUrl}' and link_lost_at is not null`)).rows[0].c);
+  ok("menghapus entri Super Link menyisakan rujukan (link_id null, alamat terakhir, ditandai)", survived === 2);
 }
 
 // ------------------------------------------------------------------
@@ -1793,6 +1815,213 @@ console.log("0050 - Kotak Masuk (siaran & penerima)");
   ok("menghapus siaran ikut menghapus penerimanya", orphans.rows[0].n === 0);
 
   await db.exec(`delete from broadcast_recipients; delete from broadcasts;`);
+}
+
+
+// ------------------------------------------------------------------
+// 0051: menghapus edisi ikut menghapus datanya.
+//
+// members, links, prospects dan budget_plans dulu ON DELETE SET NULL, dan
+// aplikasi membaca event_id NULL sebagai "milik semua edisi". Jadi menghapus
+// satu Ormawa Visit menumpahkan roster, prospek dan Super Link-nya ke setiap
+// edisi lain. Dua keadaan diuji: hasil akhir setup.sql, dan database LAMA yang
+// kuncinya masih SET NULL lalu diperbaiki oleh berkas migrasinya.
+// ------------------------------------------------------------------
+console.log("0051 - menghapus edisi ikut menghapus datanya");
+{
+  const seedEdition = (id) => db.exec(`
+    insert into events (id, code, title) values ('${id}', 'X', 'Hapus saya');
+    insert into members (event_id, name, nrp, type, year) values ('${id}', 'Anggota ${id}', '1', 'fungsionaris', 2024);
+    insert into links (event_id, name, url) values ('${id}', 'Tautan ${id}', 'https://z.test');
+    insert into prospects (event_id, org_name) values ('${id}', 'HIMA ${id}');
+    insert into budget_plans (name, event_id) values ('RAB ${id}', '${id}');`);
+  const leftovers = async (id) => {
+    const r = await db.query(`select
+      (select count(*) from members where name = 'Anggota ${id}')
+      + (select count(*) from links where name = 'Tautan ${id}')
+      + (select count(*) from prospects where org_name = 'HIMA ${id}')
+      + (select count(*) from budget_plans where name = 'RAB ${id}') as n`);
+    return Number(r.rows[0].n);
+  };
+
+  await seedEdition("ov-hapus-1");
+  await db.exec(`delete from events where id = 'ov-hapus-1';`);
+  ok("setup.sql: menghapus edisi tidak meninggalkan anggota/tautan/prospek/RAB tanpa edisi",
+    (await leftovers("ov-hapus-1")) === 0);
+
+  // Keadaan database produksi sebelum 0051: kunci asingnya masih SET NULL.
+  await db.exec(`
+    alter table members drop constraint members_event_id_fkey;
+    alter table members add constraint members_event_id_fkey
+      foreign key (event_id) references events(id) on delete set null;
+    alter table links drop constraint links_event_id_fkey;
+    alter table links add constraint links_event_id_fkey
+      foreign key (event_id) references events(id) on delete set null;`);
+  await seedEdition("ov-hapus-2");
+  await db.exec(`delete from events where id = 'ov-hapus-2';`);
+  ok("kondisi lama memang bocor (dua baris tertinggal dengan event_id NULL)",
+    (await leftovers("ov-hapus-2")) === 2);
+  await db.exec(`delete from members where name = 'Anggota ov-hapus-2';
+    delete from links where name = 'Tautan ov-hapus-2';`);
+
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0051_edition_delete_cascade.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  await seedEdition("ov-hapus-3");
+  await db.exec(`delete from events where id = 'ov-hapus-3';`);
+  ok("0051 memperbaiki database lama: data edisi ikut terhapus", (await leftovers("ov-hapus-3")) === 0);
+
+  const fks = await db.query(`select count(*)::int as n from pg_constraint
+    where contype = 'f' and confrelid = 'public.events'::regclass
+      and conrelid in ('public.members'::regclass, 'public.links'::regclass,
+                       'public.prospects'::regclass, 'public.budget_plans'::regclass)
+      and confdeltype <> 'c'`);
+  ok("tidak ada lagi kunci asing SET NULL ke events di keempat tabel itu", fks.rows[0].n === 0);
+}
+
+// ------------------------------------------------------------------
+// 0052: akun bersama + foto profil karakter.
+//
+// Mengubah kata sandi TIDAK lewat Server Action mana pun - browser memanggil
+// supabase.auth.updateUser() langsung dengan anon key yang publik. Jadi
+// menyembunyikan menunya di aplikasi tidak menahan siapa pun, dan satu-satunya
+// tempat yang benar-benar menolak adalah trigger di database. Itu yang diuji
+// di sini, dari kursi pemakainya.
+//
+// Yang kedua: pemilik akun boleh mengganti nama dan avatarnya sendiri, tapi
+// tidak boleh menyentuh `role` maupun `is_shared`. Kalau `is_shared` bisa
+// dimatikan sendiri, seluruh perlindungan di atas tinggal dilewati dengan satu
+// UPDATE.
+// ------------------------------------------------------------------
+console.log("0052 - akun bersama & foto profil");
+{
+  await db.exec(`update profiles set is_shared = true where id = '${U.staff}';`);
+
+  // Dijalankan SEBAGAI DATABASE, bukan lewat `as(U.staff)`. Itu bukan
+  // kemudahan: mengganti kata sandi tidak dikerjakan PostgREST melainkan
+  // GoTrue, lewat koneksi databasenya sendiri tanpa klaim JWT. Mengujinya
+  // dengan sesi pengguna akan lulus karena `authenticated` memang tidak punya
+  // GRANT di auth.users - lulus tanpa pernah menyentuh trigger-nya.
+  const tryUpdate = async (sql) => {
+    try { await db.exec(sql); return null; } catch (e) { return e.message; }
+  };
+
+  const blocked = await tryUpdate(
+    `update auth.users set encrypted_password = 'baru' where id = '${U.staff}';`);
+  ok("kata sandi akun bersama DITOLAK, siapa pun yang mengubahnya", !!blocked);
+  if (blocked) console.log(`      -> ${blocked.slice(0, 90)}`);
+
+  // Akun biasa tidak tersentuh aturan itu.
+  const normal = await tryUpdate(
+    `update auth.users set encrypted_password = 'baru' where id = '${U.intern}';`);
+  ok("akun biasa tetap bisa berganti kata sandi", normal === null);
+
+  // Satu-satunya pintu keluar, dan harus disebut secara sadar. Tanpa ini,
+  // "tidak bisa diganti" berarti juga "tidak bisa dirotasi selamanya".
+  const rotated = await tryUpdate(`
+    begin;
+    set local app.rotate_shared_password = 'on';
+    update auth.users set encrypted_password = 'rotasi' where id = '${U.staff}';
+    commit;`);
+  ok("admin bisa merotasinya lewat pintu keluar yang disengaja", rotated === null);
+
+  // Dan pintunya menutup lagi sesudahnya: `set local` hanya berlaku di dalam
+  // transaksinya sendiri.
+  const afterRotate = await tryUpdate(
+    `update auth.users set encrypted_password = 'lagi' where id = '${U.staff}';`);
+  ok("pintu keluarnya tidak menganga setelah transaksinya selesai", !!afterRotate);
+
+  await check("pemilik akun boleh mengganti nama & avatarnya", U.staff, false,
+    `update profiles set name = 'Nama Baru', avatar = 'panda' where id = '${U.staff}'`, "allow");
+
+  const unshare = await as(U.staff, false,
+    `update profiles set is_shared = false where id = '${U.staff}'`);
+  ok("pemilik akun TIDAK bisa mencabut tanda akun bersama", !!unshare.error);
+
+  const promote = await as(U.staff, false,
+    `update profiles set role = 'admin' where id = '${U.staff}'`);
+  ok("pemilik akun TIDAK bisa menaikkan perannya sendiri", !!promote.error);
+
+  await check("akun lain tidak bisa mengubah profil orang", U.intern, false,
+    `update profiles set name = 'Dibajak' where id = '${U.staff}'`, "deny");
+
+  await db.exec(`update profiles set is_shared = false, avatar = null where id = '${U.staff}';`);
+}
+
+// ------------------------------------------------------------------
+// 0053: referensi yang sumber Super Link-nya dihapus, dan hasil tugas yang
+// wajib terbit.
+//
+// Tugas A merujuk entri Super Link yang diterbitkan tugas B. Kalau B
+// menghapus tautan hasilnya, entrinya ikut terhapus dan kunci asing SET NULL
+// mengosongkan link_id di referensi A tanpa jejak. Trigger BEFORE DELETE harus
+// menyalin alamat & judul terakhirnya dan mencap link_lost_at SEBELUM itu,
+// termasuk ketika tugas A berada di edisi yang DIARSIPKAN (penghapusnya tidak
+// boleh menulis ke sana, jadi trigger-nya security definer).
+//
+// Fixture sendiri: blok 0043 di atas mengosongkan seluruh database.
+// ------------------------------------------------------------------
+console.log("0053 - referensi yang sumbernya dihapus & hasil tugas wajib terbit");
+{
+  const TB = "cccc0053-0000-0000-0000-000000000001"; // pemilik entri (edisi terbuka)
+  const TA = "cccc0053-0000-0000-0000-000000000002"; // perujuk (edisi diarsipkan)
+  const LK = "dddd0053-0000-0000-0000-000000000001";
+  await db.exec(`
+    insert into events (id, code, title, locked) values
+      ('ov-ref-open', 'REF1', 'Edisi Ref Terbuka', false),
+      ('ov-ref-lock', 'REF2', 'Edisi Ref Arsip', false)
+      on conflict (id) do nothing;
+    insert into tasks (id, event_id, division, title) values
+      ('${TB}', 'ov-ref-open', 'EVENT', 'Susun proposal B'),
+      ('${TA}', 'ov-ref-lock', 'EVENT', 'Tugas perujuk A');
+    insert into links (id, event_id, division, section, name, url, source) values
+      ('${LK}', 'ov-ref-open', 'EVENT', 'Hasil Tugas', 'Proposal B', 'https://b.example/v2', 'task');
+    insert into task_links (task_id, url, label, in_super_link, link_id) values
+      ('${TB}', 'https://b.example/v2', 'Proposal B', true, '${LK}');
+    insert into task_refs (task_id, url, label, link_id, "order") values
+      ('${TA}', 'https://b.example/v1', '', '${LK}', 0),
+      ('${TA}', 'https://b.example/v1', 'Nama sendiri', '${LK}', 1);
+    update events set locked = true where id = 'ov-ref-lock';
+  `);
+
+  await check("koordinator menghapus entri Super Link milik tugas B", U.coord, false,
+    `delete from links where id = '${LK}'`, "allow");
+
+  const refs = (await db.query(
+    `select label, url, link_id, link_lost_at from task_refs where task_id = '${TA}' order by "order"`)).rows;
+  ok("referensi tugas A tidak ikut hilang", refs.length === 2);
+  ok("link_id-nya kosong (kunci asing SET NULL tetap bekerja)", refs.every((r) => r.link_id === null));
+  ok("alamat TERBARU entrinya disalin, bukan salinan lama", refs.every((r) => r.url === "https://b.example/v2"));
+  ok("referensi yang mengikuti judul entri mewarisi judul terakhirnya", refs[0]?.label === "Proposal B");
+  ok("judul yang diubah sendiri tidak ditimpa", refs[1]?.label === "Nama sendiri");
+  ok("keduanya dicap link_lost_at, termasuk di edisi yang diarsipkan", refs.every((r) => r.link_lost_at !== null));
+
+  // Backfill: tautan hasil lama yang belum terbit dibuatkan entrinya.
+  await db.exec(`
+    update events set locked = false where id = 'ov-ref-lock';
+    insert into task_links (task_id, url, label, in_super_link, link_id) values
+      ('${TB}', 'https://b.example/lampiran', '', false, null);
+  `);
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0053_task_evaluation_and_ref_lifecycle.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  const pub = (await db.query(`
+    select tl.label, tl.in_super_link, l.name, l.source, l.section
+      from task_links tl left join links l on l.id = tl.link_id
+     where tl.task_id = '${TB}' and tl.url = 'https://b.example/lampiran'`)).rows[0];
+  ok("0053 menerbitkan tautan hasil lama ke Super Link", !!pub?.name && pub.in_super_link === true);
+  ok("tautan tanpa judul diberi judul tugasnya", pub?.label === "Susun proposal B" && pub?.name === "Susun proposal B");
+  ok("entrinya dimiliki tugas (source 'task', kelompok Hasil Tugas)", pub?.source === "task" && pub?.section === "Hasil Tugas");
+  const again = (await db.query(`select count(*)::int as n from links where url = 'https://b.example/lampiran'`)).rows[0].n;
+  for (const stmt of splitStatements(readFileSync(join(__dirname, "../supabase/migrations/0053_task_evaluation_and_ref_lifecycle.sql"), "utf8"))) {
+    await db.exec(stmt);
+  }
+  const after = (await db.query(`select count(*)::int as n from links where url = 'https://b.example/lampiran'`)).rows[0].n;
+  ok("menjalankan 0053 dua kali tidak menggandakan entri", again === 1 && after === 1);
+
+  await db.exec(`
+    delete from events where id in ('ov-ref-open', 'ov-ref-lock');
+  `);
 }
 
 

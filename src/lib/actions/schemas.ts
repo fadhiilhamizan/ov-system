@@ -119,6 +119,7 @@ export const createTaskSchema = z.object({
   start_date: optionalDate,
   end_date: optionalDate,
   notes: optionalText(),
+  evaluation: optionalText(),
   result: optionalText(),
   status: taskStatus.optional(),
 });
@@ -133,6 +134,7 @@ export const updateTaskSchema = z
     start_date: optionalDate,
     end_date: optionalDate,
     notes: z.string().trim().max(2000),
+    evaluation: z.string().trim().max(2000),
     result: z.string().trim().max(2000),
     status: taskStatus,
   })
@@ -156,13 +158,22 @@ export const bulkTaskFieldsSchema = z
   })
   .partial();
 
-/** One result link on a task. `url` must be a real http(s) link; `label` is the
- *  name used for its Super Link entry when published. */
+/**
+ * One result link on a task. `url` must be a real http(s) link and `label` is
+ * the name of its Super Link entry.
+ *
+ * Every task result is published to Super Link: that is where other tasks go
+ * looking for last edition's proposal, and a result nobody can find from there
+ * was the gap. So `in_super_link` is forced to true whatever the client sends
+ * (the tick box is gone from the form), and the name is REQUIRED, because the
+ * old fallback to the task title filled Super Link with entries that all read
+ * like job descriptions.
+ */
 export const taskLinkSchema = z.object({
   id: z.string().trim().max(128).optional(),
   url: urlSchema,
-  label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
-  in_super_link: z.boolean().optional().transform((v) => !!v),
+  label: nonEmpty("Judul tautan hasil", 200),
+  in_super_link: z.unknown().optional().transform(() => true as const),
 });
 export const taskLinksSchema = z
   .array(taskLinkSchema)
@@ -194,6 +205,7 @@ export const taskRefSchema = z.object({
   url: urlSchema,
   label: z.string().trim().max(200).optional().transform((v) => v ?? ""),
   link_id: z.string().trim().max(128).nullish().transform((v) => v || null),
+  link_lost: z.boolean().optional().transform((v) => !!v),
 });
 export const taskRefsSchema = z
   .array(taskRefSchema)
@@ -235,6 +247,30 @@ export const startTaskCommentSchema = z.object({
 export const replyTaskCommentSchema = z.object({
   parent_id: idSchema,
   body: taskCommentBodySchema,
+});
+
+// ---------------- My account (0051) ----------------
+
+/**
+ * The bits of an account its owner may edit.
+ *
+ * Deliberately short. `role` is decided by an admin through the role-request
+ * flow, `email` is an auth credential that needs a confirmation round trip, and
+ * `is_shared` is what stops somebody taking a shared login private - none of
+ * them belong in a form the account fills in about itself. The database
+ * enforces the same list through a column GRANT, so an extra key here could
+ * not widen it anyway.
+ *
+ * `avatar` accepts an empty string as "back to my initials"; the enum is
+ * checked against the real character list so a forged key cannot be stored.
+ */
+export const myProfileSchema = z.object({
+  name: nonEmpty("Nama", 80),
+  avatar: z
+    .enum(["rubah", "panda", "burung", "kucing", "beruang"])
+    .or(z.literal(""))
+    .nullish()
+    .transform((v) => v || null),
 });
 
 // ---------------- Inbox / broadcasts (0050) ----------------
@@ -558,21 +594,44 @@ export const rundownSchema = z.object({
   merges: z.record(z.string().max(128), z.number().int().min(1).max(200)).optional(),
 });
 
+/** A client-generated row id (crypto.randomUUID), so a new row can be shown
+ *  and edited before its insert has come back. */
+export const clientUuidSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID baris tidak valid.");
+
 /**
- * ONE division's cell on a rundown row.
+ * A batch of inline rundown edits, flushed together by the table after a pause.
  *
- * Its own schema because `division_jobs` is a jsonb blob and the table writes
- * it a cell at a time. Sending the whole object from the browser meant the
+ * `division_jobs` here is PARTIAL: only the division keys the person changed.
+ * It is a jsonb blob, and sending the whole object from the browser meant the
  * payload was built from whatever props React had a moment ago, so editing two
  * divisions in the same row in quick succession silently reverted the first.
- * The caller names the key it is changing and nothing else; the repo merges it
- * onto the value that is actually in the database. Caps mirror `rundownSchema`.
+ * The repo merges these keys onto the value that is actually in the database.
+ * Caps mirror `rundownSchema`.
  */
-export const rundownDivisionJobSchema = z.object({
-  division: nonEmpty("Divisi", 128),
-  value: z.string().trim().max(1000, "Teks terlalu panjang (maks. 1000 karakter).")
-    .optional().transform((v) => v ?? ""),
-});
+export const rundownChangesSchema = z
+  .array(
+    z.object({
+      id: idSchema,
+      patch: rundownSchema
+        .pick({
+          time_start: true, time_end: true, duration: true, activity: true,
+          keterangan: true, mc: true, operator: true, merges: true,
+        })
+        .extend({
+          division_jobs: z
+            .record(
+              z.string().trim().min(1).max(128),
+              z.string().trim().max(1000, "Teks terlalu panjang (maks. 1000 karakter)."),
+            )
+            .optional(),
+        }),
+    }),
+  )
+  .min(1)
+  .max(500, "Terlalu banyak perubahan sekaligus.");
 
 // ---------------- Jobs (Hari-H) ----------------
 export const jobSchema = z.object({

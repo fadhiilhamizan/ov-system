@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import type { LinkItem, TaskLink, TaskRef } from "@/lib/types";
+import type { TaskLink, TaskRef } from "@/lib/types";
+import type { SuperLinkOption } from "@/lib/super-link";
 
 /**
  * Per-page link data for tasks, provided once so the dialog and the table cells
@@ -10,6 +11,8 @@ import type { LinkItem, TaskLink, TaskRef } from "@/lib/types";
  *   links     - a task's RESULT links, published TO Super Link.
  *   refs      - a task's REFERENCES, pointing AT Super Link or anywhere else.
  *   superLink - the Super Link directory itself, used by the reference picker.
+ *   refCounts - how many task references point at each Super Link entry, so a
+ *               result link can warn that other tasks read from it.
  *
  * `refs` is deliberately `undefined` when a page does not fetch it, NOT an
  * empty object. "This task has no references" and "this page never asked for
@@ -22,7 +25,8 @@ import type { LinkItem, TaskLink, TaskRef } from "@/lib/types";
 interface TaskLinkCtx {
   links: Record<string, TaskLink[]>;
   refs?: Record<string, TaskRef[]>;
-  superLink: LinkItem[];
+  superLink: SuperLinkOption[];
+  refCounts: Record<string, number>;
 }
 
 /**
@@ -34,24 +38,27 @@ interface TaskLinkCtx {
  * the whole table - so the one prop a page is allowed to omit was quietly
  * costing the most.
  */
-const NO_LINKS: LinkItem[] = [];
+const NO_LINKS: SuperLinkOption[] = [];
+const NO_COUNTS: Record<string, number> = {};
 
-const Ctx = React.createContext<TaskLinkCtx>({ links: {}, superLink: NO_LINKS });
+const Ctx = React.createContext<TaskLinkCtx>({ links: {}, superLink: NO_LINKS, refCounts: NO_COUNTS });
 
 export function TaskLinksProvider({
   value,
   refs,
   superLink = NO_LINKS,
+  refCounts = NO_COUNTS,
   children,
 }: {
   value: Record<string, TaskLink[]>;
   refs?: Record<string, TaskRef[]>;
-  superLink?: LinkItem[];
+  superLink?: SuperLinkOption[];
+  refCounts?: Record<string, number>;
   children: React.ReactNode;
 }) {
   const ctx = React.useMemo(
-    () => ({ links: value, refs, superLink }),
-    [value, refs, superLink],
+    () => ({ links: value, refs, superLink, refCounts }),
+    [value, refs, superLink, refCounts],
   );
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }
@@ -73,6 +80,11 @@ export function useTaskRefs(taskId?: string): TaskRef[] | undefined {
 }
 
 /** The whole Super Link directory, for the reference picker. */
-export function useSuperLinks(): LinkItem[] {
+export function useSuperLinks(): SuperLinkOption[] {
   return React.useContext(Ctx).superLink;
+}
+
+/** Number of task references pointing at each Super Link entry, by link id. */
+export function useLinkRefCounts(): Record<string, number> {
+  return React.useContext(Ctx).refCounts;
 }

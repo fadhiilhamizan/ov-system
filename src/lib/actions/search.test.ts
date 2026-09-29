@@ -17,7 +17,7 @@ vi.mock("@/lib/session", () => ({
 const task = (over: Partial<Task> = {}): Task => ({
   id: "t1", event_id: "ov1", division: "EVENT", no: "1", pic: "",
   title: "Susun proposal", start_date: null, start_raw: "", end_date: null,
-  end_raw: "", notes: "", result: "", status: "todo", ...over,
+  end_raw: "", notes: "", evaluation: "", result: "", status: "todo", ...over,
 });
 
 const repo = {

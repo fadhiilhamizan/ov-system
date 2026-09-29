@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { memberDivisions, primaryDivision } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 type SortCol = "name" | "nrp" | "division" | "type" | "year";
 
@@ -146,6 +147,7 @@ export function MembersView({
               picked={type}
               onChange={setType}
             />
+            {canManageMembers && <ImportXlsxButton module="members" />}
             {canManageMembers && (
               <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
                 <DialogTrigger asChild>

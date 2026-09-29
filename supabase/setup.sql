@@ -117,8 +117,16 @@ create table if not exists profiles (
   division text,
   event_id text references events(id) on delete set null,
   avatar_color text,
+  -- 0052: akun yang sengaja dipakai bersama banyak orang (coordinator@,
+  -- staff@, intern@). Kata sandinya tidak bisa diubah dari sesi akun itu
+  -- sendiri; lihat trigger block_shared_account_password di bawah.
+  is_shared boolean not null default false,
+  -- 0052: kunci karakter foto profil. NULL = pakai inisial nama.
+  avatar text,
   created_at timestamptz not null default now()
 );
+alter table profiles add column if not exists is_shared boolean not null default false;
+alter table profiles add column if not exists avatar text;
 -- Ditinggalkan sejak 0028: peran bersifat global, tidak terikat divisi/edisi.
 -- Kolomnya dibiarkan ada (tidak dihapus) supaya migrasi ini non-destruktif.
 alter table profiles add column if not exists event_id text references events(id) on delete set null;
@@ -143,7 +151,7 @@ create index if not exists divisions_event_idx on divisions(event_id);
 -- (= divisions[1]) yang dipertahankan untuk pembaca lama.
 create table if not exists members (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   name text not null,
   nickname text,
   nrp text,
@@ -152,7 +160,7 @@ create table if not exists members (
   division text,
   divisions text[] not null default '{}'
 );
-alter table members add column if not exists event_id text references events(id) on delete set null;
+alter table members add column if not exists event_id text references events(id) on delete cascade;
 alter table members add column if not exists divisions text[] not null default '{}';
 create index if not exists members_event_idx on members(event_id);
 create index if not exists members_divisions_idx on members using gin (divisions);
@@ -177,6 +185,8 @@ create table if not exists tasks (
 );
 -- ID warisan dari spreadsheet, dibuang di 0008.
 alter table tasks drop column if exists source_id;
+-- 0053: kolom Evaluasi di Work Breakdown (pelajaran dari OV sebelumnya/sekarang).
+alter table tasks add column if not exists evaluation text default '';
 -- Sejak 0018 sebuah key divisi boleh berulang antar edisi, jadi tasks.division
 -- bukan lagi foreign key - relasinya diselesaikan di aplikasi via (event_id, key).
 alter table tasks drop constraint if exists tasks_division_fkey;
@@ -188,7 +198,7 @@ create index if not exists tasks_status_idx on tasks(status);
 -- 2.6 links (Super Link) -------------------------------------------
 create table if not exists links (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   section text default '',
   division text default '',
   name text not null,
@@ -196,7 +206,7 @@ create table if not exists links (
   note text default '',
   source text default 'manual'
 );
-alter table links add column if not exists event_id text references events(id) on delete set null;
+alter table links add column if not exists event_id text references events(id) on delete cascade;
 create index if not exists links_event_idx on links(event_id);
 -- Setiap entri Super Link wajib punya URL sungguhan.
 alter table links drop constraint if exists links_url_required;
@@ -234,6 +244,9 @@ create table if not exists task_refs (
 );
 create index if not exists task_refs_task_idx on task_refs(task_id);
 create index if not exists task_refs_link_idx on task_refs(link_id);
+-- 0053: terisi saat entri Super Link yang dirujuk DIHAPUS (lihat trigger
+-- links_release_refs). Alamat & judul terakhir entrinya disalin ke baris ini.
+alter table task_refs add column if not exists link_lost_at timestamptz;
 
 -- 2.7c task_comments (0049): catatan/komentar per tugas di Work Breakdown.
 -- parent_id null = komentar inisiasi (akar thread); terisi = balasan atas
@@ -265,7 +278,7 @@ create index if not exists task_comments_open_idx
 -- 2.8 prospects (Reach & Offer) ------------------------------------
 create table if not exists prospects (
   id uuid primary key default gen_random_uuid(),
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   batch text default '',
   no text,
   date_text text default '',
@@ -283,7 +296,7 @@ create table if not exists prospects (
   is_primary boolean not null default false,
   source text default 'manual'
 );
-alter table prospects add column if not exists event_id text references events(id) on delete set null;
+alter table prospects add column if not exists event_id text references events(id) on delete cascade;
 alter table prospects add column if not exists mode text;
 alter table prospects add column if not exists is_primary boolean not null default false;
 -- 0036: catatan per prospek. Kolom `link*` di bawahnya WARISAN sejak 0038 -
@@ -324,7 +337,7 @@ create unique index if not exists prospect_links_link_uniq
 create table if not exists budget_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  event_id text references events(id) on delete set null,
+  event_id text references events(id) on delete cascade,
   -- Rencana UTAMA edisi ini (0048). RAB Minimal dan RAB Maksimal adalah dua
   -- skenario untuk uang yang sama, jadi Dashboard membaca satu rencana saja,
   -- bukan jumlah semuanya. Pola yang sama dengan prospects.is_primary (0022).
@@ -384,6 +397,45 @@ update budget_plans b
   from ranked r
  where b.id = r.id
    and r.rn = 1;
+
+-- 2.9b Menghapus edisi ikut menghapus datanya (0051) ---------------
+-- members, links, prospects dan budget_plans dulu ON DELETE SET NULL, dan
+-- aplikasi membaca event_id NULL sebagai "milik semua edisi": menghapus satu
+-- Ormawa Visit menumpahkan roster, prospek dan Super Link-nya ke SETIAP edisi
+-- lain. Definisi tabel di atas sudah CASCADE untuk database baru; blok ini
+-- memperbaiki database lama yang tabelnya sudah ada (create table if not
+-- exists tidak menyentuh kunci asing yang sudah terpasang).
+do $do$
+declare
+  t text;
+  c text;
+begin
+  foreach t in array array['members', 'links', 'prospects', 'budget_plans'] loop
+    for c in
+      select con.conname
+        from pg_constraint con
+       where con.conrelid = format('public.%I', t)::regclass
+         and con.contype = 'f'
+         and con.confrelid = 'public.events'::regclass
+         and con.confdeltype <> 'c'
+    loop
+      execute format('alter table public.%I drop constraint %I', t, c);
+    end loop;
+
+    if not exists (
+      select 1
+        from pg_constraint con
+       where con.conrelid = format('public.%I', t)::regclass
+         and con.contype = 'f'
+         and con.confrelid = 'public.events'::regclass
+    ) then
+      execute format(
+        'alter table public.%I add constraint %I foreign key (event_id) references public.events(id) on delete cascade',
+        t, t || '_event_id_fkey');
+    end if;
+  end loop;
+end
+$do$;
 
 -- 2.10 rundown -----------------------------------------------------
 -- job_lo … job_opr adalah kolom warisan: tidak lagi ditulis, tapi masih dibaca
@@ -898,6 +950,55 @@ begin new.updated_at = now(); return new; end; $fn$;
 -- ------------------------------------------------------------------
 -- 4. Trigger
 -- ------------------------------------------------------------------
+-- 0052: tolak perubahan kata sandi pada akun bersama, tapi HANYA kalau
+-- perubahannya datang dari sesi akun itu sendiri. Admin tetap bisa merotasinya
+-- dari Dashboard/SQL Editor, di mana auth.uid() NULL. Mengubah kata sandi tidak
+-- lewat Server Action mana pun (browser memanggil supabase.auth.updateUser
+-- langsung dengan anon key yang publik), jadi database adalah satu-satunya
+-- tempat yang benar-benar bisa menolaknya.
+create or replace function block_shared_account_password()
+returns trigger
+language plpgsql security definer set search_path = public as $fn$
+begin
+  if new.encrypted_password is distinct from old.encrypted_password
+     and coalesce(current_setting('app.rotate_shared_password', true), '') <> 'on'
+     and exists (select 1 from public.profiles p where p.id = new.id and p.is_shared)
+  then
+    raise exception
+      'Akun ini dipakai bersama, jadi kata sandinya tidak bisa diganti. Rotasi hanya lewat SQL, lihat migrasi 0052.'
+      using errcode = '42501';
+  end if;
+  return new;
+end; $fn$;
+
+drop trigger if exists on_shared_account_password_change on auth.users;
+create trigger on_shared_account_password_change
+  before update on auth.users
+  for each row execute function block_shared_account_password();
+
+-- 0053: entri Super Link yang dirujuk tugas lain dihapus. BEFORE DELETE, jadi
+-- jalan sebelum kunci asing SET NULL mengosongkan link_id: salin alamat &
+-- judul terakhirnya ke referensi dan cap link_lost_at supaya aplikasi bisa
+-- menandainya. SECURITY DEFINER karena yang menghapus belum tentu boleh
+-- menulis referensi tugas lain (mis. di edisi yang diarsipkan).
+create or replace function release_link_refs()
+returns trigger
+language plpgsql security definer set search_path = public as $fn$
+begin
+  update public.task_refs
+     set url = case when old.url ~* '^https?://' then old.url else url end,
+         label = case when coalesce(btrim(label), '') = '' then coalesce(old.name, '') else label end,
+         link_lost_at = coalesce(link_lost_at, now())
+   where link_id = old.id;
+  return old;
+end; $fn$;
+revoke all on function release_link_refs() from public;
+
+drop trigger if exists links_release_refs on links;
+create trigger links_release_refs
+  before delete on links
+  for each row execute function release_link_refs();
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users for each row execute function handle_new_user();
@@ -1239,8 +1340,9 @@ create policy "profiles_update_self" on profiles for update to authenticated
   using (id = auth.uid() and not is_anon())
   with check (
     id = auth.uid()
-    and role     is not distinct from (select p.role     from profiles p where p.id = auth.uid())
-    and division is not distinct from (select p.division from profiles p where p.id = auth.uid())
+    and role      is not distinct from (select p.role      from profiles p where p.id = auth.uid())
+    and division  is not distinct from (select p.division  from profiles p where p.id = auth.uid())
+    and is_shared is not distinct from (select p.is_shared from profiles p where p.id = auth.uid())
   );
 
 -- 5.5 role_requests ------------------------------------------------
@@ -1288,7 +1390,9 @@ end $do$;
 --    GRANT. Inilah perbaikan sesungguhnya untuk celah angkat-diri-jadi-admin.
 -- ------------------------------------------------------------------
 revoke update on public.profiles from authenticated, anon;
-grant update (name, avatar_color) on public.profiles to authenticated;
+-- `avatar` ikut sejak 0052; `is_shared` sengaja TIDAK - kalau ikut, pemakai
+-- akun bersama tinggal mematikan tandanya sendiri lalu mengganti kata sandinya.
+grant update (name, avatar_color, avatar) on public.profiles to authenticated;
 
 -- broadcast_recipients (0050): penerima hanya boleh menyentuh `read_at`, tidak
 -- boleh memindahkan pesan ke akun lain atau menempelkan dirinya ke siaran yang

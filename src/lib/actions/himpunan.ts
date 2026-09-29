@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidateEntities } from "./revalidate";
 import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getEvent } from "@/lib/data/repo";
@@ -50,7 +50,7 @@ export async function createFgdPlanAction(input: Partial<FgdPlan>): Promise<Resu
   try {
     await createFgdPlan(v.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -64,7 +64,7 @@ export async function updateFgdPlanAction(id: string, patch: Partial<FgdPlan>): 
   try {
     await updateFgdPlan(idv.data, v.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -76,7 +76,7 @@ export async function deleteFgdPlanAction(id: string): Promise<Result> {
   try {
     await deleteFgdPlan(idv.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -88,7 +88,7 @@ export async function createFgdRowAction(planId: string): Promise<Result> {
   try {
     await createFgdRow(idv.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -105,7 +105,7 @@ export async function updateFgdRowAction(
   try {
     await updateFgdRow(idv.data, v.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -117,7 +117,7 @@ export async function deleteFgdRowAction(id: string): Promise<Result> {
   try {
     await deleteFgdRow(idv.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -137,7 +137,7 @@ export async function reorderFgdRowsAction(orderedIds: string[]): Promise<Result
   try {
     await reorderFgdRows(clean);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -170,7 +170,7 @@ export async function createCompareSubjectAction(
     }
     return errMsg(e);
   }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -182,7 +182,7 @@ export async function deleteCompareSubjectAction(id: string): Promise<Result> {
   try {
     await deleteCompareSubject(idv.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -213,7 +213,7 @@ export async function createCompareEntryAction(input: Partial<CompareEntry>): Pr
       minus: v.data.minus ?? "",
     });
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -230,7 +230,7 @@ export async function updateCompareEntryAction(
   try {
     await updateCompareEntry(idv.data, v.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }
 
@@ -242,6 +242,6 @@ export async function deleteCompareEntryAction(id: string): Promise<Result> {
   try {
     await deleteCompareEntry(idv.data);
   } catch (e) { return errMsg(e); }
-  revalidatePath("/himpunan");
+  revalidateEntities("himpunan");
   return { ok: true };
 }

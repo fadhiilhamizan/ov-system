@@ -35,7 +35,7 @@ const user = (over: Partial<AppUser> = {}): AppUser => ({
 const task = (over: Partial<Task> = {}): Task => ({
   id: "t1", event_id: "ov1", division: "EVENT", no: "1", pic: "Budi",
   title: "Susun proposal", start_date: null, start_raw: "", end_date: null, end_raw: "",
-  notes: "", result: "", status: "todo", ...over,
+  notes: "", evaluation: "", result: "", status: "todo", ...over,
 });
 
 const comment = (over: Partial<TaskComment> = {}): TaskComment => ({

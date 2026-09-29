@@ -188,22 +188,31 @@ describe("idSchema", () => {
 });
 
 describe("taskLinksSchema (result links)", () => {
-  it("accepts valid links and defaults the publish flag", () => {
-    const r = parse(taskLinksSchema, [{ url: "https://a.com/x", label: " Proposal " }]);
+  it("accepts valid links and ALWAYS publishes them, whatever the client says", () => {
+    const r = parse(taskLinksSchema, [
+      { url: "https://a.com/x", label: " Proposal " },
+      { url: "https://a.com/y", label: "LPJ", in_super_link: false },
+    ]);
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.data[0].in_super_link).toBe(false);
+      expect(r.data.map((l) => l.in_super_link)).toEqual([true, true]);
       expect(r.data[0].label).toBe("Proposal");
     }
   });
+  it("requires a title (it is the Super Link entry's name)", () => {
+    const blank = parse(taskLinksSchema, [{ url: "https://a.com/x", label: "   " }]);
+    expect(blank.ok).toBe(false);
+    if (!blank.ok) expect(blank.error).toContain("Judul tautan hasil");
+    expect(parse(taskLinksSchema, [{ url: "https://a.com/x" }]).ok).toBe(false);
+  });
   it("rejects a non-http(s) link", () => {
-    expect(parse(taskLinksSchema, [{ url: "javascript:alert(1)" }]).ok).toBe(false);
-    expect(parse(taskLinksSchema, [{ url: "bukan-link" }]).ok).toBe(false);
+    expect(parse(taskLinksSchema, [{ url: "javascript:alert(1)", label: "X" }]).ok).toBe(false);
+    expect(parse(taskLinksSchema, [{ url: "bukan-link", label: "X" }]).ok).toBe(false);
   });
   it("rejects the same URL twice (would duplicate it in Super Link)", () => {
     const dup = parse(taskLinksSchema, [
-      { url: "https://a.com/x" },
-      { url: "https://a.com/x/" }, // trailing slash still counts as the same
+      { url: "https://a.com/x", label: "A" },
+      { url: "https://a.com/x/", label: "B" }, // trailing slash still counts as the same
     ]);
     expect(dup.ok).toBe(false);
   });

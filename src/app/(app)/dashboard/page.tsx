@@ -353,7 +353,7 @@ const QUICK_LINKS: {
   icon: React.ReactNode;
 }[] = [
   { moduleKey: "tasks", href: "/tasks", label: "Work Breakdown", sub: "Kelola tugas", color: "#6366f1", icon: <ListChecks /> },
-  { moduleKey: "divisions", href: "/divisions", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
+  { moduleKey: "divisions", href: "/members", label: "Divisi", sub: "Per divisi", color: "#10b981", icon: <Users /> },
   { moduleKey: "prospects", href: "/prospects", label: "Reach & Offer", sub: "Pipeline himpunan", color: "#f59e0b", icon: <Target /> },
   { moduleKey: "budget", href: "/budget", label: "Anggaran", sub: "RAB", color: "#0ea5e9", icon: <Wallet /> },
   { moduleKey: "rundown", href: "/rundown", label: "Rundown", sub: "Susunan acara", color: "#d946ef", icon: <CalendarClock /> },

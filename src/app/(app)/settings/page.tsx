@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Check, Minus, Sparkles, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink, Code2 } from "lucide-react";
+import { Check, Minus, Sparkles, ShieldCheck, Info, Cloud, MessageCircle, UserCircle, DatabaseBackup, History, FlaskConical, FileSpreadsheet, ExternalLink, Code2, Users } from "lucide-react";
 import { ARCHIVE_SHEETS } from "@/lib/archives";
 import { requireModule } from "@/lib/guard";
 import { can } from "@/lib/permissions";
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { EditAccountButton } from "@/components/auth/edit-account-dialog";
 import { BackupPanel } from "@/components/settings/backup-panel";
 import { ChangelogList } from "@/components/settings/changelog-list";
 import { DemoReset } from "@/components/settings/demo-reset";
@@ -102,14 +103,27 @@ export default async function SettingsPage() {
           <UserCircle className="size-4 text-primary" />
           <CardTitle>{t("Akun Saya")}</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center gap-3">
-          <Avatar name={user.name} color={user.avatarColor} size={44} />
-          <div className="min-w-0">
+        <CardContent className="flex flex-wrap items-center gap-3">
+          <Avatar name={user.name} color={user.avatarColor} character={user.avatar} size={44} />
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-muted-foreground">{user.email || t("Mode tamu")}</p>
           </div>
-          <Badge variant="outline" className="ml-auto shrink-0">{t(ROLE_META[user.role].label)}</Badge>
+          {user.isShared && (
+            <Badge variant="warning" className="shrink-0">
+              <Users className="size-3" /> {t("Akun bersama")}
+            </Badge>
+          )}
+          <Badge variant="outline" className="shrink-0">{t(ROLE_META[user.role].label)}</Badge>
+          {user.role !== "guest" && <EditAccountButton user={user} />}
         </CardContent>
+        {user.isShared && (
+          <CardContent className="pt-0">
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+              {t("Akun ini dipakai bersama banyak orang, jadi kata sandinya tidak bisa diubah dari dalam aplikasi. Hubungi admin kalau kata sandinya perlu diganti.")}
+            </p>
+          </CardContent>
+        )}
       </Card>
 
       {/* Backend status */}

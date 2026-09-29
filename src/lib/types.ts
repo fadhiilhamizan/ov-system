@@ -96,6 +96,10 @@ export interface Task {
   end_date: string | null;
   end_raw: string;
   notes: string;
+  /** Evaluasi (migration 0053): what went right or wrong with this task, in
+   *  the previous Ormawa Visit and/or this one. Copied along when the task is
+   *  cloned into a new edition, which is how last edition's lessons arrive. */
+  evaluation: string;
   result: string;
   status: TaskStatus;
 }
@@ -127,6 +131,10 @@ export interface TaskRef {
   url: string;
   label: string;
   link_id?: string | null;
+  /** Set when the Super Link entry this reference was picked from has since
+   *  been deleted (a database trigger records it, migration 0053). The URL and
+   *  name it had at that moment are kept in `url` / `label`. */
+  link_lost_at?: string | null;
   order: number;
 }
 
@@ -170,6 +178,9 @@ export interface TaskRefInput {
   url: string;
   label: string;
   link_id?: string | null;
+  /** Keep the "source deleted from Super Link" flag. Cleared as soon as the
+   *  user edits the URL or picks a replacement. */
+  link_lost?: boolean;
 }
 
 /** Shape the task form sends back; `id` is absent for newly-added rows. */
@@ -610,6 +621,20 @@ export interface AppUser {
   email: string;
   role: Role;
   avatarColor?: string;
+  /** Kunci karakter foto profil pilihannya. Kosong = pakai inisial namanya. */
+  avatar?: string | null;
+  /**
+   * Akun ini sengaja DIPAKAI BERSAMA banyak orang (coordinator@, staff@,
+   * intern@ dari default-accounts.sql).
+   *
+   * Dipakai untuk menandainya di layar dan menyembunyikan "Ubah Kata Sandi".
+   * Penegakan sebenarnya ada di database: mengubah kata sandi tidak lewat
+   * Server Action mana pun, browser memanggil Supabase langsung, jadi sebuah
+   * pemeriksaan di sini hanya menutup jalan yang sopan. Lihat trigger
+   * `block_shared_account_password` di migrasi 0052 - termasuk cara
+   * merotasinya, yang sengaja hanya bisa lewat SQL.
+   */
+  isShared?: boolean;
 }
 
 /**

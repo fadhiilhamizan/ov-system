@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import {
   createTask, deleteTask, getTask, updateTask, bulkUpdateTasks, bulkDeleteTasks,
-  syncTaskLinks, purgeTaskLinks, syncTaskRefs, getTasksByIds,
+  syncTaskLinks, purgeTaskLinks, syncTaskRefs, getTasksByIds, refreshTaskSuperLinks,
 } from "@/lib/data/repo";
 import type { AppUser, DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
 import {
@@ -22,11 +22,16 @@ export interface TaskInput {
   start_date?: string | null;
   end_date?: string | null;
   notes?: string;
+  evaluation?: string;
   result?: string;
   status?: TaskStatus;
 }
 
 type Result = { ok: true } | { ok: false; error: string };
+
+/** Task fields a published Super Link entry is built from (see syncTaskLinks). */
+const PUBLISHED_FROM = ["title", "division", "event_id"] as const;
+const touchesPublished = (patch: Partial<Task>) => PUBLISHED_FROM.some((k) => k in patch);
 
 const errMsg = (e: unknown) =>
   e instanceof Error ? `Gagal menyimpan: ${e.message}` : "Gagal menyimpan tugas.";
@@ -100,9 +105,14 @@ export async function updateTaskAction(
     if (blockedDest) return blockedDest;
   }
 
+  // Without the links payload the dialog did not run the sync, but a change
+  // to the title, division or edition still changes what the published Super
+  // Link entries should say.
+  const refresh = !lv && touchesPublished(v.data);
   try {
     await updateTask(idv.data, v.data);
     if (lv && lv.ok) await syncTaskLinks({ ...task, ...v.data }, lv.data);
+    else if (refresh) await refreshTaskSuperLinks([idv.data]);
     if (rv && rv.ok) await syncTaskRefs(idv.data, rv.data);
   } catch (e) {
     return { ok: false, error: errMsg(e) };
@@ -184,6 +194,9 @@ export async function bulkUpdateTaskFieldsAction(
   const allowed = tasks.map((t) => t.id);
   try {
     if (allowed.length) await bulkUpdateTasks(allowed, v.data);
+    // Re-filing tasks into another division moves their published results in
+    // Super Link along with them.
+    if (allowed.length && v.data.division) await refreshTaskSuperLinks(allowed);
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
@@ -228,6 +241,7 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
       start_date: task.start_date,
       end_date: task.end_date,
       notes: task.notes,
+      evaluation: task.evaluation,
       status: "todo",
     });
   } catch (e) {

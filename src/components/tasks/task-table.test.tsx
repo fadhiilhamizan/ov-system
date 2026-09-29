@@ -54,7 +54,7 @@ const events: OVEvent[] = [
 const task = (id: string, title: string): Task => ({
   id, event_id: "ov1", division: "EVENT", no: "1", pic: "Budi", title,
   start_date: null, start_raw: "", end_date: null, end_raw: "",
-  notes: "", result: "", status: "todo",
+  notes: "", evaluation: "", result: "", status: "todo",
 });
 
 const comment = (over: Partial<TaskComment> & { id: string; task_id: string }): TaskComment => ({

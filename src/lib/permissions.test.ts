@@ -23,6 +23,7 @@ function task(over: Partial<Task> = {}): Task {
     end_date: null,
     end_raw: "",
     notes: "",
+    evaluation: "",
     result: "",
     status: "todo",
     ...over,

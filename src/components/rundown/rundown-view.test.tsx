@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import type { Division, RundownItem } from "@/lib/types";
 
 // ============================================================
@@ -14,8 +14,7 @@ import type { Division, RundownItem } from "@/lib/types";
 // ============================================================
 
 const actions = vi.hoisted(() => ({
-  setRundownDivisionJobAction: vi.fn(async () => ({ ok: true as const })),
-  updateRundownAction: vi.fn(async () => ({ ok: true as const })),
+  saveRundownChangesAction: vi.fn(async (changes: unknown) => ({ ok: true as const, changes })),
   createRundownAction: vi.fn(async () => ({ ok: true as const })),
   deleteRundownAction: vi.fn(async () => ({ ok: true as const })),
   duplicateRundownAction: vi.fn(async () => ({ ok: true as const })),
@@ -24,6 +23,12 @@ vi.mock("@/lib/actions/schedule", () => actions);
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const { RundownView } = await import("./rundown-view");
+const { FLUSH_DELAY } = await import("./use-rundown-queue");
+
+/** Let the batch timer fire and the save chain run. */
+async function flushQueue() {
+  await act(async () => { await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 50); });
+}
 
 const DIVISIONS: Division[] = [
   { key: "LO", name: "Liaison Officer", short: "LO", color: "#6366f1", order: 1 },
@@ -50,6 +55,10 @@ function divisionCell(rowIndex: number, divIndex: number): HTMLTextAreaElement {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("RundownView", () => {
@@ -112,18 +121,67 @@ describe("RundownView", () => {
     );
 
     const eventCell = divisionCell(0, 1);
+    fireEvent.focus(eventCell);
     fireEvent.change(eventCell, { target: { value: "Siapkan panggung" } });
     fireEvent.blur(eventCell);
+    await flushQueue();
 
-    expect(actions.setRundownDivisionJobAction).toHaveBeenCalledTimes(1);
-    expect(actions.setRundownDivisionJobAction).toHaveBeenCalledWith(
-      "r1", "EVENT", "Siapkan panggung",
-    );
-    // The old payload shape must not come back through the generic update path.
-    expect(actions.updateRundownAction).not.toHaveBeenCalled();
+    expect(actions.saveRundownChangesAction).toHaveBeenCalledTimes(1);
+    // Only the EVENT key: the LO job must not be re-sent from stale props.
+    expect(actions.saveRundownChangesAction).toHaveBeenCalledWith([
+      { id: "r1", patch: { division_jobs: { EVENT: "Siapkan panggung" } } },
+    ]);
   });
 
-  it("does not save a cell that was focused and left unchanged", () => {
+  it("shows an edit at once and batches several cells into ONE save", async () => {
+    // The table used to make one round trip per cell, each followed by a
+    // revalidation, which is what made it feel stuck. Now edits are visible
+    // immediately and a pause sends them together.
+    render(<RundownView items={[row()]} divisions={DIVISIONS} eventId="ov1" canManage canDelete />);
+    const lo = divisionCell(0, 0);
+    fireEvent.focus(lo);
+    fireEvent.change(lo, { target: { value: "Jaga meja" } });
+    fireEvent.blur(lo);
+    const ev = divisionCell(0, 1);
+    fireEvent.focus(ev);
+    fireEvent.change(ev, { target: { value: "Panggung" } });
+    fireEvent.blur(ev);
+
+    expect(actions.saveRundownChangesAction).not.toHaveBeenCalled();
+    expect(divisionCell(0, 0).value).toBe("Jaga meja");
+    await flushQueue();
+    expect(actions.saveRundownChangesAction).toHaveBeenCalledTimes(1);
+    expect(actions.saveRundownChangesAction).toHaveBeenCalledWith([
+      { id: "r1", patch: { division_jobs: { LO: "Jaga meja", EVENT: "Panggung" } } },
+    ]);
+  });
+
+  it("does not reset a focused cell when fresh props arrive mid-typing", () => {
+    const { rerender } = render(
+      <RundownView items={[row()]} divisions={DIVISIONS} eventId="ov1" canManage canDelete />,
+    );
+    const cell = divisionCell(0, 0);
+    fireEvent.focus(cell);
+    fireEvent.change(cell, { target: { value: "Sedang diketik" } });
+    rerender(
+      <RundownView
+        items={[row({ division_jobs: { LO: "Dari server" } })]}
+        divisions={DIVISIONS}
+        eventId="ov1"
+        canManage
+        canDelete
+      />,
+    );
+    expect(divisionCell(0, 0).value).toBe("Sedang diketik");
+  });
+
+  it("adds a row immediately, before the server answers", () => {
+    render(<RundownView items={[row()]} divisions={DIVISIONS} eventId="ov1" canManage canDelete />);
+    fireEvent.click(screen.getByText("Tambah baris"));
+    expect(document.querySelectorAll("tbody tr")).toHaveLength(2);
+  });
+
+  it("does not save a cell that was focused and left unchanged", async () => {
     render(
       <RundownView
         items={[row({ division_jobs: { LO: "Jaga meja depan" } })]}
@@ -133,8 +191,10 @@ describe("RundownView", () => {
         canDelete
       />,
     );
+    fireEvent.focus(divisionCell(0, 0));
     fireEvent.blur(divisionCell(0, 0));
-    expect(actions.setRundownDivisionJobAction).not.toHaveBeenCalled();
+    await flushQueue();
+    expect(actions.saveRundownChangesAction).not.toHaveBeenCalled();
   });
 
   it("renders read-only cells with no inputs when the user cannot manage", () => {

@@ -22,6 +22,7 @@ import {
   picOptions, taskPicList,
 } from "@/lib/task-filters";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 type View = "table" | "kanban" | "timeline";
 
@@ -101,7 +102,7 @@ export function TasksView({
       if (openNotesOnly && openThreadCount(allComments?.[t.id]) === 0) return false;
       if (
         query &&
-        !`${t.title} ${t.pic} ${t.notes} ${t.result}`.toLowerCase().includes(query)
+        !`${t.title} ${t.pic} ${t.notes} ${t.evaluation ?? ""} ${t.result}`.toLowerCase().includes(query)
       )
         return false;
       return true;
@@ -240,6 +241,7 @@ export function TasksView({
               </button>
             ))}
           </div>
+          {can.manageTasks(user) && <ImportXlsxButton module="tasks" />}
           {can.manageTasks(user) && (
             <TaskFormDialog
               mode="create"

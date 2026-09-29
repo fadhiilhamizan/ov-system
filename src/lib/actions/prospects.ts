@@ -6,6 +6,7 @@ import {
   createProspect, deleteProspect, updateProspect, bulkDeleteProspects,
   getProspects, setPrimaryProspect, unsetPrimaryProspect, syncEventFromProspect, syncProspectLinks,
 } from "@/lib/data/repo";
+import { renameCompareSubjectFor } from "@/lib/data/himpunan-repo";
 import type { Prospect, ProspectLinkInput } from "@/lib/types";
 import { getActiveEvent } from "@/lib/session";
 import { prospectSchema, prospectUpdateSchema, prospectLinksSchema, idSchema, parse } from "./schemas";
@@ -63,13 +64,20 @@ export async function updateProspectAction(
   // with it, or ticking a prospect as primary would wipe its attachments.
   const lv = links ? parse(prospectLinksSchema, links) : null;
   if (lv && !lv.ok) return lv;
+  let renamedSubject = false;
   try {
     await updateProspect(idv.data, v.data);
     if (links) {
       const current = (await getProspects()).find((p) => p.id === idv.data);
       if (current && lv?.ok) await syncProspectLinks(current, lv.data);
     }
+    // The Compare card for this association (Menu Himpunan) carries a copy of
+    // its name; keep the copy in step while the prospect still exists.
+    if (v.data.org_name !== undefined) {
+      renamedSubject = await renameCompareSubjectFor(idv.data, v.data.org_name);
+    }
   } catch (e) { return errMsg(e); }
+  if (renamedSubject) revalidateEntities("himpunan");
   // Editing the primary prospect re-syncs the OV's partner/campus/location/mode.
   // That is a write to `events`, so the bust has to include it: the topbar
   // switcher and the dashboard's "Ringkasan Ormawa Visit" read the edition, and

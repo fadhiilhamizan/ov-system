@@ -94,8 +94,8 @@ export const PRIVACY: LegalDoc = {
       ],
       bullets: [
         {
-          id: "Data akun - nama, alamat email, dan warna avatar. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
-          en: "Account data - your name, email address, and avatar colour. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
+          id: "Data akun - nama tampilan, alamat email, warna avatar, dan pilihan karakter foto profil. Nama tampilan dan foto profil bisa kamu ubah sendiri kapan saja lewat menu akun. Jika kamu mendaftar lewat Google, kami menerima nama, alamat email, dan foto profil dari akun Google-mu. Kami tidak pernah menerima atau menyimpan kata sandi Google-mu.",
+          en: "Account data - your display name, email address, avatar colour, and chosen profile character. You can change your display name and profile picture yourself at any time from the account menu. If you sign up with Google, we receive your name, email address, and profile picture from your Google account. We never receive or store your Google password.",
         },
         {
           id: "Data keanggotaan - nama, nama panggilan, NRP, angkatan, divisi, dan status (fungsionaris atau intern) anggota kepanitiaan.",
@@ -209,6 +209,10 @@ export const PRIVACY: LegalDoc = {
         {
           id: "Salinan cadangan seluruh data dibuat otomatis secara berkala (setiap tiga hari) dan dapat juga dibuat manual oleh Admin sebelum tindakan berisiko. Cadangan disimpan di basis data yang sama dan hanya dapat diakses Admin.",
           en: "Backups of all data are created automatically on a regular schedule (every three days) and can also be made manually by an Admin before risky operations. Backups live in the same database and are accessible only to Admins.",
+        },
+        {
+          id: "File spreadsheet (.xlsx) yang kamu unggah lewat Import XLSX tidak disimpan. File itu hanya dibaca di memori server selama pemeriksaan berlangsung lalu dibuang; yang tersimpan hanyalah baris data yang kamu setujui untuk diimpor, sama seperti bila diketik manual.",
+          en: "Spreadsheet files (.xlsx) you upload through Import XLSX are not stored. The file is only read in the server's memory while it is being checked and is then discarded; the only thing saved is the rows you confirm for import, exactly as if they had been typed in by hand.",
         },
         {
           id: "Data program disimpan selama masih dibutuhkan sebagai arsip kepengurusan. Data akun disimpan selama akun masih aktif. Kamu dapat meminta penghapusan seperti dijelaskan di bagian 9.",

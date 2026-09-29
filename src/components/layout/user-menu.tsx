@@ -1,13 +1,16 @@
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronsUpDown, LogOut, Loader2, UserRoundCheck, KeyRound, TerminalSquare } from "lucide-react";
+import {
+  ChevronsUpDown, LogOut, Loader2, UserRoundCheck, KeyRound, TerminalSquare, UserCog, Users,
+} from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { exitGuestMode } from "@/lib/actions/session";
 import { ROLE_META } from "@/lib/constants";
 import { RoleRequestDialog } from "@/components/roles/role-request-dialog";
 import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
+import { EditAccountDialog } from "@/components/auth/edit-account-dialog";
 import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -38,6 +41,7 @@ export function UserMenu({
   const [pending, start] = React.useTransition();
   const [requestOpen, setRequestOpen] = React.useState(false);
   const [passwordOpen, setPasswordOpen] = React.useState(false);
+  const [accountOpen, setAccountOpen] = React.useState(false);
 
   // Any real account except an admin can use the flow - a role-less account to
   // get its first role, an existing one to move up or down. The server decides
@@ -46,7 +50,16 @@ export function UserMenu({
   // Guest is an anonymous Supabase session with no email and no password, so
   // there is nothing to change. (Demo mode never renders this menu at all -
   // the topbar shows the RoleSwitcher instead.)
-  const showChangePassword = user.role !== "guest" && !!user.email;
+  //
+  // A SHARED account has no "my password": coordinator@ / staff@ / intern@ are
+  // handed to a whole committee, so one person changing it locks everybody
+  // else out. The menu entry is replaced by a line saying why, and the
+  // database refuses the change as well - the browser talks to Supabase
+  // directly here, so hiding a menu item is only the polite half (see the
+  // trigger in migration 0051).
+  const showChangePassword = user.role !== "guest" && !!user.email && !user.isShared;
+  // Editing your own name and picture needs an account, nothing more.
+  const showEditAccount = user.role !== "guest";
 
   function signOut() {
     start(async () => {
@@ -67,7 +80,7 @@ export function UserMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring">
-          <Avatar name={user.name} color={user.avatarColor} size={28} />
+          <Avatar name={user.name} color={user.avatarColor} character={user.avatar} size={28} />
           <div className="hidden min-w-0 leading-tight sm:block">
             <div className="truncate text-xs font-semibold">{user.name}</div>
             <div className="truncate text-[11px] text-muted-foreground">{t(ROLE_META[user.role].label)}</div>
@@ -90,10 +103,21 @@ export function UserMenu({
                   : t("Ajukan Ubah Peran")}
             </DropdownMenuItem>
           )}
+          {showEditAccount && (
+            <DropdownMenuItem onSelect={() => setAccountOpen(true)}>
+              <UserCog /> {t("Ubah Informasi Akun")}
+            </DropdownMenuItem>
+          )}
           {showChangePassword && (
             <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
               <KeyRound /> {t("Ubah Kata Sandi")}
             </DropdownMenuItem>
+          )}
+          {user.isShared && (
+            <div className="flex items-start gap-2 px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+              <Users className="mt-0.5 size-3.5 shrink-0" />
+              {t("Akun bersama: kata sandinya tidak bisa diubah dari sini.")}
+            </div>
           )}
           {/* The only link to /developer anywhere in the app. It is not in the
               sidebar, the search palette, the access matrix, the Panduan, or
@@ -116,6 +140,9 @@ export function UserMenu({
 
       {showChangePassword && (
         <ChangePasswordDialog email={user.email} open={passwordOpen} onOpenChange={setPasswordOpen} />
+      )}
+      {showEditAccount && (
+        <EditAccountDialog user={user} open={accountOpen} onOpenChange={setAccountOpen} />
       )}
 
       {showRoleRequest && (

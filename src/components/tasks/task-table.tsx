@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { ListChecks, ChevronDown, ExternalLink, Loader2, Trash2, X } from "lucide-react";
+import { ListChecks, ChevronDown, ExternalLink, Loader2, Trash2, X, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -199,6 +199,7 @@ export function TaskTable({
                   meaningful to sort by. */}
               <TableHead className={cn("w-10", !canSelect && "border-l-2 border-l-transparent")}>#</TableHead>
               <SortHead sort={sort} k="title" className="min-w-[220px]">{tr("Tugas")}</SortHead>
+              <TableHead className="min-w-[180px]">{tr("Evaluasi")}</TableHead>
               <SortHead sort={sort} k="division">{tr("Divisi")}</SortHead>
               <SortHead sort={sort} k="pic" className="min-w-[110px]">{tr("PIC")}</SortHead>
               <SortHead sort={sort} k="deadline">{tr("Deadline")}</SortHead>
@@ -256,6 +257,11 @@ export function TaskTable({
                       <ExpandableText text={t.notes} lines={1} className={cn("mt-0.5 text-xs text-muted-foreground", anyFlagged && "pl-[34px]")} />
                     )}
                   </TableCell>
+                  <TableCell className="align-top">
+                    {t.evaluation
+                      ? <ExpandableText text={t.evaluation} lines={2} className="text-xs text-muted-foreground" />
+                      : <span className="text-xs text-muted-foreground">-</span>}
+                  </TableCell>
                   <TableCell>{div && <DivisionBadge division={div} />}</TableCell>
                   <TableCell className="max-w-[160px] truncate text-sm text-muted-foreground">{t.pic || "-"}</TableCell>
                   <TableCell>
@@ -291,19 +297,31 @@ function RefsCell({ task }: { task: Task }) {
   if (!refs.length) return <span className="text-sm text-muted-foreground">-</span>;
   return (
     <div className="flex flex-wrap gap-1">
-      {refs.map((r) => (
-        <a
-          key={r.id}
-          href={r.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={`${r.label || r.url}${r.link_id ? ` (${tr("Super Link")})` : ""}`}
-          className="inline-flex max-w-[140px] items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[11px] transition hover:bg-muted"
-        >
-          <span className="truncate">{r.label || r.url}</span>
-          <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
-        </a>
-      ))}
+      {refs.map((r) => {
+        // The Super Link entry it was picked from is gone. The last address is
+        // still here and still opens, but it is no longer maintained by anyone.
+        const lost = !!r.link_lost_at;
+        const note = lost
+          ? ` (${tr("sumbernya sudah dihapus dari Super Link")})`
+          : r.link_id ? ` (${tr("Super Link")})` : "";
+        return (
+          <a
+            key={r.id}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`${r.label || r.url}${note}`}
+            className={cn(
+              "inline-flex max-w-[140px] items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition hover:bg-muted",
+              lost ? "border-amber-400/70 text-amber-800 dark:border-amber-500/50 dark:text-amber-300" : "border-border",
+            )}
+          >
+            {lost && <TriangleAlert className="size-3 shrink-0" />}
+            <span className="truncate">{r.label || r.url}</span>
+            <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+          </a>
+        );
+      })}
     </div>
   );
 }

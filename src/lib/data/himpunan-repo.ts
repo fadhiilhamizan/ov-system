@@ -173,6 +173,36 @@ export async function createCompareSubject(input: {
   return data?.id ?? null;
 }
 
+/**
+ * A prospect was renamed in Reach & Offer: rename the Compare subject that
+ * stands for it (and the deprecated per-entry copy of the name).
+ *
+ * `org_name` is COPIED onto the subject so its assessments stay readable after
+ * the prospect is deleted, but while the prospect exists it is the same
+ * association, and a card still showing the old spelling reads as a second
+ * one. Skipped when another subject in the edition already has the new name:
+ * the unique index would reject the write, and the prospect edit that triggered
+ * this must not fail because of it. Returns true when a subject was renamed.
+ */
+export async function renameCompareSubjectFor(prospectId: string, orgName: string): Promise<boolean> {
+  const name = orgName.trim();
+  if (!name) return false;
+  const client = await sb();
+  const subject = await readRows<CompareSubject | null>(
+    "compare subject for prospect",
+    client.from("compare_subjects").select("*").eq("prospect_id", prospectId).maybeSingle(),
+    null,
+  );
+  if (!subject || subject.org_name === name) return false;
+  const siblings = await getCompareSubjects(subject.event_id);
+  if (siblings.some((s) => s.id !== subject.id && s.org_name.trim().toLowerCase() === name.toLowerCase())) {
+    return false;
+  }
+  must(await client.from("compare_subjects").update({ org_name: name }).eq("id", subject.id));
+  must(await client.from("compare_entries").update({ org_name: name }).eq("subject_id", subject.id));
+  return true;
+}
+
 export async function deleteCompareSubject(id: string) {
   // compare_entries follow via ON DELETE CASCADE.
   const { error } = await (await sb()).from("compare_subjects").delete().eq("id", id);

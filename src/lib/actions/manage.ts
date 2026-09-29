@@ -7,6 +7,7 @@ import {
   createMember, updateMember, deleteMember, bulkDeleteMembers, bulkUpdateMembers,
   createDivision, updateDivision, deleteDivision, bulkDeleteDivisions, bulkUpdateDivisions,
   createTeam, updateTeam, deleteTeam, getMembers, getDivisions, getBudgetPlans,
+  getMember, renameMemberReferences, unseatCoordinator, detachDivisions,
 } from "@/lib/data/repo";
 import type { CloneFilters, CloneMode, CloneSources, Division, Member, OVEvent, Team } from "@/lib/types";
 import { CLONE_MODULES } from "@/lib/types";
@@ -16,12 +17,35 @@ import {
   eventSchema, memberSchema, divisionSchema, teamSchema, cloneSourcesSchema, cloneFiltersSchema,
   cloneModeSchema, idSchema, parse,
 } from "./schemas";
-import { divisionFields, memberDivisions, withDivisionAdded } from "@/lib/members";
+import { divisionFields, memberDivisions, memberRipple, withDivisionAdded } from "@/lib/members";
 import { archivedGuard } from "./lock";
 
 /** Keep the legacy primary `division` column in step with `divisions[]`. */
 function withPrimaryDivision<T extends { divisions?: string[] }>(data: T) {
   return data.divisions ? { ...data, ...divisionFields(data.divisions) } : data;
+}
+
+/**
+ * Carry one roster change into the places that name people as TEXT (task,
+ * Hari-H and prospect PIC; team coordinator). See `memberRipple` for the rules
+ * and docs/INTEGRATION.md for the map. Returns true when anything outside
+ * `members` was written, so the caller knows to bust those routes too.
+ */
+async function applyRipple(before: Member, after: Member | null, roster: Member[], rename = true) {
+  const eventId = before.event_id ?? null;
+  // Only the people who share this member's edition can make a name
+  // ambiguous; a namesake in another Ormawa Visit is never on the same task.
+  const peers = roster.filter((m) => !eventId || !m.event_id || m.event_id === eventId);
+  const ripple = memberRipple(before, after, peers);
+  let touched = false;
+  if (rename && ripple.rename) {
+    touched = (await renameMemberReferences(eventId, ripple.rename.from, ripple.rename.to)) > 0;
+  }
+  if (ripple.unseat) {
+    await unseatCoordinator(eventId, ripple.unseat.divisions, ripple.unseat.names);
+    touched = true;
+  }
+  return touched;
 }
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -196,16 +220,33 @@ export async function updateMemberAction(id: string, patch: Partial<Member>): Pr
   if (!idv.ok) return idv;
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
-  try { await updateMember(idv.data, withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
-  revalidateEntities("members");
+  const before = await getMember(idv.data);
+  if (!before) return { ok: false, error: "Anggota tidak ditemukan." };
+  // Read BEFORE the write: the ambiguity check needs everyone else's names.
+  const roster = await getMembers(before.event_id ?? undefined);
+  const data = withPrimaryDivision(v.data);
+  let rippled = false;
+  try {
+    await updateMember(idv.data, data);
+    rippled = await applyRipple(before, { ...before, ...data }, roster);
+  } catch (e) { return errMsg(e); }
+  if (rippled) revalidateEntities("members", "teams", "tasks", "jobs", "prospects");
+  else revalidateEntities("members");
   return { ok: true };
 }
 export async function deleteMemberAction(id: string): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
-  try { await deleteMember(idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("members");
+  const before = await getMember(idv.data);
+  const roster = before ? await getMembers(before.event_id ?? undefined) : [];
+  try {
+    await deleteMember(idv.data);
+    // A deleted member cannot go on being listed as a division's coordinator.
+    // Their name stays on the tasks they were PIC of (see memberRipple).
+    if (before) await applyRipple(before, null, roster);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("members", "teams");
   return { ok: true };
 }
 
@@ -225,8 +266,17 @@ export async function bulkDeleteMembersAction(ids: string[]): Promise<Result> {
   if (!can.manageMembers(await getCurrentUser())) return DENY;
   const idv = parseIds(ids);
   if (!idv.ok) return idv;
-  try { await bulkDeleteMembers(idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("members");
+  const wanted = new Set(idv.data);
+  const roster = await getMembers();
+  const leaving = roster.filter((m) => wanted.has(m.id));
+  // Everyone ELSE is the ambiguity reference: two leavers who share a name do
+  // not protect each other's coordinator seat.
+  const staying = roster.filter((m) => !wanted.has(m.id));
+  try {
+    await bulkDeleteMembers(idv.data);
+    for (const m of leaving) await applyRipple(m, null, staying);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("members", "teams");
   return { ok: true };
 }
 
@@ -236,8 +286,18 @@ export async function bulkUpdateMembersAction(ids: string[], patch: Partial<Memb
   if (!idv.ok) return idv;
   const v = parse(memberSchema.partial(), patch);
   if (!v.ok) return v;
-  try { await bulkUpdateMembers(idv.data, withPrimaryDivision(v.data)); } catch (e) { return errMsg(e); }
-  revalidateEntities("members");
+  const data = withPrimaryDivision(v.data);
+  const wanted = new Set(idv.data);
+  const roster = await getMembers();
+  try {
+    await bulkUpdateMembers(idv.data, data);
+    // Bulk edits change divisions or type, never one person's name, so only
+    // the coordinator half of the ripple applies.
+    for (const m of roster.filter((x) => wanted.has(x.id))) {
+      await applyRipple(m, { ...m, ...data }, roster, false);
+    }
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("members", "teams");
   return { ok: true };
 }
 
@@ -279,6 +339,19 @@ export async function addMembersToDivisionAction(
 }
 
 // ---------------- Divisions ----------------
+/**
+ * A division's `key` is what every other table points at (task, member,
+ * team, rundown column, Super Link entry), and none of them follows a change.
+ * The form never sends it, but `divisionSchema` accepts it for create, so an
+ * update payload could carry one and orphan all of that at once. Renaming is
+ * `name`/`short`; the key is fixed for the life of the division.
+ */
+function withoutKey<T extends { key?: string }>(data: T): Omit<T, "key"> {
+  const { key: _key, ...rest } = data;
+  void _key;
+  return rest;
+}
+
 export async function createDivisionAction(input: Partial<Division>): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageDivisions(user)) return DENY;
@@ -302,7 +375,7 @@ export async function updateDivisionAction(key: string, patch: Partial<Division>
   const event = await getActiveEvent();
   const blocked = await archivedGuard(user, event.id);
   if (blocked) return blocked;
-  try { await updateDivision(event.id, idv.data, v.data); } catch (e) { return errMsg(e); }
+  try { await updateDivision(event.id, idv.data, withoutKey(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }
@@ -314,8 +387,11 @@ export async function deleteDivisionAction(key: string): Promise<Result> {
   const event = await getActiveEvent();
   const blocked = await archivedGuard(user, event.id);
   if (blocked) return blocked;
-  try { await deleteDivision(event.id, idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("divisions");
+  try {
+    await deleteDivision(event.id, idv.data);
+    await detachDivisions(event.id, [idv.data]);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("divisions", "members", "teams");
   return { ok: true };
 }
 export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result> {
@@ -326,8 +402,11 @@ export async function bulkDeleteDivisionsAction(keys: string[]): Promise<Result>
   const event = await getActiveEvent();
   const blocked = await archivedGuard(user, event.id);
   if (blocked) return blocked;
-  try { await bulkDeleteDivisions(event.id, idv.data); } catch (e) { return errMsg(e); }
-  revalidateEntities("divisions");
+  try {
+    await bulkDeleteDivisions(event.id, idv.data);
+    await detachDivisions(event.id, idv.data);
+  } catch (e) { return errMsg(e); }
+  revalidateEntities("divisions", "members", "teams");
   return { ok: true };
 }
 export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<Division>): Promise<Result> {
@@ -340,7 +419,7 @@ export async function bulkUpdateDivisionsAction(keys: string[], patch: Partial<D
   const event = await getActiveEvent();
   const blocked = await archivedGuard(user, event.id);
   if (blocked) return blocked;
-  try { await bulkUpdateDivisions(event.id, idv.data, v.data); } catch (e) { return errMsg(e); }
+  try { await bulkUpdateDivisions(event.id, idv.data, withoutKey(v.data)); } catch (e) { return errMsg(e); }
   revalidateEntities("divisions");
   return { ok: true };
 }

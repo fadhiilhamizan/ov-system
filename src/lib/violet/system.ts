@@ -78,7 +78,9 @@ export function systemPassages(): Passage[] {
       "dan Dashboard menampilkan 'belum diisi' alih-alih angka nol yang menyesatkan. " +
       "Ormawa Visit baru bisa MENYALIN data dari edisi lain per menu (divisi, anggota, prospek, tugas, rundown, " +
       "job hari-H, anggaran), dan tiap menu boleh disalin dari edisi yang berbeda. " +
-      "Salinan tugas selalu mulai dari nol: status kembali todo, PIC dan hasil dikosongkan."),
+      "Salinan tugas selalu mulai dari nol: status kembali todo, PIC dan hasil dikosongkan. " +
+      "MENGHAPUS sebuah Ormawa Visit menghapus SELURUH datanya: divisi, anggota, tugas, prospek, rundown, " +
+      "job hari-H, anggaran, dan entri Super Link-nya. Tidak ada yang tertinggal atau pindah ke edisi lain."),
 
     p("archive", "Aturan: arsip / kunci edisi", "/events",
       "Sebuah Ormawa Visit bisa DIARSIPKAN (dikunci, locked, archive). Setelah dikunci, seluruh datanya " +
@@ -90,7 +92,10 @@ export function systemPassages(): Passage[] {
     p("task", "Struktur data: tugas (Work Breakdown)", "/tasks",
       "Satu tugas di Work Breakdown (WBS) menyimpan: nomor urut, divisi pemilik, judul, PIC (boleh lebih dari " +
       "satu nama dipisah koma), tanggal mulai, tanggal selesai alias deadline atau tenggat atau batas waktu, " +
-      "catatan, hasil (deskripsi teks), status, tautan hasil, dan tautan referensi. " +
+      "catatan, evaluasi, hasil (deskripsi teks), status, tautan hasil, dan tautan referensi. " +
+      "Kolom EVALUASI (di sebelah kanan kolom Tugas) berisi pelajaran atau masukan untuk tugas itu dari " +
+      "Ormawa Visit sebelumnya dan/atau Ormawa Visit sekarang; saat tugas disalin ke Ormawa Visit baru, " +
+      "evaluasinya ikut tersalin supaya pelajarannya tidak hilang. " +
       "Statusnya ada empat: Belum (todo), Berjalan (ongoing), Selesai (done), dan Overtime. " +
       "Kolom Catatan berisi keterangan bebas soal tugas itu; kalau isinya panjang, tabel memotongnya dan " +
       "ada tombol Selengkapnya untuk membuka teks penuh tanpa masuk ke mode edit. " +
@@ -106,14 +111,20 @@ export function systemPassages(): Passage[] {
 
     p("task-links", "Aturan: tautan hasil tugas vs tautan referensi", "/tasks",
       "Satu tugas punya DUA jenis tautan yang arahnya berlawanan. " +
-      "TAUTAN HASIL adalah keluaran tugas (Drive, Docs, foto). Kalau kotak 'Tampilkan juga di Super Link' " +
-      "dicentang, tautan itu ikut terbit sebagai entri Super Link dan tugas tersebut MEMILIKI entri itu: " +
-      "menyimpan ulang memperbarui entri yang sama (tidak menggandakan), melepas centangnya menghapus entrinya, " +
-      "dan menghapus tugasnya ikut menghapus entrinya. Satu entri Super Link hanya boleh dimiliki satu tugas. " +
+      "TAUTAN HASIL adalah keluaran tugas (Drive, Docs, foto). SETIAP tautan hasil WAJIB diberi judul dan " +
+      "SELALU terbit sebagai entri Super Link (tidak bisa dimatikan), dan tugas tersebut MEMILIKI entri itu: " +
+      "menyimpan ulang memperbarui entri yang sama (tidak menggandakan), menghapus tautan hasilnya menghapus " +
+      "entrinya, dan menghapus tugasnya ikut menghapus entrinya. Satu entri Super Link hanya boleh dimiliki satu " +
+      "tugas. Entri milik tugas tidak bisa dihapus dari menu Super Link; hapus tautannya dari tugasnya. " +
       "TAUTAN REFERENSI adalah bahan rujukan yang DIPAKAI tugas (handbook, template, proposal tahun lalu). " +
       "Referensi boleh diketik manual atau diambil dari Super Link, dan satu entri Super Link boleh dirujuk " +
-      "oleh banyak tugas sekaligus. Menghapus entri Super Link tidak menghapus referensinya, alamatnya tetap " +
-      "tersimpan sebagai teks."),
+      "oleh banyak tugas sekaligus. Referensi yang diambil dari Super Link SELALU memakai URL terbaru entri itu, " +
+      "jadi memperbaiki alamatnya di Super Link langsung memperbaiki semua tugas yang merujuknya, dan " +
+      "mengganti judul entrinya ikut mengganti nama referensinya (kecuali nama referensi itu sudah diubah sendiri). " +
+      "Kalau entri Super Link yang dirujuk DIHAPUS (misalnya tugas pemiliknya menghapus tautan hasilnya), " +
+      "referensinya tidak ikut hilang: alamat dan judul terakhirnya disimpan, lalu referensi itu diberi tanda " +
+      "segitiga kuning 'sumbernya sudah dihapus dari Super Link' dan bisa diganti lewat tombol Ganti. " +
+      "Sebelum menghapus tautan hasil yang sedang dirujuk tugas lain, formulir meminta konfirmasi sekali lagi."),
 
     p("task-comments", "Aturan: catatan & diskusi pada tugas", "/tasks",
       "Tiap tugas di Work Breakdown bisa diberi CATATAN (komentar, comment, diskusi, revisi, masukan) yang " +
@@ -159,6 +170,22 @@ export function systemPassages(): Passage[] {
       "Siaran TIDAK terikat Ormawa Visit mana pun, karena ditujukan ke akun, dan akun tidak punya lingkup edisi. " +
       "Menu Role Request juga menampilkan angka notifikasi berisi jumlah pengajuan peran yang belum ditangani, " +
       "dan itu hanya terlihat oleh Admin."),
+
+    p("account", "Aturan: akun, foto profil, dan akun bersama", "/settings",
+      "AKUN di sistem ini menyimpan nama tampilan, email, peran, dan foto profil. " +
+      "MENGUBAH INFORMASI AKUN: lewat menu akun di pojok kanan atas, pilih 'Ubah Informasi Akun', " +
+      "atau tombol Ubah pada kartu Akun Saya di menu Pengaturan. Yang bisa diubah sendiri hanya " +
+      "NAMA TAMPILAN dan FOTO PROFIL. Email dan peran TIDAK bisa diubah dari sana: peran diberikan " +
+      "admin lewat menu Role Request, dan email adalah kredensial login. " +
+      "FOTO PROFIL (avatar, gambar profil, karakter): tersedia lima pilihan karakter - Rubah, Panda, " +
+      "Burung, Kucing, dan Beruang - atau tetap memakai inisial nama, yang merupakan tampilan bawaannya. " +
+      "AKUN BERSAMA: tiga akun default coordinator@ormawavisit.id, staff@ormawavisit.id, dan " +
+      "intern@ormawavisit.id ditandai sebagai akun bersama karena dipakai banyak orang sekaligus. " +
+      "Kata sandi akun bersama TIDAK BISA DIUBAH dari dalam aplikasi, dan menu 'Ubah Kata Sandi' " +
+      "memang tidak muncul untuknya: kalau satu orang menggantinya, semua orang lain terkunci. " +
+      "Rotasinya hanya bisa dilakukan admin lewat SQL, dan itu ditegakkan database, bukan hanya tampilan. " +
+      "KATA SANDI AKUN GOOGLE: akun yang mendaftar lewat Google tidak punya kata sandi di sistem ini, " +
+      "jadi tidak ada yang bisa diubah di sini. Kata sandinya diatur di akun Google masing-masing."),
 
     p("himpunan", "Struktur data: menu Himpunan (FGD & Compare)", "/himpunan",
       "Menu Himpunan menyiapkan pertemuan dengan himpunan mitra dan berisi dua hal. " +
@@ -212,7 +239,9 @@ export function systemPassages(): Passage[] {
       "Divisi yang ditandai tidak ikut rundown (biasanya PIC, Koordinator, Sekretaris, Bendahara) tidak muncul " +
       "sebagai kolom di tabel rundown. " +
       "Kalau sebuah divisi dihapus, tugas yang dulu miliknya TIDAK ikut terhapus: tugas itu jadi tanpa divisi " +
-      "dan masih bisa ditemukan lewat pilihan 'Tanpa divisi' pada filter divisi."),
+      "dan masih bisa ditemukan lewat pilihan 'Tanpa divisi' pada filter divisi. Anggotanya dilepas dari divisi " +
+      "itu (divisi lain yang mereka ikuti tetap), dan koordinator divisi itu ikut terhapus. " +
+      "Kunci (key) divisi tidak pernah berubah setelah dibuat; yang bisa diganti hanya nama, singkatan, dan warna."),
 
     p("member", "Struktur data: anggota & tim", "/members",
       "Anggota (roster External Affairs) menyimpan: nama, nama panggilan, NRP, tipe (fungsionaris atau intern), " +
@@ -223,12 +252,19 @@ export function systemPassages(): Passage[] {
       "Struktur tim sebuah divisi TIDAK disimpan terpisah, melainkan diturunkan dari roster: siapa saja yang " +
       "punya divisi itu, dialah anggotanya. Yang disimpan pada tim hanyalah KOORDINATOR divisi, dan itu opsional " +
       "(sebuah divisi boleh belum punya koordinator). " +
+      "MENGGANTI NAMA anggota (nama diganti, ganti nama, rename) atau nama panggilannya ikut mengganti namanya " +
+      "di PIC tugas, PIC Job Hari-H, PIC " +
+      "prospek, dan koordinator divisi pada Ormawa Visit yang sama, kecuali ada anggota lain yang memakai nama " +
+      "yang sama (supaya tugas orang lain tidak ikut berpindah). Anggota yang dihapus, keluar dari sebuah divisi, " +
+      "atau diubah menjadi intern otomatis dilepas dari kursi koordinator divisi itu. Namanya TETAP tercatat " +
+      "sebagai PIC tugas lama, karena tugas yang sudah dikerjakan tetap mencatat siapa yang mengerjakannya. " +
       "Nama dan NRP adalah data pribadi, jadi peran Tamu tidak bisa membacanya sama sekali dan akan melihat " +
       "roster kosong beserta pemberitahuannya."),
 
     p("rundown", "Struktur data: rundown", "/rundown",
       "Rundown adalah susunan acara hari-H, satu baris per sesi, dan diisi langsung di tabel (bukan lewat " +
-      "dialog): setiap sel tersimpan otomatis saat kamu berpindah dari sel itu. " +
+      "dialog): ketikan langsung tampil dan tersimpan otomatis di latar belakang setelah jeda singkat, " +
+      "beberapa sel sekaligus, tanpa perlu menunggu sebelum mengedit lagi. " +
       "Satu baris menyimpan: nomor, jam mulai, jam selesai, durasi, kegiatan, MC, kebutuhan operator, " +
       "kolom tugas untuk SETIAP divisi yang ikut rundown, dan catatan. " +
       "Durasi TIDAK diketik: sistem menghitungnya dari jam mulai dan jam selesai. " +
@@ -271,7 +307,27 @@ export function systemPassages(): Passage[] {
       "Entri dikelompokkan dua tingkat: per Ormawa Visit, lalu per divisi. " +
       "Sebagian entri tidak dibuat langsung di sini melainkan TERBIT OTOMATIS dari tempat lain: dari tautan " +
       "hasil sebuah tugas (kelompok 'Hasil Tugas') atau dari tautan sebuah prospek (kelompok 'Reach & Offer'). " +
-      "Entri semacam itu tetap mengikuti sumbernya, jadi memperbaikinya sebaiknya dari tugas atau prospek asalnya."),
+      "Entri semacam itu diberi label sumbernya ('Dari Work Breakdown' atau 'Dari Reach & Offer') dan tetap " +
+      "tersambung dua arah: mengubah NAMA atau URL-nya di Super Link ikut mengubahnya di tugas atau prospek " +
+      "asalnya, sedangkan divisi dan catatannya mengikuti sumbernya dan dikunci di sini. Menghapusnya dari " +
+      "Super Link mencabut centang 'Tampilkan juga di Super Link' pada sumbernya, tautannya sendiri tetap ada. " +
+      "Memindahkan tugas ke divisi lain ikut memindahkan entri hasilnya ke kelompok divisi baru."),
+
+    p("integration", "Aturan: menu yang saling terhubung (integrasi otomatis)", "/panduan",
+      "Menu-menu di sistem ini SALING TERHUBUNG: mengubah data di satu menu otomatis memperbarui menu lain, " +
+      "tanpa perlu mengetik ulang. Hubungan terpentingnya: " +
+      "Work Breakdown dan Kalender dan Papan Divisi menampilkan tugas yang SAMA, jadi mengubah di satu tempat " +
+      "langsung terlihat di semuanya, begitu juga progres per divisi di Divisi & Anggota dan angka di Dashboard. " +
+      "Tautan hasil tugas dan tautan prospek bisa terbit ke Super Link dan tetap tersambung dua arah. " +
+      "Prospek yang dijadikan data utama menyalin nama himpunan, kampus, lokasi, dan mode ke Ormawa Visit-nya. " +
+      "Respons DITERIMA di Reach & Offer membuka fitur Compare di menu Himpunan, dan mengganti nama himpunan " +
+      "di Reach & Offer ikut mengganti nama kartu perbandingannya. " +
+      "Anggota di Divisi & Anggota adalah sumber daftar PIC di Work Breakdown, Job Hari-H, dan Reach & Offer; " +
+      "mengganti namanya ikut mengganti nama PIC tersebut. Divisi menentukan kolom di Rundown dan kelompok di " +
+      "Super Link. Rencana utama Anggaran menentukan angka anggaran di Dashboard dan daftar Ormawa Visit. " +
+      "Yang sengaja TIDAK tersambung: nama mitra di tabel Plotting FGD (diketik bebas karena sering dibuat " +
+      "sebelum mitranya pasti), MC dan operator di Rundown (teks bebas), dan data Ormawa Visit yang tetap " +
+      "seperti semula ketika tanda data utama dilepas."),
 
     p("filters", "Cara pakai: filter dan pencarian di tabel", undefined,
       "Setiap tabel yang punya penyaring memakai KOTAK CENTANG, bukan pilihan tunggal, jadi beberapa nilai bisa " +
@@ -312,8 +368,28 @@ export function systemPassages(): Passage[] {
       "supaya memulihkan data lama tidak diam-diam mengembalikan peran yang sudah dicabut. " +
       "Memulihkan backup selalu membuat snapshot pengaman lebih dulu dan harus dikonfirmasi dengan mengetik " +
       "kata PULIHKAN. " +
+      "Daftar backup dikelompokkan per hari (bisa dibuka-tutup), dan beberapa backup bisa dicentang sekaligus " +
+      "untuk diunduh atau dihapus bersamaan. " +
       "Mode Demo adalah database yang benar-benar TERPISAH berisi data contoh: apa pun yang dilakukan di sana " +
       "tidak menyentuh data asli, dan datanya bisa dikembalikan ke contoh awal kapan saja."),
+
+    p("import", "Cara pakai: Import XLSX (impor dari Excel / Google Sheets)", undefined,
+      "Setiap menu bertabel punya tombol Import XLSX untuk menambah banyak data sekaligus: Work Breakdown, " +
+      "Reach & Offer, Super Link, Anggaran (RAB), Rundown, Job Hari-H, Anggota, Plotting FGD, dan Compare. " +
+      "Caranya: unduh template menu itu, isi sheet Data di Excel atau Google Sheets, lalu unggah file .xlsx-nya. " +
+      "Template berisi sheet Petunjuk (aturan pemakaian), Data (yang diisi, dengan dropdown), Contoh (contoh " +
+      "pengisian), dan Referensi (daftar divisi dan pilihan yang sah). Satu template untuk satu jenis menu. " +
+      "Sebelum disimpan selalu ada pratinjau dan daftar kesalahan per baris dan kolom. Kalau masih ada satu " +
+      "kesalahan saja, tidak ada data yang disimpan (semua baris atau tidak sama sekali). Impor selalu MENAMBAH " +
+      "data ke Ormawa Visit yang aktif dan tidak mengubah atau menghapus data lama. " +
+      "Sel yang di-merge (digabung) ke bawah berarti nilai yang sama untuk setiap baris, KECUALI di Rundown: " +
+      "merge pada kolom MC, Kebutuhan Operator, dan kolom divisi menjadi sel gabungan di tabel rundown. " +
+      "Yang boleh mengimpor sama dengan yang boleh menambah data di menu itu. " +
+      "Kalau ada kesalahan, tombol Unduh laporan pemeriksaan mengembalikan file itu dengan sel yang salah " +
+      "diwarnai merah dan diberi catatan. Baris yang sama dengan data yang sudah ada ditandai sudah ada dan " +
+      "bisa dilewati (kecuali di Rundown). Salah ketik divisi, status, atau nama PIC diberi saran. " +
+      "File yang diunggah TIDAK disimpan di mana pun: hanya dibaca di memori server selama pemeriksaan, " +
+      "lalu dibuang; yang tersimpan hanya baris data yang diimpor."),
 
     p("violet-limits", "Aturan: apa yang Violet lihat dan tidak lihat", "/panduan#guide-violet",
       "Violet hanya MEMBACA. Violet tidak bisa membuat, mengubah, menghapus, mengunggah, atau mengirim apa pun, " +

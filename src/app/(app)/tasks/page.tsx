@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { attenuate } from "@/lib/permissions";
 import { getActiveEvent, getActiveDivision } from "@/lib/session";
-import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getLinks, getTeams } from "@/lib/data/repo";
+import { getDivisions, getEvents, getMembers, getTasks, getTaskLinksByEvent, getTaskRefsByEvent, getTaskCommentsByEvent, getSuperLinkDirectory, getLinkRefCounts, getTeams } from "@/lib/data/repo";
 import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { TasksView } from "@/components/tasks/tasks-view";
@@ -19,7 +19,7 @@ export default async function TasksPage() {
     getActiveDivision(),
     getT(),
   ]);
-  const [tasks, divisions, events, members, taskLinks, taskRefs, taskComments, superLinks, teams] = await Promise.all([
+  const [tasks, divisions, events, members, taskLinks, taskRefs, taskComments, superLinks, teams, refCounts] = await Promise.all([
     getTasks({ event_id: event.id }),
     getDivisions(event.id),
     getEvents(),
@@ -27,8 +27,9 @@ export default async function TasksPage() {
     getTaskLinksByEvent(event.id),
     getTaskRefsByEvent(event.id),
     getTaskCommentsByEvent(event.id),
-    getLinks(),
+    getSuperLinkDirectory(),
     getTeams(event.id),
+    getLinkRefCounts(),
   ]);
 
   return (
@@ -38,7 +39,7 @@ export default async function TasksPage() {
         description={t("Seluruh tugas Ormawa Visit dalam satu sumber kebenaran. Ubah tampilan antara tabel, kanban, dan timeline.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks}>
+      <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks} refCounts={refCounts}>
         <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
         <TasksView

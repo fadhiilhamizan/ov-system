@@ -6,6 +6,7 @@ import { getT } from "@/lib/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { RundownView } from "@/components/rundown/rundown-view";
 import { Badge } from "@/components/ui/badge";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 export const metadata = { title: "Rundown Acara" };
 
@@ -28,6 +29,7 @@ export default async function RundownPage() {
         eventId={event.id}
         canManage={can.manageRundown(user) && writable}
         canDelete={can.deleteRundown(user) && writable}
+        importButton={<ImportXlsxButton module="rundown" size="sm" />}
       />
     </div>
   );

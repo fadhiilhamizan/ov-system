@@ -106,6 +106,7 @@ function taskPassage(
       `Deadline, tenggat, batas waktu, atau tanggal selesai: ${when(t.end_date, t.end_raw)}.`,
       t.status === "overtime" && "Tugas ini overtime: sudah lewat deadline dan belum selesai.",
       t.notes.trim() && `Catatan tugas: ${t.notes.trim()}.`,
+      t.evaluation?.trim() && `Evaluasi tugas (pelajaran, masukan, catatan evaluasi dari Ormawa Visit sebelumnya atau sekarang): ${t.evaluation.trim()}.`,
       t.result.trim() && `Hasil tugas: ${t.result.trim()}.`,
       resultLinks && `Tautan hasil tugas ini: ${resultLinks}.`,
       refs && `Referensi tugas: ${refs}.`,
@@ -348,7 +349,7 @@ export async function livePassages(user: AppUser): Promise<Passage[]> {
 
   for (const t of tasks) {
     const refs = (refsByTask[t.id] ?? [])
-      .map((r) => `${r.label || r.url} (${r.url})`)
+      .map((r) => `${r.label || r.url} (${r.url})${r.link_lost_at ? ", sumbernya sudah dihapus dari Super Link" : ""}`)
       .join(", ");
     const results = (resultLinksByTask[t.id] ?? [])
       .map((l) => `${l.label || l.url} (${l.url})${l.in_super_link ? ", juga terbit di Super Link" : ""}`)

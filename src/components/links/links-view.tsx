@@ -25,11 +25,24 @@ import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { ExpandableText } from "@/components/ui/expandable-text";
 import { createLinkAction, updateLinkAction, deleteLinkAction, bulkDeleteLinksAction } from "@/lib/actions/links";
 import { isUrl } from "@/lib/format";
+import { isOwnedLink } from "@/lib/links";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import type { Division, LinkItem, OVEvent } from "@/lib/types";
+import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
 const NO_DIVISION = "__none__";
+
+/** The badge on an entry a task result or a prospect published (and owns). */
+function OwnerBadge({ link }: { link: LinkItem }) {
+  const t = useT();
+  if (!isOwnedLink(link)) return null;
+  return (
+    <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+      {link.source === "task" ? t("Dari Work Breakdown") : t("Dari Reach & Offer")}
+    </span>
+  );
+}
 
 /** Match a (possibly legacy free-text) division value to a known Division. */
 function resolveDivision(raw: string, divisions: Division[]): Division | null {
@@ -87,6 +100,9 @@ function LinkFormDialog({
       : f.division;
 
   const urlValid = isUrl(f.url);
+  // An entry published from a task result or a prospect is rebuilt from its
+  // owner: only its name and URL flow back from here (see updateLinkAction).
+  const owned = mode === "edit" && !!link && isOwnedLink(link);
 
   function submit() {
     if (!urlValid) {
@@ -116,6 +132,13 @@ function LinkFormDialog({
           <DialogDescription>{t("Dokumen, form, atau drive penting Ormawa Visit.")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
+          {owned && (
+            <p className="rounded-lg border border-border bg-muted/40 p-2.5 text-xs text-muted-foreground">
+              {link!.source === "task"
+                ? t("Tautan ini dipublikasikan dari hasil tugas di Work Breakdown. Nama dan URL yang diubah di sini ikut berubah di tugasnya; divisi dan catatan mengikuti tugasnya.")
+                : t("Tautan ini dipublikasikan dari prospek di Reach & Offer. Nama dan URL yang diubah di sini ikut berubah di prospeknya; catatan mengikuti prospeknya.")}
+            </p>
+          )}
           <div className="grid gap-1.5">
             <Label>
               {t("Nama")} <span className="text-danger">*</span>
@@ -140,7 +163,7 @@ function LinkFormDialog({
               <Label>
                 {t("Jenis Ormawa Visit")} <span className="text-danger">*</span>
               </Label>
-              <Select value={f.event_id} onValueChange={(v) => setF({ ...f, event_id: v })}>
+              <Select value={f.event_id} onValueChange={(v) => setF({ ...f, event_id: v })} disabled={mode === "edit"}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {events.map((e) => (
@@ -151,7 +174,7 @@ function LinkFormDialog({
             </div>
             <div className="grid gap-1.5">
               <Label>{t("Divisi")}</Label>
-              <Select value={division} onValueChange={(v) => setF({ ...f, division: v })}>
+              <Select value={division} onValueChange={(v) => setF({ ...f, division: v })} disabled={owned}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_DIVISION}>{t("Umum (tanpa divisi)")}</SelectItem>
@@ -164,7 +187,12 @@ function LinkFormDialog({
           </div>
           <div className="grid gap-1.5">
             <Label>{t("Catatan (opsional)")}</Label>
-            <Textarea value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} className="min-h-[56px]" />
+            <Textarea
+              value={f.note}
+              onChange={(e) => setF({ ...f, note: e.target.value })}
+              className="min-h-[56px]"
+              disabled={owned}
+            />
           </div>
         </div>
         <DialogFooter>
@@ -200,7 +228,15 @@ function LinkActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          {canDelete && (
+          {/* A task result is ALWAYS published, so its entry is deleted by
+              removing the result link from the task, not from here (the
+              action refuses it too - see refuseTaskOwned). */}
+          {canDelete && link.source === "task" && (
+            <DropdownMenuItem disabled className="max-w-60 whitespace-normal text-xs">
+              <Trash2 /> {t("Hapus lewat tugasnya di Work Breakdown")}
+            </DropdownMenuItem>
+          )}
+          {canDelete && link.source !== "task" && (
             <DropdownMenuItem destructive onSelect={() => setDelOpen(true)}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -213,7 +249,12 @@ function LinkActions({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Hapus tautan?")}</DialogTitle>
-            <DialogDescription>&ldquo;{link.name}&rdquo; {t("akan dihapus.")}</DialogDescription>
+            <DialogDescription>
+              &ldquo;{link.name}&rdquo; {t("akan dihapus.")}
+              {isOwnedLink(link) && (
+                <> {t("Sumbernya tetap ada, hanya tidak lagi ditampilkan di Super Link.")}</>
+              )}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
@@ -335,11 +376,14 @@ export function LinksView({
           )}
         </div>
         {canCreate && (
+          <div className="flex items-center gap-2">
+          <ImportXlsxButton module="links" />
           <LinkFormDialog
             mode="create" events={events} divisions={divisions}
             defaultEventId={soleEvent ?? defaultEventId}
             trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
           />
+          </div>
         )}
       </div>
 
@@ -390,7 +434,10 @@ export function LinksView({
                             <Link2 className="size-4" />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium">{l.name}</span>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span className="truncate text-sm font-medium">{l.name}</span>
+                              <OwnerBadge link={l} />
+                            </div>
                             {l.note && (
                               <ExpandableText text={l.note} lines={1} className="text-xs text-muted-foreground" />
                             )}
