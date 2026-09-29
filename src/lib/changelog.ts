@@ -53,6 +53,15 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.54.1",
+    date: "2026-09-29",
+    title: "Perbaikan layar error saat pindah menu",
+    changes: [
+      { kind: "fix", text: "Pindah ke Divisi atau Work Breakdown tidak lagi sesekali berakhir di layar error (Minified React error #310); penyebabnya bug di Next.js saat halaman mengalihkan ke halaman lain, diperbaiki dengan naik ke Next.js 16.3.6." },
+      { kind: "ui", text: "Kartu Divisi di Dashboard dan tautan Semua divisi kini langsung membuka Divisi & Anggota tanpa pengalihan." },
+    ],
+  },
+  {
     version: "1.54.0",
     date: "2026-09-27",
     title: "Import XLSX lebih teliti: laporan pemeriksaan, cek data ganda, dan template yang lebih membantu",

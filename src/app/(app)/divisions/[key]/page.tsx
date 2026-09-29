@@ -46,7 +46,7 @@ export default async function DivisionDetailPage({
   return (
     <div>
       <Link
-        href="/divisions"
+        href="/members"
         className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> {t("Semua divisi")}
