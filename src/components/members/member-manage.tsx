@@ -22,6 +22,7 @@ import { useResetOn } from "@/lib/use-synced";
 import { angkatanFromNrp } from "@/lib/format";
 import { memberDivisions, memberInDivision, memberLabel } from "@/lib/members";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
+import type { LocalFirst } from "@/lib/use-local-first";
 
 // ---------------- Division multi-select ----------------
 /** A member usually sits in one division, but the model deliberately allows
@@ -246,11 +247,14 @@ export function MemberFormDialog({
 }
 
 export function MemberActions({
-  member, divisions, events, defaultEventId,
-}: { member: Member; divisions: Division[]; events: OVEvent[]; defaultEventId: string }) {
+  member, divisions, events, defaultEventId, store,
+}: {
+  member: Member; divisions: Division[]; events: OVEvent[]; defaultEventId: string;
+  /** The roster's local-first list (use-local-first.ts): a delete shows at once. */
+  store: LocalFirst<Member>;
+}) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
   return (
     <>
       <DropdownMenu>
@@ -259,10 +263,9 @@ export function MemberActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => start(async () => {
-            const res = await deleteMemberAction(member.id);
-            if (res.ok) toast.success(t("Anggota dihapus")); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+          <DropdownMenuItem destructive onSelect={() => {
+            store.remove([member.id], () => deleteMemberAction(member.id), { success: t("Anggota dihapus") });
+          }}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <MemberFormDialog
@@ -275,18 +278,22 @@ export function MemberActions({
 
 // ---------------- Bulk actions bar (multi-select) ----------------
 export function MemberBulkBar({
-  ids, divisions, onClear,
-}: { ids: string[]; divisions: Division[]; onClear: () => void }) {
+  ids, divisions, onClear, store,
+}: { ids: string[]; divisions: Division[]; onClear: () => void; store: LocalFirst<Member> }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
   const [delOpen, setDelOpen] = React.useState(false);
 
-  function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, ok: string) {
-    start(async () => {
-      const res = await fn();
-      if (res.ok) { toast.success(ok); onClear(); setDelOpen(false); }
-      else toast.error(res.error);
-    });
+  /** Every bulk change shows at once and saves in the background. */
+  function update(fields: Partial<Member>, patch: Partial<Member>, ok: string) {
+    const target = [...ids];
+    onClear();
+    store.patchMany(target, fields, () => bulkUpdateMembersAction(target, patch), { success: ok });
+  }
+  function removeAll() {
+    const target = [...ids];
+    onClear();
+    setDelOpen(false);
+    store.remove(target, () => bulkDeleteMembersAction(target), { success: t("Anggota dihapus") });
   }
 
   return (
@@ -296,7 +303,7 @@ export function MemberBulkBar({
         {/* Bulk change division */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={pending}>
+            <Button variant="outline" size="sm">
               <LayoutGrid className="size-4" /> {t("Ubah Divisi")}
             </Button>
           </DropdownMenuTrigger>
@@ -306,7 +313,7 @@ export function MemberBulkBar({
                 key={d.key}
                 // Bulk assignment REPLACES the selection's divisions - a member
                 // who needs several is edited one by one.
-                onSelect={() => run(() => bulkUpdateMembersAction(ids, { divisions: [d.key] }), t("Divisi anggota diperbarui"))}
+                onSelect={() => update({ divisions: [d.key], division: d.key }, { divisions: [d.key] }, t("Divisi anggota diperbarui"))}
               >
                 <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} /> {d.name}
               </DropdownMenuItem>
@@ -316,24 +323,24 @@ export function MemberBulkBar({
         {/* Bulk change type */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={pending}>
+            <Button variant="outline" size="sm">
               <Users className="size-4" /> {t("Ubah Tipe")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => run(() => bulkUpdateMembersAction(ids, { type: "fungsionaris" }), t("Tipe anggota diperbarui"))}>
+            <DropdownMenuItem onSelect={() => update({ type: "fungsionaris" }, { type: "fungsionaris" }, t("Tipe anggota diperbarui"))}>
               {t("Fungsionaris")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => run(() => bulkUpdateMembersAction(ids, { type: "intern" }), t("Tipe anggota diperbarui"))}>
+            <DropdownMenuItem onSelect={() => update({ type: "intern" }, { type: "intern" }, t("Tipe anggota diperbarui"))}>
               {t("Intern")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         {/* Bulk delete */}
-        <Button variant="destructive" size="sm" disabled={pending} onClick={() => setDelOpen(true)}>
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+        <Button variant="destructive" size="sm" onClick={() => setDelOpen(true)}>
+          <Trash2 className="size-4" /> {t("Hapus")}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onClear} disabled={pending}>
+        <Button variant="ghost" size="sm" onClick={onClear}>
           <X className="size-4" /> {t("Batal")}
         </Button>
       </div>
@@ -348,9 +355,9 @@ export function MemberBulkBar({
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-            <Button variant="destructive" disabled={pending}
-              onClick={() => run(() => bulkDeleteMembersAction(ids), t("Anggota dihapus"))}>
-              {pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}
+            <Button variant="destructive"
+              onClick={removeAll}>
+              {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,7 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
-import { CheckCheck, Inbox, Loader2, Mail, MailOpen, Megaphone } from "lucide-react";
+import { CheckCheck, Inbox, Mail, MailOpen, Megaphone } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { formatCommentTime } from "@/lib/task-comments";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { InboxMessage } from "@/lib/types";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
 
 // ============================================================
 // One account's inbox.
@@ -20,12 +20,12 @@ import type { InboxMessage } from "@/lib/types";
 // that empties itself the moment you glance at the menu is a badge that never
 // tells you anything again. A message is marked read when it is OPENED, and
 // there is an explicit way to undo that and an explicit way to clear the lot.
+// All three flip at once and save in the background (use-local-first.ts).
 // ============================================================
 
-function MessageCard({ message }: { message: InboxMessage }) {
+function MessageCard({ message, store }: { message: InboxMessage; store: LocalFirst<InboxMessage> }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
   const unread = !message.read_at;
 
   function toggle() {
@@ -34,10 +34,7 @@ function MessageCard({ message }: { message: InboxMessage }) {
     // Opening an unread message is what marks it read. Closing it again does
     // not put it back: you did read it.
     if (next && unread) {
-      start(async () => {
-        const res = await setInboxReadAction(message.id, true);
-        if (!res.ok) toast.error(res.error);
-      });
+      store.patch(message.id, { read_at: new Date().toISOString() }, () => setInboxReadAction(message.id, true));
     }
   }
 
@@ -84,7 +81,6 @@ function MessageCard({ message }: { message: InboxMessage }) {
             </span>
           )}
         </span>
-        {pending && <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground" />}
       </button>
 
       {open && (
@@ -93,12 +89,9 @@ function MessageCard({ message }: { message: InboxMessage }) {
           {message.read_at && (
             <button
               type="button"
-              onClick={() => start(async () => {
-                const res = await setInboxReadAction(message.id, false);
-                if (res.ok) toast.success(t("Ditandai belum dibaca"));
-                else toast.error(res.error);
+              onClick={() => store.patch(message.id, { read_at: null }, () => setInboxReadAction(message.id, false), {
+                success: t("Ditandai belum dibaca"),
               })}
-              disabled={pending}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
             >
               <Mail className="size-3" /> {t("Tandai belum dibaca")}
@@ -110,9 +103,10 @@ function MessageCard({ message }: { message: InboxMessage }) {
   );
 }
 
-export function InboxView({ messages }: { messages: InboxMessage[] }) {
+export function InboxView({ messages: serverMessages }: { messages: InboxMessage[] }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
+  const store = useLocalFirst(serverMessages);
+  const messages = store.rows;
   const unread = messages.filter((m) => !m.read_at).length;
 
   if (!messages.length) {
@@ -139,20 +133,20 @@ export function InboxView({ messages }: { messages: InboxMessage[] }) {
             variant="outline"
             size="sm"
             className="ml-auto"
-            disabled={pending}
-            onClick={() => start(async () => {
-              const res = await markAllInboxReadAction();
-              if (res.ok) toast.success(t("Semua pesan ditandai sudah dibaca"));
-              else toast.error(res.error);
-            })}
+            onClick={() => store.patchMany(
+              messages.filter((m) => !m.read_at).map((m) => m.id),
+              { read_at: new Date().toISOString() },
+              () => markAllInboxReadAction(),
+              { success: t("Semua pesan ditandai sudah dibaca") },
+            )}
           >
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCheck className="size-3.5" />}
+            <CheckCheck className="size-3.5" />
             {t("Tandai semua dibaca")}
           </Button>
         )}
       </div>
       <div className="space-y-2">
-        {messages.map((m) => <MessageCard key={m.id} message={m} />)}
+        {messages.map((m) => <MessageCard key={m.id} message={m} store={store} />)}
       </div>
     </div>
   );

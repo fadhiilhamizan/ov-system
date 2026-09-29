@@ -1,7 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
-import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Loader2, Star, CheckCircle2, ExternalLink, Share2, Filter } from "lucide-react";
+import { Search, Plus, Table2, Columns3, X, Building2, Phone, UserRound, Trash2, Star, CheckCircle2, ExternalLink, Share2, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +9,8 @@ import { useMultiSelect } from "@/lib/use-multi-select";
 import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { SortHead } from "@/components/ui/sort-indicator";
 import { bulkDeleteProspectsAction } from "@/lib/actions/prospects";
+import { useLocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import { FilterMultiSelect } from "@/components/ui/filter-multi-select";
 import { ExpandableText } from "@/components/ui/expandable-text";
 import {
@@ -99,11 +100,14 @@ export function ProspectsView({
   // "show me diterima AND ditolak" was impossible with a single-select.
   const [stage, setStage] = React.useState<Set<string>>(new Set());
   const sort = useMultiSort<ProspectSortKey>();
-  const [bulkPending, startBulk] = React.useTransition();
+  // Local-first (use-local-first.ts): the primary star and deletes show at
+  // once and save in the background. Everything below renders from `all`.
+  const store = useLocalFirst(prospects);
+  const all = store.rows;
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
-    return prospects.filter((p) => {
+    return all.filter((p) => {
       if (stage.size > 0 && !stage.has(prospectStage(p))) return false;
       if (!query) return true;
       // Link names are searchable too: people look a prospect up by the
@@ -113,18 +117,18 @@ export function ProspectsView({
         .toLowerCase()
         .includes(query);
     });
-  }, [prospects, prospectLinks, q, stage]);
+  }, [all, prospectLinks, q, stage]);
 
   // Counted before the stage filter, so ticking one stage does not blank out
   // the numbers next to the ones you have not ticked yet.
   const stageCounts = React.useMemo(() => {
     const by: Record<string, number> = {};
-    for (const p of prospects) {
+    for (const p of all) {
       const k = prospectStage(p);
       by[k] = (by[k] ?? 0) + 1;
     }
     return by;
-  }, [prospects]);
+  }, [all]);
 
   const stageOrder = React.useMemo(
     () => Object.fromEntries(PIPELINE_STAGES.map((s, i) => [s.key, i])),
@@ -148,11 +152,9 @@ export function ProspectsView({
   const hasFilters = q || stage.size > 0;
   const allSelected = sel.allVisibleSelected;
   function bulkDelete() {
-    startBulk(async () => {
-      const res = await bulkDeleteProspectsAction(sel.ids);
-      if (res.ok) { toast.success(`${sel.count} ${t("prospek dihapus")}`); sel.clear(); }
-      else toast.error(res.error);
-    });
+    const ids = sel.ids;
+    sel.clear();
+    store.remove(ids, () => bulkDeleteProspectsAction(ids), { success: `${ids.length} ${t("prospek dihapus")}` });
   }
 
   return (
@@ -200,6 +202,7 @@ export function ProspectsView({
               </button>
             ))}
           </div>
+          <LocalSaveStatus status={store.status} />
           {manage && <ImportXlsxButton module="prospects" />}
           {manage && (
             <ProspectFormDialog
@@ -222,10 +225,10 @@ export function ProspectsView({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
-              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+              <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       ) : (
@@ -294,7 +297,7 @@ export function ProspectsView({
                     </TableCell>
                     {manage && (
                       <TableCell>
-                        <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} />
+                        <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} store={store} />
                       </TableCell>
                     )}
                   </TableRow>
@@ -321,7 +324,7 @@ export function ProspectsView({
                     <div key={p.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium">{p.org_name || "-"}</p>
-                        {manage && <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} />}
+                        {manage && <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} store={store} />}
                       </div>
                       {p.campus && <p className="mt-0.5 text-xs text-muted-foreground">{p.campus}</p>}
                       <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">

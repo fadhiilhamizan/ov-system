@@ -244,6 +244,7 @@ export async function createTask(
   // trigger (advisory-locked per event+division) when left null, so concurrent
   // creates can't collide. An explicit `no` (manual/clone) is preserved.
   const data = await must(client.from("tasks").insert({
+    ...(input.id ? { id: input.id } : {}),
     event_id: input.event_id,
     division: input.division,
     no: input.no ?? null,
@@ -562,6 +563,8 @@ export const getTaskCommentsByEvent = cache(
 );
 
 export interface TaskCommentRow {
+  /** Client uuid, so the message can be shown before the insert returns. */
+  id?: string;
   task_id: string;
   parent_id: string | null;
   body: string;
@@ -1191,6 +1194,7 @@ export async function setCategoryColor(planId: string, category: string, color: 
 export async function createBudgetItem(
   planId: string,
   input: {
+    id?: string;
     category: string; name: string; qty?: number | null; unit?: string;
     unit_price?: number | null; category_color?: string | null;
   },
@@ -1201,6 +1205,7 @@ export async function createBudgetItem(
   // number and write it twice. Gaps do not matter, the column is only sorted on.
   const total = Math.round((input.qty ?? 0) * (input.unit_price ?? 0));
   const { error } = await client.from("budget_items").insert({
+    ...(input.id ? { id: input.id } : {}),
     plan_id: planId,
     category: input.category || "LAIN-LAIN",
     name: input.name,
@@ -2048,6 +2053,7 @@ export async function createJob(input: Partial<JobHariH>) {
   // `no` assigned atomically by the assign_job_no() BEFORE-INSERT trigger
   // (advisory-locked per event) when null; an explicit `no` is preserved.
   await must(client.from("job_harih").insert({
+    ...(input.id ? { id: input.id } : {}),
     event_id: input.event_id ?? null,
     no: input.no ?? null,
     pic: input.pic ?? "",

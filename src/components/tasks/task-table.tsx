@@ -25,6 +25,7 @@ import { useMultiSort, sortRows } from "@/lib/use-multi-sort";
 import { visibleSelection } from "@/lib/use-multi-select";
 import { formatDate, daysUntil, isUrl } from "@/lib/format";
 import { bulkSetStatusAction, bulkDeleteTasksAction } from "@/lib/actions/tasks";
+import { useTaskStore } from "./task-store";
 import { STATUS_ORDER, STATUS_META } from "@/lib/constants";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,7 @@ export function TaskTable({
   // is on screen (see use-multi-select).
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [pending, start] = React.useTransition();
+  const store = useTaskStore();
 
   const canSelect = user.role !== "guest";
   const canBulkDelete = can.deleteTask(user);
@@ -113,6 +115,13 @@ export function TaskTable({
 
   function bulkStatus(status: TaskStatus) {
     const ids = selectedInView;
+    if (store) {
+      store.patchMany(ids, { status }, () => bulkSetStatusAction(ids, status), {
+        success: (r) => ("count" in r ? `${r.count} ${tr("tugas")} -> ${STATUS_META[status].label}` : null),
+        onResult: (r) => { if ("skipped" in r && r.skipped > 0) toast.warning(`${r.skipped} ${tr("tugas dilewati (tanpa akses)")}`); },
+      });
+      return;
+    }
     start(async () => {
       const res = await bulkSetStatusAction(ids, status);
       if (res.ok) {
@@ -123,6 +132,14 @@ export function TaskTable({
   }
   function bulkDelete() {
     const ids = selectedInView;
+    if (store) {
+      setSelected(new Set());
+      store.remove(ids, () => bulkDeleteTasksAction(ids), {
+        success: (r) => ("count" in r ? `${r.count} ${tr("tugas dihapus")}` : null),
+        onResult: (r) => { if ("skipped" in r && r.skipped > 0) toast.warning(`${r.skipped} ${tr("tugas dilewati (tanpa akses)")}`); },
+      });
+      return;
+    }
     start(async () => {
       const res = await bulkDeleteTasksAction(ids);
       if (res.ok) {

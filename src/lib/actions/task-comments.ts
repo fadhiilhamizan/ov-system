@@ -5,7 +5,14 @@ import { can } from "@/lib/permissions";
 import {
   createTaskComment, deleteTaskComment, getTask, getTaskComment, setTaskCommentResolved,
 } from "@/lib/data/repo";
-import { idSchema, parse, replyTaskCommentSchema, startTaskCommentSchema } from "./schemas";
+import { clientUuidSchema, idSchema, parse, replyTaskCommentSchema, startTaskCommentSchema } from "./schemas";
+
+/** Validate an optional client uuid; `null` result = invalid. */
+function clientId(newId?: string): { ok: true; id?: string } | { ok: false; error: string } {
+  if (newId === undefined) return { ok: true };
+  const v = parse(clientUuidSchema, newId);
+  return v.ok ? { ok: true, id: v.data } : v;
+}
 import { archivedGuard, errMsg } from "./lock";
 
 // ============================================================
@@ -31,9 +38,11 @@ type Result = { ok: true } | { ok: false; error: string };
 export async function startTaskCommentAction(input: {
   task_id: string;
   body: string;
-}): Promise<Result> {
+}, newId?: string): Promise<Result> {
   const v = parse(startTaskCommentSchema, input);
   if (!v.ok) return v;
+  const cid = clientId(newId);
+  if (!cid.ok) return cid;
 
   const user = await getCurrentUser();
   if (!can.startTaskComment(user)) {
@@ -49,6 +58,7 @@ export async function startTaskCommentAction(input: {
 
   try {
     await createTaskComment({
+      id: cid.id,
       task_id: task.id,
       parent_id: null,
       body: v.data.body,
@@ -79,9 +89,11 @@ export async function startTaskCommentAction(input: {
 export async function replyTaskCommentAction(input: {
   parent_id: string;
   body: string;
-}): Promise<Result> {
+}, newId?: string): Promise<Result> {
   const v = parse(replyTaskCommentSchema, input);
   if (!v.ok) return v;
+  const cid = clientId(newId);
+  if (!cid.ok) return cid;
 
   const user = await getCurrentUser();
   if (!can.replyTaskComment(user)) {
@@ -99,6 +111,7 @@ export async function replyTaskCommentAction(input: {
 
   try {
     await createTaskComment({
+      id: cid.id,
       task_id: parent.task_id,
       parent_id: parent.id,
       body: v.data.body,

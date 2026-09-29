@@ -19,6 +19,7 @@ import { TaskActions } from "./task-actions";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { TaskCommentBadge } from "./task-comments";
 import { setTaskStatusAction } from "@/lib/actions/tasks";
+import { useTaskStore } from "./task-store";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export function TaskKanban({
 }) {
   const t = useT();
   const [items, setItems] = useSynced(tasks);
+  const store = useTaskStore();
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -61,6 +63,12 @@ export function TaskKanban({
     if (!task || task.status === newStatus) return;
     if (!can.editTaskProgress(user)) {
       toast.error(t("Kamu tidak punya akses mengubah status tugas ini."));
+      return;
+    }
+    // Inside the Work Breakdown the shared store moves the card (and the
+    // table, and the counts) at once; the local copy is the fallback.
+    if (store) {
+      store.patch(id, { status: newStatus }, () => setTaskStatusAction(id, newStatus));
       return;
     }
     setItems((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));

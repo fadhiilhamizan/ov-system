@@ -155,18 +155,25 @@ export async function updateJobAction(id: string, patch: Partial<JobHariH>): Pro
   revalidateEntities("jobs");
   return { ok: true };
 }
-export async function duplicateJobAction(id: string): Promise<Result> {
+/** `newId`: optional client uuid, so the copy can be shown before it exists. */
+export async function duplicateJobAction(id: string, newId?: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!can.manageJobs(user)) return DENY;
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
+  let copyId: string | undefined;
+  if (newId !== undefined) {
+    const nv = parse(clientUuidSchema, newId);
+    if (!nv.ok) return nv;
+    copyId = nv.data;
+  }
   const job = (await getJobs()).find((j) => j.id === idv.data);
   if (!job) return { ok: false, error: "Tugas tidak ditemukan." };
   const blocked = await archivedGuard(user, job.event_id);
   if (blocked) return blocked;
   try {
     await createJob({
-      event_id: job.event_id, job: `${job.job} (salinan)`, pic: job.pic, notes: job.notes,
+      id: copyId, event_id: job.event_id, job: `${job.job} (salinan)`, pic: job.pic, notes: job.notes,
     });
   } catch (e) { return errMsg(e); }
   revalidateEntities("jobs");

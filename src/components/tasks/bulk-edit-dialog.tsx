@@ -13,6 +13,7 @@ import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
 import { splitForDivision } from "@/lib/members";
 import { bulkUpdateTaskFieldsAction } from "@/lib/actions/tasks";
+import { useTaskStore } from "./task-store";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import type { Division, DivisionKey } from "@/lib/types";
@@ -37,6 +38,7 @@ export function BulkEditDialog({
   const members = useMembers();
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
+  const store = useTaskStore();
 
   // Every re-open starts blank so a previous edit can't be replayed by accident.
   const [f, setF] = useResetOn(open, () => ({
@@ -57,14 +59,26 @@ export function BulkEditDialog({
   const nothingPicked = !f.useDivision && !f.usePic && !f.useDeadline;
 
   function submit() {
-    start(async () => {
-      const res = await bulkUpdateTaskFieldsAction(ids, {
-        ...(f.useDivision ? { division: f.division } : {}),
-        ...(f.usePic ? { pic: f.pic } : {}),
-        // An empty date field means "clear the deadline", which is a deliberate
-        // edit - hence null rather than skipping the key.
-        ...(f.useDeadline ? { end_date: f.end_date || null } : {}),
+    const patch = {
+      ...(f.useDivision ? { division: f.division } : {}),
+      ...(f.usePic ? { pic: f.pic } : {}),
+      // An empty date field means "clear the deadline", which is a deliberate
+      // edit - hence null rather than skipping the key.
+      ...(f.useDeadline ? { end_date: f.end_date || null } : {}),
+    };
+    // The picked values are all known here, so the rows can change at once.
+    if (store) {
+      const target = [...ids];
+      setOpen(false);
+      onDone();
+      store.patchMany(target, patch, () => bulkUpdateTaskFieldsAction(target, patch), {
+        success: (r) => ("count" in r ? `${r.count} ${t("tugas diperbarui")}` : null),
+        onResult: (r) => { if ("skipped" in r && r.skipped > 0) toast.warning(`${r.skipped} ${t("tugas dilewati (tanpa akses)")}`); },
       });
+      return;
+    }
+    start(async () => {
+      const res = await bulkUpdateTaskFieldsAction(ids, patch);
       if (res.ok) {
         toast.success(`${res.count} ${t("tugas diperbarui")}`);
         if (res.skipped > 0) toast.warning(`${res.skipped} ${t("tugas dilewati (tanpa akses)")}`);

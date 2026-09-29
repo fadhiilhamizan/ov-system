@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
 import type { TaskComment } from "@/lib/types";
 
 /**
@@ -13,8 +14,13 @@ import type { TaskComment } from "@/lib/types";
  * composer-less panel that suggests the conversation was lost. A page that
  * mounts the task dialog should provide this; one that does not simply hides
  * the whole feature.
+ *
+ * The comments are local-first (use-local-first.ts): a note you send, a reply,
+ * a tick and a delete all show at once and save in the background, the way a
+ * chat is expected to behave.
  */
 const Ctx = React.createContext<Record<string, TaskComment[]> | undefined>(undefined);
+const StoreCtx = React.createContext<LocalFirst<TaskComment> | null>(null);
 
 export function TaskCommentsProvider({
   value,
@@ -23,7 +29,24 @@ export function TaskCommentsProvider({
   value?: Record<string, TaskComment[]>;
   children: React.ReactNode;
 }) {
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  const flat = React.useMemo(() => (value ? Object.values(value).flat() : []), [value]);
+  const store = useLocalFirst(flat);
+  const grouped = React.useMemo(() => {
+    if (!value) return undefined;
+    const map: Record<string, TaskComment[]> = {};
+    for (const c of store.rows) (map[c.task_id] ??= []).push(c);
+    return map;
+  }, [value, store.rows]);
+  return (
+    <StoreCtx.Provider value={value ? store : null}>
+      <Ctx.Provider value={grouped}>{children}</Ctx.Provider>
+    </StoreCtx.Provider>
+  );
+}
+
+/** The local-first comment list, or null outside a provider that has data. */
+export function useTaskCommentStore(): LocalFirst<TaskComment> | null {
+  return React.useContext(StoreCtx);
 }
 
 /**

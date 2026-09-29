@@ -8,7 +8,9 @@ import {
   createBudgetPlan, deleteBudgetPlan, getBudgetPlans, setCategoryColor, reorderBudgetItems,
   moveBudgetItem, setPrimaryBudgetPlan,
 } from "@/lib/data/repo";
-import { budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, parse } from "./schemas";
+import {
+  budgetItemSchema, updateBudgetItemSchema, budgetPlanSchema, idSchema, clientUuidSchema, parse,
+} from "./schemas";
 // The shared one, not a local copy: it recognises the two database errors a
 // committee member can act on (an RLS denial, and a database that is behind the
 // app) and says which script to run, instead of handing over raw Postgres prose.
@@ -85,16 +87,24 @@ export async function deleteBudgetItemAction(itemId: string): Promise<Result> {
   return { ok: true };
 }
 
-export async function duplicateBudgetItemAction(itemId: string): Promise<Result> {
+/** `newId`: optional client uuid, so the copy can be shown before it exists. */
+export async function duplicateBudgetItemAction(itemId: string, newId?: string): Promise<Result> {
   if (!can.manageBudget(await getCurrentUser())) return DENY;
   const idv = parse(idSchema, itemId);
   if (!idv.ok) return idv;
+  let copyId: string | undefined;
+  if (newId !== undefined) {
+    const nv = parse(clientUuidSchema, newId);
+    if (!nv.ok) return nv;
+    copyId = nv.data;
+  }
   const plans = await getBudgetPlans();
   const plan = plans.find((p) => p.items.some((i) => i.id === idv.data));
   const item = plan?.items.find((i) => i.id === idv.data);
   if (!plan || !item) return { ok: false, error: "Item tidak ditemukan." };
   try {
     await createBudgetItem(plan.id, {
+      id: copyId,
       category: item.category,
       name: `${item.name} (salinan)`,
       qty: item.qty,

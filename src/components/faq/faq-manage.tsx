@@ -14,6 +14,7 @@ import { createFaqAction, updateFaqAction, deleteFaqAction } from "@/lib/actions
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
 import type { Faq } from "@/lib/types";
+import type { LocalFirst } from "@/lib/use-local-first";
 
 function FaqFormDialog({
   mode, faq, open, onOpenChange, trigger,
@@ -77,10 +78,14 @@ export function AddFaqButton() {
   );
 }
 
+/** The FAQ list's local-first store (use-local-first.ts), provided by FaqList. */
+export const FaqStoreContext = React.createContext<LocalFirst<Faq> | null>(null);
+
 export function FaqActions({ faq }: { faq: Faq }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
+  const store = React.useContext(FaqStoreContext);
   return (
     <>
       <DropdownMenu>
@@ -92,10 +97,17 @@ export function FaqActions({ faq }: { faq: Faq }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => start(async () => {
-            const res = await deleteFaqAction(faq.id);
-            if (res.ok) toast.success(t("FAQ dihapus")); else toast.error(res.error);
-          })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+          <DropdownMenuItem destructive onSelect={() => {
+            // Gone at once when inside the list; waits only without one.
+            if (store) {
+              store.remove([faq.id], () => deleteFaqAction(faq.id), { success: t("FAQ dihapus") });
+              return;
+            }
+            start(async () => {
+              const res = await deleteFaqAction(faq.id);
+              if (res.ok) toast.success(t("FAQ dihapus")); else toast.error(res.error);
+            });
+          }}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <FaqFormDialog mode="edit" faq={faq} open={editOpen} onOpenChange={setEditOpen} />

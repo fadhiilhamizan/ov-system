@@ -24,6 +24,8 @@ import { memberDivisions, primaryDivision } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import type { Division, Member, OVEvent, Team } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
+import { useLocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 
 type SortCol = "name" | "nrp" | "division" | "type" | "year";
 
@@ -56,9 +58,13 @@ export function MembersView({
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const sort = useMultiSort<SortCol>([{ key: "name", dir: "asc" }]);
   const divMap = React.useMemo(() => new Map(divisions.map((d) => [d.key, d])), [divisions]);
+  // Local-first (use-local-first.ts): deletes and bulk changes show at once and
+  // save in the background. Everything below renders from `all`.
+  const store = useLocalFirst(members);
+  const all = store.rows;
 
   const filtered = React.useMemo(() => {
-    const list = members.filter((m) => {
+    const list = all.filter((m) => {
       if (type.size > 0 && !type.has(m.type)) return false;
       if (q && !`${m.name} ${m.nickname} ${m.nrp}`.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
@@ -74,7 +80,7 @@ export function MembersView({
       }
     };
     return sortRows(list, sort.rules, val);
-  }, [members, type, q, sort.rules, divMap]);
+  }, [all, type, q, sort.rules, divMap]);
 
   // Only ever act on selections that are still visible under the current filter
   // (ids selected then filtered away, or deleted, are simply ignored - no effect
@@ -100,8 +106,8 @@ export function MembersView({
     });
   }
 
-  const fungCount = members.filter((m) => m.type === "fungsionaris").length;
-  const internCount = members.filter((m) => m.type === "intern").length;
+  const fungCount = all.filter((m) => m.type === "fungsionaris").length;
+  const internCount = all.filter((m) => m.type === "intern").length;
 
   return (
     <Tabs defaultValue="divisi">
@@ -120,7 +126,7 @@ export function MembersView({
           divisions={divisions}
           stats={divisionStats}
           teams={teams}
-          members={members}
+          members={all}
           eventId={eventId}
           canManage={canManageDivisions}
           canManageTeams={canManageTeams}
@@ -137,7 +143,7 @@ export function MembersView({
           <div className="flex items-center gap-2">
             <FilterMultiSelect
               label={tr("Tipe")}
-              allLabel={`${tr("Semua")} (${members.length})`}
+              allLabel={`${tr("Semua")} (${all.length})`}
               unit={tr("tipe")}
               icon={<IdCard className="size-3.5" />}
               options={[
@@ -147,6 +153,7 @@ export function MembersView({
               picked={type}
               onChange={setType}
             />
+            <LocalSaveStatus status={store.status} />
             {canManageMembers && <ImportXlsxButton module="members" />}
             {canManageMembers && (
               <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
@@ -159,7 +166,7 @@ export function MembersView({
         </div>
 
         {canManageMembers && selectedInView.length > 0 && (
-          <MemberBulkBar ids={selectedInView} divisions={divisions} onClear={() => setSelected(new Set())} />
+          <MemberBulkBar ids={selectedInView} divisions={divisions} onClear={() => setSelected(new Set())} store={store} />
         )}
 
         {filtered.length ? (
@@ -226,7 +233,7 @@ export function MembersView({
                       <TableCell className="text-sm text-muted-foreground">{m.year}</TableCell>
                       {canManageMembers && (
                         <TableCell>
-                          <MemberActions member={m} divisions={divisions} events={events} defaultEventId={eventId} />
+                          <MemberActions member={m} divisions={divisions} events={events} defaultEventId={eventId} store={store} />
                         </TableCell>
                       )}
                     </TableRow>

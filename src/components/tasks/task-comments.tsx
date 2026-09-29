@@ -17,9 +17,18 @@ import { can } from "@/lib/permissions";
 import { ROLE_META } from "@/lib/constants";
 import { formatCommentTime, openThreadCount, sortThreads, toThreads } from "@/lib/task-comments";
 import { useT } from "@/lib/i18n/provider";
-import { cn } from "@/lib/utils";
+import { cn, uuidV4 } from "@/lib/utils";
 import type { AppUser, Role, Task, TaskComment, TaskCommentThread } from "@/lib/types";
-import { useTaskComments } from "./task-comments-context";
+import { useTaskCommentStore, useTaskComments } from "./task-comments-context";
+
+/** A new comment as it will look once stored, shown before the insert returns. */
+function draftComment(user: AppUser, taskId: string, parentId: string | null, body: string): TaskComment {
+  return {
+    id: uuidV4(), task_id: taskId, parent_id: parentId, body,
+    author_id: user.id, author_name: user.name, author_role: user.role,
+    resolved: false, resolved_at: null, resolved_by: "", created_at: new Date().toISOString(),
+  };
+}
 
 // ============================================================
 // Catatan per tugas: a small chat hanging off one Work Breakdown row.
@@ -48,6 +57,7 @@ function CommentBubble({
 }) {
   const t = useT();
   const [pending, start] = React.useTransition();
+  const store = useTaskCommentStore();
   const canDelete = can.deleteTaskComment(user, comment.author_id);
   const roleLabel = ROLE_META[comment.author_role as Role]?.label;
 
@@ -68,11 +78,19 @@ function CommentBubble({
             <button
               type="button"
               disabled={pending}
-              onClick={() => start(async () => {
-                const res = await deleteTaskCommentAction(comment.id);
-                if (res.ok) toast.success(t("Catatan dihapus"));
-                else toast.error(res.error);
-              })}
+              onClick={() => {
+                if (store) {
+                  // A root takes its replies with it (the FK cascades).
+                  const ids = [comment.id, ...store.rows.filter((c) => c.parent_id === comment.id).map((c) => c.id)];
+                  void store.remove(ids, () => deleteTaskCommentAction(comment.id), { success: t("Catatan dihapus") });
+                  return;
+                }
+                start(async () => {
+                  const res = await deleteTaskCommentAction(comment.id);
+                  if (res.ok) toast.success(t("Catatan dihapus"));
+                  else toast.error(res.error);
+                });
+              }}
               className="ml-auto inline-flex items-center rounded p-0.5 text-muted-foreground/60 transition hover:text-danger disabled:opacity-50"
               aria-label={t("Hapus catatan")}
             >
@@ -110,10 +128,15 @@ function Composer({
   function send() {
     const text = body.trim();
     if (!text || pending) return;
+    // The box empties at once (the message is already in the thread), and a
+    // message the server refuses comes BACK into the box, so a long note is
+    // never lost with nothing to retry.
+    setBody("");
+    // Called in the click itself, not inside the transition: the message is
+    // added to the thread in this same render rather than a deferred one.
+    const sent = onSend(text);
     start(async () => {
-      // Only clear on success - a message the server refused has to stay in the
-      // box, or a long note is gone with nothing to retry.
-      if (await onSend(text)) setBody("");
+      if (!(await sent)) setBody((cur) => cur || text);
     });
   }
 
@@ -149,6 +172,7 @@ function Composer({
 function ThreadCard({ thread, user }: { thread: TaskCommentThread; user: AppUser }) {
   const t = useT();
   const [pending, start] = React.useTransition();
+  const store = useTaskCommentStore();
   const { root, replies } = thread;
   const canResolve = can.resolveTaskComment(user);
   const canReply = can.replyTaskComment(user);
@@ -176,12 +200,22 @@ function ThreadCard({ thread, user }: { thread: TaskCommentThread; user: AppUser
           <button
             type="button"
             disabled={pending}
-            onClick={() => start(async () => {
-              const res = await setTaskCommentResolvedAction(root.id, !root.resolved);
-              if (res.ok) {
-                toast.success(root.resolved ? t("Catatan dibuka lagi") : t("Catatan ditandai selesai"));
-              } else toast.error(res.error);
-            })}
+            onClick={() => {
+              const msg = root.resolved ? t("Catatan dibuka lagi") : t("Catatan ditandai selesai");
+              if (store) {
+                void store.patch(root.id, {
+                  resolved: !root.resolved,
+                  resolved_at: root.resolved ? null : new Date().toISOString(),
+                  resolved_by: root.resolved ? "" : user.name,
+                }, () => setTaskCommentResolvedAction(root.id, !root.resolved), { success: msg });
+                return;
+              }
+              start(async () => {
+                const res = await setTaskCommentResolvedAction(root.id, !root.resolved);
+                if (res.ok) toast.success(msg);
+                else toast.error(res.error);
+              });
+            }}
             className={cn(
               "ml-auto inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition disabled:opacity-50",
               root.resolved
@@ -216,6 +250,10 @@ function ThreadCard({ thread, user }: { thread: TaskCommentThread; user: AppUser
             placeholder={t("Tulis balasan…")}
             label={t("Balas")}
             onSend={async (body) => {
+              if (store) {
+                const c = draftComment(user, root.task_id, root.id, body);
+                return store.add(c, () => replyTaskCommentAction({ parent_id: root.id, body }, c.id));
+              }
               const res = await replyTaskCommentAction({ parent_id: root.id, body });
               if (res.ok) toast.success(t("Balasan terkirim"));
               else toast.error(res.error);
@@ -231,6 +269,7 @@ function ThreadCard({ thread, user }: { thread: TaskCommentThread; user: AppUser
 /** The composer that STARTS a thread. Hidden for roles that may only reply. */
 function StartThreadBox({ task, user }: { task: Task; user: AppUser }) {
   const t = useT();
+  const store = useTaskCommentStore();
   if (!can.startTaskComment(user)) {
     return (
       <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
@@ -247,6 +286,10 @@ function StartThreadBox({ task, user }: { task: Task; user: AppUser }) {
         placeholder={t("Revisi, informasi tambahan, atau hal lain yang perlu disampaikan…")}
         label={t("Kirim catatan")}
         onSend={async (body) => {
+          if (store) {
+            const c = draftComment(user, task.id, null, body);
+            return store.add(c, () => startTaskCommentAction({ task_id: task.id, body }, c.id));
+          }
           const res = await startTaskCommentAction({ task_id: task.id, body });
           if (res.ok) toast.success(t("Catatan ditambahkan"));
           else toast.error(res.error);

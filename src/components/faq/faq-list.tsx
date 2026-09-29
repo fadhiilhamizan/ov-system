@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
 import { ChevronDown, GripVertical } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
@@ -10,12 +9,11 @@ import {
   SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FaqActions } from "@/components/faq/faq-manage";
+import { FaqActions, FaqStoreContext } from "@/components/faq/faq-manage";
 import { reorderFaqsAction } from "@/lib/actions/faq";
 import { useT } from "@/lib/i18n/provider";
-import { useResetOn } from "@/lib/use-synced";
-import { useAutosave } from "@/lib/use-autosave";
-import { SaveIndicator } from "@/components/ui/save-indicator";
+import { useLocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import { cn } from "@/lib/utils";
 import type { Faq } from "@/lib/types";
 
@@ -91,30 +89,24 @@ function SortableFaq({ faq, index, defaultOpen }: { faq: Faq; index: number; def
 
 export function FaqList({ faqs, manage }: { faqs: Faq[]; manage: boolean }) {
   const t = useT();
-  // Server order is the truth; this local copy exists so a drag lands instantly,
-  // and it resets whenever the server sends a different sequence.
-  const orderKey = faqs.map((f) => f.id).join(",");
-  const [items, setItems] = useResetOn(orderKey, () => faqs);
+  // Local-first (use-local-first.ts): a drag or a delete lands instantly and
+  // saves in the background; the server's order takes over once it arrives.
+  const store = useLocalFirst(faqs);
+  const items = store.rows;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const autosave = useAutosave();
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const from = items.findIndex((f) => f.id === active.id);
     const to = items.findIndex((f) => f.id === over.id);
     if (from < 0 || to < 0) return;
-    const next = arrayMove(items, from, to);
-    setItems(next); // optimistic
-    autosave.run(async () => {
-      const res = await reorderFaqsAction(next.map((f) => f.id));
-      if (!res.ok) { toast.error(res.error); setItems(faqs); }
-      return res;
-    });
+    const ids = arrayMove(items, from, to).map((f) => f.id);
+    store.reorder(ids, () => reorderFaqsAction(ids));
   }
 
   if (!manage) {
@@ -128,10 +120,11 @@ export function FaqList({ faqs, manage }: { faqs: Faq[]; manage: boolean }) {
   }
 
   return (
+    <FaqStoreContext.Provider value={store}>
     <div className="space-y-2.5">
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         {t("Seret ikon untuk mengurutkan pertanyaan; nomor tersusun otomatis.")}
-        <SaveIndicator status={autosave.status} />
+        <LocalSaveStatus status={store.status} />
       </p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((f) => f.id)} strategy={verticalListSortingStrategy}>
@@ -141,5 +134,6 @@ export function FaqList({ faqs, manage }: { faqs: Faq[]; manage: boolean }) {
         </SortableContext>
       </DndContext>
     </div>
+    </FaqStoreContext.Provider>
   );
 }

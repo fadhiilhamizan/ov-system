@@ -1,8 +1,7 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { ArrowRight, Users2, Trash2, Loader2, X, CalendarOff, Calendar, Plus } from "lucide-react";
+import { ArrowRight, Users2, Trash2, X, CalendarOff, Calendar, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,11 +13,13 @@ import { StackedBar } from "@/components/charts/bars";
 import { AddDivisionButton, DeleteDivisionsDialog, DivisionActions } from "@/components/divisions/division-manage";
 import { STATUS_META } from "@/lib/constants";
 import { useMultiSelect } from "@/lib/use-multi-select";
-import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction } from "@/lib/actions/manage";
+import { bulkDeleteDivisionsAction, bulkUpdateDivisionsAction, deleteDivisionAction } from "@/lib/actions/manage";
 import { memberInDivision, memberLabel, splitRoster } from "@/lib/members";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Division, Member, Team } from "@/lib/types";
+import { useLocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 
 export interface DivisionStat {
   division: Division;
@@ -166,14 +167,18 @@ export function DivisionsGrid({
   canManageMembers: boolean;
 }) {
   const t = useT();
+  // Local-first (use-local-first.ts), keyed by the division KEY: a delete or a
+  // rundown toggle shows at once and saves in the background.
+  const keyed = React.useMemo(() => divisions.map((d) => ({ ...d, id: d.key })), [divisions]);
+  const store = useLocalFirst(keyed);
+  const shown = store.rows;
   // Selection intersects with what is on screen instead of being wiped by an
   // effect, so a tick survives an unrelated re-render (see use-multi-select).
-  const sel = useMultiSelect(React.useMemo(() => divisions.map((d) => d.key), [divisions]));
-  const [pending, start] = React.useTransition();
+  const sel = useMultiSelect(React.useMemo(() => shown.map((d) => d.key), [shown]));
   const [bulkDelOpen, setBulkDelOpen] = React.useState(false);
 
   const statMap = React.useMemo(() => new Map(stats.map((s) => [s.division.key, s])), [stats]);
-  const cards = divisions.map((division) => {
+  const cards = shown.map((division) => {
     const s = statMap.get(division.key);
     return {
       division,
@@ -182,11 +187,18 @@ export function DivisionsGrid({
     };
   });
 
-  function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, ok: string) {
-    start(async () => {
-      const res = await fn();
-      if (res.ok) { toast.success(ok); sel.clear(); setBulkDelOpen(false); } else toast.error(res.error);
+  function setRundown(exclude: boolean) {
+    const keys = sel.ids;
+    sel.clear();
+    store.patchMany(keys, { exclude_from_rundown: exclude }, () => bulkUpdateDivisionsAction(keys, { exclude_from_rundown: exclude }), {
+      success: t("Divisi diperbarui"),
     });
+  }
+  function removeSelected() {
+    const keys = sel.ids;
+    sel.clear();
+    setBulkDelOpen(false);
+    store.remove(keys, () => bulkDeleteDivisionsAction(keys), { success: t("Divisi dihapus") });
   }
 
   return (
@@ -194,11 +206,12 @@ export function DivisionsGrid({
       <DeleteDivisionsDialog
         open={bulkDelOpen}
         onOpenChange={setBulkDelOpen}
-        names={divisions.filter((d) => sel.selected.has(d.key)).map((d) => d.name)}
-        pending={pending}
-        onConfirm={() => run(() => bulkDeleteDivisionsAction(sel.ids), t("Divisi dihapus"))}
+        names={shown.filter((d) => sel.selected.has(d.key)).map((d) => d.name)}
+        pending={false}
+        onConfirm={removeSelected}
       />
       <div className="mb-4 flex items-center justify-end gap-2">
+        <LocalSaveStatus status={store.status} className="mr-auto" />
         {canManage && <AddDivisionButton />}
       </div>
 
@@ -206,18 +219,16 @@ export function DivisionsGrid({
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" disabled={pending}
-              onClick={() => run(() => bulkUpdateDivisionsAction(sel.ids, { exclude_from_rundown: true }), t("Divisi diperbarui"))}>
+            <Button variant="outline" size="sm" onClick={() => setRundown(true)}>
               <CalendarOff className="size-4" /> {t("Tanpa rundown")}
             </Button>
-            <Button variant="outline" size="sm" disabled={pending}
-              onClick={() => run(() => bulkUpdateDivisionsAction(sel.ids, { exclude_from_rundown: false }), t("Divisi diperbarui"))}>
+            <Button variant="outline" size="sm" onClick={() => setRundown(false)}>
               <Calendar className="size-4" /> {t("Ikut rundown")}
             </Button>
-            <Button variant="destructive" size="sm" disabled={pending} onClick={() => setBulkDelOpen(true)}>
-              {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            <Button variant="destructive" size="sm" onClick={() => setBulkDelOpen(true)}>
+              <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={pending}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       )}
@@ -234,7 +245,12 @@ export function DivisionsGrid({
                 {canManage && (
                   <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
                     <Checkbox checked={checked} onCheckedChange={() => sel.toggle(s.division.key)} aria-label={t("Pilih")} />
-                    <DivisionActions division={s.division} />
+                    <DivisionActions
+                      division={s.division}
+                      onDelete={() => store.remove([s.division.key], () => deleteDivisionAction(s.division.key), {
+                        success: t("Divisi dihapus"),
+                      })}
+                    />
                   </div>
                 )}
                 <Link href={`/divisions/${s.division.key}`} className="group block">

@@ -23,6 +23,8 @@ import { can } from "@/lib/permissions";
 import { deleteTaskAction, duplicateTaskAction } from "@/lib/actions/tasks";
 import { useT } from "@/lib/i18n/provider";
 import type { AppUser, Division, OVEvent, Task } from "@/lib/types";
+import { uuidV4 } from "@/lib/utils";
+import { useTaskStore } from "./task-store";
 
 export function TaskActions({
   task,
@@ -41,6 +43,7 @@ export function TaskActions({
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
+  const store = useTaskStore();
 
   const canEditAny = can.editTaskProgress(user);
   // Duplicating creates a new task, so it follows "create" (limited) rights;
@@ -50,12 +53,36 @@ export function TaskActions({
   if (!canEditAny && !canDuplicate && !canDelete) return null;
 
   function doDelete() {
+    if (store) {
+      setDelOpen(false);
+      store.remove([task.id], () => deleteTaskAction(task.id), { success: t("Tugas dihapus") });
+      return;
+    }
     start(async () => {
       const res = await deleteTaskAction(task.id);
       if (res.ok) {
         toast.success(t("Tugas dihapus"));
         setDelOpen(false);
       } else toast.error(res.error);
+    });
+  }
+
+  /** The copy appears at once, with the id it will have on the server (so it
+   *  can be opened before the insert returns), at the end: where its new number
+   *  puts it once the server has it, so it does not jump. */
+  function duplicate() {
+    if (store) {
+      const id = uuidV4();
+      store.add(
+        { ...task, id, no: "", title: `${task.title} (salinan)`, status: "todo", result: "" },
+        () => duplicateTaskAction(task.id, id),
+        { success: t("Tugas diduplikat") },
+      );
+      return;
+    }
+    start(async () => {
+      const res = await duplicateTaskAction(task.id);
+      if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
     });
   }
 
@@ -72,10 +99,7 @@ export function TaskActions({
             </DropdownMenuItem>
           )}
           {canDuplicate && (
-            <DropdownMenuItem onSelect={() => start(async () => {
-              const res = await duplicateTaskAction(task.id);
-              if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
-            })}>
+            <DropdownMenuItem onSelect={() => duplicate()}>
               <Copy /> {t("Duplikat")}
             </DropdownMenuItem>
           )}

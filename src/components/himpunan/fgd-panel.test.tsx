@@ -45,27 +45,32 @@ const view = (canManage = true) =>
 beforeEach(() => { vi.clearAllMocks(); });
 
 describe("editing a cell", () => {
-  it("saves on blur", () => {
+  it("saves on blur, and shows the new text at once", async () => {
     view();
     const cell = screen.getAllByPlaceholderText("Departemen mitra")[1];
+    fireEvent.focus(cell);
     fireEvent.change(cell, { target: { value: "Riset dan Teknologi" } });
     fireEvent.blur(cell);
+    expect((screen.getAllByPlaceholderText("Departemen mitra")[1] as HTMLTextAreaElement).value).toBe("Riset dan Teknologi");
+    await act(async () => {});
     expect(actions.updateFgdRowAction).toHaveBeenCalledWith("r2", { theirs: "Riset dan Teknologi" });
   });
 
-  it("does not save when the text did not change", () => {
+  it("does not save when the text did not change", async () => {
     view();
     const cell = screen.getAllByPlaceholderText("Departemen HMSI")[0];
     fireEvent.change(cell, { target: { value: "PSDM" } });
     fireEvent.blur(cell);
+    await act(async () => {});
     expect(actions.updateFgdRowAction).not.toHaveBeenCalled();
   });
 
-  it("saves the partner heading on blur", () => {
+  it("saves the partner heading on blur", async () => {
     view();
     const heading = screen.getByPlaceholderText("Nama himpunan mitra");
     fireEvent.change(heading, { target: { value: "KBMDSI" } });
     fireEvent.blur(heading);
+    await act(async () => {});
     expect(actions.updateFgdPlanAction).toHaveBeenCalledWith("p1", { partner_name: "KBMDSI" });
   });
 });
@@ -85,11 +90,13 @@ describe("drag handles", () => {
 });
 
 describe("adding a row", () => {
-  it("asks the server for a new row on this plan", async () => {
+  it("shows the new row at once and asks the server for it on this plan", async () => {
     view();
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /Tambah baris/i }));
-    });
-    expect(actions.createFgdRowAction).toHaveBeenCalledWith("p1");
+    const before = screen.getAllByPlaceholderText("Departemen HMSI").length;
+    fireEvent.click(screen.getByRole("button", { name: /Tambah baris/i }));
+    expect(screen.getAllByPlaceholderText("Departemen HMSI")).toHaveLength(before + 1);
+    await act(async () => {});
+    // With the client id the new row already carries.
+    expect(actions.createFgdRowAction).toHaveBeenCalledWith("p1", expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 });

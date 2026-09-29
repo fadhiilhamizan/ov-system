@@ -13,9 +13,11 @@ import { setTaskStatusAction } from "@/lib/actions/tasks";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import type { AppUser, Task, TaskStatus } from "@/lib/types";
+import { useTaskStore } from "./task-store";
 
 export function StatusMenu({ task, user }: { task: Task; user: AppUser }) {
   const [pending, start] = React.useTransition();
+  const store = useTaskStore();
   const editable = can.editTaskProgress(user);
   const m = STATUS_META[task.status];
 
@@ -36,6 +38,12 @@ export function StatusMenu({ task, user }: { task: Task; user: AppUser }) {
 
   function change(s: TaskStatus) {
     if (s === task.status) return;
+    // Inside the Work Breakdown the pill flips at once and saves in the
+    // background; elsewhere (the calendar's dialog) it waits as before.
+    if (store) {
+      store.patch(task.id, { status: s }, () => setTaskStatusAction(task.id, s));
+      return;
+    }
     start(async () => {
       const res = await setTaskStatusAction(task.id, s);
       if (res.ok) toast.success(`Status → ${STATUS_META[s].label}`);

@@ -145,19 +145,21 @@ describe("optimistic rollback", () => {
 });
 
 describe("inline name and unit", () => {
-  it("saves a renamed item on blur", () => {
+  it("saves a renamed item on blur", async () => {
     render(<BudgetView plans={[plan()]} events={[event]} canManage />);
     const name = nameCell(0);
     fireEvent.change(name, { target: { value: "Snack Sore" } });
     fireEvent.blur(name);
+    await act(async () => {});
     expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { name: "Snack Sore" });
   });
 
-  it("saves a changed unit on Enter", () => {
+  it("saves a changed unit on Enter", async () => {
     render(<BudgetView plans={[plan()]} events={[event]} canManage />);
     const unit = unitCell(0);
     fireEvent.change(unit, { target: { value: "porsi" } });
     fireEvent.keyDown(unit, { key: "Enter" });
+    await act(async () => {});
     expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { unit: "porsi" });
   });
 
@@ -173,11 +175,12 @@ describe("inline name and unit", () => {
     expect(nameCell(0).value).toBe("Snack");
   });
 
-  it("DOES save an emptied UNIT, because a line may have none", () => {
+  it("DOES save an emptied UNIT, because a line may have none", async () => {
     render(<BudgetView plans={[plan()]} events={[event]} canManage />);
     const unit = unitCell(0);
     fireEvent.change(unit, { target: { value: "" } });
     fireEvent.blur(unit);
+    await act(async () => {});
     expect(actions.updateBudgetItemAction).toHaveBeenCalledWith("i1", { unit: "" });
   });
 

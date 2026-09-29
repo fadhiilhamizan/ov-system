@@ -15,7 +15,7 @@ import type { AppUser, Role, Task, TaskComment } from "@/lib/types";
 
 vi.mock("@/lib/i18n/provider", () => ({ useT: () => (s: string) => s }));
 
-const start = vi.fn(async () => ({ ok: true as const }));
+const start = vi.fn<(...args: unknown[]) => Promise<{ ok: boolean; error?: string }>>(async () => ({ ok: true }));
 const reply = vi.fn(async () => ({ ok: true as const }));
 const resolve = vi.fn(async () => ({ ok: true as const }));
 const remove = vi.fn(async () => ({ ok: true as const }));
@@ -143,8 +143,21 @@ describe("TaskCommentsPanel - the full history in the Edit dialog", () => {
       target: { value: "Mohon dikoreksi" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Kirim catatan/ }));
+    // The note is in the thread before the server has answered...
+    expect(screen.getByText("Mohon dikoreksi")).toBeTruthy();
     await waitFor(() =>
-      expect(start).toHaveBeenCalledWith({ task_id: "t1", body: "Mohon dikoreksi" }));
+      expect(start).toHaveBeenCalledWith({ task_id: "t1", body: "Mohon dikoreksi" }, expect.stringMatching(/^[0-9a-f-]{36}$/)));
+  });
+
+  it("puts a refused note back into the box so it is not lost", async () => {
+    start.mockResolvedValueOnce({ ok: false, error: "Ditolak." });
+    mount(<TaskCommentsPanel task={task} user={user("staff")} />, []);
+    const box = screen.getByPlaceholderText(/Revisi, informasi tambahan/) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "Catatan panjang" } });
+    fireEvent.click(screen.getByRole("button", { name: /Kirim catatan/ }));
+    expect(box.value).toBe("");
+    await waitFor(() => expect(box.value).toBe("Catatan panjang"));
+    expect(screen.queryByText("Catatan panjang", { selector: "p" })).toBeNull();
   });
 
   it("sends a reply against the thread's ROOT, not the message clicked", async () => {
@@ -157,7 +170,7 @@ describe("TaskCommentsPanel - the full history in the Edit dialog", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Balas/ }));
     await waitFor(() =>
-      expect(reply).toHaveBeenCalledWith({ parent_id: "c1", body: "Siap, saya perbaiki" }));
+      expect(reply).toHaveBeenCalledWith({ parent_id: "c1", body: "Siap, saya perbaiki" }, expect.any(String)));
   });
 
   it("keeps a finished thread replyable - the tick closes the badge, not the chat", () => {

@@ -101,7 +101,7 @@ export async function deleteFgdPlan(id: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function createFgdRow(planId: string) {
+export async function createFgdRow(planId: string, id?: string) {
   const client = await sb();
   const rows = await readRows<{ order: number }[]>(
     "fgd row order",
@@ -110,7 +110,7 @@ export async function createFgdRow(planId: string) {
   );
   const nextOrder = Math.max(0, ...rows.map((r) => r.order + 1));
   const { error } = await client
-    .from("fgd_rows").insert({ plan_id: planId, ours: "", theirs: "", order: nextOrder });
+    .from("fgd_rows").insert({ ...(id ? { id } : {}), plan_id: planId, ours: "", theirs: "", order: nextOrder });
   if (error) throw new Error(error.message);
 }
 
@@ -228,7 +228,7 @@ export const getCompareEntries = cache(async (eventId: string): Promise<CompareE
  * empty and every assessment quietly landed at position zero.
  */
 export async function createCompareEntry(
-  input: Omit<CompareEntry, "id" | "order"> & { subject_id: string },
+  input: Omit<CompareEntry, "id" | "order"> & { subject_id: string; id?: string },
 ) {
   const client = await sb();
   const rows = await readRows<{ order: number }[]>(
@@ -237,7 +237,8 @@ export async function createCompareEntry(
     [],
   );
   const nextOrder = Math.max(0, ...rows.map((r) => r.order + 1));
-  const { error } = await client.from("compare_entries").insert({ ...input, order: nextOrder });
+  const { id, ...rest } = input;
+  const { error } = await client.from("compare_entries").insert({ ...(id ? { id } : {}), ...rest, order: nextOrder });
   if (error) throw new Error(error.message);
 }
 

@@ -9,7 +9,7 @@ import {
 import type { AppUser, DivisionKey, Task, TaskLinkInput, TaskRefInput, TaskStatus } from "@/lib/types";
 import {
   createTaskSchema, updateTaskSchema, taskStatusSchema, taskLinksSchema, taskRefsSchema,
-  bulkTaskFieldsSchema, idSchema, parse,
+  bulkTaskFieldsSchema, idSchema, clientUuidSchema, parse,
 } from "./schemas";
 import { archivedGuard } from "./lock";
 
@@ -220,9 +220,16 @@ export async function bulkDeleteTasksAction(ids: string[]): Promise<BulkResult> 
   return { ok: true, count: allowed.length, skipped: ids.length - allowed.length };
 }
 
-export async function duplicateTaskAction(id: string): Promise<Result> {
+/** `newId`: optional client uuid, so the copy can be shown before it exists. */
+export async function duplicateTaskAction(id: string, newId?: string): Promise<Result> {
   const idv = parse(idSchema, id);
   if (!idv.ok) return idv;
+  let copyId: string | undefined;
+  if (newId !== undefined) {
+    const nv = parse(clientUuidSchema, newId);
+    if (!nv.ok) return nv;
+    copyId = nv.data;
+  }
   const user = await getCurrentUser();
   const task = await getTask(idv.data);
   if (!task) return { ok: false, error: "Tugas tidak ditemukan." };
@@ -234,6 +241,7 @@ export async function duplicateTaskAction(id: string): Promise<Result> {
   // Fresh copy: keeps the plan (division/PIC/dates/notes), resets progress.
   try {
     await createTask({
+      id: copyId,
       event_id: task.event_id,
       division: task.division,
       title: `${task.title} (salinan)`,

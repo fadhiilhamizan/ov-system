@@ -152,7 +152,14 @@ export function DeleteDivisionsDialog({
   );
 }
 
-export function DivisionActions({ division }: { division: Division }) {
+export function DivisionActions({
+  division, onDelete,
+}: {
+  division: Division;
+  /** Local-first delete from the grid (use-local-first.ts): the card goes at
+   *  once. Without it the dialog waits for the server, as before. */
+  onDelete?: () => void;
+}) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
@@ -179,10 +186,13 @@ export function DivisionActions({ division }: { division: Division }) {
         onOpenChange={setDelOpen}
         names={[division.name]}
         pending={pending}
-        onConfirm={() => start(async () => {
-          const res = await deleteDivisionAction(division.key);
-          if (res.ok) { toast.success(t("Divisi dihapus")); setDelOpen(false); } else toast.error(res.error);
-        })}
+        onConfirm={() => {
+          if (onDelete) { setDelOpen(false); onDelete(); return; }
+          start(async () => {
+            const res = await deleteDivisionAction(division.key);
+            if (res.ok) { toast.success(t("Divisi dihapus")); setDelOpen(false); } else toast.error(res.error);
+          });
+        }}
       />
     </>
   );

@@ -391,6 +391,16 @@ export function systemPassages(): Passage[] {
       "File yang diunggah TIDAK disimpan di mana pun: hanya dibaca di memori server selama pemeriksaan, " +
       "lalu dibuang; yang tersimpan hanya baris data yang diimpor."),
 
+    p("autosave", "Aturan: perubahan langsung terlihat dan tersimpan otomatis", undefined,
+      "Di semua tabel (Work Breakdown, Rundown, Job Hari-H, Anggaran, Plotting FGD, Compare, Super Link, " +
+      "Reach & Offer, Anggota, Divisi, FAQ, Kotak Masuk) perubahan langsung terlihat tanpa menunggu server: " +
+      "mengubah status, mengetik di sel, menambah, menghapus, menduplikat, mengurutkan, dan aksi massal. " +
+      "Penyimpanannya berjalan otomatis di latar belakang, satu per satu sesuai urutan. Tulisan kecil " +
+      "\"Perubahan disimpan otomatis\" berarti masih menyimpan, \"Tersimpan\" berarti sudah. " +
+      "Kalau penyimpanan gagal (mis. koneksi putus atau tidak punya akses), hanya perubahan itu yang " +
+      "dikembalikan dan pesan kesalahannya muncul. Formulir dialog dan tindakan besar seperti menghapus " +
+      "atau mengarsipkan satu Ormawa Visit tetap menunggu konfirmasi server."),
+
     p("violet-limits", "Aturan: apa yang Violet lihat dan tidak lihat", "/panduan#guide-violet",
       "Violet hanya MEMBACA. Violet tidak bisa membuat, mengubah, menghapus, mengunggah, atau mengirim apa pun, " +
       "dan tidak bisa mengubah peran siapa pun. " +

@@ -27,11 +27,11 @@ import { ExpandableText } from "@/components/ui/expandable-text";
 import { createJobAction, updateJobAction, deleteJobAction, reorderJobsAction, duplicateJobAction } from "@/lib/actions/schedule";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
-import { useAutosave } from "@/lib/use-autosave";
-import { SaveIndicator } from "@/components/ui/save-indicator";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import { MemberPicker } from "@/components/members/member-picker";
 import { useMembers } from "@/components/members/members-context";
-import { cn } from "@/lib/utils";
+import { cn, uuidV4 } from "@/lib/utils";
 import type { JobHariH } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -105,10 +105,11 @@ function JobFormDialog({
   );
 }
 
-function JobActions({ job, eventId, canDelete }: { job: JobHariH; eventId: string; canDelete: boolean }) {
+function JobActions({
+  job, eventId, canDelete, store,
+}: { job: JobHariH; eventId: string; canDelete: boolean; store: LocalFirst<JobHariH> }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
   return (
     <>
       <DropdownMenu>
@@ -117,15 +118,20 @@ function JobActions({ job, eventId, canDelete }: { job: JobHariH; eventId: strin
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditOpen(true)}><Pencil /> {t("Edit")}</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => start(async () => {
-            const res = await duplicateJobAction(job.id);
-            if (res.ok) toast.success(t("Tugas diduplikat")); else toast.error(res.error);
-          })}><Copy /> {t("Duplikat")}</DropdownMenuItem>
+          {/* Both show at once and save in the background (use-local-first).
+              The copy lands at the end, where its new number puts it. */}
+          <DropdownMenuItem onSelect={() => {
+            const id = uuidV4();
+            store.add(
+              { ...job, id, no: "", job: `${job.job} (salinan)` },
+              () => duplicateJobAction(job.id, id),
+              { success: t("Tugas diduplikat") },
+            );
+          }}><Copy /> {t("Duplikat")}</DropdownMenuItem>
           {canDelete && (
-            <DropdownMenuItem destructive onSelect={() => start(async () => {
-              const res = await deleteJobAction(job.id);
-              if (res.ok) toast.success(t("Tugas dihapus")); else toast.error(res.error);
-            })}>{pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 />} {t("Hapus")}</DropdownMenuItem>
+            <DropdownMenuItem destructive onSelect={() => {
+              store.remove([job.id], () => deleteJobAction(job.id), { success: t("Tugas dihapus") });
+            }}><Trash2 /> {t("Hapus")}</DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
@@ -146,7 +152,12 @@ function PicChips({ pic }: { pic: string }) {
   );
 }
 
-function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: JobHariH; index: number; eventId: string; canManage: boolean; canDelete: boolean }) {
+function SortableJobRow({
+  job, index, eventId, canManage, canDelete, store,
+}: {
+  job: JobHariH; index: number; eventId: string; canManage: boolean; canDelete: boolean;
+  store: LocalFirst<JobHariH>;
+}) {
   const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id, disabled: !canManage });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -177,7 +188,7 @@ function SortableJobRow({ job, index, eventId, canManage, canDelete }: { job: Jo
       <TableCell className="max-w-[280px] align-top text-xs text-muted-foreground">
         <ExpandableText text={job.notes} />
       </TableCell>
-      {canManage && <TableCell><JobActions job={job} eventId={eventId} canDelete={canDelete} /></TableCell>}
+      {canManage && <TableCell><JobActions job={job} eventId={eventId} canDelete={canDelete} store={store} /></TableCell>}
     </tr>
   );
 }
@@ -193,33 +204,27 @@ export function JobsTable({
   canDelete: boolean;
 }) {
   const t = useT();
-  // Local order for optimistic drag; synced from server props on change.
   const sorted = React.useMemo(
     () => [...jobs].sort((a, b) => (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0)),
     [jobs],
   );
-  const orderKey = sorted.map((j) => j.id).join(",");
-  const [items, setItems] = useResetOn(orderKey, () => sorted);
+  // Local-first: drag, duplicate and delete show at once (use-local-first).
+  const store = useLocalFirst(sorted);
+  const items = store.rows;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const autosave = useAutosave();
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const from = items.findIndex((j) => j.id === active.id);
     const to = items.findIndex((j) => j.id === over.id);
     if (from < 0 || to < 0) return;
-    const next = arrayMove(items, from, to);
-    setItems(next); // optimistic
-    autosave.run(async () => {
-      const res = await reorderJobsAction(next.map((j) => j.id));
-      if (!res.ok) { toast.error(res.error); setItems(sorted); }
-      return res;
-    });
+    const ids = arrayMove(items, from, to).map((j) => j.id);
+    store.reorder(ids, () => reorderJobsAction(ids));
   }
 
   return (
@@ -228,7 +233,7 @@ export function JobsTable({
         <div className="flex items-center justify-between gap-2">
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
             {t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}
-            <SaveIndicator status={autosave.status} />
+            <LocalSaveStatus status={store.status} />
           </p>
           <div className="flex items-center gap-2">
             <ImportXlsxButton module="jobs" />
@@ -256,7 +261,7 @@ export function JobsTable({
               <TableBody>
                 <SortableContext items={items.map((j) => j.id)} strategy={verticalListSortingStrategy}>
                   {items.map((j, i) => (
-                    <SortableJobRow key={j.id} job={j} index={i} eventId={eventId} canManage={canManage} canDelete={canDelete} />
+                    <SortableJobRow key={j.id} job={j} index={i} eventId={eventId} canManage={canManage} canDelete={canDelete} store={store} />
                   ))}
                 </SortableContext>
               </TableBody>

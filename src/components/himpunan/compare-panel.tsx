@@ -2,7 +2,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  Columns2, Loader2, Minus, Plus, Rows3, Scale, Trash2,
+  Columns2, Minus, Plus, Rows3, Scale, Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,10 @@ import {
   deleteCompareSubjectAction, updateCompareEntryAction,
 } from "@/lib/actions/himpunan";
 import { useT } from "@/lib/i18n/provider";
-import { useSynced } from "@/lib/use-synced";
-import { cn } from "@/lib/utils";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
+import { useCellDraft } from "@/lib/use-cell-draft";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
+import { cn, uuidV4 } from "@/lib/utils";
 import type { CompareEntry, CompareSubject, Prospect } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -52,20 +54,25 @@ export function ComparePanel({
   const t = useT();
   const [view, setView] = React.useState<View>("cards");
   const [addOpen, setAddOpen] = React.useState(false);
+  // Local-first (use-local-first.ts): typing, adding and removing aspects and
+  // removing a whole comparison show at once and save in the background.
+  const subjectStore = useLocalFirst(subjects);
+  const entryStore = useLocalFirst(entries);
+  const shownSubjects = subjectStore.rows;
 
   const entriesBySubject = React.useMemo(() => {
     const map = new Map<string, CompareEntry[]>();
-    for (const e of entries) {
+    for (const e of entryStore.rows) {
       if (!e.subject_id) continue;
       map.set(e.subject_id, [...(map.get(e.subject_id) ?? []), e]);
     }
     return map;
-  }, [entries]);
+  }, [entryStore.rows]);
 
   // Which accepted associations have NOT been made into a subject yet. Matched
   // by prospect id first, then by name (an imported subject has no prospect).
-  const madeProspectIds = new Set(subjects.map((s) => s.prospect_id).filter(Boolean));
-  const madeNames = new Set(subjects.map((s) => s.org_name.trim().toLowerCase()));
+  const madeProspectIds = new Set(shownSubjects.map((s) => s.prospect_id).filter(Boolean));
+  const madeNames = new Set(shownSubjects.map((s) => s.org_name.trim().toLowerCase()));
   const available = accepted.filter(
     (p) => !madeProspectIds.has(p.id) && !madeNames.has((p.org_name ?? "").trim().toLowerCase()),
   );
@@ -84,12 +91,13 @@ export function ComparePanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          {subjects.length
-            ? `${subjects.length} ${t("himpunan dibandingkan.")} ${t("Catat aspek penilaian, indikator, kelebihan, dan kekurangan tiap himpunan.")}`
+          {shownSubjects.length
+            ? `${shownSubjects.length} ${t("himpunan dibandingkan.")} ${t("Catat aspek penilaian, indikator, kelebihan, dan kekurangan tiap himpunan.")}`
             : t("Belum ada perbandingan yang dibuat. Klik tombol untuk memilih himpunan yang menerima ajakan.")}
         </p>
         <div className="flex items-center gap-2">
-          {subjects.length > 1 && (
+          <LocalSaveStatus status={entryStore.status === "idle" ? subjectStore.status : entryStore.status} />
+          {shownSubjects.length > 1 && (
             <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
               {(["cards", "side"] as const).map((v) => (
                 <button
@@ -106,10 +114,10 @@ export function ComparePanel({
               ))}
             </div>
           )}
-          {canManage && subjects.length > 0 && (
+          {canManage && shownSubjects.length > 0 && (
             <ImportXlsxButton
               module="compare"
-              targets={subjects.map((s) => ({ value: s.id, label: s.org_name }))}
+              targets={shownSubjects.map((s) => ({ value: s.id, label: s.org_name }))}
             />
           )}
           {canManage && (
@@ -120,13 +128,13 @@ export function ComparePanel({
         </div>
       </div>
 
-      {canManage && available.length === 0 && accepted.length > 0 && subjects.length > 0 && (
+      {canManage && available.length === 0 && accepted.length > 0 && shownSubjects.length > 0 && (
         <p className="text-[11px] text-muted-foreground">
           {t("Semua himpunan yang menerima ajakan sudah dibuatkan perbandingannya.")}
         </p>
       )}
 
-      {subjects.length === 0 ? (
+      {shownSubjects.length === 0 ? (
         <EmptyState
           icon={<Scale />}
           title={t("Belum ada perbandingan")}
@@ -138,13 +146,15 @@ export function ComparePanel({
         />
       ) : view === "cards" ? (
         <CardsView
-          subjects={subjects}
+          subjects={shownSubjects}
           entriesBySubject={entriesBySubject}
           eventId={eventId}
           canManage={canManage}
+          subjectStore={subjectStore}
+          entryStore={entryStore}
         />
       ) : (
-        <SideBySide subjects={subjects} entriesBySubject={entriesBySubject} />
+        <SideBySide subjects={shownSubjects} entriesBySubject={entriesBySubject} />
       )}
 
       <AddSubjectDialog
@@ -160,12 +170,14 @@ export function ComparePanel({
 // ---------------- cards view (data entry) ----------------
 
 function CardsView({
-  subjects, entriesBySubject, eventId, canManage,
+  subjects, entriesBySubject, eventId, canManage, subjectStore, entryStore,
 }: {
   subjects: CompareSubject[];
   entriesBySubject: Map<string, CompareEntry[]>;
   eventId: string;
   canManage: boolean;
+  subjectStore: LocalFirst<CompareSubject>;
+  entryStore: LocalFirst<CompareEntry>;
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-2">
@@ -176,6 +188,8 @@ function CardsView({
           rows={entriesBySubject.get(s.id) ?? []}
           eventId={eventId}
           canManage={canManage}
+          subjectStore={subjectStore}
+          entryStore={entryStore}
         />
       ))}
     </div>
@@ -183,27 +197,31 @@ function CardsView({
 }
 
 function SubjectCard({
-  subject, rows, eventId, canManage,
+  subject, rows, eventId, canManage, subjectStore, entryStore,
 }: {
   subject: CompareSubject;
   rows: CompareEntry[];
   eventId: string;
   canManage: boolean;
+  subjectStore: LocalFirst<CompareSubject>;
+  entryStore: LocalFirst<CompareEntry>;
 }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
   const [delOpen, setDelOpen] = React.useState(false);
 
   function addRow() {
-    start(async () => {
-      const res = await createCompareEntryAction({
-        event_id: eventId,
-        subject_id: subject.id,
-        prospect_id: subject.prospect_id,
-        org_name: subject.org_name,
-      });
-      if (!res.ok) toast.error(res.error);
-    });
+    const id = uuidV4();
+    const base = {
+      event_id: eventId,
+      subject_id: subject.id,
+      prospect_id: subject.prospect_id,
+      org_name: subject.org_name,
+    };
+    const order = rows.reduce((m, r) => Math.max(m, r.order + 1), 0);
+    entryStore.add(
+      { ...base, id, section: "", no: "", aspect: "", indicator: "", plus: "", minus: "", order },
+      () => createCompareEntryAction(base, id),
+    );
   }
 
   return (
@@ -225,16 +243,15 @@ function SubjectCard({
       ) : (
         <div className="divide-y divide-border">
           {rows.map((row) => (
-            <EntryRow key={row.id} entry={row} canManage={canManage} />
+            <EntryRow key={row.id} entry={row} canManage={canManage} store={entryStore} />
           ))}
         </div>
       )}
 
       {canManage && (
         <div className="border-t border-border px-3 py-2">
-          <Button variant="ghost" size="sm" onClick={addRow} disabled={pending}>
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}{" "}
-            {t("Tambah aspek")}
+          <Button variant="ghost" size="sm" onClick={addRow}>
+            <Plus className="size-3.5" /> {t("Tambah aspek")}
           </Button>
         </div>
       )}
@@ -251,14 +268,14 @@ function SubjectCard({
             <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
             <Button
               variant="destructive"
-              disabled={pending}
-              onClick={() => start(async () => {
-                const res = await deleteCompareSubjectAction(subject.id);
-                if (res.ok) { toast.success(t("Perbandingan dihapus")); setDelOpen(false); }
-                else toast.error(res.error);
-              })}
+              onClick={() => {
+                setDelOpen(false);
+                subjectStore.remove([subject.id], () => deleteCompareSubjectAction(subject.id), {
+                  success: t("Perbandingan dihapus"),
+                });
+              }}
             >
-              {pending && <Loader2 className="size-4 animate-spin" />} {t("Hapus")}
+              {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -267,9 +284,8 @@ function SubjectCard({
   );
 }
 
-function EntryRow({ entry, canManage }: { entry: CompareEntry; canManage: boolean }) {
+function EntryRow({ entry, canManage, store }: { entry: CompareEntry; canManage: boolean; store: LocalFirst<CompareEntry> }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
 
   return (
     <div className="group grid gap-2 px-4 py-3">
@@ -280,21 +296,17 @@ function EntryRow({ entry, canManage }: { entry: CompareEntry; canManage: boolea
       )}
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1 space-y-1.5">
-          <Field entry={entry} field="aspect" label={t("Aspek Penilaian")} strong canManage={canManage} />
-          <Field entry={entry} field="indicator" label={t("Indikator yang Dinilai")} canManage={canManage} />
+          <Field entry={entry} field="aspect" label={t("Aspek Penilaian")} strong canManage={canManage} store={store} />
+          <Field entry={entry} field="indicator" label={t("Indikator yang Dinilai")} canManage={canManage} store={store} />
         </div>
         {canManage && (
           <button
             type="button"
-            disabled={pending}
-            onClick={() => start(async () => {
-              const res = await deleteCompareEntryAction(entry.id);
-              if (!res.ok) toast.error(res.error);
-            })}
+            onClick={() => store.remove([entry.id], () => deleteCompareEntryAction(entry.id))}
             className="shrink-0 rounded p-1 text-muted-foreground/50 opacity-0 transition hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus:opacity-100"
             title={t("Hapus aspek")}
           >
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+            <Trash2 className="size-3.5" />
           </button>
         )}
       </div>
@@ -303,13 +315,13 @@ function EntryRow({ entry, canManage }: { entry: CompareEntry; canManage: boolea
           <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
             <Plus className="size-3" /> {t("Kelebihan")}
           </p>
-          <Field entry={entry} field="plus" label={t("Plus / Kelebihan")} bare canManage={canManage} />
+          <Field entry={entry} field="plus" label={t("Plus / Kelebihan")} bare canManage={canManage} store={store} />
         </div>
         <div className="rounded-lg border border-red-500/25 bg-red-500/5 p-2">
           <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-400">
             <Minus className="size-3" /> {t("Kekurangan")}
           </p>
-          <Field entry={entry} field="minus" label={t("Minus / Kekurangan")} bare canManage={canManage} />
+          <Field entry={entry} field="minus" label={t("Minus / Kekurangan")} bare canManage={canManage} store={store} />
         </div>
       </div>
     </div>
@@ -317,7 +329,7 @@ function EntryRow({ entry, canManage }: { entry: CompareEntry; canManage: boolea
 }
 
 function Field({
-  entry, field, label, strong = false, bare = false, canManage,
+  entry, field, label, strong = false, bare = false, canManage, store,
 }: {
   entry: CompareEntry;
   field: "aspect" | "indicator" | "plus" | "minus";
@@ -325,14 +337,10 @@ function Field({
   strong?: boolean;
   bare?: boolean;
   canManage: boolean;
+  store: LocalFirst<CompareEntry>;
 }) {
-  const [value, setValue] = useSynced(entry[field]);
-  const save = () => {
-    if (value === entry[field]) return;
-    void updateCompareEntryAction(entry.id, { [field]: value }).then((r) => {
-      if (!r.ok) toast.error(r.error);
-    });
-  };
+  const d = useCellDraft(entry[field], (value) =>
+    store.patch(entry.id, { [field]: value }, () => updateCompareEntryAction(entry.id, { [field]: value })), 1500);
 
   if (!canManage) {
     if (!entry[field]) return <span className="text-xs text-muted-foreground/50">-</span>;
@@ -350,9 +358,10 @@ function Field({
 
   return (
     <textarea
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={save}
+      value={d.v}
+      onChange={(e) => d.set(e.target.value)}
+      onFocus={d.onFocus}
+      onBlur={d.onBlur}
       rows={1}
       placeholder={label}
       aria-label={label}

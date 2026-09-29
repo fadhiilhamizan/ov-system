@@ -1,11 +1,12 @@
 "use client";
 import * as React from "react";
-import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink, Check, CircleAlert } from "lucide-react";
+import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { computeDuration } from "@/lib/rundown-time";
+import { useCellDraft } from "@/lib/use-cell-draft";
 import { isUrl } from "@/lib/format";
 import {
   MERGE_MC, MERGE_OPERATOR, columnRoles, canMergeDownIn, mergedDown, splitCell,
@@ -13,47 +14,9 @@ import {
 } from "@/lib/rundown-merge";
 import { useT } from "@/lib/i18n/provider";
 import { DivisionColumnFilter } from "./division-column-filter";
-import { useRundownQueue, type QueueStatus } from "./use-rundown-queue";
+import { useRundownQueue } from "./use-rundown-queue";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import type { Division, RundownItem } from "@/lib/types";
-
-/** How long a cell may sit untouched mid-typing before its text is committed
- *  to the table's local copy (the save itself is batched later). */
-const IDLE_COMMIT = 700;
-
-/**
- * Local text state for one editable cell.
- *
- * Mirrors `value` like `useSynced`, EXCEPT while the cell has focus: a
- * revalidation landing mid-sentence used to reset the text under the caret.
- * Also commits after a short typing pause, so an edit is never only in the DOM
- * when the person moves on without leaving the cell.
- */
-function useCellDraft(value: string, onSave: (v: string) => void) {
-  const [v, setV] = React.useState(value);
-  const [prev, setPrev] = React.useState(value);
-  const [editing, setEditing] = React.useState(false);
-  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  if (!editing && !Object.is(prev, value)) {
-    setPrev(value);
-    setV(value);
-  }
-  React.useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  const commit = (next: string) => {
-    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    if (next !== value) onSave(next);
-  };
-  return {
-    v,
-    set: (next: string) => {
-      setV(next);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => commit(next), IDLE_COMMIT);
-    },
-    replace: (next: string) => { setV(next); commit(next); },
-    onFocus: () => setEditing(true),
-    onBlur: () => { setEditing(false); commit(v); },
-  };
-}
 
 function EditCell({
   value, onSave, placeholder, readOnly, className, multiline,
@@ -142,7 +105,7 @@ function NoteCell({ value, onSave, readOnly }: { value: string; onSave: (v: stri
  * are the same thing, so it unmounted and remounted every merged cell instead of
  * updating it. Each of those cells holds an <EditCell> with its own input state,
  * so the remount threw away the caret position and any half-typed text - and it
- * fired constantly, because the SaveIndicator alone re-renders this component
+ * fired constantly, because the save status line alone re-renders this component
  * three times per save (idle -> saving -> saved -> idle).
  */
 function MergeableCell({
@@ -199,27 +162,6 @@ function MergeableCell({
         </div>
       )}
     </td>
-  );
-}
-
-/**
- * Ambient save state. Deliberately calm: "pending" is plain muted text with no
- * spinner, because the table never waits for it - the person can keep typing.
- */
-function QueueIndicator({ status }: { status: QueueStatus }) {
-  const t = useT();
-  if (status === "idle") return null;
-  const map = {
-    pending: { icon: <span className="size-1.5 rounded-full bg-muted-foreground/60" />, text: t("Perubahan disimpan otomatis"), tone: "text-muted-foreground" },
-    saved: { icon: <Check className="size-3" />, text: t("Tersimpan"), tone: "text-emerald-600 dark:text-emerald-400" },
-    error: { icon: <CircleAlert className="size-3" />, text: t("Gagal menyimpan"), tone: "text-danger" },
-  } as const;
-  const m = map[status];
-  return (
-    <span role="status" aria-live="polite" className={cn("inline-flex items-center gap-1.5 text-xs", m.tone)}>
-      {m.icon}
-      {m.text}
-    </span>
   );
 }
 
@@ -356,7 +298,7 @@ export function RundownView({
           </span>
         )}
         <div className="ml-auto flex h-4 items-center">
-          <QueueIndicator status={q.status} />
+          <LocalSaveStatus status={q.status} />
         </div>
       </div>
 

@@ -53,6 +53,21 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.55.0",
+    date: "2026-09-29",
+    title: "Perubahan langsung terlihat di semua menu, tanpa menunggu server",
+    changes: [
+      { kind: "ui", text: "Cara kerja Rundown kini dipakai di seluruh menu: perubahan langsung tampil, disimpan di latar belakang satu per satu sesuai urutan, dan tabel tidak pernah menunggu server sebelum bisa dipakai lagi." },
+      { kind: "ui", text: "Work Breakdown: ganti status (menu maupun seret di Kanban), hapus, duplikat, ubah status massal, edit massal, dan hapus massal langsung terlihat di tabel, Kanban, dan hitungan status sekaligus." },
+      { kind: "ui", text: "Job Desc Hari-H, Budget (RAB), Plotting FGD, Compare, Super Link, Reach & Offer, Anggota, Divisi, FAQ, dan Kotak Masuk: mengetik di sel, menambah dan menghapus baris, menduplikat, mengurutkan, menandai rencana/data utama, dan aksi massal langsung terlihat." },
+      { kind: "ui", text: "Catatan & diskusi pada tugas muncul di percakapan begitu dikirim, dan catatan yang ditolak server dikembalikan ke kotak tulis supaya tidak hilang." },
+      { kind: "ui", text: "Setiap menu menampilkan status simpan yang tenang (\"Perubahan disimpan otomatis\" lalu \"Tersimpan\") tanpa ikon berputar." },
+      { kind: "fix", text: "Kalau penyimpanan gagal, hanya perubahan itu yang dikembalikan beserta pesan kesalahannya; perubahan lain yang lebih baru tidak ikut hilang." },
+      { kind: "fix", text: "Di Budget, Plotting FGD, dan Compare, sel yang sedang diketik tidak lagi tertimpa saat hasil simpan sel lain datang." },
+      { kind: "ui", text: "Formulir dialog (tambah/edit data) dan tindakan besar seperti menghapus atau mengarsipkan satu Ormawa Visit tetap menunggu konfirmasi server, karena kesalahannya perlu ditunjukkan di tempat." },
+    ],
+  },
+  {
     version: "1.54.1",
     date: "2026-09-29",
     title: "Perbaikan layar error saat pindah menu",

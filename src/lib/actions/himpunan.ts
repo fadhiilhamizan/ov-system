@@ -11,7 +11,7 @@ import {
 import type { CompareEntry, FgdPlan } from "@/lib/types";
 import {
   compareEntrySchema, compareSubjectSchema, compareUpdateSchema, fgdPlanSchema, fgdPlanUpdateSchema,
-  fgdRowUpdateSchema, idSchema, parse,
+  fgdRowUpdateSchema, idSchema, clientUuidSchema, parse,
 } from "./schemas";
 import { archivedGuard, errMsg } from "./lock";
 
@@ -80,13 +80,21 @@ export async function deleteFgdPlanAction(id: string): Promise<Result> {
   return { ok: true };
 }
 
-export async function createFgdRowAction(planId: string): Promise<Result> {
+/** `newId`: optional client uuid, so the row can be shown and typed into
+ *  before the insert returns (see use-local-first.ts). */
+export async function createFgdRowAction(planId: string, newId?: string): Promise<Result> {
   const idv = parse(idSchema, planId);
   if (!idv.ok) return idv;
+  let rowId: string | undefined;
+  if (newId !== undefined) {
+    const nv = parse(clientUuidSchema, newId);
+    if (!nv.ok) return nv;
+    rowId = nv.data;
+  }
   const g = await guard();
   if (!g.ok) return g;
   try {
-    await createFgdRow(idv.data);
+    await createFgdRow(idv.data, rowId);
   } catch (e) { return errMsg(e); }
   revalidateEntities("himpunan");
   return { ok: true };
@@ -186,9 +194,16 @@ export async function deleteCompareSubjectAction(id: string): Promise<Result> {
   return { ok: true };
 }
 
-export async function createCompareEntryAction(input: Partial<CompareEntry>): Promise<Result> {
+/** `newId`: optional client uuid, so the row can be shown before it exists. */
+export async function createCompareEntryAction(input: Partial<CompareEntry>, newId?: string): Promise<Result> {
   const v = parse(compareEntrySchema, input);
   if (!v.ok) return v;
+  let rowId: string | undefined;
+  if (newId !== undefined) {
+    const nv = parse(clientUuidSchema, newId);
+    if (!nv.ok) return nv;
+    rowId = nv.data;
+  }
   const g = await guard(v.data.event_id);
   if (!g.ok) return g;
   // An assessment must belong to a subject; without one it would be an orphan
@@ -201,6 +216,7 @@ export async function createCompareEntryAction(input: Partial<CompareEntry>): Pr
   }
   try {
     await createCompareEntry({
+      id: rowId,
       event_id: v.data.event_id,
       subject_id: v.data.subject_id,
       prospect_id: v.data.prospect_id ?? null,

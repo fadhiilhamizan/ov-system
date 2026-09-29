@@ -28,6 +28,8 @@ import { isUrl } from "@/lib/format";
 import { isOwnedLink } from "@/lib/links";
 import { useT } from "@/lib/i18n/provider";
 import { useResetOn } from "@/lib/use-synced";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import type { Division, LinkItem, OVEvent } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -208,18 +210,18 @@ function LinkFormDialog({
 }
 
 function LinkActions({
-  link, events, divisions, defaultEventId, canDelete,
+  link, events, divisions, defaultEventId, canDelete, store,
 }: {
   link: LinkItem;
   events: OVEvent[];
   divisions: Division[];
   defaultEventId: string;
   canDelete: boolean;
+  store: LocalFirst<LinkItem>;
 }) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
   return (
     <>
       <DropdownMenu>
@@ -258,10 +260,10 @@ function LinkActions({
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-            <Button variant="destructive" disabled={pending} onClick={() => start(async () => {
-              const res = await deleteLinkAction(link.id);
-              if (res.ok) { toast.success(t("Tautan dihapus")); setDelOpen(false); } else toast.error(res.error);
-            })}>{pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}</Button>
+            <Button variant="destructive" onClick={() => {
+              setDelOpen(false);
+              store.remove([link.id], () => deleteLinkAction(link.id), { success: t("Tautan dihapus") });
+            }}>{t("Hapus")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -298,29 +300,30 @@ export function LinksView({
    *  headings and as the default edition on the create form. */
   const soleEvent = eventFilter.size === 1 ? [...eventFilter][0] : null;
   const eventMap = React.useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
-  const [bulkPending, startBulk] = React.useTransition();
+  // Local-first (use-local-first.ts): deletes disappear at once and save in
+  // the background. Everything below renders from `all`.
+  const store = useLocalFirst(links);
+  const all = store.rows;
   function bulkDelete() {
-    startBulk(async () => {
-      const res = await bulkDeleteLinksAction(sel.ids);
-      if (res.ok) { toast.success(`${sel.count} ${t("tautan dihapus")}`); sel.clear(); }
-      else toast.error(res.error);
-    });
+    const ids = sel.ids;
+    sel.clear();
+    store.remove(ids, () => bulkDeleteLinksAction(ids), { success: `${ids.length} ${t("tautan dihapus")}` });
   }
 
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
-    return links.filter((l) => {
+    return all.filter((l) => {
       if (eventFilter.size > 0 && !(l.event_id && eventFilter.has(l.event_id))) return false;
       if (query && !`${l.name} ${l.division} ${l.note} ${l.url}`.toLowerCase().includes(query)) return false;
       return true;
     });
-  }, [links, q, eventFilter]);
+  }, [all, q, eventFilter]);
 
   const eventCounts = React.useMemo(() => {
     const by: Record<string, number> = {};
-    for (const l of links) if (l.event_id) by[l.event_id] = (by[l.event_id] ?? 0) + 1;
+    for (const l of all) if (l.event_id) by[l.event_id] = (by[l.event_id] ?? 0) + 1;
     return by;
-  }, [links]);
+  }, [all]);
 
   // Selection follows what is on screen; ticks survive a search (see use-multi-select).
   const sel = useMultiSelect(React.useMemo(() => filtered.map((l) => l.id), [filtered]));
@@ -374,6 +377,7 @@ export function LinksView({
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter(new Set()); }}><X className="size-4" /> {t("Reset")}</Button>
           )}
+          <LocalSaveStatus status={store.status} />
         </div>
         {canCreate && (
           <div className="flex items-center gap-2">
@@ -391,10 +395,10 @@ export function LinksView({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
-              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+              <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       )}
@@ -449,7 +453,7 @@ export function LinksView({
                             {t("Buka")} <ExternalLink className="size-3" />
                           </a>
                           {canManage && (
-                            <LinkActions link={l} events={events} divisions={divisions} defaultEventId={defaultEventId} canDelete={canDelete} />
+                            <LinkActions link={l} events={events} divisions={divisions} defaultEventId={defaultEventId} canDelete={canDelete} store={store} />
                           )}
                         </div>
                       ))}

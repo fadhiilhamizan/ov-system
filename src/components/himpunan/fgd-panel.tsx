@@ -23,8 +23,10 @@ import {
 } from "@/lib/actions/himpunan";
 import { HOME_ORG } from "@/lib/constants";
 import { useT } from "@/lib/i18n/provider";
-import { useSynced } from "@/lib/use-synced";
-import { cn } from "@/lib/utils";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
+import { useCellDraft } from "@/lib/use-cell-draft";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
+import { cn, uuidV4 } from "@/lib/utils";
 import type { FgdPlan, FgdRow } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -33,7 +35,9 @@ import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 //
 // Edited straight in the table, like the Rundown, rather than through a dialog:
 // this is a grid of short strings that gets filled in one pass, and a dialog
-// per cell would be twenty round trips of clicking. Cells save on blur.
+// per cell would be twenty round trips of clicking. Local-first like the
+// Rundown too (use-local-first.ts): typing, adding, removing and dragging rows
+// all show at once and save in the background, one write after another.
 //
 // A new table starts pre-filled with the ten HMSI departments (seeded in the
 // repo, not here, so a table created any other way gets them too). They stay
@@ -50,6 +54,8 @@ export function FgdPanel({
 }) {
   const t = useT();
   const [pending, start] = React.useTransition();
+  // Plan-level edits (title, partner name, delete) are local-first too.
+  const planStore = useLocalFirst(plans);
   const [addOpen, setAddOpen] = React.useState(false);
   const [partner, setPartner] = React.useState("");
   const [title, setTitle] = React.useState("");
@@ -102,8 +108,8 @@ export function FgdPanel({
         />
       ) : (
         <div className="space-y-5">
-          {plans.map((plan) => (
-            <PlanTable key={plan.id} plan={plan} rows={rows[plan.id] ?? []} canManage={canManage} />
+          {planStore.rows.map((plan) => (
+            <PlanTable key={plan.id} plan={plan} rows={rows[plan.id] ?? []} canManage={canManage} planStore={planStore} />
           ))}
         </div>
       )}
@@ -143,29 +149,26 @@ export function FgdPanel({
 }
 
 function PlanTable({
-  plan, rows, canManage,
+  plan, rows, canManage, planStore,
 }: {
   plan: FgdPlan;
   rows: FgdRow[];
   canManage: boolean;
+  planStore: LocalFirst<FgdPlan>;
 }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
   const [delOpen, setDelOpen] = React.useState(false);
-  // The row order shown while a drag is being saved. `useSynced` hands control
-  // back to the server's order as soon as the revalidated props arrive, so a
-  // failed save undoes itself without a rollback branch of its own.
-  const [order, setOrder] = useSynced(rows);
+  const store = useLocalFirst(rows);
+  const order = store.rows;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   function addRow() {
-    start(async () => {
-      const res = await createFgdRowAction(plan.id);
-      if (!res.ok) toast.error(res.error);
-    });
+    const id = uuidV4();
+    const nextOrder = order.reduce((m, r) => Math.max(m, r.order + 1), 0);
+    store.add({ id, plan_id: plan.id, ours: "", theirs: "", order: nextOrder }, () => createFgdRowAction(plan.id, id));
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -174,20 +177,17 @@ function PlanTable({
     const from = order.findIndex((r) => r.id === active.id);
     const to = order.findIndex((r) => r.id === over.id);
     if (from < 0 || to < 0) return;
-    const next = arrayMove(order, from, to);
-    const before = order;
-    setOrder(next);
-    void reorderFgdRowsAction(next.map((r) => r.id)).then((res) => {
-      if (!res.ok) { toast.error(res.error); setOrder(before); }
-    });
+    const ids = arrayMove(order, from, to).map((r) => r.id);
+    store.reorder(ids, () => reorderFgdRowsAction(ids));
   }
 
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
-        <PlanTitle plan={plan} canManage={canManage} />
-        <span className="ml-auto text-[11px] text-muted-foreground">
-          {rows.length} {t("baris")}
+        <PlanTitle plan={plan} canManage={canManage} planStore={planStore} />
+        <LocalSaveStatus status={store.status} className="ml-auto" />
+        <span className={cn("text-[11px] text-muted-foreground", store.status === "idle" && "ml-auto")}>
+          {order.length} {t("baris")}
         </span>
         {canManage && (
           <Button variant="ghost" size="icon-sm" onClick={() => setDelOpen(true)} title={t("Hapus tabel")}>
@@ -206,7 +206,7 @@ function PlanTable({
                 {HOME_ORG}
               </th>
               <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <PartnerHeading plan={plan} canManage={canManage} />
+                <PartnerHeading plan={plan} canManage={canManage} planStore={planStore} />
               </th>
               {canManage && <th className="w-10 border-b border-border" />}
             </tr>
@@ -214,7 +214,7 @@ function PlanTable({
           <SortableContext items={order.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <tbody>
             {order.map((row) => (
-              <RowCells key={row.id} row={row} canManage={canManage} />
+              <RowCells key={row.id} row={row} canManage={canManage} store={store} />
             ))}
             {order.length === 0 && (
               <tr>
@@ -231,9 +231,8 @@ function PlanTable({
 
       {canManage && (
         <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-2">
-          <Button variant="ghost" size="sm" onClick={addRow} disabled={pending}>
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}{" "}
-            {t("Tambah baris")}
+          <Button variant="ghost" size="sm" onClick={addRow}>
+            <Plus className="size-3.5" /> {t("Tambah baris")}
           </Button>
           {order.length > 1 && (
             <span className="text-[11px] text-muted-foreground">
@@ -255,14 +254,12 @@ function PlanTable({
             <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
             <Button
               variant="destructive"
-              disabled={pending}
-              onClick={() => start(async () => {
-                const res = await deleteFgdPlanAction(plan.id);
-                if (res.ok) { toast.success(t("Tabel FGD dihapus")); setDelOpen(false); }
-                else toast.error(res.error);
-              })}
+              onClick={() => {
+                setDelOpen(false);
+                planStore.remove([plan.id], () => deleteFgdPlanAction(plan.id), { success: t("Tabel FGD dihapus") });
+              }}
             >
-              {pending && <Loader2 className="size-4 animate-spin" />} {t("Hapus")}
+              {t("Hapus")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -271,22 +268,19 @@ function PlanTable({
   );
 }
 
-function PlanTitle({ plan, canManage }: { plan: FgdPlan; canManage: boolean }) {
+function PlanTitle({ plan, canManage, planStore }: { plan: FgdPlan; canManage: boolean; planStore: LocalFirst<FgdPlan> }) {
   const t = useT();
-  const [value, setValue] = useSynced(plan.title);
+  const d = useCellDraft(plan.title, (title) =>
+    planStore.patch(plan.id, { title }, () => updateFgdPlanAction(plan.id, { title })), 1500);
   if (!canManage) {
     return <span className="text-sm font-semibold">{plan.title || t("Plotting FGD")}</span>;
   }
   return (
     <input
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => {
-        if (value === plan.title) return;
-        void updateFgdPlanAction(plan.id, { title: value }).then((r) => {
-          if (!r.ok) toast.error(r.error);
-        });
-      }}
+      value={d.v}
+      onChange={(e) => d.set(e.target.value)}
+      onFocus={d.onFocus}
+      onBlur={d.onBlur}
       placeholder={t("Plotting FGD")}
       className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground focus:ring-0"
     />
@@ -294,31 +288,27 @@ function PlanTitle({ plan, canManage }: { plan: FgdPlan; canManage: boolean }) {
 }
 
 /** The right-hand column heading is the partner's name, edited in place. */
-function PartnerHeading({ plan, canManage }: { plan: FgdPlan; canManage: boolean }) {
+function PartnerHeading({ plan, canManage, planStore }: { plan: FgdPlan; canManage: boolean; planStore: LocalFirst<FgdPlan> }) {
   const t = useT();
-  const [value, setValue] = useSynced(plan.partner_name);
+  const d = useCellDraft(plan.partner_name, (partner_name) =>
+    planStore.patch(plan.id, { partner_name }, () => updateFgdPlanAction(plan.id, { partner_name })), 1500);
   if (!canManage) {
     return <>{plan.partner_name || t("(belum diisi)")}</>;
   }
   return (
     <input
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => {
-        if (value === plan.partner_name) return;
-        void updateFgdPlanAction(plan.id, { partner_name: value }).then((r) => {
-          if (!r.ok) toast.error(r.error);
-        });
-      }}
+      value={d.v}
+      onChange={(e) => d.set(e.target.value)}
+      onFocus={d.onFocus}
+      onBlur={d.onBlur}
       placeholder={t("Nama himpunan mitra")}
       className="w-full border-0 bg-transparent p-0 text-xs font-semibold uppercase tracking-wide outline-none placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/70 focus:ring-0"
     />
   );
 }
 
-function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
+function RowCells({ row, canManage, store }: { row: FgdRow; canManage: boolean; store: LocalFirst<FgdRow> }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
     disabled: !canManage,
@@ -343,21 +333,17 @@ function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
           </button>
         </td>
       )}
-      <Cell row={row} field="ours" canManage={canManage} />
-      <Cell row={row} field="theirs" canManage={canManage} />
+      <Cell row={row} field="ours" canManage={canManage} store={store} />
+      <Cell row={row} field="theirs" canManage={canManage} store={store} />
       {canManage && (
         <td className="border-b border-border px-1 text-center align-middle">
           <button
             type="button"
-            disabled={pending}
-            onClick={() => start(async () => {
-              const res = await deleteFgdRowAction(row.id);
-              if (!res.ok) toast.error(res.error);
-            })}
+            onClick={() => store.remove([row.id], () => deleteFgdRowAction(row.id))}
             className="rounded p-1 text-muted-foreground/50 opacity-0 transition hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus:opacity-100"
             title={t("Hapus baris")}
           >
-            {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+            <Trash2 className="size-3.5" />
           </button>
         </td>
       )}
@@ -366,14 +352,16 @@ function RowCells({ row, canManage }: { row: FgdRow; canManage: boolean }) {
 }
 
 function Cell({
-  row, field, canManage,
+  row, field, canManage, store,
 }: {
   row: FgdRow;
   field: "ours" | "theirs";
   canManage: boolean;
+  store: LocalFirst<FgdRow>;
 }) {
   const t = useT();
-  const [value, setValue] = useSynced(row[field]);
+  const d = useCellDraft(row[field], (value) =>
+    store.patch(row.id, { [field]: value }, () => updateFgdRowAction(row.id, { [field]: value })), 1500);
   const placeholder = field === "ours" ? t("Departemen HMSI") : t("Departemen mitra");
 
   if (!canManage) {
@@ -386,14 +374,10 @@ function Cell({
   return (
     <td className="border-b border-border p-0 align-top">
       <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => {
-          if (value === row[field]) return;
-          void updateFgdRowAction(row.id, { [field]: value }).then((r) => {
-            if (!r.ok) toast.error(r.error);
-          });
-        }}
+        value={d.v}
+        onChange={(e) => d.set(e.target.value)}
+        onFocus={d.onFocus}
+        onBlur={d.onBlur}
         rows={1}
         placeholder={placeholder}
         className={cn(

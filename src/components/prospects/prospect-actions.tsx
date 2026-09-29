@@ -1,7 +1,6 @@
 "use client";
 import * as React from "react";
-import { MoreHorizontal, Pencil, Trash2, Loader2, Star, StarOff } from "lucide-react";
-import { toast } from "sonner";
+import { MoreHorizontal, Pencil, Trash2, Star, StarOff } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,24 +23,35 @@ import {
 } from "@/lib/actions/prospects";
 import { useT } from "@/lib/i18n/provider";
 import type { Member, Prospect, ProspectLink } from "@/lib/types";
+import type { LocalFirst } from "@/lib/use-local-first";
 
 export function ProspectActions({
-  prospect, prospectLinks, members, eventId,
-}: { prospect: Prospect; prospectLinks: ProspectLink[]; members: Member[]; eventId: string }) {
+  prospect, prospectLinks, members, eventId, store,
+}: {
+  prospect: Prospect;
+  prospectLinks: ProspectLink[];
+  members: Member[];
+  eventId: string;
+  /** The page's local-first list: the star and the delete show at once. */
+  store: LocalFirst<Prospect>;
+}) {
   const t = useT();
   const [editOpen, setEditOpen] = React.useState(false);
   const [delOpen, setDelOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
 
   function togglePrimary() {
-    start(async () => {
-      const res = prospect.is_primary
-        ? await unsetPrimaryProspectAction(prospect.id)
-        : await setPrimaryProspectAction(prospect.id);
-      if (res.ok) {
-        toast.success(prospect.is_primary ? t("Data utama dilepas") : t("Dijadikan data utama Ormawa Visit"));
-      } else toast.error(res.error);
-    });
+    if (prospect.is_primary) {
+      store.patch(prospect.id, { is_primary: false }, () => unsetPrimaryProspectAction(prospect.id), {
+        success: t("Data utama dilepas"),
+      });
+      return;
+    }
+    // At most one per edition: this one on, every other one off, one write.
+    store.change(
+      store.rows.map((p) => ({ id: p.id, fields: { is_primary: p.id === prospect.id } })),
+      () => setPrimaryProspectAction(prospect.id),
+      { success: t("Dijadikan data utama Ormawa Visit") },
+    );
   }
 
   return (
@@ -79,18 +89,11 @@ export function ProspectActions({
             </DialogClose>
             <Button
               variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                start(async () => {
-                  const res = await deleteProspectAction(prospect.id);
-                  if (res.ok) {
-                    toast.success(t("Prospek dihapus"));
-                    setDelOpen(false);
-                  } else toast.error(res.error);
-                })
-              }
+              onClick={() => {
+                setDelOpen(false);
+                store.remove([prospect.id], () => deleteProspectAction(prospect.id), { success: t("Prospek dihapus") });
+              }}
             >
-              {pending && <Loader2 className="size-4 animate-spin" />}
               {t("Hapus")}
             </Button>
           </DialogFooter>

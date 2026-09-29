@@ -23,6 +23,9 @@ import {
 } from "@/lib/task-filters";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
+import { useLocalFirst } from "@/lib/use-local-first";
+import { TaskStoreContext } from "./task-store";
 
 type View = "table" | "kanban" | "timeline";
 
@@ -49,6 +52,11 @@ export function TasksView({
   lockedDivision?: DivisionKey;
   initialDivision?: string;
 }) {
+  // Local-first: status changes, deletes, duplicates and bulk edits show up
+  // immediately and save in the background (see use-local-first.ts). Every
+  // view below renders from `all`, never from the raw prop.
+  const store = useLocalFirst(tasks);
+  const all = store.rows;
   const [view, setView] = React.useState<View>("table");
   const [q, setQ] = React.useState("");
   // Empty = no filter. Several statuses at once is the point: "what is still
@@ -85,8 +93,8 @@ export function TasksView({
   // fully filtered list - otherwise ticking a PIC would remove everyone else
   // from the menu and you could never add a second one.
   const inDivision = React.useMemo(
-    () => tasks.filter((t) => matchesDivision(t, division, divisionKeys)),
-    [tasks, division, divisionKeys],
+    () => all.filter((t) => matchesDivision(t, division, divisionKeys)),
+    [all, division, divisionKeys],
   );
   const picChoices = React.useMemo(() => picOptions(inDivision), [inDivision]);
   const someUnassigned = React.useMemo(
@@ -134,6 +142,7 @@ export function TasksView({
   const hasFilters = q || status.size > 0 || pics.size > 0 || openNotesOnly;
 
   return (
+    <TaskStoreContext.Provider value={store}>
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -155,7 +164,7 @@ export function TasksView({
               divisions={divisions}
               active={divisionFocus}
               onChange={setDivisionFocus}
-              showNoDivision={hasOrphanTasks(tasks, divisionKeys)}
+              showNoDivision={hasOrphanTasks(all, divisionKeys)}
             />
           )}
           <PicFilter
@@ -267,6 +276,7 @@ export function TasksView({
         <span className="text-muted-foreground">
           {filtered.length} {t("tugas")}
         </span>
+        <LocalSaveStatus status={store.status} className="order-last ml-auto" />
         {STATUS_ORDER.map((s) => (
           <span
             key={s}
@@ -288,5 +298,6 @@ export function TasksView({
         <TaskTimeline tasks={filtered} divisions={divisions} events={events} user={user} />
       )}
     </div>
+    </TaskStoreContext.Provider>
   );
 }

@@ -29,17 +29,28 @@ import {
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
 import { categoryDropId, planAfterDrag, primaryBudgetPlan } from "@/lib/budget";
-import { cn } from "@/lib/utils";
+import { cn, uuidV4 } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
-import { useAutosave } from "@/lib/use-autosave";
-import { SaveIndicator } from "@/components/ui/save-indicator";
 import { useSynced } from "@/lib/use-synced";
+import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
+import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import type { BudgetItem, BudgetPlan, OVEvent } from "@/lib/types";
 
 const CATEGORY_PRESETS = ["KONSUMSI", "TRANSPORTASI & AKOMODASI", "PERALATAN & CETAKAN", "PEMINJAMAN TEMPAT", "LAIN-LAIN"];
 
 /** What one inline cell edit can change. `total` is derived, never sent. */
 type ItemPatch = { qty?: number; unit_price?: number; name?: string; unit?: string };
+
+/** An item with the plan it belongs to, so every plan's items can live in ONE
+ *  local-first list (use-local-first.ts). */
+type FlatItem = BudgetItem & { plan_id: string };
+
+/** The page's two local-first lists, for the buttons deep inside each card. */
+const BudgetStores = React.createContext<{
+  items: LocalFirst<FlatItem>;
+  plans: LocalFirst<BudgetPlan>;
+} | null>(null);
+const useBudgetStores = () => React.useContext(BudgetStores)!;
 
 const CAT_COLORS: Record<string, string> = {
   KONSUMSI: "#f97316",
@@ -223,20 +234,21 @@ function AddItemDialog({
  */
 function SetPrimaryPlanButton({ plan }: { plan: BudgetPlan }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
+  const { plans } = useBudgetStores();
   return (
     <button
       type="button"
-      disabled={pending}
       title={t("Jadikan rencana utama")}
       aria-label={`${t("Jadikan rencana utama")}: ${plan.name}`}
-      onClick={() => start(async () => {
-        const res = await setPrimaryBudgetPlanAction(plan.id);
-        if (res.ok) toast.success(t("Rencana utama diperbarui")); else toast.error(res.error);
-      })}
+      // The star moves at once: this plan on, every other one off, one write.
+      onClick={() => plans.change(
+        plans.rows.map((p) => ({ id: p.id, fields: { is_primary: p.id === plan.id } })),
+        () => setPrimaryBudgetPlanAction(plan.id),
+        { success: t("Rencana utama diperbarui") },
+      )}
       className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
     >
-      {pending ? <Loader2 className="size-4 animate-spin" /> : <Star className="size-4" />}
+      <Star className="size-4" />
     </button>
   );
 }
@@ -244,7 +256,7 @@ function SetPrimaryPlanButton({ plan }: { plan: BudgetPlan }) {
 function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
+  const { plans } = useBudgetStores();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {/* No stopPropagation needed: this trigger is a sibling of the card's
@@ -265,30 +277,35 @@ function DeletePlanButton({ plan }: { plan: BudgetPlan }) {
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-          <Button variant="destructive" disabled={pending} onClick={() => start(async () => {
-            const res = await deleteBudgetPlanAction(plan.id);
-            if (res.ok) { toast.success(t("Rencana anggaran dihapus")); setOpen(false); } else toast.error(res.error);
-          })}>{pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}</Button>
+          <Button variant="destructive" onClick={() => {
+            setOpen(false);
+            plans.remove([plan.id], () => deleteBudgetPlanAction(plan.id), { success: t("Rencana anggaran dihapus") });
+          }}>{t("Hapus")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function DuplicateItemButton({ itemId }: { itemId: string }) {
+function DuplicateItemButton({ item }: { item: BudgetItem }) {
   const t = useT();
-  const [pending, start] = React.useTransition();
+  const { items } = useBudgetStores();
   return (
     <button
       title={t("Duplikat")}
-      disabled={pending}
-      onClick={() => start(async () => {
-        const res = await duplicateBudgetItemAction(itemId);
-        if (res.ok) toast.success(t("Item diduplikat")); else toast.error(res.error);
-      })}
+      onClick={() => {
+        const source = items.rows.find((i) => i.id === item.id);
+        if (!source) return;
+        const id = uuidV4();
+        // Appended to the plan, which is where its new position puts it; the
+        // category grouping then shows it under its own category.
+        items.add({ ...source, id, name: `${source.name} (salinan)` }, () => duplicateBudgetItemAction(item.id, id), {
+          success: t("Item diduplikat"),
+        });
+      }}
       className="inline-flex size-6 items-center justify-center rounded text-muted-foreground/60 transition hover:bg-muted hover:text-foreground"
     >
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+      <Copy className="size-3.5" />
     </button>
   );
 }
@@ -296,7 +313,7 @@ function DuplicateItemButton({ itemId }: { itemId: string }) {
 function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: string }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
-  const [pending, start] = React.useTransition();
+  const { items } = useBudgetStores();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -311,11 +328,10 @@ function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: stri
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-          <Button variant="destructive" disabled={pending} onClick={() => start(async () => {
-            const res = await deleteBudgetItemAction(itemId);
-            if (res.ok) toast.success(t("Item dihapus")); else toast.error(res.error);
+          <Button variant="destructive" onClick={() => {
             setOpen(false);
-          })}>{pending && <Loader2 className="size-4 animate-spin" />}{t("Hapus")}</Button>
+            items.remove([itemId], () => deleteBudgetItemAction(itemId), { success: t("Item dihapus") });
+          }}>{t("Hapus")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -394,7 +410,7 @@ function ItemRow({
       {canManage && (
         <td className="px-2 py-2">
           <div className="flex items-center gap-0.5">
-            <DuplicateItemButton itemId={it.id} />
+            <DuplicateItemButton item={it} />
             <DeleteItemButton itemId={it.id} itemName={it.name} />
           </div>
         </td>
@@ -414,58 +430,40 @@ export function BudgetView({
 }) {
   const t = useT();
   const evMap = new Map(events.map((e) => [e.id, e]));
-  const [state, setState] = useSynced(plans);
+  // Local-first (use-local-first.ts): every inline edit, drag, duplicate and
+  // delete shows at once and saves in the background, one write after another.
+  // It used to mirror the props with useSynced, so a revalidation from one save
+  // could put a SECOND, still-unsaved edit back to its old value for a moment.
+  const flat = React.useMemo<FlatItem[]>(
+    () => plans.flatMap((p) => p.items.map((i) => ({ ...i, plan_id: p.id }))),
+    [plans],
+  );
+  const itemStore = useLocalFirst(flat);
+  const planStore = useLocalFirst(plans);
+  const state = React.useMemo(
+    () => planStore.rows.map((p) => ({ ...p, items: itemStore.rows.filter((i) => i.plan_id === p.id) })),
+    [planStore.rows, itemStore.rows],
+  );
+  const stores = React.useMemo(() => ({ items: itemStore, plans: planStore }), [itemStore, planStore]);
   // Every item across every plan is "on screen"; a deleted id just stops
   // counting, so the selection needs no cleanup effect (see use-multi-select).
   const sel = useMultiSelect(
     React.useMemo(() => state.flatMap((p) => p.items.map((i) => i.id)), [state]),
   );
-  const [bulkPending, startBulk] = React.useTransition();
-  const autosave = useAutosave();
   const mainId = primaryBudgetPlan(state)?.id;
   function bulkDelete() {
-    startBulk(async () => {
-      const res = await bulkDeleteBudgetItemsAction(sel.ids);
-      if (res.ok) { toast.success(`${sel.count} ${t("item dihapus")}`); sel.clear(); }
-      else toast.error(res.error);
-    });
+    const ids = sel.ids;
+    sel.clear();
+    itemStore.remove(ids, () => bulkDeleteBudgetItemsAction(ids), { success: `${ids.length} ${t("item dihapus")}` });
   }
 
   function edit(itemId: string, patch: ItemPatch) {
-    // Remember just THIS row, so a failure can put it back without touching
-    // anything else. The rollback used to be `setState(plans)` - a jump all
-    // the way back to the props the page was rendered with, which also undid
-    // every OTHER edit made since, including ones that had already saved
-    // successfully. Those rows then showed a stale value that did not match
-    // the database until the next reload.
-    const before = state.flatMap((p) => p.items).find((i) => i.id === itemId);
-
-    setState((prev) =>
-      prev.map((p) => ({
-        ...p,
-        items: p.items.map((it) => {
-          if (it.id !== itemId) return it;
-          const next = { ...it, ...patch };
-          next.total = Math.round((next.qty ?? 0) * (next.unit_price ?? 0));
-          return next;
-        }),
-      })),
-    );
-    autosave.run(async () => {
-      const r = await updateBudgetItemAction(itemId, patch);
-      if (!r.ok) {
-        toast.error(r.error);
-        if (before) {
-          setState((prev) =>
-            prev.map((p) => ({
-              ...p,
-              items: p.items.map((it) => (it.id === itemId ? before : it)),
-            })),
-          );
-        }
-      }
-      return r;
-    });
+    const cur = itemStore.rows.find((i) => i.id === itemId);
+    if (!cur) return;
+    const next = { ...cur, ...patch };
+    // The total is derived, so it follows the new qty/price at once too.
+    const total = Math.round((next.qty ?? 0) * (next.unit_price ?? 0));
+    itemStore.patch(itemId, { ...patch, total }, () => updateBudgetItemAction(itemId, patch));
   }
 
   /**
@@ -484,39 +482,34 @@ export function BudgetView({
     const drop = planAfterDrag(plan.items, activeId, overId);
     if (!drop) return;
     const { items: nextItems, category, changedCategory: moved } = drop;
-    // Same reasoning as `edit`: put back only the plan that was dragged.
-    const beforeItems = plan.items;
-    setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: nextItems } : p)));
-    autosave.run(async () => {
-      const ids = nextItems.map((i) => i.id);
-      // A cross-category drop is two writes (category + order) and has its own
-      // action so the database can do both in one transaction: half of it
-      // would print the same category twice in the table.
-      const r = moved
-        ? await moveBudgetItemAction(activeId, category, ids)
-        : await reorderBudgetItemsAction(ids);
-      if (!r.ok) {
-        toast.error(r.error);
-        setState((prev) => prev.map((p) => (p.id === planId ? { ...p, items: beforeItems } : p)));
-      }
-      return r;
-    });
+    const planIds = nextItems.map((i) => i.id);
+    // The local order covers every plan; only this plan's slice changes.
+    const allIds = state.flatMap((p) => (p.id === planId ? planIds : p.items.map((i) => i.id)));
+    // A cross-category drop is two writes (category + order) and has its own
+    // action so the database can do both in one transaction: half of it would
+    // print the same category twice in the table.
+    itemStore.reorder(
+      allIds,
+      () => (moved ? moveBudgetItemAction(activeId, category, planIds) : reorderBudgetItemsAction(planIds)),
+      { changes: moved ? [{ id: activeId, fields: { category } }] : [] },
+    );
   }
 
   return (
+    <BudgetStores.Provider value={stores}>
     <div className="space-y-5">
-      {/* Qty/price edit inline and debounce-save; this confirms it stuck. */}
+      {/* Ambient save state; nothing on the page waits for it. */}
       <div className="flex h-4 items-center justify-end">
-        <SaveIndicator status={autosave.status} />
+        <LocalSaveStatus status={itemStore.status === "idle" ? planStore.status : itemStore.status} />
       </div>
       {canManage && sel.count > 0 && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 backdrop-blur">
           <span className="text-sm font-medium">{sel.count} {t("item dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" disabled={bulkPending} onClick={bulkDelete}>
-              {bulkPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} {t("Hapus")}
+            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+              <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear} disabled={bulkPending}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       )}
@@ -537,6 +530,7 @@ export function BudgetView({
         />
       ))}
     </div>
+    </BudgetStores.Provider>
   );
 }
 
