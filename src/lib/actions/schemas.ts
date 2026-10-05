@@ -66,6 +66,12 @@ const optionalText = (max = 2000) =>
 /** An id passed back from the client (row identifiers). */
 export const idSchema = nonEmpty("ID", 128);
 
+/** Several row ids at once (a bulk action), capped so one call stays one statement. */
+export const bulkIdsSchema = z
+  .array(idSchema)
+  .min(1, "Pilih minimal satu baris.")
+  .max(500, "Terlalu banyak baris sekaligus.");
+
 /** Nullable ISO-ish date (yyyy-mm-dd) or empty. */
 const optionalDate = z
   .string()
@@ -617,6 +623,8 @@ export const rundownChangesSchema = z
       id: idSchema,
       patch: rundownSchema
         .pick({
+          // `no` travels when a row is dragged to a new place (rundown-reorder.ts).
+          no: true,
           time_start: true, time_end: true, duration: true, activity: true,
           keterangan: true, mc: true, operator: true, merges: true,
         })

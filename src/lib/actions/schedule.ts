@@ -4,12 +4,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { getActiveEvent } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import {
-  createRundown, applyRundownChanges, deleteRundown, getRundown,
+  createRundown, applyRundownChanges, deleteRundown, bulkDeleteRundown, getRundown,
   createJob, updateJob, deleteJob, reorderJobs, getJobs,
 } from "@/lib/data/repo";
 import type { JobHariH, RundownItem } from "@/lib/types";
 import {
-  rundownSchema, rundownChangesSchema, clientUuidSchema, jobSchema, idSchema, parse,
+  rundownSchema, rundownChangesSchema, clientUuidSchema, jobSchema, idSchema, bulkIdsSchema, parse,
 } from "./schemas";
 import { archivedGuard, errMsg } from "./lock";
 
@@ -123,6 +123,24 @@ export async function deleteRundownAction(id: string): Promise<Result> {
   const blocked = await archivedGuard(user, await scopeOf());
   if (blocked) return blocked;
   try { await deleteRundown(idv.data); } catch (e) { return errMsg(e); }
+  revalidateEntities("rundown");
+  return { ok: true };
+}
+
+/**
+ * Remove the rows ticked in the rundown table, all at once. Same rule as a
+ * single delete: FULL access only. Only rows of the active edition are
+ * touched, whatever ids the payload names.
+ */
+export async function bulkDeleteRundownAction(ids: string[]): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!can.deleteRundown(user)) return DENY;
+  const v = parse(bulkIdsSchema, ids);
+  if (!v.ok) return v;
+  const eventId = await scopeOf();
+  const blocked = await archivedGuard(user, eventId);
+  if (blocked) return blocked;
+  try { await bulkDeleteRundown(eventId, v.data); } catch (e) { return errMsg(e); }
   revalidateEntities("rundown");
   return { ok: true };
 }

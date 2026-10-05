@@ -2047,6 +2047,11 @@ export async function applyRundownChanges(
 export async function deleteRundown(id: string) {
   await must((await sb()).from("rundown").delete().eq("id", id));
 }
+/** Remove several rows of ONE edition's rundown in a single statement. */
+export async function bulkDeleteRundown(eventId: string, ids: string[]) {
+  if (!ids.length) return;
+  await must((await sb()).from("rundown").delete().eq("event_id", eventId).in("id", ids));
+}
 
 export async function createJob(input: Partial<JobHariH>) {
   const client = await sb();

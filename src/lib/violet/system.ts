@@ -100,7 +100,9 @@ export function systemPassages(): Passage[] {
       "Kolom Catatan berisi keterangan bebas soal tugas itu; kalau isinya panjang, tabel memotongnya dan " +
       "ada tombol Selengkapnya untuk membuka teks penuh tanpa masuk ke mode edit. " +
       "Nomor tugas diberikan otomatis dan berurut PER DIVISI dalam satu Ormawa Visit, jadi angka yang sama " +
-      "bisa muncul di divisi berbeda. Karena itu kolom '#' di tabel hanyalah nomor baris di layar."),
+      "bisa muncul di divisi berbeda. Karena itu kolom '#' di tabel hanyalah nomor baris di layar. " +
+      "Setiap sel tabel kecuali Status dan '#' bisa diedit langsung lewat ikon PENSIL di pojok kanan atas " +
+      "sel itu: muncul kotak kecil berisi isian sel itu saja untuk baris itu saja, tanpa membuka menu titik tiga."),
 
     p("overtime", "Aturan: status Overtime muncul sendiri", "/tasks",
       "Status Overtime TIDAK perlu diisi manual dan tidak diubah oleh siapa pun. Sebuah tugas otomatis " +
@@ -270,7 +272,12 @@ export function systemPassages(): Passage[] {
       "Durasi TIDAK diketik: sistem menghitungnya dari jam mulai dan jam selesai. " +
       "Menambah baris baru memakai jam selesai baris terakhir sebagai jam mulainya. " +
       "Empat kolom pertama (No, Waktu, Durasi, Kegiatan) dibekukan supaya tetap terlihat saat menggulir " +
-      "ke samping, dan sel yang isinya sama pada beberapa baris berurutan bisa digabung."),
+      "ke samping, dan sel yang isinya sama pada beberapa baris berurutan bisa digabung. " +
+      "Baris bisa DISERET ke urutan lain lewat pegangan di kolom paling kiri: nomornya disusun ulang, dan jam " +
+      "baris-baris di antara posisi lama dan baru dihitung ulang sehingga tiap baris tetap dengan durasinya " +
+      "sendiri dan jeda istirahat tetap di jam yang sama. Baris yang selnya digabung TIDAK bisa diseret, dan " +
+      "baris lain tidak bisa diletakkan di tengah sel gabungan. Beberapa baris bisa dicentang lalu dihapus " +
+      "sekaligus; sel gabungan yang kehilangan baris ikut menyusut."),
 
     p("jobs", "Struktur data: Job Hari-H", "/jobs",
       "Job Hari-H adalah pembagian tugas saat acara berlangsung, terpisah dari Work Breakdown yang berisi " +
@@ -304,7 +311,8 @@ export function systemPassages(): Passage[] {
       "Super Link adalah direktori tautan penting: dokumen, form, folder Drive. Satu entri menyimpan: " +
       "Ormawa Visit pemilik, divisi (boleh kosong, berarti Umum), nama, alamat URL, dan catatan. " +
       "URL WAJIB diisi dan harus berupa tautan sungguhan; aturan itu ditegakkan sampai di database. " +
-      "Entri dikelompokkan dua tingkat: per Ormawa Visit, lalu per divisi. " +
+      "Entri dikelompokkan dua tingkat: per Ormawa Visit, lalu per divisi. Kelompok Ormawa Visit yang sedang " +
+      "dipilih di tombol Ormawa Visit di bagian atas selalu tampil PALING ATAS dengan tanda 'Sedang dilihat'. " +
       "Sebagian entri tidak dibuat langsung di sini melainkan TERBIT OTOMATIS dari tempat lain: dari tautan " +
       "hasil sebuah tugas (kelompok 'Hasil Tugas') atau dari tautan sebuah prospek (kelompok 'Reach & Offer'). " +
       "Entri semacam itu diberi label sumbernya ('Dari Work Breakdown' atau 'Dari Reach & Offer') dan tetap " +

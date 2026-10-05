@@ -284,7 +284,7 @@ export const EN: Record<string, string> = {
 
   // Rundown table
   "Waktu": "Time",
-  "Kebutuhan Operator": "Operator needs",
+  "Kebutuhan Operator": "Operator Needs",
   "Catatan…": "Note…",
   "Catatan cepat": "Quick note",
   "Catatan cepat evaluasi": "Quick evaluation note",
@@ -1421,4 +1421,17 @@ export const EN: Record<string, string> = {
   "Tidak ada baris di kategori ini.": "No rows in this category.",
   "Ukuran file maksimal 3 MB. Pecah datanya menjadi beberapa file.": "The file may be at most 3 MB. Split the data into several files.",
   "Unduh laporan pemeriksaan": "Download the check report",
+  // v1.56.0: edit one Work Breakdown cell, rundown drag & multi-select
+  "Deadline lebih awal dari tanggal mulai tugas.": "The deadline is before the task's start date.",
+  "Referensi belum dapat diubah dari halaman ini.": "References cannot be changed from this page yet.",
+  "Referensi diperbarui": "References updated",
+  "Hasil diperbarui": "Result updated",
+  "agenda dihapus": "agenda items deleted",
+  "Hapus baris rundown?": "Delete rundown rows?",
+  "baris akan dihapus permanen. Sel yang digabung ikut menyesuaikan.": "rows will be deleted permanently. Merged cells adjust with them.",
+  "Pilih baris": "Select row",
+  "Baris yang digabung tidak bisa dipindahkan": "Merged rows cannot be moved",
+  "Baris yang digabung tidak bisa dipindahkan. Pisahkan selnya dulu.": "Merged rows cannot be moved. Split the cell first.",
+  "Baris tidak bisa disisipkan di tengah sel yang digabung.": "A row cannot be placed inside a merged cell.",
+  "Seret ikon untuk memindahkan baris; jam menyesuaikan dan durasi tiap baris tetap.": "Drag the handle to move a row; the times adjust and each row keeps its duration.",
 };

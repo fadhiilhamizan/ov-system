@@ -1,9 +1,26 @@
 "use client";
 import * as React from "react";
-import { Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink, GripVertical, X,
+} from "lucide-react";
+import {
+  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
+  type DragEndEvent, type DraggableAttributes, type DraggableSyntheticListeners,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+} from "@/components/ui/dialog";
+import { useMultiSelect } from "@/lib/use-multi-select";
+import { mergedRowIds } from "@/lib/rundown-reorder";
 import { cn } from "@/lib/utils";
 import { computeDuration } from "@/lib/rundown-time";
 import { useCellDraft } from "@/lib/use-cell-draft";
@@ -165,6 +182,43 @@ function MergeableCell({
   );
 }
 
+interface DragHandle {
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+}
+
+/**
+ * One draggable row. Module scope for the same reason as MergeableCell: a
+ * component declared inside RundownView would be a new type every render and
+ * remount every input in the row.
+ *
+ * A row inside a merged run cannot be picked up (`draggable` false), but it
+ * stays a drop target so a free row can still be dropped right above or below
+ * a run; dropping one INSIDE a run is refused by checkMove.
+ */
+function SortableRow({
+  id, draggable, children,
+}: {
+  id: string;
+  draggable: boolean;
+  children: (handle: DragHandle) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: { draggable: !draggable, droppable: false },
+  });
+  return (
+    <tr
+      ref={setNodeRef}
+      // Translate only: a scaled <tr> squashes the rowspan cells around it.
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn("hover:bg-muted/20", isDragging && "relative z-30 bg-card opacity-90 shadow-lg")}
+    >
+      {children({ attributes, listeners })}
+    </tr>
+  );
+}
+
 export function RundownView({
   items,
   divisions,
@@ -212,6 +266,30 @@ export function RundownView({
   const q = useRundownQueue(items, eventId);
   const list = q.list;
 
+  // Multi-select for deleting several rows at once (full access only).
+  const sel = useMultiSelect(React.useMemo(() => list.map((r) => r.id), [list]));
+  const [confirmBulk, setConfirmBulk] = React.useState(false);
+  function bulkDelete() {
+    const ids = sel.ids;
+    setConfirmBulk(false);
+    sel.clear();
+    q.remove(ids);
+  }
+
+  // Rows in a merged run (any column, hidden ones included) stay put.
+  const locked = React.useMemo(() => mergedRowIds(list), [list]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const res = q.move(String(active.id), String(over.id));
+    if (res === "merged-row") toast.error(t("Baris yang digabung tidak bisa dipindahkan. Pisahkan selnya dulu."));
+    else if (res === "inside-merge") toast.error(t("Baris tidak bisa disisipkan di tengah sel yang digabung."));
+  }
+
   function save(id: string, patch: Partial<RundownItem>) {
     const { division_jobs: _j, id: _i, ...fields } = patch;
     void _j; void _i;
@@ -237,7 +315,7 @@ export function RundownView({
     return <EmptyState icon={<Clock />} title={t("Belum ada rundown")} description={t("Rundown acara belum tersedia untuk Ormawa Visit ini.")} />;
   }
 
-  const th = "border-b border-border bg-muted/40 px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
+  const th = "border-b border-border bg-muted/40 px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground";
   const td = "border-b border-border/60 align-top";
 
   // Merged cells: one value spanning several time slots, so "one activity that
@@ -272,15 +350,19 @@ export function RundownView({
   // the automatic table algorithm. (With `table-layout: auto` the browser sizes
   // columns by content, the offsets drifted out of alignment, and the gaps let
   // scrolled-under content show through the frozen block - the "hollow" look.)
-  const W = { no: 44, time: 96, dur: 72, act: 220, mc: 140, opr: 160, div: 150, note: 180, actions: 44 };
-  const noL = { left: 0 } as const;
-  const timeL = { left: W.no } as const;
-  const durL = { left: W.no + W.time } as const;
-  const actL = { left: W.no + W.time + W.dur } as const;
+  // The first column holds the drag handle and/or the selection tick, and is
+  // only there for roles that can use one of them.
+  const selW = (canManage ? 24 : 0) + (canDelete ? 24 : 0) + (canManage || canDelete ? 12 : 0);
+  const W = { sel: selW, no: 44, time: 96, dur: 72, act: 220, mc: 140, opr: 160, div: 150, note: 180, actions: 44 };
+  const selL = { left: 0 } as const;
+  const noL = { left: W.sel } as const;
+  const timeL = { left: W.sel + W.no } as const;
+  const durL = { left: W.sel + W.no + W.time } as const;
+  const actL = { left: W.sel + W.no + W.time + W.dur } as const;
   // Below the minimum the table scrolls horizontally; above it the unsized
   // Catatan column absorbs the slack, so the frozen offsets never shift.
   const minTableWidth =
-    W.no + W.time + W.dur + W.act + W.mc + W.opr + cols.length * W.div + W.note +
+    W.sel + W.no + W.time + W.dur + W.act + W.mc + W.opr + cols.length * W.div + W.note +
     (canManage ? W.actions : 0);
 
   const FZ = "sticky !bg-card"; // opaque so scrolled content doesn't bleed through
@@ -297,14 +379,46 @@ export function RundownView({
             {cols.length} {t("dari")} {allCols.length} {t("kolom divisi")}
           </span>
         )}
+        {canManage && list.length > 1 && (
+          <span className="text-xs text-muted-foreground">
+            {t("Seret ikon untuk memindahkan baris; jam menyesuaikan dan durasi tiap baris tetap.")}
+          </span>
+        )}
         <div className="ml-auto flex h-4 items-center">
           <LocalSaveStatus status={q.status} />
         </div>
       </div>
 
+      {canDelete && sel.count > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+          <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="destructive" size="sm" onClick={() => setConfirmBulk(true)}>
+              <Trash2 className="size-4" /> {t("Hapus")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
+          </div>
+        </div>
+      )}
+      <Dialog open={confirmBulk} onOpenChange={setConfirmBulk}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Hapus baris rundown?")}</DialogTitle>
+            <DialogDescription>
+              {sel.count} {t("baris akan dihapus permanen. Sel yang digabung ikut menyesuaikan.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
+            <Button variant="destructive" onClick={bulkDelete}>{t("Hapus")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* border-separate (not collapse): sticky/frozen columns don't paint their
           background reliably under border-collapse, which made them look hollow. */}
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <table
           className="w-full table-fixed border-separate border-spacing-0 text-sm"
           style={{ minWidth: minTableWidth }}
@@ -312,6 +426,7 @@ export function RundownView({
           {/* Pins every column width so the sticky offsets above stay exact.
               Catatan is deliberately unsized: it soaks up any leftover space. */}
           <colgroup>
+            {W.sel > 0 && <col style={{ width: W.sel }} />}
             <col style={{ width: W.no }} />
             <col style={{ width: W.time }} />
             <col style={{ width: W.dur }} />
@@ -326,6 +441,20 @@ export function RundownView({
           </colgroup>
           <thead>
             <tr>
+              {W.sel > 0 && (
+                <th className={cn(th, FZ, "z-20")} style={selL}>
+                  {canDelete && (
+                    <span className={cn("flex", canManage ? "justify-end pr-0.5" : "justify-center")}>
+                      <Checkbox
+                        checked={sel.allVisibleSelected}
+                        onCheckedChange={sel.toggleAll}
+                        aria-label={t("Pilih semua")}
+                        disabled={!list.length}
+                      />
+                    </span>
+                  )}
+                </th>
+              )}
               <th className={cn(th, FZ, "z-20 text-center")} style={noL}>{t("No")}</th>
               <th className={cn(th, FZ, "z-20")} style={timeL}>{t("Waktu")}</th>
               <th className={cn(th, FZ, "z-20")} style={durL}>{t("Durasi")}</th>
@@ -344,14 +473,48 @@ export function RundownView({
               {canManage && <th className={th} />}
             </tr>
           </thead>
+          <SortableContext items={list.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <tbody>
             {list.map((item, rowIndex) => {
               // Derive at RENDER time, not only on blur: rows that already had
               // a start+end (seeded, imported, or edited before auto-duration
               // existed) never got a stored value and showed an empty cell.
               const duration = computeDuration(item.time_start, item.time_end) ?? item.duration;
+              const merged = locked.has(item.id);
               return (
-              <tr key={item.id} className="hover:bg-muted/20">
+              <SortableRow key={item.id} id={item.id} draggable={canManage && !merged}>
+                {(handle) => (<>
+                {W.sel > 0 && (
+                  <td className={cn(td, FZ, "z-10", sel.selected.has(item.id) && "!bg-accent")} style={selL}>
+                    <div className="flex items-center justify-center gap-1 pt-1.5">
+                      {canManage && (merged ? (
+                        <span
+                          title={t("Baris yang digabung tidak bisa dipindahkan")}
+                          className="flex cursor-not-allowed items-center justify-center p-0.5 text-muted-foreground/30"
+                        >
+                          <GripVertical className="size-4" />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          {...handle.attributes}
+                          {...handle.listeners}
+                          aria-label={t("Geser untuk mengurutkan")}
+                          className="flex cursor-grab touch-none items-center justify-center rounded p-0.5 text-muted-foreground/60 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
+                        >
+                          <GripVertical className="size-4" />
+                        </button>
+                      ))}
+                      {canDelete && (
+                        <Checkbox
+                          checked={sel.selected.has(item.id)}
+                          onCheckedChange={() => sel.toggle(item.id)}
+                          aria-label={t("Pilih baris")}
+                        />
+                      )}
+                    </div>
+                  </td>
+                )}
                 <td className={cn(td, FZ, "z-10 text-center text-xs font-medium text-muted-foreground")} style={noL}>{item.no}</td>
                 <td className={cn(td, FZ, "z-10")} style={timeL}>
                   <div className="flex flex-col">
@@ -423,18 +586,21 @@ export function RundownView({
                     </div>
                   </td>
                 )}
-              </tr>
+                </>)}
+              </SortableRow>
               );
             })}
             {list.length === 0 && (
               <tr>
-                <td colSpan={7 + cols.length + (canManage ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={7 + cols.length + (canManage ? 1 : 0) + (W.sel > 0 ? 1 : 0)} className="px-4 py-8 text-center text-sm text-muted-foreground">
                   {t("Belum ada baris rundown.")}
                 </td>
               </tr>
             )}
           </tbody>
+          </SortableContext>
         </table>
+        </DndContext>
       </div>
 
       {canManage && (

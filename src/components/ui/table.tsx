@@ -26,7 +26,9 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        "h-10 px-3 text-left align-middle text-xs font-medium uppercase tracking-wide text-muted-foreground",
+        // Capitalized Case as written, never `uppercase`: an all-caps header
+        // hides which words are abbreviations (PIC, NRP, MC) and which are not.
+        "h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground",
         className,
       )}
       {...props}

@@ -237,7 +237,7 @@ export function TaskTimeline({
             {/* ---- axis: month row on top, day numbers underneath ---- */}
             <div className="flex border-b border-border">
               <div
-                className="sticky left-0 z-20 flex shrink-0 items-end border-r border-border bg-card px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                className="sticky left-0 z-20 flex shrink-0 items-end border-r border-border bg-card px-3 pb-1.5 text-[11px] font-semibold text-muted-foreground"
                 style={{ width: LABEL_W }}
               >
                 {tr("Tugas")}

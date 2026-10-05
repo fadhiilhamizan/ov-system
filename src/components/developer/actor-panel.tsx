@@ -66,8 +66,8 @@ export function ActorPanel({
               <TableHead className="text-right">Tambah</TableHead>
               <TableHead className="text-right">Ubah</TableHead>
               <TableHead className="text-right">Hapus</TableHead>
-              <TableHead>Terakhir menulis</TableHead>
-              <TableHead>Terakhir terlihat</TableHead>
+              <TableHead>Terakhir Menulis</TableHead>
+              <TableHead>Terakhir Terlihat</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

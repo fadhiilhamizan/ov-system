@@ -12,6 +12,7 @@ import {
 import { DivisionBadge } from "@/components/division-badge";
 import { StatusMenu } from "./status-menu";
 import { TaskActions } from "./task-actions";
+import { EditableTaskCell } from "./task-cell-edit";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useTaskLinks, useTaskRefs } from "./task-links-context";
@@ -243,14 +244,16 @@ export function TaskTable({
                 ? "border-l-2 border-l-amber-400 dark:border-l-amber-500"
                 : "border-l-2 border-l-transparent";
               return (
-                <TableRow key={t.id} className={cn(checked && "bg-accent/40")}>
+                <TableRow key={t.id} className={cn("group/row", checked && "bg-accent/40")}>
                   {canSelect && (
                     <TableCell className={accent}>
                       <Checkbox checked={checked} onCheckedChange={() => toggleOne(t.id)} aria-label={tr("Pilih tugas")} />
                     </TableCell>
                   )}
                   <TableCell className={cn("text-xs tabular-nums text-muted-foreground", !canSelect && accent)}>{rowIndex + 1}</TableCell>
-                  <TableCell className="align-top">
+                  {/* Every cell but # and Status carries an edit pencil in its
+                      top-right corner (EditableTaskCell reserves the room). */}
+                  <EditableTaskCell task={t} field="title" user={user} divisions={divisions} className="align-top">
                     <div className="flex items-start gap-1.5">
                       {/* The slot is reserved for EVERY row, but only once some
                           row on screen actually carries a note - otherwise a
@@ -273,22 +276,26 @@ export function TaskTable({
                     {t.notes && (
                       <ExpandableText text={t.notes} lines={1} className={cn("mt-0.5 text-xs text-muted-foreground", anyFlagged && "pl-[34px]")} />
                     )}
-                  </TableCell>
-                  <TableCell className="align-top">
+                  </EditableTaskCell>
+                  <EditableTaskCell task={t} field="evaluation" user={user} divisions={divisions} className="align-top">
                     {t.evaluation
                       ? <ExpandableText text={t.evaluation} lines={2} className="text-xs text-muted-foreground" />
                       : <span className="text-xs text-muted-foreground">-</span>}
-                  </TableCell>
-                  <TableCell>{div && <DivisionBadge division={div} />}</TableCell>
-                  <TableCell className="max-w-[160px] truncate text-sm text-muted-foreground">{t.pic || "-"}</TableCell>
-                  <TableCell>
+                  </EditableTaskCell>
+                  <EditableTaskCell task={t} field="division" user={user} divisions={divisions}>
+                    {div ? <DivisionBadge division={div} /> : <span className="text-xs text-muted-foreground">-</span>}
+                  </EditableTaskCell>
+                  <EditableTaskCell task={t} field="pic" user={user} divisions={divisions} className="max-w-[180px] text-sm text-muted-foreground">
+                    <span className="block truncate">{t.pic || "-"}</span>
+                  </EditableTaskCell>
+                  <EditableTaskCell task={t} field="deadline" user={user} divisions={divisions}>
                     <span className={cn("text-sm", overdue ? "font-medium text-danger" : "text-muted-foreground")}>
                       {formatDate(t.end_date) ?? t.end_raw ?? "-"}
                     </span>
-                  </TableCell>
+                  </EditableTaskCell>
                   <TableCell><StatusMenu task={t} user={user} /></TableCell>
-                  <TableCell><RefsCell task={t} /></TableCell>
-                  <TableCell><ResultCell task={t} /></TableCell>
+                  <EditableTaskCell task={t} field="refs" user={user} divisions={divisions}><RefsCell task={t} /></EditableTaskCell>
+                  <EditableTaskCell task={t} field="result" user={user} divisions={divisions}><ResultCell task={t} /></EditableTaskCell>
                   <TableCell>
                     <TaskActions task={t} divisions={divisions} events={events} activeEventId={activeEventId} user={user} />
                   </TableCell>

@@ -53,6 +53,19 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.56.0",
+    date: "2026-10-05",
+    title: "Edit sel langsung di Work Breakdown, seret dan hapus massal di Rundown",
+    changes: [
+      { kind: "new", text: "Work Breakdown: setiap sel kecuali Status punya ikon pensil di pojok kanan atas yang membuka kotak edit khusus sel itu untuk baris itu, tanpa lewat menu titik tiga." },
+      { kind: "new", text: "Rundown: baris bisa diseret ke urutan lain; nomor tersusun ulang dan jam dihitung ulang sehingga durasi tiap baris tetap sama." },
+      { kind: "new", text: "Rundown: beberapa baris bisa dicentang lalu dihapus sekaligus, dan sel gabungan yang kehilangan baris ikut menyusut." },
+      { kind: "ui", text: "Rundown: baris yang selnya digabung tidak bisa diseret, dan baris lain tidak bisa diletakkan di tengah sel gabungan." },
+      { kind: "ui", text: "Super Link: tautan Ormawa Visit yang sedang dipilih di tombol atas kini selalu tampil paling atas dengan tanda \"Sedang dilihat\"." },
+      { kind: "ui", text: "Judul kolom di semua tabel kini ditulis dengan huruf kapital di awal kata, bukan huruf besar semua, sehingga singkatan seperti PIC, NRP, dan MC tetap mudah dikenali." },
+    ],
+  },
+  {
     version: "1.55.0",
     date: "2026-09-29",
     title: "Perubahan langsung terlihat di semua menu, tanpa menunggu server",

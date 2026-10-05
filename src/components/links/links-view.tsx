@@ -352,8 +352,19 @@ export function LinksView({
           items,
         })),
       };
-    });
-  }, [filtered, divisions, eventMap]);
+    })
+      // The edition picked in the topbar switcher (the button left of the
+      // language toggle) comes first: that is the Ormawa Visit being worked
+      // on, so its links are the ones looked for. The rest follow in the
+      // editions' own order, and links with no edition come last.
+      .sort((a, b) => rank(a.event) - rank(b.event));
+    function rank(e: OVEvent | null): number {
+      if (!e) return Number.MAX_SAFE_INTEGER;
+      if (e.id === defaultEventId) return -1;
+      const i = events.findIndex((x) => x.id === e.id);
+      return i < 0 ? events.length : i;
+    }
+  }, [filtered, divisions, eventMap, events, defaultEventId]);
 
   const hasFilters = q || eventFilter.size > 0;
 
@@ -415,6 +426,11 @@ export function LinksView({
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold">{event?.title ?? t("Tanpa Ormawa Visit")}</h3>
                   {event && <Badge variant="outline">{event.cabinet}</Badge>}
+                  {event?.id === defaultEventId && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      {t("Sedang dilihat")}
+                    </span>
+                  )}
                 </div>
               )}
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

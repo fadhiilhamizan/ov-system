@@ -2,8 +2,10 @@
 import * as React from "react";
 import { toast } from "sonner";
 import {
-  createRundownAction, deleteRundownAction, duplicateRundownAction, saveRundownChangesAction,
+  createRundownAction, deleteRundownAction, bulkDeleteRundownAction, duplicateRundownAction,
+  saveRundownChangesAction,
 } from "@/lib/actions/schedule";
+import { checkMove, planMove, planRemoval, type MoveCheck } from "@/lib/rundown-reorder";
 import { useT } from "@/lib/i18n/provider";
 import { uuidV4 } from "@/lib/utils";
 import type { RundownItem } from "@/lib/types";
@@ -274,19 +276,48 @@ export function useRundownQueue(items: RundownItem[], eventId: string) {
     });
   }
 
-  function remove(id: string) {
-    queue.current.delete(id);
-    setRemoved((s) => new Set(s).add(id));
+  /**
+   * Remove one or several rows. A merged run that loses rows is shrunk first
+   * (and handed to the next row when its top row goes), and those fixes are
+   * sent BEFORE the delete, on the same chain, so the run never swallows the
+   * row that slides up into the gap. See planRemoval.
+   */
+  function remove(ids: string | string[]) {
+    const gone = Array.isArray(ids) ? ids : [ids];
+    if (!gone.length) return;
+    const goneSet = new Set(gone);
+    for (const id of gone) queue.current.delete(id);
+    for (const p of planRemoval(list, goneSet)) {
+      edit(p.id, { ...p.fields, merges: p.merges }, Object.keys(p.jobs).length ? p.jobs : undefined);
+    }
+    flush();
+    setRemoved((s) => { const n = new Set(s); for (const id of gone) n.add(id); return n; });
     enqueue(async () => {
-      const res = await deleteRundownAction(id);
-      if (res.ok) toast.success(t("Agenda dihapus"));
+      const res = gone.length === 1 ? await deleteRundownAction(gone[0]) : await bulkDeleteRundownAction(gone);
+      if (res.ok) toast.success(gone.length === 1 ? t("Agenda dihapus") : `${gone.length} ${t("agenda dihapus")}`);
       else {
         failed.current = true;
         toast.error(res.error);
-        setRemoved((s) => { const n = new Set(s); n.delete(id); return n; });
+        setRemoved((s) => { const n = new Set(s); for (const id of gone) n.delete(id); return n; });
       }
     });
   }
 
-  return { list, status, edit, flush, addRow, duplicate, remove };
+  /**
+   * Drag a row to where another row is. Renumbers the list and re-times the
+   * stretch between the two places (see planMove), shows it at once and sends
+   * it straight away: a drop is one deliberate action, not typing.
+   * Returns why a move was refused, so the table can say so.
+   */
+  function move(activeId: string, overId: string): MoveCheck {
+    const from = list.findIndex((r) => r.id === activeId);
+    const to = list.findIndex((r) => r.id === overId);
+    const check = checkMove(list, from, to);
+    if (check !== "ok") return check;
+    for (const p of planMove(list, from, to)) edit(p.id, p.fields);
+    flush();
+    return "ok";
+  }
+
+  return { list, status, edit, flush, addRow, duplicate, remove, move };
 }

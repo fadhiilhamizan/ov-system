@@ -649,7 +649,7 @@ function PlanCard({
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-border text-xs text-muted-foreground">
                   {canManage && (
                     <th className="w-8 px-3">
                       <Checkbox

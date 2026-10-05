@@ -202,10 +202,10 @@ function PlanTable({
           <thead>
             <tr>
               {canManage && <th className="w-8 border-b border-border" />}
-              <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                 {HOME_ORG}
               </th>
-              <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="w-1/2 border-b border-border px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                 <PartnerHeading plan={plan} canManage={canManage} planStore={planStore} />
               </th>
               {canManage && <th className="w-10 border-b border-border" />}
@@ -302,7 +302,7 @@ function PartnerHeading({ plan, canManage, planStore }: { plan: FgdPlan; canMana
       onFocus={d.onFocus}
       onBlur={d.onBlur}
       placeholder={t("Nama himpunan mitra")}
-      className="w-full border-0 bg-transparent p-0 text-xs font-semibold uppercase tracking-wide outline-none placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/70 focus:ring-0"
+      className="w-full border-0 bg-transparent p-0 text-xs font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/70 focus:ring-0"
     />
   );
 }
