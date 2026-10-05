@@ -90,7 +90,7 @@ export function AddBudgetPlanButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button><Plus className="size-4" /> {t("Tambah Rencana")}</Button>
+        <Button aria-keyshortcuts="N"><Plus className="size-4" /> {t("Tambah Rencana")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -154,7 +154,7 @@ function AddItemDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm"><Plus className="size-3.5" /> {t("Tambah Item")}</Button>
+        <Button variant="outline" size="sm" aria-keyshortcuts="Shift+N"><Plus className="size-3.5" /> {t("Tambah Item")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -589,14 +589,14 @@ function PlanCard({
       {/* The collapse toggle is a real <button>, and the delete trigger is its
           SIBLING rather than a child: a <button> nested in a <button> is invalid
           HTML, and React reported it as a hydration error on every render. */}
-      <div className="flex w-full items-center gap-3 px-5 py-4 transition hover:bg-muted/30">
+      <div className="flex w-full items-center gap-2 px-3 py-3 transition hover:bg-muted/30 sm:gap-3 sm:px-5 sm:py-4">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-left focus-visible:outline-none sm:flex-nowrap focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:flex">
             <Wallet className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -610,8 +610,9 @@ function PlanCard({
             </div>
             <p className="text-xs text-muted-foreground">{plan.items.length} {t("item")} · {cats.length} {t("kategori")}</p>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-bold tabular-nums">{formatRupiah(grand)}</div>
+          {/* Phones: the total drops to its own line under the name. */}
+          <div className="order-last basis-full text-left sm:order-none sm:basis-auto sm:text-right">
+            <div className="text-base font-bold tabular-nums sm:text-lg">{formatRupiah(grand)}</div>
             <div className="text-[11px] text-muted-foreground">
               {isPrimary ? t("Total (dipakai Dashboard)") : t("Total")}
             </div>

@@ -20,14 +20,19 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border border-border bg-card p-6 shadow-2xl data-[state=open]:animate-[dialog-in_0.2s_ease] focus:outline-none",
+        // max-h + overflow: on a phone a long form is taller than the screen,
+        // and a fixed dialog that cannot scroll hides its own save button.
+        "fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-5 shadow-2xl data-[state=open]:animate-[dialog-in_0.2s_ease] focus:outline-none sm:w-[calc(100vw-2rem)] sm:p-6",
         className,
       )}
       {...props}
     >
       {children}
       {!hideClose && (
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground opacity-70 transition-opacity hover:bg-muted hover:opacity-100 focus:outline-none">
+        <DialogPrimitive.Close
+          aria-keyshortcuts="Escape"
+          className="absolute right-3 top-3 rounded-lg p-1.5 text-muted-foreground opacity-70 transition-opacity hover:bg-muted hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-4 sm:top-4 sm:p-1"
+        >
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -42,7 +47,9 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
 }
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />
+    // data-dialog-footer: Ctrl/Cmd+Enter presses the last button in here (the
+    // save button, by this codebase's convention). See keyboard-shortcuts.tsx.
+    <div data-dialog-footer="" className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />
   );
 }
 export const DialogTitle = React.forwardRef<

@@ -161,6 +161,7 @@ export function TaskTable({
             <DropdownMenuTrigger asChild>
               <button
                 disabled={pending}
+                aria-keyshortcuts="Shift+S"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium transition hover:bg-muted disabled:opacity-60"
               >
                 {pending ? <Loader2 className="size-3.5 animate-spin" /> : null} {tr("Ubah status")}
@@ -187,6 +188,8 @@ export function TaskTable({
             <button
               onClick={bulkDelete}
               disabled={pending}
+              aria-keyshortcuts="Shift+Delete"
+              data-shortcut-label={tr("Hapus tugas terpilih")}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-danger transition hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-500/10"
             >
               <Trash2 className="size-3.5" /> {tr("Hapus")}
@@ -194,6 +197,8 @@ export function TaskTable({
           )}
           <button
             onClick={() => setSelected(new Set())}
+            aria-keyshortcuts="Escape"
+            data-shortcut-label={tr("Batalkan pilihan")}
             className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <X className="size-3.5" /> {tr("Batal")}
@@ -202,7 +207,7 @@ export function TaskTable({
       )}
 
       <div className="rounded-xl border border-border bg-card">
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               {canSelect && (
@@ -246,11 +251,11 @@ export function TaskTable({
               return (
                 <TableRow key={t.id} className={cn("group/row", checked && "bg-accent/40")}>
                   {canSelect && (
-                    <TableCell className={accent}>
+                    <TableCell cell="select" className={accent}>
                       <Checkbox checked={checked} onCheckedChange={() => toggleOne(t.id)} aria-label={tr("Pilih tugas")} />
                     </TableCell>
                   )}
-                  <TableCell className={cn("text-xs tabular-nums text-muted-foreground", !canSelect && accent)}>{rowIndex + 1}</TableCell>
+                  <TableCell cell="hide-mobile" className={cn("text-xs tabular-nums text-muted-foreground", !canSelect && accent)}>{rowIndex + 1}</TableCell>
                   {/* Every cell but # and Status carries an edit pencil in its
                       top-right corner (EditableTaskCell reserves the room). */}
                   <EditableTaskCell task={t} field="title" user={user} divisions={divisions} className="align-top">
@@ -265,7 +270,7 @@ export function TaskTable({
                         </span>
                       )}
                       <TaskDetailDialog task={t} division={div} event={evMap.get(t.event_id)} user={user}>
-                        <button className="group min-w-0 flex-1 text-left">
+                        <button data-row-open="" className="group min-w-0 flex-1 text-left">
                           <span className="line-clamp-2 text-sm font-medium group-hover:text-primary">{t.title}</span>
                         </button>
                       </TaskDetailDialog>
@@ -293,10 +298,10 @@ export function TaskTable({
                       {formatDate(t.end_date) ?? t.end_raw ?? "-"}
                     </span>
                   </EditableTaskCell>
-                  <TableCell><StatusMenu task={t} user={user} /></TableCell>
+                  <TableCell label={tr("Status")}><StatusMenu task={t} user={user} /></TableCell>
                   <EditableTaskCell task={t} field="refs" user={user} divisions={divisions}><RefsCell task={t} /></EditableTaskCell>
                   <EditableTaskCell task={t} field="result" user={user} divisions={divisions}><ResultCell task={t} /></EditableTaskCell>
-                  <TableCell>
+                  <TableCell cell="actions">
                     <TaskActions task={t} divisions={divisions} events={events} activeEventId={activeEventId} user={user} />
                   </TableCell>
                 </TableRow>

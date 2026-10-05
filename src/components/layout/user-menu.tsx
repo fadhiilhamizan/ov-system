@@ -21,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useT } from "@/lib/i18n/provider";
+import { Keyboard } from "lucide-react";
+import { runShortcutCommand } from "./keyboard-shortcuts";
 import type { AppUser, RequestableRole, RoleRequest } from "@/lib/types";
 
 export function UserMenu({
@@ -79,7 +81,11 @@ export function UserMenu({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring">
+        <DropdownMenuTrigger
+          aria-keyshortcuts="Shift+U"
+          aria-label={t("Menu akun")}
+          className="flex items-center gap-2 rounded-lg border border-border bg-card px-1.5 py-1 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring sm:px-2 sm:py-1.5"
+        >
           <Avatar name={user.name} color={user.avatarColor} character={user.avatar} size={28} />
           <div className="hidden min-w-0 leading-tight sm:block">
             <div className="truncate text-xs font-semibold">{user.name}</div>
@@ -132,6 +138,10 @@ export function UserMenu({
               </DropdownMenuItem>
             </>
           )}
+          <DropdownMenuItem onSelect={() => runShortcutCommand("help")}>
+            <Keyboard /> {t("Pintasan keyboard")}
+            <kbd className="ml-auto rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">?</kbd>
+          </DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={(e) => { e.preventDefault(); signOut(); }}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut />} {t("Keluar")}
           </DropdownMenuItem>

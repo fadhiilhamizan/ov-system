@@ -53,6 +53,22 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.57.0",
+    date: "2026-10-05",
+    title: "Nyaman di HP, bisa dipakai penuh dengan keyboard, dan kerangka muat per menu",
+    changes: [
+      { kind: "ui", text: "Di HP ada bar navigasi bawah (Dashboard, WBS, Kalender, Rundown, Menu), topbar lebih ringkas dengan judul halaman, dan tema serta bahasa pindah ke dalam Menu." },
+      { kind: "ui", text: "Di HP tabel Work Breakdown, Reach & Offer, Anggota EA, dan Hari-H tampil sebagai kartu per baris sehingga semua kolom terbaca tanpa menggeser ke samping." },
+      { kind: "ui", text: "Di HP filter bisa digeser dalam satu baris, kartu angka tidak lagi terpotong, kalender memakai titik penanda, banner demo cukup satu baris, dan dialog yang panjang bisa digulir sampai tombol simpannya." },
+      { kind: "ui", text: "Di HP Rundown hanya membekukan kolom No supaya tabelnya tetap bisa digeser, dan tombol Violet serta notifikasi tidak lagi menutupi bar bawah." },
+      { kind: "new", text: "Seluruh sistem bisa dipakai tanpa mouse: tekan ? untuk daftar semua pintasan keyboard, G lalu satu huruf untuk pindah menu, N untuk menambah data, / untuk mencari, dan angka untuk pindah tampilan atau tab." },
+      { kind: "new", text: "Ctrl+K kini menjadi palet perintah: selain mencari data, bisa menjalankan tombol di halaman, pindah menu, mengganti tema, dan mengganti bahasa." },
+      { kind: "new", text: "Di tabel, J dan K pindah baris, X mencentang, O membuka, E mengedit, titik membuka menu baris, dan Ctrl+Enter menyimpan dialog atau kotak edit yang terbuka." },
+      { kind: "new", text: "Kartu Kanban bisa dipindah kolom dengan keyboard, tanggal di Kalender bisa dijelajahi dengan tombol panah, dan ada tombol 'Lewati ke konten utama' untuk pengguna keyboard." },
+      { kind: "ui", text: "Kerangka saat halaman dimuat kini berbentuk sesuai menunya masing-masing (tabel, kalender, kartu, rundown) dan bisa digulir seperti halaman aslinya." },
+    ],
+  },
+  {
     version: "1.56.0",
     date: "2026-10-05",
     title: "Edit sel langsung di Work Breakdown, seret dan hapus massal di Rundown",

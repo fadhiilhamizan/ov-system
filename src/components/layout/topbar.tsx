@@ -1,7 +1,9 @@
 "use client";
+import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
-import { navItemForPath } from "./nav-config";
+import { navItemForPath, ALL_NAV_ITEMS } from "./nav-config";
+import { can } from "@/lib/permissions";
 import { GlobalSearch } from "./global-search";
 import { EventSwitcher } from "./event-switcher";
 import { RoleSwitcher } from "./role-switcher";
@@ -39,10 +41,14 @@ export function Topbar({
   // title from. Naming it here rather than adding a nav entry keeps it out of
   // the sidebar, the search palette, and the access matrix, which all read NAV.
   const onDeveloper = pathname.startsWith("/developer");
+  const allowedNav = React.useMemo(
+    () => ALL_NAV_ITEMS.filter((i) => can.accessModule(user, i.key)).map((i) => i.key),
+    [user],
+  );
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label={t("Menu")}>
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-4 md:px-6">
+      <Button variant="ghost" size="icon" className="-ml-1 shrink-0 lg:hidden" onClick={onMenu} aria-label={t("Menu")}>
         <Menu />
       </Button>
 
@@ -58,11 +64,14 @@ export function Topbar({
       {/* min-w-0 so this cluster can shrink; without it the buttons' combined
           min-content width pushes the whole page into horizontal overflow on
           tablet-sized screens. */}
-      <div className="flex min-w-0 items-center gap-2">
-        <GlobalSearch />
+      <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+        <GlobalSearch allowedNav={allowedNav} />
         <EventSwitcher events={events} activeId={activeEventId} />
-        <LangToggle />
-        <ThemeToggle />
+        {/* On a phone these two move into the menu drawer (app-shell). */}
+        <span className="hidden sm:contents">
+          <LangToggle />
+          <ThemeToggle />
+        </span>
         {sandboxMode ? (
           <RoleSwitcher user={user} />
         ) : (

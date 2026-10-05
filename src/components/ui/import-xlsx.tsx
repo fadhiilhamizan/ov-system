@@ -87,6 +87,7 @@ export function ImportXlsxButton({
         className={className}
         onClick={() => setOpen(true)}
         aria-label={label ?? t("Import XLSX")}
+        aria-keyshortcuts="I"
       >
         <FileSpreadsheet className="size-4" />
         <span className="hidden sm:inline">{label ?? t("Import XLSX")}</span>

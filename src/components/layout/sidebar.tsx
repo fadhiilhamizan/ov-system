@@ -1,4 +1,5 @@
 "use client";
+import type * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -49,6 +50,7 @@ export function SidebarContent({
   /** When provided, a collapse/expand button is shown in the header. */
   onToggle,
   toggleCollapsed,
+  extra,
 }: {
   user: AppUser;
   /** Per-menu counts of things waiting (unread inbox, pending role requests). */
@@ -58,6 +60,8 @@ export function SidebarContent({
   onToggle?: () => void;
   /** The persisted state (may differ from `collapsed` while hover-peeking). */
   toggleCollapsed?: boolean;
+  /** Extra controls above the role card (the phone drawer's theme/language). */
+  extra?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const activeSeg = "/" + (pathname.split("/")[1] ?? "");
@@ -144,7 +148,8 @@ export function SidebarContent({
         })}
       </nav>
 
-      <div className={cn("border-t border-sidebar-border", collapsed ? "p-2" : "p-3")}>
+      <div className={cn("space-y-2 border-t border-sidebar-border", collapsed ? "p-2" : "p-3")}>
+        {!collapsed && extra}
         {collapsed ? (
           <div
             className="flex flex-col items-center gap-1.5 rounded-lg bg-sidebar-accent/50 py-2.5"

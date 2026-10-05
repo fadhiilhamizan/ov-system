@@ -161,9 +161,16 @@ export function ProspectsView({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative min-w-[180px] flex-1 sm:max-w-xs">
+          <div className="relative min-w-0 basis-full sm:min-w-[180px] sm:max-w-xs sm:flex-1 sm:basis-auto">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari himpunan, kampus, PIC…")} className="pl-9" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("Cari himpunan, kampus, PIC…")}
+              aria-label={t("Cari himpunan, kampus, PIC…")}
+              aria-keyshortcuts="/"
+              className="pl-9"
+            />
           </div>
           <FilterMultiSelect
             label={t("Tahap")}
@@ -180,18 +187,22 @@ export function ProspectsView({
             onChange={setStage}
           />
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStage(new Set()); }}>
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStage(new Set()); }} aria-keyshortcuts="Shift+R" data-shortcut-label={t("Reset filter")}>
               <X className="size-4" /> {t("Reset")}
             </Button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            {(["table", "board"] as const).map((v) => (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label={t("Tampilan")}>
+            {(["table", "board"] as const).map((v, i) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
+                aria-pressed={view === v}
+                aria-label={v === "table" ? t("Tabel") : t("Pipeline")}
+                aria-keyshortcuts={String(i + 1)}
+                data-shortcut-label={`${t("Tampilan")} ${v === "table" ? t("Tabel") : t("Pipeline")}`}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition",
                   view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
@@ -211,7 +222,7 @@ export function ProspectsView({
               eventId={activeEventId}
               trigger={
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button aria-keyshortcuts="N" aria-label={t("Tambah prospek")} className="ml-auto sm:ml-0">
                     <Plus className="size-4" /> <span className="hidden sm:inline">{t("Tambah")}</span>
                   </Button>
                 </DialogTrigger>
@@ -225,10 +236,10 @@ export function ProspectsView({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+            <Button variant="destructive" size="sm" onClick={bulkDelete} aria-keyshortcuts="Shift+Delete" data-shortcut-label={t("Hapus prospek terpilih")}>
               <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} aria-keyshortcuts="Escape" data-shortcut-label={t("Batalkan pilihan")}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       ) : (
@@ -238,7 +249,7 @@ export function ProspectsView({
       {view === "table" ? (
         filtered.length ? (
           <div className="rounded-xl border border-border bg-card">
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {manage && (
@@ -268,11 +279,11 @@ export function ProspectsView({
                     className={cn(p.done && "bg-emerald-50/40 dark:bg-emerald-500/[0.06]")}
                   >
                     {manage && (
-                      <TableCell>
+                      <TableCell cell="select">
                         <Checkbox checked={sel.selected.has(p.id)} onCheckedChange={() => sel.toggle(p.id)} aria-label={t("Pilih")} />
                       </TableCell>
                     )}
-                    <TableCell className="font-medium">
+                    <TableCell cell="primary" className="font-medium">
                       <span className="inline-flex items-center gap-1.5">
                         {p.is_primary && (
                           <span title={t("Data utama Ormawa Visit")} className="text-amber-500">
@@ -285,18 +296,18 @@ export function ProspectsView({
                         </span>
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.campus || "-"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
-                    <TableCell className="text-sm">{p.pic || "-"}</TableCell>
-                    <TableCell><StageBadge p={p} /></TableCell>
-                    <TableCell className="align-top">
+                    <TableCell label={t("Kampus")} className="text-sm text-muted-foreground">{p.campus || "-"}</TableCell>
+                    <TableCell label={t("Kontak")} className="max-w-[200px] truncate text-sm text-muted-foreground">{p.contact || "-"}</TableCell>
+                    <TableCell label={t("PIC")} className="text-sm">{p.pic || "-"}</TableCell>
+                    <TableCell label={t("Tahap")}><StageBadge p={p} /></TableCell>
+                    <TableCell label={t("Tautan")} className="align-top">
                       <ProspectLinkChips links={prospectLinks[p.id] ?? []} />
                     </TableCell>
-                    <TableCell className="max-w-[240px] align-top text-sm text-muted-foreground">
+                    <TableCell label={t("Catatan")} className="max-w-[240px] align-top text-sm text-muted-foreground">
                       <ExpandableText text={p.notes} />
                     </TableCell>
                     {manage && (
-                      <TableCell>
+                      <TableCell cell="actions">
                         <ProspectActions prospect={p} prospectLinks={prospectLinks[p.id] ?? []} members={members} eventId={activeEventId} store={store} />
                       </TableCell>
                     )}

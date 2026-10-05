@@ -59,9 +59,15 @@ export function EditableTaskCell({
   className?: string;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const editable = canEditCell(user, field);
   return (
-    <TableCell className={cn(className, editable && "group/cell relative pr-8")}>
+    <TableCell
+      label={field === "title" ? undefined : t(FIELD_LABEL[field])}
+      cell={field === "title" ? "primary" : undefined}
+      data-editable={editable ? "" : undefined}
+      className={cn(className, editable && "group/cell relative pr-8")}
+    >
       {children}
       {editable && <CellEditButton task={task} field={field} divisions={divisions} />}
     </TableCell>
@@ -87,6 +93,7 @@ function CellEditButton({ task, field, divisions }: { task: Task; field: TaskCel
       <PopoverTrigger asChild>
         <button
           type="button"
+          data-cell-pencil=""
           aria-label={`${t("Edit")} ${t(FIELD_LABEL[field])}`}
           title={`${t("Edit")} ${t(FIELD_LABEL[field])}`}
           className={cn(
@@ -164,7 +171,7 @@ function Footer({ onSave, disabled, pending, close }: {
 }) {
   const t = useT();
   return (
-    <div className="flex justify-end gap-2 pt-1">
+    <div data-dialog-footer="" className="flex justify-end gap-2 pt-1">
       <Button variant="outline" size="sm" onClick={close}>{t("Batal")}</Button>
       <Button size="sm" onClick={onSave} disabled={disabled || pending}>
         {pending && <Loader2 className="size-3.5 animate-spin" />}

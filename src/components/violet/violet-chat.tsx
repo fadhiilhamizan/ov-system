@@ -147,14 +147,17 @@ export function VioletChat() {
         <button
           onClick={() => setOpen(true)}
           aria-label={t("Buka Violet")}
-          className="group fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition hover:shadow-xl hover:shadow-violet-600/35 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-background"
+          aria-keyshortcuts="Shift+A"
+          // Above the bottom tab bar on a phone, and a round icon there so it
+          // covers as little of the page as possible.
+          className="group fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 p-3 text-sm font-semibold text-white shadow-lg sm:px-4 lg:bottom-4 lg:right-4 shadow-violet-600/25 transition hover:shadow-xl hover:shadow-violet-600/35 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-background"
         >
-          <Sparkles className="size-4 transition group-hover:rotate-12" /> Violet
+          <Sparkles className="size-4 transition group-hover:rotate-12" /> <span className="hidden sm:inline">Violet</span>
         </button>
       )}
 
       {open && (
-        <div className="animate-fade-in fixed inset-x-3 bottom-3 z-40 flex max-h-[82dvh] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl sm:inset-x-auto sm:right-4 sm:w-[420px]">
+        <div className="animate-fade-in fixed inset-x-2 bottom-2 z-40 flex max-h-[85dvh] flex-col sm:inset-x-3 sm:bottom-3 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl sm:inset-x-auto sm:right-4 sm:w-[420px]">
           {/* Header */}
           <div className="flex items-center gap-2.5 bg-gradient-to-br from-violet-500 to-violet-700 px-4 py-3 text-white">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">

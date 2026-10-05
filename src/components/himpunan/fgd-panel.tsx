@@ -89,7 +89,7 @@ export function FgdPanel({
                 }))}
               />
             )}
-            <Button onClick={() => setAddOpen(true)}>
+            <Button onClick={() => setAddOpen(true)} aria-keyshortcuts="N">
               <Plus className="size-4" /> {t("Tabel baru")}
             </Button>
           </div>

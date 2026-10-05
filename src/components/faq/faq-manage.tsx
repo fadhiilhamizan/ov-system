@@ -73,7 +73,7 @@ export function AddFaqButton() {
   const t = useT();
   return (
     <FaqFormDialog mode="create" trigger={
-      <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah FAQ")}</Button></DialogTrigger>
+      <DialogTrigger asChild><Button aria-keyshortcuts="N"><Plus className="size-4" /> {t("Tambah FAQ")}</Button></DialogTrigger>
     } />
   );
 }

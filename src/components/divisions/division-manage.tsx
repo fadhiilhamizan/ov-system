@@ -105,7 +105,7 @@ export function AddDivisionButton() {
   return (
     <DivisionFormDialog mode="create" trigger={
       <DialogTrigger asChild>
-        <Button><Plus className="size-4" /> {t("Tambah Divisi")}</Button>
+        <Button aria-keyshortcuts="Shift+N"><Plus className="size-4" /> {t("Tambah Divisi")}</Button>
       </DialogTrigger>
     } />
   );

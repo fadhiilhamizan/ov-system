@@ -9,9 +9,11 @@ export function DemoBanner() {
   const t = useT();
   const [pending, start] = React.useTransition();
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-amber-500 px-4 py-1.5 text-center text-xs font-medium text-white dark:bg-amber-600">
+    <div className="flex items-center justify-center gap-x-2 bg-amber-500 px-3 py-1 text-center text-[11px] font-medium text-white sm:flex-wrap sm:px-4 sm:py-1.5 sm:text-xs dark:bg-amber-600">
       <FlaskConical className="size-3.5 shrink-0" />
-      <span>{t("Mode Demo - database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.")}</span>
+      {/* One short line on a phone: the full sentence took three. */}
+      <span className="truncate sm:hidden">{t("Mode Demo (data terpisah)")}</span>
+      <span className="hidden sm:inline">{t("Mode Demo - database terpisah, aman untuk coba-coba. Perubahan tidak memengaruhi data asli.")}</span>
       <button
         type="button"
         onClick={() => start(() => exitDemoMode())}

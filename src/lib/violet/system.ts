@@ -409,6 +409,16 @@ export function systemPassages(): Passage[] {
       "dikembalikan dan pesan kesalahannya muncul. Formulir dialog dan tindakan besar seperti menghapus " +
       "atau mengarsipkan satu Ormawa Visit tetap menunggu konfirmasi server."),
 
+    p("shortcuts", "Aturan: pintasan keyboard dan tampilan HP", "/panduan#guide-shortcuts",
+      "Seluruh sistem bisa dipakai TANPA MOUSE lewat pintasan keyboard (shortcut). Tanda tanya (?) membuka " +
+      "daftar semua pintasan, termasuk yang khusus halaman itu. Ctrl+K membuka palet perintah untuk mencari " +
+      "menu, tombol di halaman, dan data. G lalu satu huruf pindah menu (G W Work Breakdown, G R Rundown, " +
+      "G K Kalender, dan seterusnya). N menambah data, / mencari di halaman, I membuka Import XLSX, angka " +
+      "1-9 pindah tampilan atau tab. Di tabel, J dan K pindah baris, X mencentang, O membuka, E mengedit. " +
+      "Di dialog, Ctrl+Enter menyimpan dan Esc menutup. Pintasan huruf tidak aktif saat sedang mengetik. " +
+      "Di HP (handphone, ponsel, layar kecil) menu utama ada di bar bawah, tema dan bahasa ada di Menu, " +
+      "tabel berubah menjadi kartu per baris, dan filter digeser ke samping dalam satu baris."),
+
     p("violet-limits", "Aturan: apa yang Violet lihat dan tidak lihat", "/panduan#guide-violet",
       "Violet hanya MEMBACA. Violet tidak bisa membuat, mengubah, menghapus, mengunggah, atau mengirim apa pun, " +
       "dan tidak bisa mengubah peran siapa pun. " +

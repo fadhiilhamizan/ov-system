@@ -11,6 +11,12 @@ import { ArchiveBanner } from "./archive-banner";
 import { RoleRequestBanner } from "@/components/roles/role-request-banner";
 import { AnchorScroller } from "./anchor-scroller";
 import { SessionBeacons } from "@/components/developer/session-beacons";
+import { KeyboardShortcuts, ShortcutsHint } from "./keyboard-shortcuts";
+import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "./theme-toggle";
+import { LangToggle } from "./lang-toggle";
+import { ALL_NAV_ITEMS } from "./nav-config";
+import { can } from "@/lib/permissions";
 import type { AppUser, OVEvent, RequestableRole, RoleRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useModalLayer } from "@/lib/use-modal-layer";
@@ -96,8 +102,27 @@ export function AppShell({
 
   const showWide = !collapsed || peeking;
 
+  // "[" collapses the sidebar on a desktop; on a phone there is no sidebar to
+  // collapse, so it opens (or closes) the drawer instead.
+  function toggleSidebar() {
+    if (window.matchMedia("(min-width: 1024px)").matches) toggleCollapsed();
+    else setMobileOpen((v) => !v);
+  }
+  const allowedNav = React.useMemo(
+    () => ALL_NAV_ITEMS.filter((i) => can.accessModule(user, i.key)).map((i) => i.key),
+    [user],
+  );
+
   return (
     <div className="min-h-dvh">
+      {/* First stop for Tab: straight past the menu to the page itself. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
+      >
+        {t("Lewati ke konten utama")}
+      </a>
+      <KeyboardShortcuts allowedNav={allowedNav} onToggleSidebar={toggleSidebar} />
       {/* Desktop sidebar - a rail when collapsed, expanding on hover. */}
       <aside
         className={cn(
@@ -142,14 +167,34 @@ export function AppShell({
             >
               <X className="size-5" />
             </button>
-            <SidebarContent user={user} badges={badges} onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent
+              user={user}
+              badges={badges}
+              onNavigate={() => setMobileOpen(false)}
+              // The topbar has no room for these on a phone, so they live here.
+              extra={
+                <div className="flex items-center gap-1 rounded-lg border border-sidebar-border px-1.5 py-1 sm:hidden">
+                  <LangToggle />
+                  <ThemeToggle />
+                  <span className="ml-auto text-[11px] text-sidebar-muted">{t("Bahasa & tema")}</span>
+                </div>
+              }
+            />
           </aside>
         </div>
       )}
 
       {/* Main - padding follows the PERSISTED state only, so a hover-peek
           overlays the content instead of shoving it sideways. */}
-      <div className={cn("transition-[padding] duration-200 ease-out", collapsed ? "lg:pl-[68px]" : "lg:pl-64")}>
+      <div
+        className={cn(
+          "transition-[padding] duration-200 ease-out",
+          // Room for the bottom tab bar on phones, so the footer and the last
+          // row of a page are never hidden behind it.
+          "pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0",
+          collapsed ? "lg:pl-[68px]" : "lg:pl-64",
+        )}
+      >
         {sandboxMode && <DemoBanner />}
         {activeEventLocked && <ArchiveBanner isAdmin={user.role === "admin"} />}
         {showRoleBanner && roleOptions.length > 0 && (
@@ -165,7 +210,13 @@ export function AppShell({
           isDeveloper={isDeveloper}
           onMenu={() => setMobileOpen(true)}
         />
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-6 lg:px-8">{children}</main>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1400px] px-4 py-4 focus:outline-none sm:py-6 md:px-6 lg:px-8"
+        >
+          {children}
+        </main>
         {/* Applies the URL's #anchor after a navigation, so a shortcut lands on
             its section instead of at the top of a long page. */}
         <AnchorScroller />
@@ -191,10 +242,13 @@ export function AppShell({
               </Link>
               <span aria-hidden className="text-border">·</span>
               <span>v{APP_VERSION}</span>
+              <span aria-hidden className="hidden text-border lg:inline">·</span>
+              <ShortcutsHint className="hidden items-center gap-1.5 hover:text-foreground lg:inline-flex" />
             </div>
           </div>
         </footer>
       </div>
+      <MobileNav user={user} badges={badges} onMenu={() => setMobileOpen(true)} />
     </div>
   );
 }

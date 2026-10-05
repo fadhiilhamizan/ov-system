@@ -366,7 +366,12 @@ export function RundownView({
     (canManage ? W.actions : 0);
 
   const FZ = "sticky !bg-card"; // opaque so scrolled content doesn't bleed through
-  const lastFrozen = "shadow-[2px_0_4px_-1px_rgba(0,0,0,0.12)]"; // edge of the frozen block
+  const lastFrozen = "md:shadow-[2px_0_4px_-1px_rgba(0,0,0,0.12)]"; // edge of the frozen block
+  // On a phone the four frozen columns (~430px) are wider than the screen, so
+  // only the tick/handle and No stay put there; Waktu/Durasi/Kegiatan freeze
+  // from md up. The No column draws the edge shadow on a phone instead.
+  const FZ_MD = "md:sticky !bg-card";
+  const noEdge = "max-md:shadow-[2px_0_4px_-1px_rgba(0,0,0,0.12)]";
 
   return (
     <div className="space-y-3">
@@ -393,10 +398,10 @@ export function RundownView({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" onClick={() => setConfirmBulk(true)}>
+            <Button variant="destructive" size="sm" onClick={() => setConfirmBulk(true)} aria-keyshortcuts="Shift+Delete" data-shortcut-label={t("Hapus baris terpilih")}>
               <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} aria-keyshortcuts="Escape" data-shortcut-label={t("Batalkan pilihan")}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       )}
@@ -455,10 +460,10 @@ export function RundownView({
                   )}
                 </th>
               )}
-              <th className={cn(th, FZ, "z-20 text-center")} style={noL}>{t("No")}</th>
-              <th className={cn(th, FZ, "z-20")} style={timeL}>{t("Waktu")}</th>
-              <th className={cn(th, FZ, "z-20")} style={durL}>{t("Durasi")}</th>
-              <th className={cn(th, FZ, lastFrozen, "z-20")} style={actL}>{t("Kegiatan")}</th>
+              <th className={cn(th, FZ, noEdge, "z-20 text-center")} style={noL}>{t("No")}</th>
+              <th className={cn(th, FZ_MD, "z-20")} style={timeL}>{t("Waktu")}</th>
+              <th className={cn(th, FZ_MD, "z-20")} style={durL}>{t("Durasi")}</th>
+              <th className={cn(th, FZ_MD, lastFrozen, "z-20")} style={actL}>{t("Kegiatan")}</th>
               <th className={th}>MC</th>
               <th className={th}>{t("Kebutuhan Operator")}</th>
               {cols.map((d) => (
@@ -515,17 +520,17 @@ export function RundownView({
                     </div>
                   </td>
                 )}
-                <td className={cn(td, FZ, "z-10 text-center text-xs font-medium text-muted-foreground")} style={noL}>{item.no}</td>
-                <td className={cn(td, FZ, "z-10")} style={timeL}>
+                <td className={cn(td, FZ, noEdge, "z-10 text-center text-xs font-medium text-muted-foreground")} style={noL}>{item.no}</td>
+                <td className={cn(td, FZ_MD, "z-10")} style={timeL}>
                   <div className="flex flex-col">
                     <EditCell value={item.time_start} onSave={(v) => saveTime(item, "time_start", v)} placeholder="08.00" readOnly={!canManage} className="tabular-nums" />
                     <EditCell value={item.time_end} onSave={(v) => saveTime(item, "time_end", v)} placeholder="08.30" readOnly={!canManage} className="tabular-nums text-muted-foreground" />
                   </div>
                 </td>
-                <td className={cn(td, FZ, "z-10 px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} style={durL} title={t("Otomatis dari waktu")}>
+                <td className={cn(td, FZ_MD, "z-10 px-2 py-1.5 text-xs text-muted-foreground tabular-nums")} style={durL} title={t("Otomatis dari waktu")}>
                   {duration || <span className="text-muted-foreground/50">–</span>}
                 </td>
-                <td className={cn(td, FZ, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
+                <td className={cn(td, FZ_MD, lastFrozen, "z-10")} style={actL}><EditCell value={item.activity} onSave={(v) => save(item.id, { activity: v })} placeholder={t("Kegiatan")} readOnly={!canManage} multiline className="font-medium" /></td>
                 <MergeableCell {...cellProps(rowIndex, MERGE_MC)}>
                   <EditCell value={item.mc} onSave={(v) => save(item.id, { mc: v })} readOnly={!canManage} multiline />
                 </MergeableCell>
@@ -605,7 +610,7 @@ export function RundownView({
 
       {canManage && (
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={q.addRow}>
+          <Button variant="outline" size="sm" onClick={q.addRow} aria-keyshortcuts="N">
             <Plus className="size-4" /> {t("Tambah baris")}
           </Button>
           {importButton}

@@ -146,16 +146,21 @@ export function TasksView({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="relative min-w-[180px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("Cari tugas, PIC, catatan…")}
+              aria-label={t("Cari tugas, PIC, catatan…")}
+              aria-keyshortcuts="/"
               className="pl-9"
             />
           </div>
+          {/* Phones: the filters scroll sideways in one row instead of
+              wrapping into four. From sm up the wrapper disappears. */}
+          <div className="toolbar-scroll flex items-center gap-2 sm:contents">
           {/* Division focus lives here (next to the other filters) rather than
               in the topbar - it only ever affected the Work Breakdown. Hidden
               on a per-division board, where the division is already fixed. */}
@@ -226,18 +231,25 @@ export function TasksView({
               // Note: Reset deliberately leaves the division focus alone. It is
               // persisted across pages, so clearing it from here would surprise
               // someone who set it on purpose.
+              aria-keyshortcuts="Shift+R"
+              data-shortcut-label={t("Reset filter")}
             >
               <X className="size-4" /> {t("Reset")}
             </Button>
           )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            {VIEWS.map((v) => (
+          <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="group" aria-label={t("Tampilan")}>
+            {VIEWS.map((v, i) => (
               <button
                 key={v.key}
                 onClick={() => setView(v.key)}
+                aria-pressed={view === v.key}
+                aria-label={t(v.label)}
+                aria-keyshortcuts={String(i + 1)}
+                data-shortcut-label={`${t("Tampilan")} ${t(v.label)}`}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition",
                   view === v.key
@@ -261,7 +273,7 @@ export function TasksView({
               user={user}
               trigger={
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button aria-keyshortcuts="N" aria-label={t("Tambah Tugas")} className="ml-auto sm:ml-0">
                     <Plus className="size-4" /> <span className="hidden sm:inline">{t("Tambah")}</span>
                   </Button>
                 </DialogTrigger>

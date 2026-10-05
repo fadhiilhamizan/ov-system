@@ -4,6 +4,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   useDraggable,
@@ -45,7 +46,13 @@ export function TaskKanban({
   const store = useTaskStore();
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // KeyboardSensor: focus a card's grip, Space to lift, arrow keys to move it
+  // to another column, Space to drop (Escape cancels). The status pill on the
+  // card is the other keyboard route.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  );
   const divMap = new Map(divisions.map((d) => [d.key, d]));
   const evMap = new Map(events.map((e) => [e.id, e]));
   const activeTask = items.find((t) => t.id === activeId) ?? null;

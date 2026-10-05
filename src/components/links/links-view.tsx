@@ -372,9 +372,16 @@ export function LinksView({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative min-w-[180px] flex-1 sm:max-w-xs">
+          <div className="relative min-w-0 basis-full sm:min-w-[180px] sm:max-w-xs sm:flex-1 sm:basis-auto">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Cari tautan…")} className="pl-9" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("Cari tautan…")}
+              aria-label={t("Cari tautan…")}
+              aria-keyshortcuts="/"
+              className="pl-9"
+            />
           </div>
           <FilterMultiSelect
             label={t("Jenis Ormawa Visit")}
@@ -386,7 +393,7 @@ export function LinksView({
             onChange={setEventFilter}
           />
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter(new Set()); }}><X className="size-4" /> {t("Reset")}</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setQ(""); setEventFilter(new Set()); }} aria-keyshortcuts="Shift+R" data-shortcut-label={t("Reset filter")}><X className="size-4" /> {t("Reset")}</Button>
           )}
           <LocalSaveStatus status={store.status} />
         </div>
@@ -396,7 +403,7 @@ export function LinksView({
           <LinkFormDialog
             mode="create" events={events} divisions={divisions}
             defaultEventId={soleEvent ?? defaultEventId}
-            trigger={<DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
+            trigger={<DialogTrigger asChild><Button aria-keyshortcuts="N" data-shortcut-label={t("Tambah Tautan")}><Plus className="size-4" /> {t("Tambah")}</Button></DialogTrigger>}
           />
           </div>
         )}
@@ -406,10 +413,10 @@ export function LinksView({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
           <span className="text-sm font-medium">{sel.count} {t("dipilih")}</span>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+            <Button variant="destructive" size="sm" onClick={bulkDelete} aria-keyshortcuts="Shift+Delete" data-shortcut-label={t("Hapus tautan terpilih")}>
               <Trash2 className="size-4" /> {t("Hapus")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={sel.clear}><X className="size-4" /> {t("Batal")}</Button>
+            <Button variant="ghost" size="sm" onClick={sel.clear} aria-keyshortcuts="Escape" data-shortcut-label={t("Batalkan pilihan")}><X className="size-4" /> {t("Batal")}</Button>
           </div>
         </div>
       )}
@@ -446,11 +453,11 @@ export function LinksView({
                     </div>
                     <div className="divide-y divide-border">
                       {items.map((l) => (
-                        <div key={l.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <div key={l.id} className="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4">
                           {canDelete && (
                             <Checkbox checked={sel.selected.has(l.id)} onCheckedChange={() => sel.toggle(l.id)} aria-label={t("Pilih")} />
                           )}
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                          <span className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground sm:flex">
                             <Link2 className="size-4" />
                           </span>
                           <div className="min-w-0 flex-1">

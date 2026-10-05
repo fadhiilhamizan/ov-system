@@ -171,7 +171,7 @@ function SortableJobRow({
       )}
     >
       {canManage && (
-        <TableCell className="w-8 pr-0">
+        <TableCell cell="select" className="w-8 pr-0">
           <button
             {...attributes}
             {...listeners}
@@ -182,13 +182,15 @@ function SortableJobRow({
           </button>
         </TableCell>
       )}
-      <TableCell className="text-sm font-medium tabular-nums text-muted-foreground">{index + 1}</TableCell>
-      <TableCell className="font-medium">{job.job}</TableCell>
-      <TableCell><PicChips pic={job.pic} /></TableCell>
-      <TableCell className="max-w-[280px] align-top text-xs text-muted-foreground">
+      <TableCell cell="hide-mobile" className="text-sm font-medium tabular-nums text-muted-foreground">{index + 1}</TableCell>
+      <TableCell cell="primary" className="font-medium">
+        <span className="mr-1.5 text-xs tabular-nums text-muted-foreground md:hidden">{index + 1}.</span>{job.job}
+      </TableCell>
+      <TableCell label={t("PIC")}><PicChips pic={job.pic} /></TableCell>
+      <TableCell label={t("Catatan")} className="max-w-[280px] align-top text-xs text-muted-foreground">
         <ExpandableText text={job.notes} />
       </TableCell>
-      {canManage && <TableCell><JobActions job={job} eventId={eventId} canDelete={canDelete} store={store} /></TableCell>}
+      {canManage && <TableCell cell="actions"><JobActions job={job} eventId={eventId} canDelete={canDelete} store={store} /></TableCell>}
     </tr>
   );
 }
@@ -230,15 +232,15 @@ export function JobsTable({
   return (
     <div className="space-y-4">
       {canManage && (
-        <div className="flex items-center justify-between gap-2">
-          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="inline-flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {t("Seret ikon untuk mengurutkan; nomor tersusun otomatis.")}
             <LocalSaveStatus status={store.status} />
           </p>
           <div className="flex items-center gap-2">
             <ImportXlsxButton module="jobs" />
             <JobFormDialog mode="create" eventId={eventId} trigger={
-              <DialogTrigger asChild><Button><Plus className="size-4" /> {t("Tambah Tugas")}</Button></DialogTrigger>
+              <DialogTrigger asChild><Button aria-keyshortcuts="N"><Plus className="size-4" /> <span className="hidden sm:inline">{t("Tambah Tugas")}</span><span className="sr-only sm:hidden">{t("Tambah Tugas")}</span></Button></DialogTrigger>
             } />
           </div>
         </div>
@@ -247,7 +249,7 @@ export function JobsTable({
       {items.length ? (
         <div className="rounded-xl border border-border bg-card">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {canManage && <TableHead className="w-8" />}

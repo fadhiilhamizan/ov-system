@@ -8,6 +8,8 @@ export function Toaster() {
     <Sonner
       theme={(resolvedTheme as "light" | "dark") ?? "system"}
       position="bottom-right"
+      // Clear of the bottom tab bar on a phone (it is lg:hidden).
+      mobileOffset={{ bottom: "calc(4.25rem + env(safe-area-inset-bottom))", left: 12, right: 12 }}
       toastOptions={{
         classNames: {
           toast:

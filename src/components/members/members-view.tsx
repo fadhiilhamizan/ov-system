@@ -112,10 +112,10 @@ export function MembersView({
   return (
     <Tabs defaultValue="divisi">
       <TabsList>
-        <TabsTrigger value="divisi">
+        <TabsTrigger value="divisi" aria-keyshortcuts="1">
           <LayoutGrid /> {tr("Divisi")}
         </TabsTrigger>
-        <TabsTrigger value="anggota">
+        <TabsTrigger value="anggota" aria-keyshortcuts="2">
           <IdCard /> {tr("Anggota EA")}
         </TabsTrigger>
       </TabsList>
@@ -138,9 +138,16 @@ export function MembersView({
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("Cari nama / NRP…")} className="pl-9" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={tr("Cari nama / NRP…")}
+              aria-label={tr("Cari nama / NRP…")}
+              aria-keyshortcuts="/"
+              className="pl-9"
+            />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <FilterMultiSelect
               label={tr("Tipe")}
               allLabel={`${tr("Semua")} (${all.length})`}
@@ -158,7 +165,7 @@ export function MembersView({
             {canManageMembers && (
               <MemberFormDialog mode="create" divisions={divisions} events={events} defaultEventId={eventId} trigger={
                 <DialogTrigger asChild>
-                  <Button><Plus className="size-4" /> <span className="hidden sm:inline">{tr("Tambah")}</span></Button>
+                  <Button aria-keyshortcuts="N" aria-label={tr("Tambah anggota")} className="ml-auto sm:ml-0"><Plus className="size-4" /> <span className="hidden sm:inline">{tr("Tambah")}</span></Button>
                 </DialogTrigger>
               } />
             )}
@@ -171,7 +178,7 @@ export function MembersView({
 
         {filtered.length ? (
           <div className="rounded-xl border border-border bg-card">
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {canManageMembers && (
@@ -198,7 +205,7 @@ export function MembersView({
                   return (
                     <TableRow key={m.id} data-state={selected.has(m.id) ? "selected" : undefined}>
                       {canManageMembers && (
-                        <TableCell>
+                        <TableCell cell="select">
                           <Checkbox
                             checked={selected.has(m.id)}
                             onCheckedChange={() => toggleOne(m.id)}
@@ -206,7 +213,7 @@ export function MembersView({
                           />
                         </TableCell>
                       )}
-                      <TableCell>
+                      <TableCell cell="primary">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={m.nickname || m.name} size={32} />
                           <div className="min-w-0">
@@ -215,8 +222,8 @@ export function MembersView({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{m.nrp || "-"}</TableCell>
-                      <TableCell>
+                      <TableCell label="NRP" className="text-sm text-muted-foreground">{m.nrp || "-"}</TableCell>
+                      <TableCell label={tr("Divisi")}>
                         {divs.length ? (
                           <div className="flex flex-wrap items-center gap-1">
                             {divs.map((d) => <DivisionBadge key={d.key} division={d} />)}
@@ -225,14 +232,14 @@ export function MembersView({
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell label={tr("Tipe")}>
                         <Badge variant={m.type === "fungsionaris" ? "primary" : "info"}>
                           {m.type === "fungsionaris" ? tr("Fungsio") : tr("Intern")}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{m.year}</TableCell>
+                      <TableCell label={tr("Angkatan")} className="text-sm text-muted-foreground">{m.year}</TableCell>
                       {canManageMembers && (
-                        <TableCell>
+                        <TableCell cell="actions">
                           <MemberActions member={m} divisions={divisions} events={events} defaultEventId={eventId} store={store} />
                         </TableCell>
                       )}

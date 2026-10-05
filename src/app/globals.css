@@ -220,3 +220,120 @@ textarea.autosize {
   animation: anchor-flash 1.8s ease-out both;
   scroll-margin-top: 6rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Phones: a `stack` table (components/ui/table.tsx) becomes one card per row.
+   Every cell shows its data-label beside the value; data-cell places the
+   title, the tick box and the row menu. Unlayered on purpose so it wins over
+   the cells' own padding utilities.
+--------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .table-stack,
+  .table-stack > tbody {
+    display: block;
+    width: 100%;
+  }
+  .table-stack > thead {
+    display: none;
+  }
+  .table-stack > tbody > tr {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+    padding: 0.8rem 0.9rem;
+  }
+  .table-stack > tbody > tr > td {
+    display: grid;
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    align-items: start;
+    justify-items: start;
+    column-gap: 0.75rem;
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    border-left-width: 0;
+    white-space: normal;
+  }
+  .table-stack > tbody > tr > td::before {
+    content: attr(data-label);
+    padding-top: 0.15rem;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--muted-foreground);
+  }
+  .table-stack > tbody > tr > td:not([data-label]) {
+    display: block;
+  }
+  .table-stack > tbody > tr > td:not([data-label])::before {
+    content: none;
+  }
+  .table-stack > tbody > tr > td[data-cell="primary"] {
+    display: block;
+    padding-right: 2.25rem;
+  }
+  .table-stack > tbody > tr:has(> td[data-cell="select"]) > td[data-cell="primary"] {
+    padding-left: 1.75rem;
+  }
+  .table-stack > tbody > tr > td[data-cell="primary"]::before {
+    content: none;
+  }
+  .table-stack > tbody > tr > td[data-cell="select"] {
+    position: absolute;
+    top: 0.9rem;
+    left: 0.9rem;
+    display: block;
+  }
+  .table-stack > tbody > tr > td[data-cell="actions"] {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.45rem;
+    display: block;
+  }
+  .table-stack > tbody > tr > td[data-cell="hide-mobile"] {
+    display: none;
+  }
+  /* A cell with an edit pencil keeps room for it, and the pencil sits level
+     with the value rather than below it. */
+  .table-stack > tbody > tr > td[data-editable] {
+    padding-right: 2rem;
+  }
+  .table-stack > tbody > tr > td[data-editable] > [data-cell-pencil] {
+    top: -0.2rem;
+    right: 0;
+  }
+  /* The title's pencil steps left of the row menu in the card's corner. */
+  .table-stack > tbody > tr > td[data-cell="primary"][data-editable] {
+    padding-right: 4rem;
+  }
+  .table-stack > tbody > tr > td[data-cell="primary"][data-editable] > [data-cell-pencil] {
+    right: 1.9rem;
+  }
+  /* An empty-state row spans the table; keep it a plain block. */
+  .table-stack > tbody > tr > td[colspan] {
+    display: block;
+  }
+
+  /* A toolbar row of filters scrolls sideways instead of wrapping into four
+     rows. Add `toolbar-scroll` to the row; its items keep their size. */
+  .toolbar-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scrollbar-width: none;
+    scroll-padding-inline: 1rem;
+  }
+  .toolbar-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .toolbar-scroll > * {
+    flex-shrink: 0;
+  }
+}
+
+/* Keyboard users: the table row that holds focus is tinted (j/k move it). */
+tbody > tr:has(:focus-visible) > td {
+  background-color: color-mix(in srgb, var(--primary) 7%, transparent);
+}

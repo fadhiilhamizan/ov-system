@@ -170,7 +170,7 @@ export function BackupPanel({ initialBackups }: { initialBackups: BackupMeta[] }
         </p>
         <div className="flex shrink-0 items-center gap-2">
           <ImportBackupButton onDone={refreshAfterMutation} />
-          <Button size="sm" onClick={backupNow} disabled={creating}>
+          <Button size="sm" onClick={backupNow} disabled={creating} aria-keyshortcuts="Shift+B">
             {creating ? <Loader2 className="size-4 animate-spin" /> : <DatabaseBackup className="size-4" />}
             {t("Backup Sekarang")}
           </Button>

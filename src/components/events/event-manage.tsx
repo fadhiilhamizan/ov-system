@@ -18,7 +18,7 @@ export function AddEventButton({ events }: { events: OVEvent[] }) {
       events={events}
       trigger={
         <DialogTrigger asChild>
-          <Button>
+          <Button aria-keyshortcuts="N">
             <Plus className="size-4" /> {t("Tambah Ormawa Visit")}
           </Button>
         </DialogTrigger>

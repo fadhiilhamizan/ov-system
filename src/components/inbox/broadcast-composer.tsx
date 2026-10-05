@@ -316,7 +316,7 @@ export function BroadcastManager({
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-medium">{t("Siaran terkirim")}</p>
         <span className="text-xs text-muted-foreground">{broadcasts.length}</span>
-        <Button size="sm" className="ml-auto" onClick={() => setComposing(true)}>
+        <Button size="sm" className="ml-auto" onClick={() => setComposing(true)} aria-keyshortcuts="N">
           <Megaphone className="size-4" /> {t("Siaran Baru")}
         </Button>
       </div>

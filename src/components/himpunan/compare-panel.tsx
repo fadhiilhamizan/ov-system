@@ -121,7 +121,7 @@ export function ComparePanel({
             />
           )}
           {canManage && (
-            <Button onClick={() => setAddOpen(true)} disabled={available.length === 0}>
+            <Button onClick={() => setAddOpen(true)} disabled={available.length === 0} aria-keyshortcuts="N">
               <Plus className="size-4" /> {t("Buat perbandingan")}
             </Button>
           )}

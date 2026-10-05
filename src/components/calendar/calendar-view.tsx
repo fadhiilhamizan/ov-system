@@ -82,9 +82,9 @@ export function CalendarView({
             <h3 className="text-base font-semibold">{t(MONTHS[month])} {year}</h3>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => setRef(new Date())}>{t("Hari ini")}</Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month - 1, 1))}><ChevronLeft /></Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month + 1, 1))}><ChevronRight /></Button>
+            <Button variant="outline" size="sm" onClick={() => setRef(new Date())} aria-keyshortcuts="T">{t("Hari ini")}</Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month - 1, 1))} aria-label={t("Bulan sebelumnya")} aria-keyshortcuts="Shift+ArrowLeft"><ChevronLeft /></Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setRef(new Date(year, month + 1, 1))} aria-label={t("Bulan berikutnya")} aria-keyshortcuts="Shift+ArrowRight"><ChevronRight /></Button>
           </div>
         </div>
 
@@ -105,9 +105,18 @@ export function CalendarView({
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(day)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(day); } }}
+                aria-label={`${day.getDate()} ${t(MONTHS[day.getMonth()])}${dayTasks.length ? `, ${dayTasks.length} ${t("tugas")}` : ""}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(day); return; }
+                  // Arrow keys walk the month grid like a date picker.
+                  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+                  if (step === undefined) return;
+                  const cells = e.currentTarget.parentElement?.children;
+                  const next = cells?.[i + step] as HTMLElement | undefined;
+                  if (next) { e.preventDefault(); next.focus(); }
+                }}
                 className={cn(
-                  "group relative min-h-[92px] cursor-pointer border-b border-r border-border p-1.5 text-left transition hover:bg-muted/40 last:border-r-0 [&:nth-child(7n)]:border-r-0",
+                  "group relative min-h-[60px] cursor-pointer border-b border-r border-border p-1 text-left transition hover:bg-muted/40 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring last:border-r-0 sm:min-h-[92px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
                   !inMonth && "bg-muted/20 text-muted-foreground/50",
                   isEvent && "bg-accent/40",
                 )}
@@ -129,7 +138,17 @@ export function CalendarView({
                     <Plus className="size-3.5" />
                   </button>
                 )}
-                <div className="space-y-1">
+                {/* Phones: a row of coloured dots instead of titles that would be
+                    cut to one letter. The day dialog lists them in full. */}
+                {dayTasks.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-0.5 px-0.5 sm:hidden">
+                    {dayTasks.slice(0, 4).map((tk) => (
+                      <span key={tk.id} className="size-1.5 rounded-full" style={{ backgroundColor: divMap.get(tk.division)?.color ?? "#888" }} />
+                    ))}
+                    {dayTasks.length > 4 && <span className="text-[9px] leading-none text-muted-foreground">+{dayTasks.length - 4}</span>}
+                  </div>
+                )}
+                <div className="hidden space-y-1 sm:block">
                   {isEvent && (
                     <div className="truncate rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">🎉 {t("Hari-H")}</div>
                   )}

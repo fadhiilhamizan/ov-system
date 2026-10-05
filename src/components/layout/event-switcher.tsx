@@ -28,10 +28,12 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        aria-keyshortcuts="Shift+E"
+        aria-label={`${t("Pilih Ormawa Visit")}: ${active?.title ?? ""}`}
         className={cn(
           // min-w-0 lets the label truncate instead of forcing the whole topbar
           // wider than the viewport on tablet widths.
-          "flex min-w-0 items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          "flex min-w-0 items-center gap-1.5 rounded-lg border border-border bg-card px-1.5 py-1 text-left shadow-sm sm:gap-2.5 sm:px-3 sm:py-1.5 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
           pending && "opacity-60",
         )}
       >
@@ -44,9 +46,9 @@ export function EventSwitcher({ events, activeId }: { events: OVEvent[]; activeI
           </div>
           <div className="truncate text-xs font-semibold">{active?.title}</div>
         </div>
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+        <ChevronsUpDown className="hidden size-3.5 shrink-0 text-muted-foreground sm:block" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-80">
+      <DropdownMenuContent align="start" className="w-[min(20rem,calc(100vw-1.5rem))]">
         <DropdownMenuLabel>{t("Pilih Ormawa Visit")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {events.map((e) => {

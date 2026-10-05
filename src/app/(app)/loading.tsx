@@ -1,26 +1,15 @@
-import { Skeleton } from "@/components/ui/empty";
+import { SkPage, SkHeader, SkStats, SkCard } from "@/components/skeletons";
 
+// Fallback for any route without its own skeleton (and the developer page).
 export default function Loading() {
   return (
-    <div className="animate-fade-in">
-      {/* header */}
-      <div className="mb-6 space-y-2">
-        <Skeleton className="h-7 w-56" />
-        <Skeleton className="h-4 w-80 max-w-full" />
+    <SkPage>
+      <SkHeader badge={false} />
+      <SkStats />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <SkCard lines={8} className="lg:col-span-2" />
+        <SkCard lines={8} />
       </div>
-
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
-        ))}
-      </div>
-
-      {/* content block */}
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Skeleton className="h-64 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    </div>
+    </SkPage>
   );
 }

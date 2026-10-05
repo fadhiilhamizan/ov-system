@@ -67,6 +67,8 @@ describe("retrieval of system knowledge", () => {
     ["kalau nama anggota diganti apakah PIC tugas ikut berubah", "system-member"],
     ["bagaimana cara import data dari excel", "system-import"],
     ["apakah perubahan tersimpan otomatis tanpa menunggu", "system-autosave"],
+    ["apa saja pintasan keyboard untuk pindah menu tanpa mouse", "system-shortcuts"],
+    ["di handphone menu ada di mana", "system-shortcuts"],
   ])("%s -> %s", (question, expected) => {
     expect(best(question)).toBe(expected);
   });

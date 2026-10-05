@@ -16,6 +16,8 @@ import {
 import type { AppUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import { Keyboard } from "lucide-react";
+import { runShortcutCommand } from "./keyboard-shortcuts";
 
 export function RoleSwitcher({ user }: { user: AppUser }) {
   const t = useT();
@@ -23,8 +25,10 @@ export function RoleSwitcher({ user }: { user: AppUser }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        aria-keyshortcuts="Shift+U"
+        aria-label={t("Menu akun")}
         className={cn(
-          "flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-left shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          "flex items-center gap-2 rounded-lg border border-border bg-card px-1.5 py-1 text-left shadow-sm sm:px-2 sm:py-1.5 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
           pending && "opacity-60",
         )}
       >
@@ -33,9 +37,9 @@ export function RoleSwitcher({ user }: { user: AppUser }) {
           <div className="truncate text-xs font-semibold">{user.name}</div>
           <div className="truncate text-[11px] text-muted-foreground">{t(ROLE_META[user.role].label)}</div>
         </div>
-        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        <ChevronsUpDown className="hidden size-3.5 text-muted-foreground sm:block" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))]">
         <DropdownMenuLabel className="flex items-center gap-1.5">
           <ShieldCheck className="size-3.5" /> {t("Ganti peran (mode demo)")}
         </DropdownMenuLabel>
@@ -58,6 +62,11 @@ export function RoleSwitcher({ user }: { user: AppUser }) {
             </div>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => runShortcutCommand("help")}>
+          <Keyboard /> {t("Pintasan keyboard")}
+          <kbd className="ml-auto rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">?</kbd>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
