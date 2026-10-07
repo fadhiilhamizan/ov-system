@@ -251,9 +251,15 @@ export function RundownView({
   const [focus, setFocus] = React.useState<Set<string>>(new Set());
   // Everything below renders from `cols`, so narrowing it here is all the
   // filter has to do - including the merge bookkeeping.
+  // A ticked key whose division no longer exists matches nothing; ignore it,
+  // or a stale tick would hide every division column.
+  const liveFocus = React.useMemo(
+    () => new Set([...focus].filter((k) => allCols.some((d) => d.key === k))),
+    [focus, allCols],
+  );
   const cols = React.useMemo(
-    () => (focus.size ? allCols.filter((d) => focus.has(d.key)) : allCols),
-    [allCols, focus],
+    () => (liveFocus.size ? allCols.filter((d) => liveFocus.has(d.key)) : allCols),
+    [allCols, liveFocus],
   );
 
   // Single rundown: migration 0035 merged the old A/B versions and deleted
@@ -378,8 +384,8 @@ export function RundownView({
       {/* Saving is ambient: a quiet line of text, never a spinner, and nothing
           on the table is ever disabled while it happens. */}
       <div className="flex flex-wrap items-center gap-2">
-        <DivisionColumnFilter options={allCols} focus={focus} onChange={setFocus} />
-        {focus.size > 0 && (
+        <DivisionColumnFilter options={allCols} focus={liveFocus} onChange={setFocus} />
+        {liveFocus.size > 0 && (
           <span className="text-xs text-muted-foreground">
             {cols.length} {t("dari")} {allCols.length} {t("kolom divisi")}
           </span>

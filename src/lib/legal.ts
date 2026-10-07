@@ -140,7 +140,7 @@ export const PRIVACY: LegalDoc = {
           id: "Cookie sesi Supabase (diawali sb-) - menjaga kamu tetap masuk setelah login.",
           en: "Supabase session cookies (prefixed sb-) - keep you signed in after login.",
         },
-        { id: "ov_guest - menandai sesi tamu (hanya lihat, tanpa akun).", en: "ov_guest - marks a guest session (view-only, no account)." },
+        { id: "ov_guest - menandai sesi tamu (hanya lihat, tanpa akun), termasuk saat membuka tautan bagikan.", en: "ov_guest - marks a guest session (view-only, no account), including when opening a share link." },
         { id: "ov_lang - bahasa tampilan pilihanmu (Indonesia atau Inggris).", en: "ov_lang - your chosen display language (Indonesian or English)." },
         { id: "ov_sidebar - apakah menu samping sedang diciutkan.", en: "ov_sidebar - whether the sidebar is collapsed." },
         { id: "ov_active_event dan ov_active_division - Ormawa Visit dan divisi yang sedang kamu lihat.", en: "ov_active_event and ov_active_division - the Ormawa Visit and division you are currently viewing." },

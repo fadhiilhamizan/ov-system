@@ -125,12 +125,44 @@ describe("useLocalFirst", () => {
     expect(result.current.rows.map((r) => r.id)).toEqual(["a", "b"]);
   });
 
-  it("a save that throws (network) counts as failed", async () => {
+  it("a save that throws (network) is retried once, then counts as failed", async () => {
+    const save = vi.fn(() => Promise.reject(new Error("offline")));
     const { result } = renderHook(() => useLocalFirst([A]));
-    act(() => { void result.current.patch("a", { status: "done" }, () => Promise.reject(new Error("offline"))); });
+    act(() => { void result.current.patch("a", { status: "done" }, save); });
     await flush();
+    // Still showing the edit while the retry waits.
+    expect(result.current.rows[0].status).toBe("done");
+    await act(async () => { await new Promise((r) => setTimeout(r, 800)); });
+    await flush();
+    expect(save).toHaveBeenCalledTimes(2);
     expect(result.current.rows[0].status).toBe("todo");
     expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/koneksi/));
+  });
+
+  it("a save that throws once and then succeeds is kept, with no error", async () => {
+    let calls = 0;
+    const save = vi.fn(() => (++calls === 1 ? Promise.reject(new Error("blip")) : Promise.resolve({ ok: true })));
+    const { result } = renderHook(() => useLocalFirst([A]));
+    act(() => { void result.current.patch("a", { status: "done" }, save); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 800)); });
+    await flush();
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(result.current.rows[0].status).toBe("done");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("an outdated tab (deploy) is announced, not retried and not blamed on the connection", async () => {
+    const heard = vi.fn();
+    window.addEventListener("ov:stale-build", heard);
+    const save = vi.fn(() => Promise.reject(new Error('Server Action "abc123" was not found on the server.')));
+    const { result } = renderHook(() => useLocalFirst([A]));
+    act(() => { void result.current.patch("a", { status: "done" }, save); });
+    await flush();
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(heard).toHaveBeenCalled();
+    expect(result.current.rows[0].status).toBe("todo");
+    expect(toast.error).not.toHaveBeenCalled();
+    window.removeEventListener("ov:stale-build", heard);
   });
   it("change() moves a flag across rows in ONE write and rolls all of it back together", async () => {
     const rows = [{ ...A, status: "main" }, B];

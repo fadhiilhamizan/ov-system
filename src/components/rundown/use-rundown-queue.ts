@@ -6,6 +6,7 @@ import {
   saveRundownChangesAction,
 } from "@/lib/actions/schedule";
 import { checkMove, planMove, planRemoval, type MoveCheck } from "@/lib/rundown-reorder";
+import { withOneRetry, isStaleBuildError } from "@/lib/stale-build";
 import { useT } from "@/lib/i18n/provider";
 import { uuidV4 } from "@/lib/utils";
 import type { RundownItem } from "@/lib/types";
@@ -119,9 +120,10 @@ export function useRundownQueue(items: RundownItem[], eventId: string) {
     setStatus("pending");
     chain.current = chain.current
       .then(fn)
-      .catch(() => {
+      .catch((e) => {
         failed.current = true;
-        toast.error(t("Gagal menyimpan. Periksa koneksi internet lalu coba lagi."));
+        // An outdated tab gets the "reload" notice instead (stale-build.ts).
+        if (!isStaleBuildError(e)) toast.error(t("Gagal menyimpan. Periksa koneksi internet lalu coba lagi."));
       })
       .finally(() => {
         inflight.current--;
@@ -169,7 +171,7 @@ export function useRundownQueue(items: RundownItem[], eventId: string) {
     enqueue(async () => {
       let res: { ok: boolean; error?: string };
       try {
-        res = await saveRundownChangesAction(batch);
+        res = await withOneRetry(() => saveRundownChangesAction(batch));
       } catch (e) {
         settle(false);
         throw e;

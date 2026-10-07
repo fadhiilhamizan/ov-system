@@ -13,6 +13,7 @@ import { AnchorScroller } from "./anchor-scroller";
 import { SessionBeacons } from "@/components/developer/session-beacons";
 import { KeyboardShortcuts, ShortcutsHint } from "./keyboard-shortcuts";
 import { MobileNav } from "./mobile-nav";
+import { StaleBuildNotice } from "./stale-build-notice";
 import { ThemeToggle } from "./theme-toggle";
 import { LangToggle } from "./lang-toggle";
 import { ALL_NAV_ITEMS } from "./nav-config";
@@ -249,6 +250,7 @@ export function AppShell({
         </footer>
       </div>
       <MobileNav user={user} badges={badges} onMenu={() => setMobileOpen(true)} />
+      <StaleBuildNotice />
     </div>
   );
 }

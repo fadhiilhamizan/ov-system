@@ -135,13 +135,17 @@ export const GUIDE: GuideSection[] = [
     key: "calendar",
     title: { id: "Kalender", en: "Calendar" },
     purpose: {
-      id: "Melihat tenggat tugas dan hari pelaksanaan dalam tampilan bulanan.",
-      en: "See task deadlines and the event day itself in a monthly view.",
+      id: "Melihat tenggat dan rentang tugas, Hari-H, serta jam-jam rundown dalam satu kalender, dengan enam pilihan tampilan.",
+      en: "See task deadlines and ranges, the event day and the rundown's hours in one calendar, with six views to choose from.",
     },
     steps: [
-      { id: "Klik tanggal mana pun untuk melihat daftar tugas yang jatuh tempo di tanggal tersebut.", en: "Click any date to see the tasks due on it." },
-      { id: "Arahkan kursor ke sebuah tanggal, lalu klik ikon + di pojok kanan atas untuk langsung menambah tugas di tanggal itu.", en: "Hover a date and click the + icon at its top right to add a task on that date directly." },
-      { id: "Tanggal Hari-H ditandai bintang dan label khusus.", en: "The event day is marked with a star and its own label." },
+      { id: "Pilih tampilan dengan tombol di kanan atas kalender: Sehari, 4 Hari, Seminggu, Sebulan, Setahun, atau Jadwal (angka 1 sampai 6 di keyboard). Tombol panah pindah ke periode sebelum/berikutnya, dan 'Hari ini' kembali ke tanggal sekarang.", en: "Pick a view with the buttons at the calendar's top right: Day, 4 Days, Week, Month, Year or Schedule (keys 1 to 6). The arrows move to the previous/next period, and 'Today' jumps back to the current date." },
+      { id: "Sebulan: setiap tanggal menampilkan tugas yang deadline-nya jatuh di tanggal itu. Klik tanggal untuk melihat daftarnya, menambah tugas di tanggal itu, atau membuka tampilan Sehari.", en: "Month: each date shows the tasks due on it. Click a date to see the list, add a task on that date, or open the Day view." },
+      { id: "Sehari, 4 Hari, dan Seminggu: baris 'Sepanjang hari' menampilkan tugas yang sedang berjalan pada tanggal itu (dari tanggal mulai sampai deadline; ikon bendera merah menandai deadline-nya). Di bawahnya ada jam-jam, dan pada Hari-H sesi Rundown tampil sesuai jamnya. Klik sesi untuk melihat detailnya.", en: "Day, 4 Days and Week: the 'All day' row shows the tasks running on that date (from start date to deadline; a red flag marks the deadline). Below it are the hours, and on the event day the Rundown sessions sit at their times. Click a session for its details." },
+      { id: "Setahun: dua belas bulan sekaligus; tanggal bertitik punya deadline. Klik tanggal mana pun untuk membuka tampilan Sehari.", en: "Year: all twelve months at once; dotted dates have deadlines. Click any date to open the Day view." },
+      { id: "Jadwal: daftar berurutan per tanggal dalam satu bulan, berisi Hari-H beserta jam rundown-nya, deadline, dan tugas yang dimulai.", en: "Schedule: an ordered list by date for one month, with the event day and its rundown hours, deadlines, and tasks that start." },
+      { id: "Gunakan penyaring Divisi untuk hanya melihat tugas divisi tertentu.", en: "Use the Division filter to see only some divisions' tasks." },
+      { id: "Tampilan dan tanggal yang sedang dibuka tersimpan di alamat halaman, jadi memuat ulang atau membagikan tautannya membuka tempat yang sama.", en: "The open view and date live in the page address, so reloading or sharing the link opens the same place." },
     ],
   },
   {
@@ -393,6 +397,28 @@ export const GUIDE: GuideSection[] = [
       { id: "Di Mode Demo menu ini tetap bisa dibuka, tapi isinya selalu kosong: demo memakai database contoh yang terpisah dan tidak memakai login sama sekali (peran diganti lewat tombol peran di kanan atas), jadi tidak ada akun yang bisa mengajukan maupun diberi peran. Penjelasan ini juga ditampilkan di halamannya.", en: "In Demo Mode this menu still opens but is always empty: the demo runs on a separate sample database with no login at all (you switch role with the role button at the top right), so there is no account to file or receive a request. The page itself explains this too." },
     ],
     access: { id: "Hanya Admin yang bisa membuka dan memutuskan.", en: "Only Admins can open it and decide." },
+  },
+  {
+    key: "share",
+    title: { id: "Bagikan Tautan (tanpa login)", en: "Share Links (no login)" },
+    purpose: {
+      id: "Membagikan satu menu dari satu Ormawa Visit lewat tautan, yang bisa langsung dibuka siapa saja sebagai Tamu tanpa halaman login.",
+      en: "Share one menu of one Ormawa Visit through a link that anyone can open straight away as a Guest, without the login page.",
+    },
+    steps: [
+      { id: "Buka menu yang ingin dibagikan (Dashboard, Work Breakdown, Kalender, Rundown, Hari-H, atau Himpunan), lalu klik ikon bagikan di bagian atas, di sebelah kotak pencarian.", en: "Open the menu you want to share (Dashboard, Work Breakdown, Calendar, Rundown, Event Day or Associations), then click the share icon at the top, next to the search box." },
+      { id: "Pilih Ormawa Visit dan menunya (bawaannya edisi dan menu yang sedang dibuka), lalu tekan Salin atau Bagikan. Di Kalender, tampilan dan tanggal yang sedang dibuka bisa ikut disertakan.", en: "Pick the Ormawa Visit and the menu (by default the edition and menu you are on), then press Copy or Share. On the Calendar, the open view and date can be included." },
+      { id: "Penerima yang membuka tautan langsung masuk ke menu itu sebagai Tamu (hanya baca), tanpa daftar atau login. Orang yang sudah login tetap memakai akunnya, hanya Ormawa Visit-nya yang berganti.", en: "Whoever opens the link lands on that menu as a Guest (read-only), with no sign-up or login. Someone already logged in keeps their account; only the Ormawa Visit switches." },
+    ],
+    tips: [
+      { id: "Hanya menu yang memang boleh dilihat Tamu yang bisa dibagikan. Daftar anggota (berisi NRP), anggaran, Super Link, dan kontak di Reach & Offer sengaja tidak bisa dibagikan.", en: "Only menus a Guest may see can be shared. The member roster (with student IDs), the budget, Super Link and the contacts in Reach & Offer deliberately cannot." },
+      { id: "Tautan yang dibuat di Mode Demo membuka database demo, bukan data asli.", en: "A link made in Demo Mode opens the demo database, not the real data." },
+      { id: "Siapa pun yang memegang tautannya bisa membukanya, jadi bagikan hanya ke orang yang memang boleh melihat isinya.", en: "Anyone holding the link can open it, so share it only with people who may see what is in it." },
+    ],
+    access: {
+      id: "Semua peran bisa membuat tautan. Penerimanya selalu masuk sebagai Tamu (hanya baca), kecuali yang sudah login dengan akunnya sendiri.",
+      en: "Every role can make a link. Recipients always come in as a Guest (read-only), unless they are already logged in with their own account.",
+    },
   },
   {
     key: "shortcuts",

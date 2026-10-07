@@ -5,6 +5,9 @@ import { AlertTriangle, RotateCcw, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n/provider";
 import { reportErrorAction } from "@/lib/actions/developer";
+import { isStaleBuildError } from "@/lib/stale-build";
+
+const RELOAD_KEY = "ov_stale_reload_at";
 
 /**
  * Segment-level error boundary for every page under (app).
@@ -19,6 +22,23 @@ export default function AppError({
   reset: () => void;
 }) {
   const t = useT();
+
+  const stale = isStaleBuildError(error);
+  React.useEffect(() => {
+    // The tab is older than the server (a deploy happened): a reload IS the
+    // fix, so do it once, quietly. The timestamp stops a loop if the reload
+    // somehow lands on the same error again.
+    if (!stale) return;
+    try {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY) ?? 0);
+      if (Date.now() - last > 60_000) {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+      }
+    } catch {
+      /* storage blocked: the button below still works */
+    }
+  }, [stale]);
 
   React.useEffect(() => {
     // Surface for logging/monitoring; the message itself is never shown raw.
@@ -45,10 +65,12 @@ export default function AppError({
       </div>
       <div className="space-y-1.5">
         <h2 className="text-lg font-semibold text-foreground">
-          {t("Terjadi kesalahan")}
+          {stale ? t("Aplikasi baru saja diperbarui") : t("Terjadi kesalahan")}
         </h2>
         <p className="max-w-md text-sm text-muted-foreground">
-          {t("Halaman ini gagal dimuat. Coba muat ulang, atau kembali ke dashboard.")}
+          {stale
+            ? t("Muat ulang halaman untuk melanjutkan. Perubahan yang belum tersimpan perlu diulang setelah dimuat ulang.")
+            : t("Halaman ini gagal dimuat. Coba muat ulang, atau kembali ke dashboard.")}
         </p>
         {error.digest && (
           <p className="pt-1 font-mono text-xs text-muted-foreground/70">
@@ -57,7 +79,7 @@ export default function AppError({
         )}
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button onClick={reset}>
+        <Button onClick={stale ? () => window.location.reload() : reset}>
           <RotateCcw />
           {t("Coba lagi")}
         </Button>

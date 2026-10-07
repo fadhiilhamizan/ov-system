@@ -64,7 +64,7 @@ export default async function BudgetPage() {
       </div>
 
       {plans.length ? (
-        <BudgetView plans={plans} events={events} canManage={can.manageBudget(user)} />
+        <BudgetView key={event.id} plans={plans} events={events} canManage={can.manageBudget(user)} />
       ) : (
         <EmptyState
           icon={<Wallet />}

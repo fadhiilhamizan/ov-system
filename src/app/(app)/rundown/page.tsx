@@ -23,7 +23,7 @@ export default async function RundownPage() {
         description={t("Susunan acara hari-H: tiap divisi menjadi kolom, isi kegiatannya langsung di tabel.")}
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
-      <RundownView
+      <RundownView key={event.id}
         items={items}
         divisions={divisions}
         eventId={event.id}

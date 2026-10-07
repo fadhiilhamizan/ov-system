@@ -3,6 +3,7 @@
 // is not configured, this is a no-op so the local demo keeps working.
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -63,8 +64,17 @@ export async function proxy(request: NextRequest) {
   // anyone out.
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
   const user = session?.user ?? null;
+  // A refresh that failed because Supabase Auth was unreachable or busy is not
+  // a signed-out user. Redirecting on it threw people out mid-session; the
+  // layout's own check (lib/auth.ts) makes the real call one step later.
+  const transient =
+    !!sessionError &&
+    (isAuthRetryableFetchError(sessionError) ||
+      ((sessionError as { status?: number }).status ?? 0) === 429 ||
+      ((sessionError as { status?: number }).status ?? 0) >= 500);
 
   // Defense-in-depth route protection: block unauthenticated access to the
   // app before the page renders. Mirrors getCurrentUser() in lib/auth.ts -
@@ -87,7 +97,12 @@ export async function proxy(request: NextRequest) {
     path === "/terms" ||
     path.startsWith("/auth/");
   const isGuest = request.cookies.get("ov_guest")?.value === "1";
-  if (!user && !isGuest && !isPublic) {
+  // Only a page load (GET) is redirected. A Server Action is a POST from a
+  // page that is already open: redirecting it threw away the edit it carried,
+  // and the action's own identity check answers it properly instead.
+  // A share link (/s/...) is public by design: it opens read-only, no account.
+  const isShare = path.startsWith("/s/");
+  if (!user && !isGuest && !isPublic && !isShare && !transient && request.method === "GET") {
     const redirectUrl = new URL("/login", request.url);
     return NextResponse.redirect(redirectUrl);
   }

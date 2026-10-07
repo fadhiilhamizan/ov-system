@@ -53,6 +53,23 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.58.0",
+    date: "2026-10-07",
+    title: "Bagikan tautan tanpa login, kalender enam tampilan, dan perbaikan terpental",
+    changes: [
+      { kind: "fix", text: "Pengguna tidak lagi terlempar ke halaman login saat layanan login Supabase sedang lambat atau sibuk; sesi yang masih berlaku tetap dipakai sehingga perubahan tetap tersimpan." },
+      { kind: "fix", text: "Gangguan sesaat saat membaca profil tidak lagi menurunkan peran menjadi Tamu, yang dulu membuat setiap simpanan ditolak dengan pesan tidak punya akses." },
+      { kind: "fix", text: "Menyimpan dari halaman yang sudah lama terbuka setelah aplikasi diperbarui kini memunculkan ajakan Muat ulang, bukan pesan koneksi gagal yang berulang." },
+      { kind: "fix", text: "Simpanan yang gagal karena gangguan jaringan sesaat dicoba ulang sekali secara otomatis sebelum dibatalkan." },
+      { kind: "fix", text: "Filter divisi di Work Breakdown tidak lagi menyembunyikan semua tugas setelah berganti Ormawa Visit, karena pilihan divisi dari edisi lain kini diabaikan dan direset." },
+      { kind: "fix", text: "Mencentang filter divisi tidak lagi memuat ulang seluruh halaman, dan filter tiap menu dimulai bersih setiap kali Ormawa Visit diganti." },
+      { kind: "new", text: "Bagikan tautan: Dashboard, Work Breakdown, Kalender, Rundown, Hari-H, dan Himpunan bisa dibagikan untuk satu Ormawa Visit, dan penerimanya langsung melihat sebagai Tamu tanpa login." },
+      { kind: "new", text: "Kalender kini punya enam tampilan: Sehari, 4 Hari, Seminggu, Sebulan, Setahun, dan Jadwal, plus penyaring divisi." },
+      { kind: "new", text: "Di tampilan Sehari, 4 Hari, dan Seminggu, tugas tampil sebagai rentang dari tanggal mulai sampai deadline, dan sesi Rundown tampil sesuai jamnya pada Hari-H." },
+      { kind: "ui", text: "Tampilan dan tanggal kalender tersimpan di alamat halaman, jadi memuat ulang atau membagikan tautannya membuka tempat yang sama." },
+    ],
+  },
+  {
     version: "1.57.0",
     date: "2026-10-05",
     title: "Nyaman di HP, bisa dipakai penuh dengan keyboard, dan kerangka muat per menu",

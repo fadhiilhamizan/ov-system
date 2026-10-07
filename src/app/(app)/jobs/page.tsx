@@ -24,7 +24,7 @@ export default async function JobsPage() {
         actions={<Badge variant="outline">{event.title}</Badge>}
       />
       <MembersProvider members={members}>
-        <JobsTable
+        <JobsTable key={event.id}
           jobs={jobs}
           eventId={event.id}
           canManage={can.manageJobs(user) && writable}

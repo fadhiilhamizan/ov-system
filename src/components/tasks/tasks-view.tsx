@@ -19,7 +19,7 @@ import { openThreadCount } from "@/lib/task-comments";
 import { PicFilter } from "./pic-filter";
 import {
   divisionKeySet, hasOrphanTasks, matchesDivision, matchesPics, parseDivisionFocus,
-  picOptions, taskPicList,
+  picOptions, pruneDivisionFocus, prunePicks, taskPicList,
 } from "@/lib/task-filters";
 import type { AppUser, Division, DivisionKey, OVEvent, Task, TaskStatus } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
@@ -69,12 +69,19 @@ export function TasksView({
   // come back before applying the next tick loses selections (see
   // DivisionFilter). The cookie is persistence for the next page load, not the
   // live value.
-  const [divisionFocus, setDivisionFocus] = React.useState<Set<string>>(
+  const [divisionFocus, setDivisionFocusRaw] = React.useState<Set<string>>(
     () => parseDivisionFocus(initialDivision),
   );
+  const divisionKeys = React.useMemo(() => divisionKeySet(divisions), [divisions]);
+  // Only keys that exist in THIS edition count. Division keys are per edition,
+  // and the focus is persisted in a cookie: carried from one Ormawa Visit to
+  // another it used to match no task at all, so the table came up empty while
+  // the filter button said "2 divisi" with nothing in its menu to untick.
+  const focus = React.useMemo(() => pruneDivisionFocus(divisionFocus, divisionKeys), [divisionFocus, divisionKeys]);
+  const setDivisionFocus = setDivisionFocusRaw;
   const division = React.useMemo(
-    () => (lockedDivision ? new Set([lockedDivision]) : divisionFocus),
-    [lockedDivision, divisionFocus],
+    () => (lockedDivision ? new Set([lockedDivision]) : focus),
+    [lockedDivision, focus],
   );
 
   const [pics, setPics] = React.useState<Set<string>>(new Set());
@@ -88,7 +95,6 @@ export function TasksView({
   // rather than shown permanently matching nothing (same rule as the badge).
   const allComments = useAllTaskComments();
 
-  const divisionKeys = React.useMemo(() => divisionKeySet(divisions), [divisions]);
   // The PIC menu is built from what the DIVISION focus leaves, not from the
   // fully filtered list - otherwise ticking a PIC would remove everyone else
   // from the menu and you could never add a second one.
@@ -102,10 +108,17 @@ export function TasksView({
     [inDivision],
   );
 
+  // Same rule for the PIC ticks: a name that no longer appears among these
+  // tasks (another edition, a renamed member) cannot keep everything hidden.
+  const livePics = React.useMemo(
+    () => prunePicks(pics, picChoices, someUnassigned),
+    [pics, picChoices, someUnassigned],
+  );
+
   const filtered = React.useMemo(() => {
     const query = q.toLowerCase().trim();
     return inDivision.filter((t) => {
-      if (!matchesPics(t, pics)) return false;
+      if (!matchesPics(t, livePics)) return false;
       if (status.size > 0 && !status.has(t.status)) return false;
       if (openNotesOnly && openThreadCount(allComments?.[t.id]) === 0) return false;
       if (
@@ -115,7 +128,7 @@ export function TasksView({
         return false;
       return true;
     });
-  }, [inDivision, q, status, pics, openNotesOnly, allComments]);
+  }, [inDivision, q, status, livePics, openNotesOnly, allComments]);
 
   const counts = React.useMemo(() => {
     const by: Record<TaskStatus, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
@@ -128,15 +141,15 @@ export function TasksView({
   // number, or you can never see what else there is to tick.
   const statusCounts = React.useMemo(() => {
     const by: Record<string, number> = { todo: 0, ongoing: 0, done: 0, overtime: 0 };
-    for (const t of inDivision) if (matchesPics(t, pics)) by[t.status]++;
+    for (const t of inDivision) if (matchesPics(t, livePics)) by[t.status]++;
     return by;
-  }, [inDivision, pics]);
+  }, [inDivision, livePics]);
 
   const openNotesCount = React.useMemo(
     () => (allComments
-      ? inDivision.filter((t) => matchesPics(t, pics) && openThreadCount(allComments[t.id]) > 0).length
+      ? inDivision.filter((t) => matchesPics(t, livePics) && openThreadCount(allComments[t.id]) > 0).length
       : 0),
-    [allComments, inDivision, pics],
+    [allComments, inDivision, livePics],
   );
 
   const hasFilters = q || status.size > 0 || pics.size > 0 || openNotesOnly;
@@ -167,14 +180,14 @@ export function TasksView({
           {!lockedDivision && (
             <DivisionFilter
               divisions={divisions}
-              active={divisionFocus}
+              active={focus}
               onChange={setDivisionFocus}
               showNoDivision={hasOrphanTasks(all, divisionKeys)}
             />
           )}
           <PicFilter
             options={picChoices}
-            picked={pics}
+            picked={livePics}
             onChange={setPics}
             hasUnassigned={someUnassigned}
           />

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { AppUser, Role } from "./types";
 import { AUTH_COOKIE, DEMO_USERS } from "./demo-users";
 import { createClient } from "./supabase/server";
+import { isAuthRetryableFetchError, type User } from "@supabase/supabase-js";
 import { DEMO_COOKIE, demoActive } from "./demo";
 
 export { AUTH_COOKIE, DEMO_USERS };
@@ -78,9 +79,7 @@ const readUser = cache(async (): Promise<AppUser | null> => {
 
   const supabase = await createClient();
   {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await verifiedUser(supabase);
 
     if (!user) {
       if (store.get(GUEST_COOKIE)?.value === "1") return GUEST_USER;
@@ -92,11 +91,9 @@ const readUser = cache(async (): Promise<AppUser | null> => {
     // guest identity - never look up a profile / real role for them.
     if (user.is_anonymous) return GUEST_USER;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
+    const profile = await readProfile(supabase, user.id);
+    // The token itself was rejected by the database: the session is over.
+    if (profile === SIGNED_OUT) return null;
     // NOTE: profiles.division / profiles.event_id are deliberately NOT read.
     // An account has no division and no edition scope - see AppUser in types.ts
     // and migration 0028, which removed the same assumption from RLS.
@@ -114,3 +111,78 @@ const readUser = cache(async (): Promise<AppUser | null> => {
     };
   }
 });
+
+
+// ------------------------------------------------------------------
+// Why a hiccup must not look like "signed out"
+//
+// Both reads below used to treat ANY failure as the absence of a session.
+// `getUser()` is a network call to Supabase Auth on every request, and every
+// request comes from the same few server IPs, so a blip or a rate limit (429)
+// made it return no user - and `getCurrentUser` answered that with
+// redirect("/login"). Mid-edit, inside a Server Action, that threw the person
+// out of the page and dropped what they had just typed. That was the
+// "terpental dan tidak tersimpan" report. The profile read had the same flaw
+// one step later: a failed read gave `profile = null`, so the role silently
+// became Tamu and every write was refused with "tidak punya akses".
+//
+// Now a TRANSIENT failure (network, 5xx, 429) falls back to the session the
+// cookie already carries, and the profile read is retried and otherwise
+// surfaces as an error. The cookie's identity is only trusted together with a
+// successful profile read made WITH that token: PostgREST verifies the JWT
+// signature, so a forged cookie fails right there (and is treated as signed
+// out). RLS was always the real boundary; this does not move it.
+// ------------------------------------------------------------------
+
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Is this auth error a temporary problem rather than a verdict on the token? */
+export function isTransientAuthError(error: unknown): boolean {
+  if (!error) return false;
+  if (isAuthRetryableFetchError(error)) return true;
+  const status = (error as { status?: number }).status ?? 0;
+  return status === 0 || status === 429 || status >= 500;
+}
+
+async function verifiedUser(supabase: ServerClient): Promise<User | null> {
+  const { data, error } = await supabase.auth.getUser();
+  if (data.user) return data.user;
+  if (!isTransientAuthError(error)) return null;
+  // Auth is unreachable or rate-limited right now. The session in the cookie
+  // is still the best evidence of who this is; the profile read that follows
+  // is made with its token, so the database gets the final say.
+  const { data: s } = await supabase.auth.getSession();
+  if (s.session?.user) {
+    console.warn(`[auth] getUser failed transiently (${(error as Error)?.message ?? "unknown"}); using the session cookie`);
+  }
+  return s.session?.user ?? null;
+}
+
+const SIGNED_OUT = Symbol("signed-out");
+
+type Profile = {
+  name?: string | null;
+  role?: string | null;
+  avatar_color?: string | null;
+  avatar?: string | null;
+  is_shared?: boolean | null;
+};
+
+/** The JWT was rejected by PostgREST (expired, revoked or forged). */
+function isTokenRejected(error: { code?: string; message?: string; status?: number }): boolean {
+  return error.code === "PGRST301" || error.code === "PGRST303" || /jwt|jws/i.test(error.message ?? "");
+}
+
+async function readProfile(supabase: ServerClient, id: string): Promise<Profile | null | typeof SIGNED_OUT> {
+  let lastError: { code?: string; message?: string } | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+    if (!error) return (data as Profile | null) ?? null;
+    if (isTokenRejected(error)) return SIGNED_OUT;
+    lastError = error;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  // Not "no profile" and not "signed out": the read failed. Saying so beats
+  // quietly demoting an admin to Tamu for the rest of this request.
+  throw new Error(`profile: ${lastError?.message ?? "read failed"}${lastError?.code ? ` (${lastError.code})` : ""}`);
+}

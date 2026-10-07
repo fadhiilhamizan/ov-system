@@ -38,7 +38,7 @@ export default async function MembersPage() {
           </span>
         </div>
       )}
-      <MembersView
+      <MembersView key={event.id}
         members={members}
         teams={teams}
         divisions={divisions}

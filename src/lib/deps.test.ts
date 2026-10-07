@@ -24,9 +24,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
  * useless if it fills up.
  */
 const USED_WITHOUT_IMPORT: Record<string, string> = {
-  // Peer of @supabase/ssr: it is where the client and its types actually come
-  // from, and `ssr` re-exports them. Removing it breaks the type surface.
-  "@supabase/supabase-js": "peer of @supabase/ssr, supplies the client types",
+  // (empty: @supabase/supabase-js used to sit here as a silent peer of
+  // @supabase/ssr; lib/auth.ts and proxy.ts now import its error helpers.)
 };
 
 const SCAN_DIRS = ["src", "scripts"];

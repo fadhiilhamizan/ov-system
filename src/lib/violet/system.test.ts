@@ -69,6 +69,8 @@ describe("retrieval of system knowledge", () => {
     ["apakah perubahan tersimpan otomatis tanpa menunggu", "system-autosave"],
     ["apa saja pintasan keyboard untuk pindah menu tanpa mouse", "system-shortcuts"],
     ["di handphone menu ada di mana", "system-shortcuts"],
+    ["bagaimana cara melihat kalender per minggu atau per tahun", "system-calendar"],
+    ["bagaimana membagikan tautan rundown ke tamu tanpa login", "system-share"],
   ])("%s -> %s", (question, expected) => {
     expect(best(question)).toBe(expected);
   });

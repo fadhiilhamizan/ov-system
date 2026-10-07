@@ -7,6 +7,9 @@ import { EVENT_COOKIE, DIVISION_COOKIE } from "@/lib/session";
 import { recordAccess } from "@/lib/data/developer-repo";
 import { LANG_COOKIE } from "@/lib/i18n/config";
 import { DEMO_COOKIE, demoActive, demoConfigured } from "@/lib/demo";
+import { getEvent } from "@/lib/data/repo";
+import { isShareModule, shareLanding } from "@/lib/share";
+import { idSchema, parse } from "./schemas";
 
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -55,6 +58,9 @@ export async function setRole(userId: string) {
 export async function setActiveEvent(eventId: string) {
   const store = await cookies();
   store.set(EVENT_COOKIE, eventId, COOKIE_OPTS);
+  // Division keys belong to one edition; a focus carried into another one
+  // matches nothing (see pruneDivisionFocus). Start the new edition unfiltered.
+  store.set(DIVISION_COOKIE, "all", COOKIE_OPTS);
   revalidatePath("/", "layout");
 }
 
@@ -67,7 +73,10 @@ export async function setActiveEvent(eventId: string) {
 export async function setActiveDivision(division: string) {
   const store = await cookies();
   store.set(DIVISION_COOKIE, division || "all", COOKIE_OPTS);
-  revalidatePath("/", "layout");
+  // No revalidation. The Work Breakdown already applied the tick locally; the
+  // cookie is only read on the NEXT page load. Revalidating the whole layout
+  // here re-fetched every list on every tick and re-rendered the page under
+  // the open filter menu.
 }
 
 export async function setLang(lang: "id" | "en") {
@@ -90,6 +99,58 @@ export async function exitGuestMode() {
   const store = await cookies();
   store.delete(GUEST_COOKIE);
   redirect("/login");
+}
+
+/**
+ * The second half of opening a share link (/s/<edition>/<menu>, see
+ * lib/share.ts). The landing page has already made sure there is a session -
+ * the visitor's own, or a fresh anonymous Tamu one - and calls this to pick the
+ * edition and learn where to go. Returns the in-app path instead of
+ * redirecting, so the landing can show a readable error when the edition in
+ * the link no longer exists.
+ */
+export async function openShareAction(input: {
+  event: string;
+  module: string;
+  /** The link points into the demo database. */
+  demo?: boolean;
+  /** The landing just started an anonymous session for this visit. */
+  guest?: boolean;
+  query?: Record<string, string>;
+}): Promise<{ ok: true; href: string } | { ok: false; error: string }> {
+  if (!isShareModule(input.module)) return { ok: false, error: "Menu di tautan ini tidak bisa dibagikan." };
+  const idv = parse(idSchema, input.event);
+  if (!idv.ok) return idv;
+  const store = await cookies();
+
+  if (input.demo) {
+    if (!demoConfigured()) return { ok: false, error: "Mode demo tidak tersedia di server ini." };
+    const already = demoActive(store.get(DEMO_COOKIE)?.value);
+    if (!already) {
+      // Counted before the cookie, for the same reason as enterDemoMode.
+      await recordAccess("demo");
+      store.set(DEMO_COOKIE, "1", DEMO_OPTS);
+      // A shared demo link opens read-only, like a real one: as the demo Tamu.
+      store.set(AUTH_COOKIE, "u-guest", COOKIE_OPTS);
+    }
+  } else {
+    // A real link must never be read through the demo database.
+    if (demoActive(store.get(DEMO_COOKIE)?.value)) store.delete(DEMO_COOKIE);
+    if (input.guest) {
+      store.set(GUEST_COOKIE, "1", COOKIE_OPTS);
+      await recordAccess("guest");
+    }
+    // Checked through the visitor's own session, so RLS has its say too.
+    let exists = false;
+    try { exists = !!(await getEvent(idv.data)); } catch { exists = false; }
+    if (!exists) {
+      return { ok: false, error: "Ormawa Visit di tautan ini tidak ditemukan. Mungkin sudah dihapus, atau tautannya terpotong." };
+    }
+  }
+
+  store.set(EVENT_COOKIE, idv.data, COOKIE_OPTS);
+  store.set(DIVISION_COOKIE, "all", COOKIE_OPTS);
+  return { ok: true, href: shareLanding(input.module, input.query ?? {}) };
 }
 
 /** Enter the demo sandbox (separate Supabase database, no account needed). */

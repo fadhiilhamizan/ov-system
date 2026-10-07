@@ -1,4 +1,5 @@
 "use client";
+import { withOneRetry, isStaleBuildError } from "./stale-build";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -161,9 +162,17 @@ export function useLocalFirst<T extends { id: string }>(serverRows: T[]): LocalF
       const job = chain.current.then(async () => {
         let res: R | null = null;
         try {
-          res = await save();
-        } catch {
+          // A save that THROWS never reached a verdict (a network blip, a
+          // cold function timing out): try once more before rolling back. An
+          // outdated tab after a deploy is announced instead (stale-build.ts).
+          res = await withOneRetry(save);
+        } catch (e) {
           res = null;
+          if (isStaleBuildError(e)) {
+            settle(false);
+            failed.current = true;
+            return res;
+          }
         }
         const ok = !!res?.ok;
         settle(ok);

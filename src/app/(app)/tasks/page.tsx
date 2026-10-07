@@ -42,7 +42,7 @@ export default async function TasksPage() {
       <TaskLinksProvider value={taskLinks} refs={taskRefs} superLink={superLinks} refCounts={refCounts}>
         <TaskCommentsProvider value={taskComments}>
         <MembersProvider members={members} teams={teams}>
-        <TasksView
+        <TasksView key={event.id}
           tasks={tasks}
           divisions={divisions}
           events={events}

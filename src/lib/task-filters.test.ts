@@ -128,3 +128,21 @@ describe("hasOrphanTasks", () => {
     expect(hasOrphanTasks([task({ division: "DIHAPUS" })], KEYS)).toBe(true);
   });
 });
+
+describe("stale ticks (another edition, a deleted division, a renamed PIC)", () => {
+  it("drops division keys this edition does not have, keeping 'no division'", async () => {
+    const { pruneDivisionFocus, NO_DIVISION } = await import("./task-filters");
+    const keys = new Set(["LO", "EVENT"]);
+    expect([...pruneDivisionFocus(new Set(["LO", "DIV-OTHER-EDITION", NO_DIVISION]), keys)]).toEqual(["LO", NO_DIVISION]);
+    // A focus made entirely of another edition's keys becomes "no filter",
+    // instead of an empty table with nothing in the menu to untick.
+    expect(pruneDivisionFocus(new Set(["DIV-A", "DIV-B"]), keys).size).toBe(0);
+  });
+
+  it("drops PIC ticks for names no task carries any more", async () => {
+    const { prunePicks, NO_PIC } = await import("./task-filters");
+    expect([...prunePicks(new Set(["budi", "siti"]), ["Budi", "Dewi"], false)]).toEqual(["budi"]);
+    expect([...prunePicks(new Set([NO_PIC]), ["Budi"], false)]).toEqual([]);
+    expect([...prunePicks(new Set([NO_PIC]), ["Budi"], true)]).toEqual([NO_PIC]);
+  });
+});

@@ -58,6 +58,7 @@ export const APP_ROUTES: Record<string, readonly string[]> = {
     "guide-events",
     "guide-inbox",
     "guide-roles",
+    "guide-share",
     "guide-shortcuts",
     "guide-violet",
     "guide-settings",

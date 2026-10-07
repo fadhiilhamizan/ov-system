@@ -89,6 +89,28 @@ export function matchesPics(task: Task, picked: ReadonlySet<string>): boolean {
   return names.some((n) => picked.has(n.toLowerCase()));
 }
 
+/**
+ * The division focus restricted to keys this edition has (plus "no
+ * division"). Keys from another edition, or of a deleted division, would match
+ * nothing and could not be unticked from the menu.
+ */
+export function pruneDivisionFocus(
+  focus: ReadonlySet<string>,
+  divisionKeys: ReadonlySet<string>,
+): Set<string> {
+  return new Set([...focus].filter((k) => k === NO_DIVISION || divisionKeys.has(k)));
+}
+
+/** PIC ticks restricted to names still on offer (lower-cased, as the menu stores them). */
+export function prunePicks(
+  picked: ReadonlySet<string>,
+  options: readonly string[],
+  hasUnassigned: boolean,
+): Set<string> {
+  const live = new Set(options.map((o) => o.toLowerCase()));
+  return new Set([...picked].filter((p) => (p === NO_PIC ? hasUnassigned : live.has(p))));
+}
+
 /** Divisions that actually have somewhere to show - used to build the menu. */
 export function divisionKeySet(divisions: readonly Division[]): Set<string> {
   return new Set(divisions.map((d) => d.key));

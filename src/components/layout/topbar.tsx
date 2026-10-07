@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { navItemForPath, ALL_NAV_ITEMS } from "./nav-config";
 import { can } from "@/lib/permissions";
 import { GlobalSearch } from "./global-search";
+import { ShareButton } from "@/components/share/share-button";
 import { EventSwitcher } from "./event-switcher";
 import { RoleSwitcher } from "./role-switcher";
 import { UserMenu } from "./user-menu";
@@ -66,6 +67,7 @@ export function Topbar({
           tablet-sized screens. */}
       <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
         <GlobalSearch allowedNav={allowedNav} />
+        <ShareButton events={events} activeEventId={activeEventId} demo={sandboxMode} />
         <EventSwitcher events={events} activeId={activeEventId} />
         {/* On a phone these two move into the menu drawer (app-shell). */}
         <span className="hidden sm:contents">

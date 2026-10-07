@@ -36,7 +36,7 @@ export default async function ProspectsPage() {
         <StatCard label={t("Ditolak")} value={count("ditolak")} icon={<XCircle />} accent="#ef4444" />
       </div>
 
-      <ProspectsView
+      <ProspectsView key={event.id}
         prospects={prospects}
         prospectLinks={prospectLinks}
         members={members}

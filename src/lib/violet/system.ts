@@ -406,8 +406,26 @@ export function systemPassages(): Passage[] {
       "Penyimpanannya berjalan otomatis di latar belakang, satu per satu sesuai urutan. Tulisan kecil " +
       "\"Perubahan disimpan otomatis\" berarti masih menyimpan, \"Tersimpan\" berarti sudah. " +
       "Kalau penyimpanan gagal (mis. koneksi putus atau tidak punya akses), hanya perubahan itu yang " +
-      "dikembalikan dan pesan kesalahannya muncul. Formulir dialog dan tindakan besar seperti menghapus " +
+      "dikembalikan dan pesan kesalahannya muncul; gangguan jaringan sesaat dicoba ulang sekali secara otomatis. " +
+      "Kalau aplikasi baru saja diperbarui saat halamannya masih terbuka, muncul ajakan Muat ulang. Formulir dialog dan tindakan besar seperti menghapus " +
       "atau mengarsipkan satu Ormawa Visit tetap menunggu konfirmasi server."),
+
+    p("calendar", "Cara pakai: Kalender dan tampilannya", "/calendar",
+      "Kalender punya ENAM tampilan: Sehari, 4 Hari, Seminggu, Sebulan, Setahun, dan Jadwal (agenda), " +
+      "yaitu melihat kalender per hari (harian), per 4 hari, per minggu (mingguan), per bulan (bulanan), " +
+      "per tahun (tahunan), atau sebagai daftar jadwal. " +
+      "Sebulan menampilkan tugas pada tanggal DEADLINE-nya. Sehari, 4 Hari, dan Seminggu menampilkan tugas " +
+      "sebagai RENTANG dari tanggal mulai sampai deadline di baris Sepanjang hari, dan jam-jam di bawahnya; " +
+      "pada Hari-H sesi RUNDOWN tampil sesuai jam mulai dan selesainya. Setahun menampilkan dua belas bulan " +
+      "dengan titik pada tanggal yang punya deadline. Jadwal adalah daftar berurutan per tanggal dalam sebulan. " +
+      "Ada penyaring divisi, dan tampilan serta tanggal yang dibuka tersimpan di alamat halaman."),
+
+    p("share", "Aturan: bagikan tautan (share link) tanpa login", "/panduan#guide-share",
+      "Menu tertentu bisa DIBAGIKAN lewat tautan lewat ikon bagikan di bagian atas: Dashboard, Work Breakdown, " +
+      "Kalender, Rundown, Hari-H, dan Himpunan, untuk satu Ormawa Visit tertentu. Orang yang membuka tautan " +
+      "langsung masuk ke menu itu sebagai TAMU (hanya baca) tanpa halaman login; yang sudah login tetap memakai " +
+      "akunnya. Daftar anggota, anggaran, Super Link, dan Reach & Offer tidak bisa dibagikan karena berisi data " +
+      "pribadi atau tertutup untuk Tamu. Tautan dari Mode Demo membuka database demo."),
 
     p("shortcuts", "Aturan: pintasan keyboard dan tampilan HP", "/panduan#guide-shortcuts",
       "Seluruh sistem bisa dipakai TANPA MOUSE lewat pintasan keyboard (shortcut). Tanda tanya (?) membuka " +
