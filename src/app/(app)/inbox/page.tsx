@@ -24,7 +24,7 @@ export default async function InboxPage() {
 
   if (!isAdmin) {
     return (
-      <div className="space-y-5">
+      <div className="mx-auto w-full max-w-[1400px] space-y-5">
         <PageHeader
           title={t("Kotak Masuk")}
           description={t("Pengumuman dan siaran dari admin.")}
@@ -46,7 +46,7 @@ export default async function InboxPage() {
   const unread = messages.filter((m) => !m.read_at).length;
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5">
       <PageHeader
         title={t("Kotak Masuk")}
         description={t("Baca siaran yang masuk, dan kirim pengumuman ke akun lain.")}

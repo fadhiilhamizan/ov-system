@@ -440,7 +440,7 @@ export function LinksView({
                   )}
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 3xl:grid-cols-3 4xl:grid-cols-4">
                 {divisionGroups.map(({ division, items }) => (
                   <Card key={division?.key ?? "none"} className="overflow-hidden">
                     <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">

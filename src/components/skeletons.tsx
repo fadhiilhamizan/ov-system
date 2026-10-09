@@ -174,7 +174,7 @@ export function SkCard({ lines = 3, className, title = true }: { lines?: number;
 /** Grid of cards (divisions, editions). */
 export function SkCardGrid({ n = 6, cols = 3, lines = 3, tall }: { n?: number; cols?: 2 | 3; lines?: number; tall?: boolean }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-3 sm:gap-4", cols === 3 ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2")}>
+    <div className={cn("grid grid-cols-1 gap-3 sm:gap-4", cols === 3 ? "md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5" : "md:grid-cols-2 3xl:grid-cols-3 4xl:grid-cols-4")}>
       {range(n).map((i) => (
         <div key={i} className={cn("space-y-3 rounded-xl border border-border bg-card p-4 sm:p-5", tall && "min-h-[220px]")}>
           <div className="flex items-center gap-3">

@@ -63,7 +63,7 @@ export default async function SettingsPage() {
   const violetProviders = providerStatus();
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5">
       <PageHeader
         title={t("Pengaturan")}
         description={t("Konfigurasi sistem, hak akses peran, backup, dan informasi Ormawa Visit Management System.")}

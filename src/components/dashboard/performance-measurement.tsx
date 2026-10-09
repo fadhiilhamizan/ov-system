@@ -95,7 +95,7 @@ export function PerformanceMeasurement({
           </p>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 3xl:grid-cols-6">
           <Metric
             icon={<Users />}
             label={t("Fungsionaris HMSI hadir")}

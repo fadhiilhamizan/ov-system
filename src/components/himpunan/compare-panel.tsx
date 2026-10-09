@@ -180,7 +180,7 @@ function CardsView({
   entryStore: LocalFirst<CompareEntry>;
 }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-2 3xl:grid-cols-3">
       {subjects.map((s) => (
         <SubjectCard
           key={s.id}

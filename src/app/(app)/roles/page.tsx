@@ -19,7 +19,7 @@ export default async function RolesPage() {
   const [requests, t] = await Promise.all([getRoleRequests(), getT()]);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5">
       <PageHeader
         title={t("Role Request")}
         description={t("Akun yang baru mendaftar belum punya peran. Setujui atau abaikan permintaan peran di sini.")}

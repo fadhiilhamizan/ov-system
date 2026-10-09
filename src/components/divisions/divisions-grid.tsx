@@ -236,7 +236,7 @@ export function DivisionsGrid({
       {cards.length === 0 ? (
         <Card className="p-10 text-center text-sm text-muted-foreground">{t("Belum ada divisi.")}</Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5">
           {cards.map((s) => {
             const team = teams.find((tm) => tm.division === s.division.key);
             const checked = sel.selected.has(s.division.key);

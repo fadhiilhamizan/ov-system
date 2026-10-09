@@ -53,6 +53,16 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.58.1",
+    date: "2026-10-09",
+    title: "Lebih lega di monitor lebar",
+    changes: [
+      { kind: "ui", text: "Di monitor lebar dan ultrawide, isi halaman kini ikut melebar sampai hampir selebar layar, tidak lagi tertahan di kolom 1400 piksel dengan ruang kosong di kiri dan kanan." },
+      { kind: "ui", text: "Kartu divisi, Super Link, daftar Ormawa Visit, Compare, kalender tahunan, dan pengukuran kinerja menambah jumlah kolom di layar lebar." },
+      { kind: "ui", text: "Halaman bacaan (FAQ, Panduan, Pengaturan, Kotak Masuk, Role Request) tetap dibatasi lebarnya supaya teks nyaman dibaca." },
+    ],
+  },
+  {
     version: "1.58.0",
     date: "2026-10-07",
     title: "Bagikan tautan tanpa login, kalender enam tampilan, dan perbaikan terpental",

@@ -301,7 +301,7 @@ function MonthGrid({
                 if (next) { e.preventDefault(); next.focus(); }
               }}
               className={cn(
-                "group relative min-h-[60px] cursor-pointer border-b border-r border-border p-1 text-left transition hover:bg-muted/40 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:min-h-[104px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
+                "group relative min-h-[60px] cursor-pointer border-b border-r border-border p-1 text-left transition hover:bg-muted/40 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:min-h-[104px] sm:p-1.5 3xl:min-h-[136px] [&:nth-child(7n)]:border-r-0",
                 !inMonth && "bg-muted/20 text-muted-foreground/50",
                 isEvent && "bg-accent/40",
               )}
@@ -540,7 +540,7 @@ function YearGrid({
 }) {
   const t = useT();
   return (
-    <div className="grid grid-cols-1 gap-4 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-6">
       {MONTHS.map((name, m) => {
         const first = new Date(year, m, 1);
         const cells = Array.from({ length: 42 }, (_, i) => addDays(first, i - first.getDay()));

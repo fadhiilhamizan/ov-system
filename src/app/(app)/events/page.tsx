@@ -41,7 +41,7 @@ export default async function EventsPage() {
         actions={manage ? <AddEventButton events={events} /> : undefined}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 3xl:grid-cols-3 4xl:grid-cols-4">
         {cards.map(({ event: e, stats, budget }) => {
           const st = STATUS[e.status];
           const isActive = e.id === active.id;

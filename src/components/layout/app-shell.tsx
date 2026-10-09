@@ -214,7 +214,10 @@ export function AppShell({
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1400px] px-4 py-4 focus:outline-none sm:py-6 md:px-6 lg:px-8"
+          // Grows in steps with the screen (see the 3xl/4xl breakpoints in
+          // globals.css) instead of stopping at 1400px. Reading pages (FAQ,
+          // Panduan, Pengaturan, ...) cap themselves narrower again.
+          className="mx-auto w-full max-w-[1400px] 2xl:max-w-[1680px] 3xl:max-w-[2080px] 4xl:max-w-[3000px] px-4 py-4 focus:outline-none sm:py-6 md:px-6 lg:px-8 3xl:px-10"
         >
           {children}
         </main>
@@ -228,7 +231,7 @@ export function AppShell({
         )}
         {violetEnabled && <VioletChat />}
         <footer className="border-t border-border px-6 py-5">
-          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
+          <div className="mx-auto flex max-w-[1400px] 2xl:max-w-[1680px] 3xl:max-w-[2080px] 4xl:max-w-[3000px] flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
             <div className="flex items-center gap-2">
               <Logo size={18} />
               <span>Ormawa Visit Management System - External Affairs HMSI ITS</span>

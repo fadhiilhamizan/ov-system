@@ -10,7 +10,7 @@ export const metadata = { title: "Panduan" };
 export default async function PanduanPage() {
   const [t, lang] = await Promise.all([getT(), getLang()]);
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5">
       <PageHeader
         title={t("Panduan Penggunaan")}
         description={t("Alur penggunaan Ormawa Visit Management System dari awal sampai akhir.")}
