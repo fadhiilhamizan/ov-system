@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Loader2, UserRoundCheck } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,

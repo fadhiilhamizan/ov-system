@@ -10,7 +10,7 @@ const actions = vi.hoisted(() => ({
   bulkDeleteBackupsAction: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("@/lib/actions/backup", () => actions);
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const { BackupPanel } = await import("./backup-panel");
 

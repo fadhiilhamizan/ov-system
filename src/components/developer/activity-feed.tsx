@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { ChevronDown, Download, Loader2, Search, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

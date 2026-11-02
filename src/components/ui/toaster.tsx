@@ -1,22 +1,17 @@
 "use client";
-import { Toaster as Sonner } from "sonner";
-import { useTheme } from "next-themes";
+import { Toaster as RareToaster } from "@/components/ui/rare/toast";
 
+// The animated Rare UI toast stack. Every caller imports `toast` from
+// "@/components/ui/rare/toast", never straight from "sonner": a sonner toast
+// would render with sonner's own default styling, not this card. The theme is
+// not passed on purpose: the card is styled with the app's tokens, which
+// already follow the `.dark` class next-themes sets.
 export function Toaster() {
-  const { resolvedTheme } = useTheme();
   return (
-    <Sonner
-      theme={(resolvedTheme as "light" | "dark") ?? "system"}
+    <RareToaster
       position="bottom-right"
       // Clear of the bottom tab bar on a phone (it is lg:hidden).
       mobileOffset={{ bottom: "calc(4.25rem + env(safe-area-inset-bottom))", left: 12, right: 12 }}
-      toastOptions={{
-        classNames: {
-          toast:
-            "!rounded-xl !border !border-border !bg-card !text-card-foreground !shadow-xl",
-          description: "!text-muted-foreground",
-        },
-      }}
     />
   );
 }

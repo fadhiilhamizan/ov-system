@@ -1528,4 +1528,17 @@ export const EN: Record<string, string> = {
   "Kamis": "Thursday",
   "Jumat": "Friday",
   "Sabtu": "Saturday",
+  // Rare UI components (toast, delete button, password input) and the footer credit
+  "Tutup notifikasi": "Dismiss notification",
+  "Ya, hapus": "Yes, delete",
+  "Dihapus": "Deleted",
+  "Tidak jadi dihapus": "Kept",
+  "Tampilkan kata sandi": "Show password",
+  "Sembunyikan kata sandi": "Hide password",
+  "Kekuatan kata sandi": "Password strength",
+  "Lemah": "Weak",
+  "Cukup": "Fair",
+  "Baik": "Good",
+  "Kuat": "Strong",
+  "Animasi UI oleh": "UI animations by",
 };

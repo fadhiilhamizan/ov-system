@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, Copy, Lock, LockOpen } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { EventFormDialog } from "./event-form-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";

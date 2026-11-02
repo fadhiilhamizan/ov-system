@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
-vi.mock("sonner", () => ({ toast }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast }));
 
 const { useLocalFirst } = await import("./use-local-first");
 

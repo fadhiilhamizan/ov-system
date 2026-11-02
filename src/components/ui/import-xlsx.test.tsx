@@ -12,7 +12,7 @@ const actions = vi.hoisted(() => ({
   downloadImportTemplateAction: vi.fn(),
 }));
 vi.mock("@/lib/actions/import", () => actions);
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const { ImportXlsxButton } = await import("./import-xlsx");
 

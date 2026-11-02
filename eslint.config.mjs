@@ -13,6 +13,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // A toast from "sonner" itself renders with sonner's default styling, not
+  // the app's animated card, so callers go through the Rare UI wrapper.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/components/ui/rare/toast.tsx"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{ name: "sonner", message: "Import toast from \"@/components/ui/rare/toast\" instead." }],
+      }],
+    },
+  },
 ]);
 
 export default eslintConfig;

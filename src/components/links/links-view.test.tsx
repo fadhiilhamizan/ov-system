@@ -12,7 +12,7 @@ vi.mock("@/lib/actions/links", () => ({
   createLinkAction: vi.fn(), updateLinkAction: vi.fn(), deleteLinkAction: vi.fn(), bulkDeleteLinksAction: vi.fn(),
 }));
 vi.mock("@/components/ui/import-xlsx", () => ({ ImportXlsxButton: () => null }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const { LinksView } = await import("./links-view");
 

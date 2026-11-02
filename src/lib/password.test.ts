@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkNewPassword, MIN_PASSWORD } from "./password";
+import { checkNewPassword, MIN_PASSWORD, passwordStrength } from "./password";
 
 describe("checkNewPassword", () => {
   it("accepts a valid new password", () => {
@@ -37,5 +37,25 @@ describe("checkNewPassword", () => {
     const r = checkNewPassword("abc", "xyz");
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain("minimal");
+  });
+});
+
+describe("passwordStrength", () => {
+  it("is 0 for an empty field, so the meter stays hidden", () => {
+    expect(passwordStrength("")).toBe(0);
+  });
+
+  it("calls anything under the minimum weak, however varied", () => {
+    // 7 characters with every class: upstream scored this 3 ("Baik").
+    expect(passwordStrength("Ab1!xyz")).toBe(1);
+    expect(MIN_PASSWORD).toBe(8);
+  });
+
+  it("climbs with length and character classes", () => {
+    expect(passwordStrength("abcdefgh")).toBe(1);
+    expect(passwordStrength("abcdefg1")).toBe(2);
+    expect(passwordStrength("Abcdefg1")).toBe(3);
+    expect(passwordStrength("Abcdefg1!")).toBe(4);
+    expect(passwordStrength("Abcdefghij1!xyz")).toBe(4);
   });
 });

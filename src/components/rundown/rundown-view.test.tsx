@@ -21,7 +21,7 @@ const actions = vi.hoisted(() => ({
   duplicateRundownAction: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("@/lib/actions/schedule", () => actions);
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const { RundownView } = await import("./rundown-view");
 const { FLUSH_DELAY } = await import("./use-rundown-queue");

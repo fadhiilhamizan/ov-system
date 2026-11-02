@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Columns2, Minus, Plus, Rows3, Scale, Trash2,
 } from "lucide-react";
@@ -20,6 +20,7 @@ import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
 import { useCellDraft } from "@/lib/use-cell-draft";
 import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import { cn, uuidV4 } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/rare/delete-button";
 import type { CompareEntry, CompareSubject, Prospect } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -300,14 +301,13 @@ function EntryRow({ entry, canManage, store }: { entry: CompareEntry; canManage:
           <Field entry={entry} field="indicator" label={t("Indikator yang Dinilai")} canManage={canManage} store={store} />
         </div>
         {canManage && (
-          <button
-            type="button"
-            onClick={() => store.remove([entry.id], () => deleteCompareEntryAction(entry.id))}
-            className="shrink-0 rounded p-1 text-muted-foreground/50 opacity-0 transition hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus:opacity-100"
-            title={t("Hapus aspek")}
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+          <DeleteButton
+            size="sm"
+            side="left"
+            label={t("Hapus aspek")}
+            onConfirm={() => store.remove([entry.id], () => deleteCompareEntryAction(entry.id))}
+            className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100"
+          />
         )}
       </div>
       <div className="grid gap-2 sm:grid-cols-2">

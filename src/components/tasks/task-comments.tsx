@@ -1,8 +1,8 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
-  Check, CornerDownRight, Loader2, MessageSquare, MessageSquarePlus, Send, Trash2, Undo2,
+  Check, CornerDownRight, Loader2, MessageSquare, MessageSquarePlus, Send, Undo2,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { ROLE_META } from "@/lib/constants";
 import { formatCommentTime, openThreadCount, sortThreads, toThreads } from "@/lib/task-comments";
 import { useT } from "@/lib/i18n/provider";
 import { cn, uuidV4 } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/rare/delete-button";
 import type { AppUser, Role, Task, TaskComment, TaskCommentThread } from "@/lib/types";
 import { useTaskCommentStore, useTaskComments } from "./task-comments-context";
 
@@ -75,10 +76,13 @@ function CommentBubble({
             {formatCommentTime(comment.created_at)}
           </span>
           {canDelete && (
-            <button
-              type="button"
+            <DeleteButton
+              size="xs"
+              side="left"
+              label={t("Hapus catatan")}
               disabled={pending}
-              onClick={() => {
+              className="ml-auto self-center"
+              onConfirm={() => {
                 if (store) {
                   // A root takes its replies with it (the FK cascades).
                   const ids = [comment.id, ...store.rows.filter((c) => c.parent_id === comment.id).map((c) => c.id)];
@@ -91,11 +95,7 @@ function CommentBubble({
                   else toast.error(res.error);
                 });
               }}
-              className="ml-auto inline-flex items-center rounded p-0.5 text-muted-foreground/60 transition hover:text-danger disabled:opacity-50"
-              aria-label={t("Hapus catatan")}
-            >
-              {pending ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
-            </button>
+            />
           )}
         </div>
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.body}</p>

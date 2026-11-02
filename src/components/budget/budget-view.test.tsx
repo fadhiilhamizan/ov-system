@@ -28,7 +28,7 @@ const actions = vi.hoisted(() => ({
   setPrimaryBudgetPlanAction: vi.fn(async () => ({ ok: true as const })),
 }));
 vi.mock("@/lib/actions/budget", () => actions);
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const { BudgetView } = await import("./budget-view");
 

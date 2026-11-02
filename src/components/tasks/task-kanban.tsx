@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { STATUS_META, STATUS_ORDER } from "@/lib/constants";
 import { DivisionBadge } from "@/components/division-badge";
 import { TaskActions } from "./task-actions";

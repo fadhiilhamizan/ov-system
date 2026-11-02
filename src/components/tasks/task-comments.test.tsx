@@ -25,7 +25,7 @@ vi.mock("@/lib/actions/task-comments", () => ({
   setTaskCommentResolvedAction: (...a: unknown[]) => resolve(...(a as [])),
   deleteTaskCommentAction: (...a: unknown[]) => remove(...(a as [])),
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const { TaskCommentBadge, TaskCommentsPanel } = await import("./task-comments");
 const { TaskCommentsProvider } = await import("./task-comments-context");

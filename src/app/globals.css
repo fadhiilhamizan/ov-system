@@ -208,6 +208,18 @@
 
 .animate-fade-in { animation: fade-in 0.25s ease both; }
 
+/* Browser autofill fires no event, but it does start an animation, and
+   PasswordInput (components/ui/rare/password-input.tsx) listens for this one
+   to learn that the field holds a value it cannot read yet. Two rules, not
+   one selector list: a browser that does not know one of the pseudo-classes
+   would drop the whole list. */
+@keyframes ov-autofill {
+  from { opacity: 1; }
+  to { opacity: 1; }
+}
+.ov-autofill-watch:autofill { animation: ov-autofill 1ms; }
+.ov-autofill-watch:-webkit-autofill { animation: ov-autofill 1ms; }
+
 /* Auto-growing textareas (rundown cells) - height follows content so long
    text wraps and stays fully visible instead of being clipped. Falls back to
    normal wrapping where field-sizing is unsupported. */

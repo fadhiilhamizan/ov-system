@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { GripVertical, Loader2, Plus, Table2, Trash2 } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
@@ -27,6 +27,7 @@ import { useLocalFirst, type LocalFirst } from "@/lib/use-local-first";
 import { useCellDraft } from "@/lib/use-cell-draft";
 import { LocalSaveStatus } from "@/components/ui/local-save-status";
 import { cn, uuidV4 } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/rare/delete-button";
 import type { FgdPlan, FgdRow } from "@/lib/types";
 import { ImportXlsxButton } from "@/components/ui/import-xlsx";
 
@@ -337,14 +338,13 @@ function RowCells({ row, canManage, store }: { row: FgdRow; canManage: boolean; 
       <Cell row={row} field="theirs" canManage={canManage} store={store} />
       {canManage && (
         <td className="border-b border-border px-1 text-center align-middle">
-          <button
-            type="button"
-            onClick={() => store.remove([row.id], () => deleteFgdRowAction(row.id))}
-            className="rounded p-1 text-muted-foreground/50 opacity-0 transition hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus:opacity-100"
-            title={t("Hapus baris")}
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+          <DeleteButton
+            size="sm"
+            side="left"
+            label={t("Hapus baris")}
+            onConfirm={() => store.remove([row.id], () => deleteFgdRowAction(row.id))}
+            className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100"
+          />
         </td>
       )}
     </tr>

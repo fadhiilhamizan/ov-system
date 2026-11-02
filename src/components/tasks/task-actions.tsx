@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { MoreHorizontal, Pencil, Trash2, Loader2, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -72,6 +72,7 @@ Masuk dengan Google perlu diaktifkan lebih dulu di dashboard Supabase (Authentic
 - Next.js 16 (App Router, Turbopack), React 19, TypeScript
 - Tailwind CSS v4 dengan komponen berbasis Radix UI
 - @dnd-kit (Kanban), grafik SVG custom, sonner (notifikasi), next-themes (mode gelap)
+- Motion untuk animasi; beberapa komponen animasi (toast, counter, tombol hapus, input kata sandi) diadaptasi dari [Rare UI](https://rareui.com) (lisensi MIT + Commons Clause + Attribution, salinannya ada di `src/components/ui/rare/LICENSE`)
 - Supabase (Postgres, Auth, Row Level Security) untuk mode cloud
 - Zod untuk validasi input pada seluruh Server Action
 - Vitest untuk pengujian unit

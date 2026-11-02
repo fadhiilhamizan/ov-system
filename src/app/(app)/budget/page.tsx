@@ -5,9 +5,9 @@ import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/page-header";
 import { BudgetView, AddBudgetPlanButton } from "@/components/budget/budget-view";
 import { StatCard } from "@/components/stat-card";
+import { RupiahCounter } from "@/components/ui/counter";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Layers, Receipt } from "lucide-react";
-import { formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/empty";
 import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import { getT } from "@/lib/i18n/server";
@@ -54,7 +54,7 @@ export default async function BudgetPage() {
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatCard
           label={t("Anggaran Edisi")}
-          value={formatRupiah(main ? planTotal(main) : 0)}
+          value={<RupiahCounter value={main ? planTotal(main) : 0} />}
           sub={main ? `${t("Rencana utama")}: ${main.name}` : undefined}
           icon={<Wallet />}
           accent="#0ea5e9"

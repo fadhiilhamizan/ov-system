@@ -1,7 +1,7 @@
 "use client";
 import { withOneRetry, isStaleBuildError } from "./stale-build";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 
 // ============================================================
 // Local-first writes for any list of rows.

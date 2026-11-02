@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { ListChecks, ChevronDown, ExternalLink, Loader2, Trash2, X, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";

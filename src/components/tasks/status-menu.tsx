@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   DropdownMenu,
   DropdownMenuContent,

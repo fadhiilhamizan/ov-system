@@ -24,9 +24,10 @@ import {
 } from "@/lib/data/repo";
 import { planTotal, primaryBudgetPlan } from "@/lib/budget";
 import { PIPELINE_STAGES, STATUS_META } from "@/lib/constants";
-import { formatRupiah, formatDate, relativeDeadline, daysUntil } from "@/lib/format";
+import { formatDate, relativeDeadline, daysUntil } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import { Counter, RupiahCounter } from "@/components/ui/counter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/charts/donut";
 import { BarList } from "@/components/charts/bars";
@@ -127,7 +128,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           label={t("Progress")}
-          value={`${stats.progress}%`}
+          value={<Counter value={stats.progress} suffix="%" />}
           sub={`${stats.by.done} ${t("dari")} ${stats.total} ${t("selesai")}`}
           icon={<TrendingUp />}
           accent="#10b981"
@@ -141,7 +142,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           label={t("Anggaran Edisi")}
-          value={formatRupiah(budget)}
+          value={<RupiahCounter value={budget} />}
           sub={mainPlan ? `${t("Rencana utama")}: ${mainPlan.name}` : t("Belum ada rencana anggaran")}
           icon={<Wallet />}
           accent="#0ea5e9"

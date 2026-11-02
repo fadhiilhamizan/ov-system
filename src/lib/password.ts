@@ -30,3 +30,25 @@ export function checkNewPassword(
   }
   return { ok: true };
 }
+
+export type PasswordStrength = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * The strength meter under a new-password field: 0 for an empty field, then
+ * 1 (Lemah) to 4 (Kuat). Same five checks as Rare UI's meter, plus one rule
+ * of ours: anything shorter than MIN_PASSWORD is Lemah whatever it contains,
+ * because the form refuses it. Without that, "Ab1!xyz" (7 characters) read
+ * "Kuat" and then failed on submit.
+ */
+export function passwordStrength(value: string): PasswordStrength {
+  if (!value) return 0;
+  if (value.length < MIN_PASSWORD) return 1;
+  const score = [
+    value.length >= MIN_PASSWORD,
+    value.length >= 12,
+    /[a-z]/.test(value) && /[A-Z]/.test(value),
+    /\d/.test(value),
+    /[^a-zA-Z0-9]/.test(value),
+  ].filter(Boolean).length;
+  return Math.min(Math.max(score, 1), 4) as PasswordStrength;
+}

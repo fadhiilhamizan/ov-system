@@ -53,6 +53,18 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.59.0",
+    date: "2026-11-02",
+    title: "Animasi baru: notifikasi, angka, tombol hapus, dan kata sandi",
+    changes: [
+      { kind: "ui", text: "Notifikasi kini muncul sebagai kartu beranimasi dengan ikon berwarna untuk berhasil, gagal, dan peringatan, dan ikut mode gelap." },
+      { kind: "ui", text: "Angka di kartu ringkasan Dashboard, Anggaran, dan Reach & Offer, serta total dan subtotal RAB, kini bergulir seperti odometer saat muncul dan saat berubah." },
+      { kind: "ui", text: "Tombol hapus di baris Rundown, item RAB, tabel FGD, aspek Compare, dan catatan tugas kini meminta konfirmasi di tempat (centang untuk hapus, silang untuk batal), jadi satu salah klik tidak lagi langsung menghapus." },
+      { kind: "new", text: "Kolom kata sandi di halaman masuk, daftar, dan Ubah Kata Sandi punya tombol mata untuk menampilkan isinya, dan kata sandi baru dilengkapi meteran kekuatan dari Lemah sampai Kuat." },
+      { kind: "ui", text: "Animasi ini diadaptasi dari Rare UI (kreditnya ada di footer) dan berhenti sendiri bila perangkat diatur untuk mengurangi gerakan." },
+    ],
+  },
+  {
     version: "1.58.1",
     date: "2026-10-09",
     title: "Lebih lega di monitor lebar",

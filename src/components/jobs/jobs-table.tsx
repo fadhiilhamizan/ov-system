@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Plus, MoreHorizontal, Pencil, Trash2, Loader2, ClipboardList, GripVertical, Copy } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter,

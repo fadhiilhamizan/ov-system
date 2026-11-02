@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   createRundownAction, deleteRundownAction, bulkDeleteRundownAction, duplicateRundownAction,
   saveRundownChangesAction,

@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Check, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { setActiveEvent } from "@/lib/actions/session";

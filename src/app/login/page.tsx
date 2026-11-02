@@ -10,6 +10,7 @@ import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/rare/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/provider";
@@ -86,13 +87,12 @@ function LoginForm() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="password">{t("Kata sandi")}</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={setPassword}
                 placeholder="••••••••"
               />
             </div>

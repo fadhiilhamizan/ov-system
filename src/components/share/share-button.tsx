@@ -2,7 +2,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Share2, Copy, Check, ExternalLink, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";

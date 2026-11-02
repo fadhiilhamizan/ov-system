@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Loader2, Download, RotateCcw, Trash2, DatabaseBackup, AlertTriangle, Upload, ChevronDown, X,
 } from "lucide-react";

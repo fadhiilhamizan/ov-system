@@ -1,12 +1,12 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Loader2, KeyRound } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/rare/password-input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/auth-errors";
@@ -117,37 +117,35 @@ export function ChangePasswordDialog({
             <input type="hidden" name="username" autoComplete="username" value={email} readOnly />
             <div className="grid gap-1.5">
               <Label htmlFor="cur-pw">{t("Kata sandi saat ini")}</Label>
-              <Input
+              <PasswordInput
                 id="cur-pw"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={f.current}
-                onChange={(e) => setF({ ...f, current: e.target.value })}
+                onChange={(v) => setF({ ...f, current: v })}
               />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="new-pw">{t("Kata sandi baru")}</Label>
-              <Input
+              <PasswordInput
                 id="new-pw"
-                type="password"
                 autoComplete="new-password"
                 required
                 minLength={MIN_PASSWORD}
                 value={f.next}
-                onChange={(e) => setF({ ...f, next: e.target.value })}
+                onChange={(v) => setF({ ...f, next: v })}
+                strength
               />
               <p className="text-[11px] text-muted-foreground">{t("Minimal 8 karakter.")}</p>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="confirm-pw">{t("Ulangi kata sandi baru")}</Label>
-              <Input
+              <PasswordInput
                 id="confirm-pw"
-                type="password"
                 autoComplete="new-password"
                 required
                 value={f.confirm}
-                onChange={(e) => setF({ ...f, confirm: e.target.value })}
+                onChange={(v) => setF({ ...f, confirm: v })}
               />
             </div>
 

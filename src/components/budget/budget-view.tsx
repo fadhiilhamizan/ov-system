@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Wallet, ChevronDown, Plus, Trash2, Loader2, X, Copy, GripVertical, Star } from "lucide-react";
 import {
   DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter, useDroppable,
@@ -28,6 +28,8 @@ import {
   reorderBudgetItemsAction, moveBudgetItemAction, setPrimaryBudgetPlanAction,
 } from "@/lib/actions/budget";
 import { formatRupiah } from "@/lib/format";
+import { RupiahCounter } from "@/components/ui/counter";
+import { DeleteButton } from "@/components/ui/rare/delete-button";
 import { categoryDropId, planAfterDrag, primaryBudgetPlan } from "@/lib/budget";
 import { cn, uuidV4 } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -310,31 +312,18 @@ function DuplicateItemButton({ item }: { item: BudgetItem }) {
   );
 }
 
+/** One item confirms in place; deleting a whole plan still asks in a dialog
+ *  (DeletePlanButton), because that takes every item with it. */
 function DeleteItemButton({ itemId, itemName }: { itemId: string; itemName: string }) {
   const t = useT();
-  const [open, setOpen] = React.useState(false);
   const { items } = useBudgetStores();
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="inline-flex size-6 items-center justify-center rounded text-muted-foreground/60 transition hover:bg-red-50 hover:text-danger dark:hover:bg-red-500/10">
-          <Trash2 className="size-3.5" />
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t("Hapus item?")}</DialogTitle>
-          <DialogDescription>&ldquo;{itemName}&rdquo; {t("akan dihapus dari rencana anggaran ini.")}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="outline">{t("Batal")}</Button></DialogClose>
-          <Button variant="destructive" onClick={() => {
-            setOpen(false);
-            items.remove([itemId], () => deleteBudgetItemAction(itemId), { success: t("Item dihapus") });
-          }}>{t("Hapus")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DeleteButton
+      size="sm"
+      side="left"
+      label={`${t("Hapus")} ${itemName}`}
+      onConfirm={() => items.remove([itemId], () => deleteBudgetItemAction(itemId), { success: t("Item dihapus") })}
+    />
   );
 }
 
@@ -612,7 +601,7 @@ function PlanCard({
           </div>
           {/* Phones: the total drops to its own line under the name. */}
           <div className="order-last basis-full text-left sm:order-none sm:basis-auto sm:text-right">
-            <div className="text-base font-bold tabular-nums sm:text-lg">{formatRupiah(grand)}</div>
+            <div className="text-base font-bold tabular-nums sm:text-lg"><RupiahCounter value={grand} /></div>
             <div className="text-[11px] text-muted-foreground">
               {isPrimary ? t("Total (dipakai Dashboard)") : t("Total")}
             </div>
@@ -631,7 +620,7 @@ function PlanCard({
               <div key={c.name} className="flex items-center gap-2 text-xs">
                 <CategoryDot planId={plan.id} category={c.name} color={c.color} canManage={canManage} />
                 <span className="font-medium">{c.name}</span>
-                <span className="text-muted-foreground">{formatRupiah(c.subtotal)}</span>
+                <span className="text-muted-foreground"><RupiahCounter value={c.subtotal} /></span>
               </div>
             ))}
             {canManage && (
@@ -690,14 +679,14 @@ function PlanCard({
                     ))}
                     <tr className="border-b border-border">
                       <td colSpan={canManage ? 5 : 4} className="px-5 py-1.5 text-right text-xs text-muted-foreground">{t("Subtotal")} {c.name}</td>
-                      <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums">{formatRupiah(c.subtotal)}</td>
+                      <td className="px-5 py-1.5 text-right text-xs font-semibold tabular-nums"><RupiahCounter value={c.subtotal} /></td>
                       {canManage && <td />}
                     </tr>
                   </React.Fragment>
                 ))}
                 <tr className="bg-muted/40">
                   <td colSpan={canManage ? 5 : 4} className="px-5 py-2.5 text-right font-semibold">{t("Total Pengeluaran")}</td>
-                  <td className="px-5 py-2.5 text-right text-base font-bold tabular-nums">{formatRupiah(grand)}</td>
+                  <td className="px-5 py-2.5 text-right text-base font-bold tabular-nums"><RupiahCounter value={grand} /></td>
                   {canManage && <td />}
                 </tr>
               </tbody>

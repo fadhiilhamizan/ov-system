@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Search, Plus, ExternalLink, Link2, Loader2, MoreHorizontal, Pencil, Trash2, X, CalendarRange,
 } from "lucide-react";

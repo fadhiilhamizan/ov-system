@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import {
   Clock, Plus, Trash2, StickyNote, Copy, ExternalLink, ChevronsDownUp, Unlink, GripVertical, X,
 } from "lucide-react";
@@ -22,6 +22,7 @@ import {
 import { useMultiSelect } from "@/lib/use-multi-select";
 import { mergedRowIds } from "@/lib/rundown-reorder";
 import { cn } from "@/lib/utils";
+import { DeleteButton } from "@/components/ui/rare/delete-button";
 import { computeDuration } from "@/lib/rundown-time";
 import { useCellDraft } from "@/lib/use-cell-draft";
 import { isUrl } from "@/lib/format";
@@ -585,14 +586,8 @@ export function RundownView({
                         <Copy className="size-3.5" />
                       </button>
                       {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => q.remove(item.id)}
-                          className="rounded p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger"
-                          title={t("Hapus")}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                        // Confirms in place: this used to delete on one click.
+                        <DeleteButton size="sm" side="left" onConfirm={() => q.remove(item.id)} />
                       )}
                     </div>
                   </td>

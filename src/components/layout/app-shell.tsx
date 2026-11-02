@@ -246,6 +246,17 @@ export function AppShell({
               </Link>
               <span aria-hidden className="text-border">·</span>
               <span>v{APP_VERSION}</span>
+              <span aria-hidden className="text-border">·</span>
+              {/* Required by the Rare UI licence (src/components/ui/rare/LICENSE):
+                  a visible link back for the animated components we ship. */}
+              <a
+                href="https://rareui.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground hover:underline"
+              >
+                {t("Animasi UI oleh")} Rare UI
+              </a>
               <span aria-hidden className="hidden text-border lg:inline">·</span>
               <ShortcutsHint className="hidden items-center gap-1.5 hover:text-foreground lg:inline-flex" />
             </div>

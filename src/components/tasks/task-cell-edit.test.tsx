@@ -24,7 +24,7 @@ vi.mock("@/lib/actions/task-comments", () => ({
   setTaskCommentResolvedAction: vi.fn(),
   deleteTaskCommentAction: vi.fn(),
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
+vi.mock("@/components/ui/rare/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 
 const { TaskTable } = await import("./task-table");
 

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { Counter } from "@/components/ui/counter";
 
 export function StatCard({
   label,
@@ -28,7 +29,12 @@ export function StatCard({
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="pr-8 text-[11px] font-medium leading-tight text-muted-foreground sm:pr-0 sm:text-xs">{label}</p>
-          <p className="break-words text-lg font-bold leading-tight tracking-tight tabular-nums sm:text-2xl">{value}</p>
+          {/* A plain number rolls up like an odometer. Anything else (a
+              percentage, a Rupiah amount) is passed in already built, as a
+              <Counter> / <RupiahCounter> or as text. */}
+          <p className="break-words text-lg font-bold leading-tight tracking-tight tabular-nums sm:text-2xl">
+            {typeof value === "number" ? <Counter value={value} /> : value}
+          </p>
           {sub && <div className="text-[11px] leading-snug text-muted-foreground sm:text-xs">{sub}</div>}
         </div>
         {icon && (

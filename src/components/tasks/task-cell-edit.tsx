@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Pencil, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/rare/toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";

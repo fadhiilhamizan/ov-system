@@ -10,6 +10,7 @@ import { GoogleButton } from "@/components/auth/google-button";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/rare/password-input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/provider";
@@ -141,27 +142,26 @@ export default function SignUpPage() {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="password">{t("Kata sandi")}</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     autoComplete="new-password"
                     required
                     minLength={MIN_PASSWORD}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={setPassword}
                     placeholder="••••••••"
+                    strength
                   />
                   <p className="text-[11px] text-muted-foreground">{t("Minimal 8 karakter.")}</p>
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="confirm">{t("Ulangi kata sandi")}</Label>
-                  <Input
+                  <PasswordInput
                     id="confirm"
-                    type="password"
                     autoComplete="new-password"
                     required
                     value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
+                    onChange={setConfirm}
                     placeholder="••••••••"
                   />
                 </div>
