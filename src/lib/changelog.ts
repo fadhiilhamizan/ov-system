@@ -53,6 +53,14 @@ export const CHANGE_KINDS: ChangeKind[] = ["new", "fix", "security", "ui", "data
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.59.1",
+    date: "2026-11-25",
+    title: "Database tidak lagi tertidur sendiri",
+    changes: [
+      { kind: "fix", text: "Sistem kini menyapa database setiap 5 hari secara otomatis, jadi Supabase tidak lagi menjeda proyek karena sepi dan situs tidak mendadak tidak bisa dibuka." },
+    ],
+  },
+  {
     version: "1.59.0",
     date: "2026-11-02",
     title: "Animasi baru: notifikasi, angka, tombol hapus, dan kata sandi",

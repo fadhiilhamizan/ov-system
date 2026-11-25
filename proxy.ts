@@ -85,12 +85,14 @@ export async function proxy(request: NextRequest) {
   // a session - that's the whole point of signing up. The legal pages are
   // public too: you have to be able to read them BEFORE agreeing to them.
   //
-  // There is deliberately NO blanket /api exemption. This app has no /api
-  // routes, so the entry only ever meant that the first one somebody adds
-  // would be born unauthenticated. A route that needs to be public says so
-  // here, by name.
+  // There is deliberately NO blanket /api exemption: such an entry would mean
+  // every /api route somebody adds is born unauthenticated. A route that needs to be public says so
+  // here, by name. /api/cron/keepalive is the Vercel Cron that stops the
+  // free-tier Supabase projects from pausing (src/lib/keepalive.ts); the cron
+  // has no session, and the route returns no data.
   const path = request.nextUrl.pathname;
   const isPublic =
+    path === "/api/cron/keepalive" ||
     path === "/login" ||
     path === "/signup" ||
     path === "/privacy" ||
